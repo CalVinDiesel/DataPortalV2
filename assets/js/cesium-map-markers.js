@@ -3,7 +3,7 @@
  * Uses the viewer from cesium-map.js (window.cesiumViewer). No separate "link" is needed for images:
  * both scripts run on the same page, so image URLs are resolved from the document (same base as
  * <img src="../../assets/..."> on the landing page) and load on the overview map.
- * Loads locations from data/locations.json and from MapData API; pins use project images as thumbnails.
+ * Loads locations from MapData API (database) when available so admin add/delete is reflected; falls back to data/locations.json when API is empty or unavailable.
  * KK_OSPREY uses kkOsprey_pin_image.jpg as pin/choice-bar thumbnail. Clustering groups nearby pins when zoomed out and shows count.
  * Expected locations (5): KK Osprey, KB 3DTiles Lite, Kolombong (fisheye test), Wisma Merdeka, PPNS YS.
  * Clustering concept: The number on each pin is not fixed—it is how many locations are grouped in that cluster.
@@ -928,23 +928,27 @@
         doneCount++;
         if (doneCount < 2) return;
         var mapDataToUse = mapDataArray;
-        if (!mapDataToUse || !mapDataToUse.length) {
-          mapDataToUse = [MAPDATA_KK_OSPREY_FALLBACK];
+        var list;
+        // When the API returns pins, use ONLY the database (API) as source of truth so admin add/delete is reflected on the map.
+        if (mapDataToUse && Array.isArray(mapDataToUse) && mapDataToUse.length > 0) {
+          list = normalizeLocations(null, mapDataToUse);
+        } else {
+          if (!mapDataToUse || !mapDataToUse.length) mapDataToUse = [MAPDATA_KK_OSPREY_FALLBACK];
+          list = normalizeLocations(locationsJson || null, mapDataToUse);
+          ALL_PINS_FALLBACK.forEach(function (fallbackLoc) {
+            if (!list.some(function (l) { return l.id === fallbackLoc.id; })) {
+              var thumb = THUMBNAIL_BY_ID[fallbackLoc.id];
+              list.push({
+                id: fallbackLoc.id,
+                name: fallbackLoc.name,
+                description: fallbackLoc.description || '',
+                thumbnailUrl: thumb || '',
+                longitude: fallbackLoc.longitude,
+                latitude: fallbackLoc.latitude
+              });
+            }
+          });
         }
-        var list = normalizeLocations(locationsJson || null, mapDataToUse);
-        ALL_PINS_FALLBACK.forEach(function (fallbackLoc) {
-          if (!list.some(function (l) { return l.id === fallbackLoc.id; })) {
-            var thumb = THUMBNAIL_BY_ID[fallbackLoc.id];
-            list.push({
-              id: fallbackLoc.id,
-              name: fallbackLoc.name,
-              description: fallbackLoc.description || '',
-              thumbnailUrl: thumb || '',
-              longitude: fallbackLoc.longitude,
-              latitude: fallbackLoc.latitude
-            });
-          }
-        });
         addMarkersWithClustering(viewer, list);
       }
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-assets-path="../../assets/" data-template="vertical-menu-template" data-bs-theme="light">
+<html lang="en" dir="ltr" data-assets-path="../../assets/" data-template="admin-data-portal" data-bs-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -33,6 +33,18 @@
             <a href="add-3d-model.html" class="menu-link">
               <i class="menu-icon tf-icons bx bx-cube"></i>
               <div>Add 3D Model</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-map-pins.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-map-pin"></i>
+              <div>Manage Map Pins</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-showcase.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-grid-alt"></i>
+              <div>Manage Showcase</div>
             </a>
           </li>
           <li class="menu-item">
@@ -75,6 +87,36 @@
                 </a>
               </div>
               <div class="col-md-6 col-lg-4 mb-4">
+                <a href="manage-map-pins.html" class="card text-decoration-none h-100">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center">
+                      <div class="avatar avatar-lg me-3">
+                        <span class="avatar-initial rounded bg-label-warning"><i class="bx bx-map-pin bx-lg"></i></span>
+                      </div>
+                      <div>
+                        <h5 class="card-title mb-0">Manage Map Pins</h5>
+                        <p class="text-muted small mb-0">View, edit, or delete pin locations and 3D models on the overview map and showcases.</p>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div class="col-md-6 col-lg-4 mb-4">
+                <a href="manage-showcase.html" class="card text-decoration-none h-100">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center">
+                      <div class="avatar avatar-lg me-3">
+                        <span class="avatar-initial rounded bg-label-secondary"><i class="bx bx-grid-alt bx-lg"></i></span>
+                      </div>
+                      <div>
+                        <h5 class="card-title mb-0">Manage Showcase</h5>
+                        <p class="text-muted small mb-0">Choose which locations appear on the landing page showcase; remove from showcase only, map only, or both.</p>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div class="col-md-6 col-lg-4 mb-4">
                 <a href="client-uploads.html" class="card text-decoration-none h-100">
                   <div class="card-body">
                     <div class="d-flex align-items-center">
@@ -83,7 +125,7 @@
                       </div>
                       <div>
                         <h5 class="card-title mb-0">Client Uploads</h5>
-                        <p class="text-muted small mb-0">View client-uploaded images and request 3D model processing.</p>
+                        <p class="text-muted small mb-0">View client requests for custom image-to-3D processing; process their images and deliver the 3D model back to them (paid service).</p>
                       </div>
                     </div>
                   </div>
@@ -93,7 +135,7 @@
             <div class="card">
               <div class="card-body">
                 <h5 class="card-title">Quick info</h5>
-                <p class="mb-0">This admin portal is linked to the database (PostgreSQL when configured). Use <strong>Add 3D Model</strong> to register new tileset URLs so they appear on the public overview map. Use <strong>Client Uploads</strong> to see uploads from the <a href="../front-pages/upload-data.html" target="_blank">upload page</a> and request image-to-3D processing.</p>
+                <p class="mb-0">This admin portal is linked to the database (PostgreSQL when configured). Use <strong>Add 3D Model</strong> to register new tileset URLs so they appear on the public overview map. Use <strong>Client Uploads</strong> to handle client requests for <strong>custom image-to-3D processing</strong>: clients submit their own drone images via the <a href="../front-pages/upload-data.html" target="_blank">upload page</a>; you process them and deliver the resulting 3D model back to the client (paid service; not added to the map).</p>
               </div>
             </div>
           </div>

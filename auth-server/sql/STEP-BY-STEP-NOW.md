@@ -2,8 +2,6 @@
 
 Do these steps **in order** in pgAdmin. Use the database **Temadigital_Data_Portal** (create it first if you don’t see it).
 
-**Important:** The Data Portal uses a table named **PortalMapData**, not **MapData**. The table **MapData** belongs to the **MobilityDB** extension — **do not drop it**. We use **PortalMapData** so there is no conflict.
-
 ---
 
 ## Step 1: Open the Query Tool
@@ -17,22 +15,19 @@ Do these steps **in order** in pgAdmin. Use the database **Temadigital_Data_Port
 
 ---
 
-## Step 2: (Optional) Drop the Data Portal table only
+## Step 2: (Optional) Drop the MapData table
 
-Only do this if you already created **PortalMapData** before and want to recreate it from scratch.  
-**Do not drop "MapData"** — that is used by MobilityDB and will cause an error.
-
-If you want to drop only **PortalMapData**, run:
+Only do this if you already created **MapData** before and want to recreate it from scratch.
 
 ```sql
-DROP TABLE IF EXISTS public."PortalMapData" CASCADE;
+DROP TABLE IF EXISTS public."MapData" CASCADE;
 ```
 
 If this is your first time, skip this step and go to Step 3.
 
 ---
 
-## Step 3: Create the PortalMapData table and add seed data
+## Step 3: Create the MapData table and add seed data
 
 1. In the same Query Tool, **clear** the editor (select all, delete).
 2. Open the file **Temadigital_Data_Portal_PostgreSQL.sql** from your project:
@@ -42,8 +37,8 @@ If this is your first time, skip this step and go to Step 3.
 4. Click **Execute** (▶) or press **F5**.
 5. In **Messages** you should see **CREATE TABLE** and **INSERT** (no error).
 6. In the left tree: **Schemas** → **public** → **Tables** → right‑click **Tables** → **Refresh**.  
-   You should see **PortalMapData** (and you may still see **MapData** from MobilityDB — leave that one alone).  
-   Right‑click **PortalMapData** → **View/Edit Data** → **All Rows** to see the one seed row (e.g. KK_OSPREY).
+   You should see **MapData**.  
+   Right‑click **MapData** → **View/Edit Data** → **All Rows** to see the one seed row (e.g. KK_OSPREY).
 
 ---
 
@@ -90,9 +85,9 @@ PG_DATABASE=Temadigital_Data_Portal
 3. In the console you should see something like:  
    **MapData & admin: using PostgreSQL database Temadigital_Data_Portal**
 4. In the browser open:  
-   **http://localhost:3000/html/vertical-menu-template/add-3d-model.html**
+   **http://localhost:3000/html/admin-data-portal/add-3d-model.html**
 5. Fill the form (Model ID, Title, Latitude, Longitude, 3D Tiles URL) and click **Save 3D Model**.
-6. In pgAdmin: **PortalMapData** → **View/Edit Data** → **All Rows**. You should see your new row.
+6. In pgAdmin: **MapData** → **View/Edit Data** → **All Rows**. You should see your new row.
 
 ---
 
@@ -101,10 +96,10 @@ PG_DATABASE=Temadigital_Data_Portal
 | # | What you do |
 |---|-----------------------------|
 | 1 | Open Query Tool on database **Temadigital_Data_Portal** |
-| 2 | (Optional) Run: `DROP TABLE IF EXISTS public."PortalMapData" CASCADE;` — do **not** drop MapData (MobilityDB). |
-| 3 | Run the full **Temadigital_Data_Portal_PostgreSQL.sql** script (creates **PortalMapData**) |
+| 2 | (Optional) Run: `DROP TABLE IF EXISTS public."MapData" CASCADE;` to recreate the table. |
+| 3 | Run the full **Temadigital_Data_Portal_PostgreSQL.sql** script (creates **MapData**) |
 | 4 | Run the full **03-admin-tables-postgres.sql** script |
 | 5 | Set **PG_HOST**, **PG_PORT**, **PG_USER**, **PG_PASSWORD**, **PG_DATABASE** in **auth-server/.env** |
-| 6 | **npm start** in auth-server, add a 3D model from admin, check **PortalMapData** in pgAdmin |
+| 6 | **npm start** in auth-server, add a 3D model from admin, check **MapData** in pgAdmin |
 
-After this, new 3D models you add from the admin page will show in the **PortalMapData** table in pgAdmin. The **MapData** table (used by MobilityDB) is left unchanged.
+After this, new 3D models you add from the admin page will show in the **MapData** table in pgAdmin.
