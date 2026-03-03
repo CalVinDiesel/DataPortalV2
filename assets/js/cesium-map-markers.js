@@ -171,6 +171,19 @@
     var shortDesc = truncate;
     var labelMaxDesc = 50;
 
+    while (viewer.dataSources.length > 0) {
+      var found = false;
+      for (var i = 0; i < viewer.dataSources.length; i++) {
+        var ds = viewer.dataSources.get(i);
+        if (ds && ds.name === 'locationMarkers') {
+          viewer.dataSources.remove(ds);
+          found = true;
+          break;
+        }
+      }
+      if (!found) break;
+    }
+
     if (DEBUG_IMAGE_URLS && typeof console !== 'undefined' && console.log) {
       console.log('[TemaDataPortal map images] Base URL for image paths:', IMAGE_BASE_URL || '(none)');
       console.log('[TemaDataPortal map images] Page URL:', typeof window !== 'undefined' && window.location ? window.location.href : 'N/A');
@@ -900,7 +913,10 @@
     });
   }
 
+  var markersLoaded = false;
   function loadAndAddMarkers() {
+    if (markersLoaded) return;
+    markersLoaded = true;
     getViewer(function (viewer) {
       if (typeof Cesium === 'undefined') return;
 
