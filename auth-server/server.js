@@ -3,7 +3,7 @@
  * - Google & Facebook OAuth (redirect flow)
  * - Email/password register and login (stored in data/users.json)
  * - MapData API (PostgreSQL or SQLite or JSON)
- * - Admin: create 3D models, view client uploads, request image processing
+ * - Admin: create 3D models (overview map); custom image-to-3D processing (deliver to client, paid service)
  */
 const path = require('path');
 const fs = require('fs');
@@ -108,7 +108,7 @@ async function readMapDataFromPg() {
   if (!process.env.PG_DATABASE) return null;
   try {
     const res = await pgQuery(
-      'SELECT "mapDataID", title, description, "xAxis" as "xAxis", "yAxis" as "yAxis", "3dTiles" as "3dTiles", "thumbNailUrl", "updateDateTime" FROM public."PortalMapData" ORDER BY "updateDateTime" DESC'
+      'SELECT "mapDataID", title, description, "xAxis" as "xAxis", "yAxis" as "yAxis", "3dTiles" as "3dTiles", "thumbNailUrl", "updateDateTime" FROM public."MapData" ORDER BY "updateDateTime" DESC'
     );
     if (!res || !res.rows || res.rows.length === 0) return null;
     const rows = res.rows.map(r => ({
@@ -343,7 +343,7 @@ app.post('/api/map-data', express.json(), async (req, res) => {
   try {
     if (process.env.PG_DATABASE) {
       await pgQuery(
-        `INSERT INTO public."PortalMapData" ("mapDataID", title, description, "xAxis", "yAxis", "3dTiles", "thumbNailUrl", "updateDateTime")
+        `INSERT INTO public."MapData" ("mapDataID", title, description, "xAxis", "yAxis", "3dTiles", "thumbNailUrl", "updateDateTime")
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          ON CONFLICT ("mapDataID") DO UPDATE SET
            title = EXCLUDED.title, description = EXCLUDED.description, "xAxis" = EXCLUDED."xAxis", "yAxis" = EXCLUDED."yAxis",
@@ -368,6 +368,227 @@ app.post('/api/map-data', express.json(), async (req, res) => {
   } catch (e) {
     console.error('POST /api/map-data', e);
     res.status(500).json({ success: false, message: e.message || 'Failed to save map data.' });
+  }
+});
+
+// ---- Admin: sync MapData from data/locations.json (so all map pins appear in Manage Map Pins) ----
+app.all('/api/admin/seed-mapdata-from-locations', function (req, res, next) {
+  if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method not allowed. Use POST to sync.' });
+  next();
+});
+app.post('/api/admin/seed-mapdata-from-locations', async (req, res) => {
+  const locationsPath = path.join(PROJECT_ROOT, 'data', 'locations.json');
+  let data;
+  try {
+    data = JSON.parse(fs.readFileSync(locationsPath, 'utf8'));
+  } catch (e) {
+    return res.status(400).json({ success: false, message: 'Could not read data/locations.json: ' + (e.message || '') });
+  }
+  const locations = data.locations || [];
+  if (!locations.length) {
+    return res.json({ success: true, upserted: 0, message: 'No locations in data/locations.json.' });
+  }
+  let upserted = 0;
+  if (process.env.PG_DATABASE) {
+    for (const loc of locations) {
+      const mapDataID = (loc.id || '').trim().replace(/[^a-zA-Z0-9_-]/g, '-');
+      if (!mapDataID) continue;
+      const title = (loc.name || mapDataID).trim();
+      const description = (loc.description || '').trim();
+      const lat = loc.coordinates && loc.coordinates.latitude != null ? Number(loc.coordinates.latitude) : null;
+      const lon = loc.coordinates && loc.coordinates.longitude != null ? Number(loc.coordinates.longitude) : null;
+      const tileset = (loc.dataPaths && loc.dataPaths.tileset) || (loc.tileset) || '';
+      const thumb = (loc.previewImage || loc.thumbNailUrl || '').trim() || null;
+      if (!tileset || lat == null || lon == null || isNaN(lat) || isNaN(lon)) continue;
+      try {
+        await pgQuery(
+          `INSERT INTO public."MapData" ("mapDataID", title, description, "xAxis", "yAxis", "3dTiles", "thumbNailUrl", "updateDateTime")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+           ON CONFLICT ("mapDataID") DO UPDATE SET
+             title = EXCLUDED.title, description = EXCLUDED.description, "xAxis" = EXCLUDED."xAxis", "yAxis" = EXCLUDED."yAxis",
+             "3dTiles" = EXCLUDED."3dTiles", "thumbNailUrl" = EXCLUDED."thumbNailUrl", "updateDateTime" = EXCLUDED."updateDateTime"`,
+          [mapDataID, title, description, lon, lat, tileset, thumb]
+        );
+        upserted++;
+      } catch (e) {
+        console.error('seed-mapdata upsert', mapDataID, e.message);
+      }
+    }
+    return res.json({ success: true, upserted, message: 'Synced ' + upserted + ' pins from data/locations.json into the database.' });
+  }
+  res.json({ success: false, message: 'PostgreSQL is not configured. Run npm run seed-mapdata from the project root instead.' });
+});
+
+// ---- Admin: delete map pin (overview map only; showcase is independent – remove from showcase only via Manage Showcase). ----
+app.delete('/api/map-data/:id', async (req, res) => {
+  const id = (req.params.id || '').trim();
+  if (!id) return res.status(400).json({ success: false, message: 'Missing id.' });
+  try {
+    if (process.env.PG_DATABASE) {
+      const r = await pgQuery('DELETE FROM public."MapData" WHERE "mapDataID" = $1 RETURNING "mapDataID"', [id]);
+      if (!r || !r.rows || r.rows.length === 0) return res.status(404).json({ success: false, message: 'Map data not found.' });
+      return res.json({ success: true, mapDataID: id, message: 'Pin removed from map. It remains in the showcase until you remove it there.' });
+    }
+    const rows = readMapData();
+    const idx = rows.findIndex(r => (r.mapDataID || '').toString() === id);
+    if (idx < 0) return res.status(404).json({ success: false, message: 'Map data not found.' });
+    rows.splice(idx, 1);
+    if (mapDataDb) {
+      mapDataDb.run('DELETE FROM MapData WHERE mapDataID = ?', [id]);
+    } else {
+      fs.writeFileSync(MAPDATA_FILE, JSON.stringify(rows, null, 2), 'utf8');
+    }
+    res.json({ success: true, mapDataID: id, message: 'Pin removed from map.' });
+  } catch (e) {
+    console.error('DELETE /api/map-data/:id', e);
+    res.status(500).json({ success: false, message: e.message || 'Failed to delete.' });
+  }
+});
+
+// ---- Admin: sync Showcase from data/locations.json (same locations as map; showcase stays independent of map delete). ----
+app.all('/api/admin/seed-showcase-from-locations', function (req, res, next) {
+  if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method not allowed. Use POST to sync showcase from locations.json.' });
+  next();
+});
+app.post('/api/admin/seed-showcase-from-locations', async (req, res) => {
+  const locationsPath = path.join(PROJECT_ROOT, 'data', 'locations.json');
+  let data;
+  try {
+    data = JSON.parse(fs.readFileSync(locationsPath, 'utf8'));
+  } catch (e) {
+    return res.status(400).json({ success: false, message: 'Could not read data/locations.json: ' + (e.message || '') });
+  }
+  const locations = data.locations || [];
+  if (!locations.length) return res.json({ success: true, added: 0, message: 'No locations in data/locations.json.' });
+  if (!process.env.PG_DATABASE) return res.json({ success: false, message: 'PostgreSQL is required for Showcase.' });
+  let added = 0;
+  try {
+    const existing = await pgQuery('SELECT map_data_id FROM public."Showcase"');
+    const existingIds = new Set((existing && existing.rows ? existing.rows : []).map(r => (r.map_data_id || '').toString()));
+    for (let i = 0; i < locations.length; i++) {
+      const loc = locations[i];
+      const mapDataId = (loc.id || '').trim().replace(/[^a-zA-Z0-9_-]/g, '-');
+      if (!mapDataId || existingIds.has(mapDataId)) continue;
+      await pgQuery('INSERT INTO public."Showcase" (map_data_id, display_order) VALUES ($1, $2)', [mapDataId, i]);
+      existingIds.add(mapDataId);
+      added++;
+    }
+    return res.json({ success: true, added, message: 'Synced ' + added + ' locations from data/locations.json into the showcase.' });
+  } catch (e) {
+    console.error('POST /api/admin/seed-showcase-from-locations', e);
+    return res.status(500).json({ success: false, message: e.message || 'Failed to sync showcase.' });
+  }
+});
+
+// ---- Admin: renumber all showcase display_order to 0, 1, 2, ... (fix duplicates or 1-based data). ----
+app.post('/api/admin/showcase-renumber', async (req, res) => {
+  if (!process.env.PG_DATABASE) return res.status(501).json({ success: false, message: 'PostgreSQL required.' });
+  try {
+    const all = await pgQuery(
+      'SELECT id FROM public."Showcase" ORDER BY display_order ASC, id ASC'
+    );
+    const rows = (all && all.rows) ? all.rows : [];
+    for (let i = 0; i < rows.length; i++) {
+      await pgQuery('UPDATE public."Showcase" SET display_order = $1 WHERE id = $2', [i, rows[i].id]);
+    }
+    return res.json({ success: true, message: 'Renumbered ' + rows.length + ' showcase items to 0–' + (rows.length - 1) + '.' });
+  } catch (e) {
+    console.error('POST /api/admin/showcase-renumber', e);
+    return res.status(500).json({ success: false, message: e.message || 'Failed to renumber.' });
+  }
+});
+
+// ---- Showcase API (landing page tiles; independent from map pins). Requires PostgreSQL. ----
+app.get('/api/showcase', async (req, res) => {
+  if (!process.env.PG_DATABASE) return res.json([]);
+  try {
+    const q = await pgQuery(
+      `SELECT s.id, s.map_data_id, s.display_order, s.created_at,
+              m.title, m."thumbNailUrl", m."3dTiles"
+       FROM public."Showcase" s
+       LEFT JOIN public."MapData" m ON m."mapDataID" = s.map_data_id
+       ORDER BY s.display_order ASC, s.id ASC`
+    );
+    const rows = (q && q.rows) ? q.rows : [];
+    res.json(rows.map(r => ({
+      id: r.id,
+      map_data_id: r.map_data_id,
+      display_order: r.display_order != null ? Number(r.display_order) : 0,
+      created_at: r.created_at,
+      title: r.title || r.map_data_id,
+      thumbNailUrl: r.thumbNailUrl || '',
+      '3dTiles': r['3dTiles'] || ''
+    })));
+  } catch (e) {
+    console.error('GET /api/showcase', e);
+    res.status(500).json({ error: 'Failed to load showcase.' });
+  }
+});
+
+app.post('/api/showcase', express.json(), async (req, res) => {
+  if (!process.env.PG_DATABASE) return res.status(501).json({ success: false, message: 'Showcase requires PostgreSQL.' });
+  const map_data_id = (req.body.map_data_id || req.body.mapDataId || '').trim().replace(/[^a-zA-Z0-9_-]/g, '-');
+  const display_order = req.body.display_order != null ? parseInt(req.body.display_order, 10) : 0;
+  if (!map_data_id) return res.status(400).json({ success: false, message: 'map_data_id is required.' });
+  try {
+    const r = await pgQuery(
+      'INSERT INTO public."Showcase" (map_data_id, display_order) VALUES ($1, $2) RETURNING id, map_data_id, display_order, created_at',
+      [map_data_id, isNaN(display_order) ? 0 : display_order]
+    );
+    const row = r && r.rows && r.rows[0];
+    if (!row) return res.status(500).json({ success: false, message: 'Insert failed.' });
+    res.status(201).json({ success: true, id: row.id, map_data_id: row.map_data_id, display_order: row.display_order, created_at: row.created_at });
+  } catch (e) {
+    console.error('POST /api/showcase', e);
+    res.status(500).json({ success: false, message: e.message || 'Failed to add showcase item.' });
+  }
+});
+
+app.put('/api/showcase/:id', express.json(), async (req, res) => {
+  if (!process.env.PG_DATABASE) return res.status(501).json({ success: false, message: 'Showcase requires PostgreSQL.' });
+  const id = parseInt(req.params.id, 10);
+  if (!id || isNaN(id)) return res.status(400).json({ success: false, message: 'Valid showcase id required.' });
+  const newOrder = req.body.display_order != null ? parseInt(req.body.display_order, 10) : undefined;
+  if (newOrder === undefined || isNaN(newOrder)) return res.status(400).json({ success: false, message: 'display_order (0-based index) required.' });
+  try {
+    const all = await pgQuery(
+      'SELECT id, map_data_id, display_order FROM public."Showcase" ORDER BY display_order ASC, id ASC'
+    );
+    const rows = (all && all.rows) ? all.rows : [];
+    const idx = rows.findIndex(r => r.id === id);
+    if (idx < 0) return res.status(404).json({ success: false, message: 'Showcase item not found.' });
+    const item = rows[idx];
+    const reordered = rows.filter((_, i) => i !== idx);
+    const targetIndex = Math.max(0, Math.min(newOrder, reordered.length));
+    reordered.splice(targetIndex, 0, item);
+    for (let i = 0; i < reordered.length; i++) {
+      await pgQuery('UPDATE public."Showcase" SET display_order = $1 WHERE id = $2', [i, reordered[i].id]);
+    }
+    res.json({ success: true, id: item.id, display_order: targetIndex });
+  } catch (e) {
+    console.error('PUT /api/showcase/:id', e);
+    res.status(500).json({ success: false, message: e.message || 'Failed to update.' });
+  }
+});
+
+app.delete('/api/showcase/:id', async (req, res) => {
+  if (!process.env.PG_DATABASE) return res.status(501).json({ success: false, message: 'Showcase requires PostgreSQL.' });
+  const id = parseInt(req.params.id, 10);
+  const from = (req.query.from || 'showcase_only').toLowerCase();
+  if (!id || isNaN(id)) return res.status(400).json({ success: false, message: 'Valid showcase id required.' });
+  if (from !== 'showcase_only' && from !== 'both') return res.status(400).json({ success: false, message: 'Query "from" must be showcase_only or both.' });
+  try {
+    const getRow = await pgQuery('SELECT id, map_data_id FROM public."Showcase" WHERE id = $1', [id]);
+    if (!getRow || !getRow.rows || getRow.rows.length === 0) return res.status(404).json({ success: false, message: 'Showcase item not found.' });
+    const map_data_id = getRow.rows[0].map_data_id;
+    await pgQuery('DELETE FROM public."Showcase" WHERE id = $1', [id]);
+    if (from === 'both' && map_data_id) {
+      await pgQuery('DELETE FROM public."MapData" WHERE "mapDataID" = $1', [map_data_id]);
+    }
+    res.json({ success: true, id, message: from === 'both' ? 'Removed from showcase and from map.' : 'Removed from showcase.' });
+  } catch (e) {
+    console.error('DELETE /api/showcase/:id', e);
+    res.status(500).json({ success: false, message: e.message || 'Failed to delete.' });
   }
 });
 
@@ -429,11 +650,41 @@ app.get('/api/admin/client-uploads', async (req, res) => {
     return res.json([]);
   }
   try {
-    const q = await pgQuery('SELECT id, project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_at, created_by_email FROM public."ClientUploads" ORDER BY created_at DESC');
+    const q = await pgQuery('SELECT id, project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_at, created_by_email, request_status, rejected_reason, decided_at, decided_by FROM public."ClientUploads" ORDER BY created_at DESC');
     res.json((q && q.rows) ? q.rows : []);
   } catch (e) {
     console.error('GET /api/admin/client-uploads', e);
     res.status(500).json({ error: 'Failed to load client uploads.' });
+  }
+});
+
+// ---- Admin: accept or reject a client upload request ----
+app.post('/api/admin/client-uploads/:id/decision', express.json(), async (req, res) => {
+  const id = req.params.id && parseInt(req.params.id, 10);
+  const action = (req.body && (req.body.action || req.body.decision)) || '';
+  const reason = (req.body && (req.body.reason || req.body.rejected_reason || '')) || '';
+  if (!id || isNaN(id) || !process.env.PG_DATABASE) {
+    return res.status(400).json({ success: false, message: 'Valid upload id is required and PostgreSQL must be configured.' });
+  }
+  const actionLower = String(action).toLowerCase();
+  if (actionLower !== 'accept' && actionLower !== 'reject') {
+    return res.status(400).json({ success: false, message: 'action must be "accept" or "reject".' });
+  }
+  if (actionLower === 'reject' && !reason.trim()) {
+    return res.status(400).json({ success: false, message: 'A reason is required when rejecting a request.' });
+  }
+  const decidedBy = (req.user && req.user.email) ? req.user.email : (req.body && req.body.decided_by) || 'admin';
+  try {
+    const r = await pgQuery(
+      `UPDATE public."ClientUploads" SET request_status = $1, rejected_reason = $2, decided_at = NOW(), decided_by = $3 WHERE id = $4 RETURNING id, request_status, decided_at`,
+      [actionLower === 'accept' ? 'accepted' : 'rejected', actionLower === 'reject' ? reason.trim() : null, decidedBy, id]
+    );
+    const row = r && r.rows && r.rows[0];
+    if (!row) return res.status(404).json({ success: false, message: 'Client upload not found.' });
+    res.json({ success: true, id: row.id, request_status: row.request_status, decided_at: row.decided_at });
+  } catch (e) {
+    console.error('POST /api/admin/client-uploads/:id/decision', e);
+    res.status(500).json({ success: false, message: e.message || 'Failed to update decision.' });
   }
 });
 
@@ -463,13 +714,34 @@ app.get('/api/admin/processing-requests', async (req, res) => {
   if (!process.env.PG_DATABASE) return res.json([]);
   try {
     const q = await pgQuery(
-      `SELECT pr.id, pr.upload_id, pr.status, pr.requested_at, pr.requested_by, pr.completed_at, pr.result_tileset_url, pr.notes
+      `SELECT pr.id, pr.upload_id, pr.status, pr.requested_at, pr.requested_by, pr.completed_at, pr.result_tileset_url, pr.notes, pr.delivered_at, pr.delivery_notes
        FROM public."ProcessingRequests" pr ORDER BY pr.requested_at DESC`
     );
     res.json((q && q.rows) ? q.rows : []);
   } catch (e) {
     console.error('GET /api/admin/processing-requests', e);
     res.status(500).json({ error: 'Failed to load processing requests.' });
+  }
+});
+
+// ---- Admin: mark processing request as delivered to client ----
+app.post('/api/admin/processing-requests/:id/delivery', express.json(), async (req, res) => {
+  const id = req.params.id && parseInt(req.params.id, 10);
+  if (!id || isNaN(id) || !process.env.PG_DATABASE) {
+    return res.status(400).json({ success: false, message: 'Valid processing request id is required and PostgreSQL must be configured.' });
+  }
+  const deliveryNotes = (req.body && (req.body.delivery_notes || req.body.notes || '')).trim() || null;
+  try {
+    const r = await pgQuery(
+      `UPDATE public."ProcessingRequests" SET delivered_at = COALESCE(delivered_at, NOW()), delivery_notes = COALESCE($1, delivery_notes) WHERE id = $2 RETURNING id, delivered_at, delivery_notes`,
+      [deliveryNotes, id]
+    );
+    const row = r && r.rows && r.rows[0];
+    if (!row) return res.status(404).json({ success: false, message: 'Processing request not found.' });
+    res.json({ success: true, id: row.id, delivered_at: row.delivered_at, delivery_notes: row.delivery_notes });
+  } catch (e) {
+    console.error('POST /api/admin/processing-requests/:id/delivery', e);
+    res.status(500).json({ success: false, message: e.message || 'Failed to update delivery.' });
   }
 });
 
@@ -480,13 +752,16 @@ app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.use(express.static(PROJECT_ROOT));
 // Open http://localhost:3000/ or http://127.0.0.1:3000/ → landing page
 app.get('/', (req, res) => res.redirect('/html/front-pages/landing-page.html'));
+// Admin portal: ensure /admin and /html/admin-data-portal open the dashboard
+app.get('/admin', (req, res) => res.redirect('/html/admin-data-portal/index.html'));
+app.get('/html/admin-data-portal', (req, res) => res.redirect('/html/admin-data-portal/index.html'));
 
 // Load SQLite MapData DB (Temadigital_Data_Portal.MapData) if file exists
 function startServer() {
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log('Auth server running on http://localhost:' + PORT + ' (or http://127.0.0.1:' + PORT + ')');
     console.log('  Landing page: http://localhost:' + PORT + '/');
-    console.log('  Admin portal: http://localhost:' + PORT + '/html/vertical-menu-template/index.html');
+    console.log('  Admin portal: http://localhost:' + PORT + '/html/admin-data-portal/index.html');
     if (process.env.PG_DATABASE) console.log('  MapData & admin: using PostgreSQL database ' + process.env.PG_DATABASE);
     else if (mapDataDb) console.log('  MapData: using SQLite (table MapData)');
     else console.log('  MapData: using data/map-data.json (run npm run create-db to create SQLite DB)');
@@ -501,6 +776,15 @@ function startServer() {
   console.log('  Facebook: GET http://localhost:' + PORT + '/api/auth/facebook');
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) console.log('  (Google not configured – set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env)');
   if (!process.env.FACEBOOK_APP_ID || !process.env.FACEBOOK_APP_SECRET) console.log('  (Facebook not configured – set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET in .env)');
+  });
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error('\n  Port ' + PORT + ' is already in use. Stop the other process using it, then run npm start again.');
+      console.error('  On Windows (PowerShell): Get-NetTCPConnection -LocalPort ' + PORT + ' | Select-Object OwningProcess');
+      console.error('  Then: Stop-Process -Id <PID> -Force\n');
+      process.exit(1);
+    }
+    throw err;
   });
 }
 

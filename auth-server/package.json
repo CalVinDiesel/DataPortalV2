@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "init-mapdata": "node scripts/init-mapdata-db.js",
-    "create-db": "node scripts/create-mapdata-table-sqlite.js"
+    "create-db": "node scripts/create-mapdata-table-sqlite.js",
+    "seed-mapdata": "node scripts/seed-mapdata-from-locations.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

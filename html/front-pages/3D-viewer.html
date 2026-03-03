@@ -106,7 +106,7 @@
     try {
       var location = null;
 
-      // 1) Try MapData API by id (table MapData, column 3dTiles)
+      // 1) Try MapData API by id (table MapData). If API returns 404, the pin was deleted by admin – do not fall back to locations.json.
       if (locationId) {
         try {
           var apiRes = await fetch(API_BASE + '/api/map-data/' + encodeURIComponent(locationId));
@@ -124,13 +124,16 @@
               fromMapData: true
             };
             console.log('✅ Loaded from MapData API: ' + location.name);
+          } else if (apiRes.status === 404) {
+            showDoneOrMessage('Location not found. It may have been removed from the map.');
+            return;
           }
         } catch (apiErr) {
           console.warn('MapData API not available, falling back to locations.json:', apiErr.message || apiErr);
         }
       }
 
-      // 2) Fallback: locations.json
+      // 2) Fallback: locations.json (only when API failed or was unavailable, not when pin was deleted)
       if (!location) {
         const res = await fetch('../../data/locations.json');
         if (!res.ok) throw new Error('Failed to load locations.json');

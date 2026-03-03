@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-assets-path="../../assets/" data-template="admin-data-portal" data-bs-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Client Uploads - Admin | TemaDataPortal</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/img/favicon/favicon.ico" />
+  <link rel="stylesheet" href="../../assets/vendor/fonts/iconify-icons.css" />
+  <link rel="stylesheet" href="../../assets/vendor/css/core.css" />
+  <link rel="stylesheet" href="../../assets/css/demo.css" />
+  <script src="../../assets/vendor/js/helpers.js"></script>
+  <script src="../../assets/vendor/libs/jquery/jquery.js"></script>
+  <script src="../../assets/vendor/js/bootstrap.js"></script>
+</head>
+<body>
+  <div class="layout-wrapper layout-content-navbar">
+    <div class="layout-container">
+      <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+        <div class="app-brand demo py-4">
+          <a href="index.html" class="app-brand-link">
+            <span class="app-brand-text demo menu-text fw-bold ms-2">Data Portal Admin</span>
+          </a>
+        </div>
+        <div class="menu-inner-shadow"></div>
+        <ul class="menu-inner py-1">
+          <li class="menu-item">
+            <a href="index.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-home-circle"></i>
+              <div>Dashboard</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="add-3d-model.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-cube"></i>
+              <div>Add 3D Model</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-map-pins.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-map-pin"></i>
+              <div>Manage Map Pins</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-showcase.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-grid-alt"></i>
+              <div>Manage Showcase</div>
+            </a>
+          </li>
+          <li class="menu-item active">
+            <a href="client-uploads.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-cloud-upload"></i>
+              <div>Client Uploads</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="../front-pages/landing-page.html" class="menu-link" target="_blank">
+              <i class="menu-icon tf-icons bx bx-map"></i>
+              <div>View Portal</div>
+            </a>
+          </li>
+        </ul>
+      </aside>
+      <div class="layout-page">
+        <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme">
+          <div class="navbar-nav-right d-flex align-items-center">
+            <a href="index.html" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
+          </div>
+        </nav>
+        <div class="content-wrapper">
+          <div class="container-xxl flex-grow-1 container-p-y">
+            <h4 class="fw-bold mb-4">Client Uploads</h4>
+            <p class="text-muted mb-4">Clients submit their own drone-captured images via the <a href="../front-pages/upload-data.html" target="_blank">Upload Data</a> page to request <strong>custom image-to-3D processing</strong>. Accept or reject each request (with a reason if rejecting). Process accepted requests and deliver the 3D model back to the client (paid service; not added to the overview map).</p>
+            <div id="uploadsAlert" class="alert alert-info d-none"></div>
+            <!-- Reject reason modal -->
+            <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="rejectModalLabel">Reject request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p class="text-muted small">Give a reason for the client (required).</p>
+                    <textarea id="rejectReasonInput" class="form-control" rows="3" placeholder="e.g. Image quality insufficient for processing"></textarea>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="rejectConfirmBtn">Reject request</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Project</th>
+                        <th>Type</th>
+                        <th>Files</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="uploadsTableBody">
+                      <tr><td colspan="7" class="text-center text-muted">Loading…</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="card mt-4">
+              <div class="card-header"><h4 class="fw-bold mb-2">Processing Requests</h4><p class="text-muted mb-0">Completed 3D models are delivered to the client (not added to the map).</p></div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Upload ID</th>
+                        <th>Status</th>
+                        <th>Requested</th>
+                        <th>Result (tileset)</th>
+                        <th>Delivered to client</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="requestsTableBody">
+                      <tr><td colspan="7" class="text-center text-muted">Loading…</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var API_BASE = (typeof window !== 'undefined' && window.TemaDataPortal_API_BASE) || (window.location ? window.location.origin : '') || 'http://localhost:3000';
+
+      var rejectModal = null;
+      var pendingRejectId = null;
+
+      function escapeHtml(s) {
+        if (!s) return '';
+        var div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+      }
+
+      function statusBadge(status) {
+        var s = (status || 'pending').toLowerCase();
+        var label = s === 'accepted' ? 'success' : s === 'rejected' ? 'danger' : 'warning';
+        return '<span class="badge bg-label-' + label + '">' + escapeHtml(s) + '</span>';
+      }
+
+      function actionCells(r) {
+        var status = (r.request_status || 'pending').toLowerCase();
+        if (status === 'pending') {
+          return '<button type="button" class="btn btn-sm btn-success me-1 accept-btn" data-upload-id="' + r.id + '">Accept</button>' +
+            '<button type="button" class="btn btn-sm btn-outline-danger reject-btn" data-upload-id="' + r.id + '">Reject</button>';
+        }
+        if (status === 'rejected') {
+          var reason = r.rejected_reason ? '<br><small class="text-muted">' + escapeHtml(r.rejected_reason) + '</small>' : '';
+          return '<span class="text-muted">Rejected</span>' + reason;
+        }
+        return '<button type="button" class="btn btn-sm btn-primary request-process-btn" data-upload-id="' + r.id + '">Process & deliver to client</button>';
+      }
+
+      function loadUploads() {
+        fetch(API_BASE + '/api/admin/client-uploads')
+          .then(function (r) { return r.json(); })
+          .then(function (rows) {
+            var tbody = document.getElementById('uploadsTableBody');
+            if (!rows || rows.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No client requests yet. Requests appear here when clients submit their images for custom 3D processing via the upload page (PostgreSQL must be configured).</td></tr>';
+              return;
+            }
+            tbody.innerHTML = rows.map(function (r) {
+              var created = r.created_at ? new Date(r.created_at).toLocaleString() : '–';
+              var status = statusBadge(r.request_status);
+              var actions = actionCells(r);
+              return '<tr><td>' + r.id + '</td><td>' + (r.project_title || r.project_id || '–') + '</td><td>' + (r.upload_type || '–') + '</td><td>' + (r.file_count || 0) + '</td><td>' + created + '</td><td>' + status + '</td><td>' + actions + '</td></tr>';
+            }).join('');
+
+            tbody.querySelectorAll('.accept-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () { submitDecision(this.getAttribute('data-upload-id'), 'accept', ''); });
+            });
+            tbody.querySelectorAll('.reject-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                pendingRejectId = this.getAttribute('data-upload-id');
+                document.getElementById('rejectReasonInput').value = '';
+                if (rejectModal) rejectModal.show();
+              });
+            });
+            tbody.querySelectorAll('.request-process-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                var id = this.getAttribute('data-upload-id');
+                this.disabled = true;
+                fetch(API_BASE + '/api/admin/processing-request', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ upload_id: parseInt(id, 10) })
+                })
+                  .then(function (r) { return r.json(); })
+                  .then(function (data) {
+                    if (data.success) {
+                      loadRequests();
+                      var al = document.getElementById('uploadsAlert');
+                      al.textContent = 'Processing request created for upload #' + id + '. Result will be delivered to the client.';
+                      al.classList.remove('d-none', 'alert-danger');
+                      al.classList.add('alert-success');
+                    } else {
+                      alert(data.message || 'Request failed.');
+                    }
+                  })
+                  .catch(function () { alert('Request failed.'); })
+                  .finally(function () { btn.disabled = false; });
+              });
+            });
+          })
+          .catch(function () {
+            document.getElementById('uploadsTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Failed to load. Ensure the server is running and PostgreSQL is configured.</td></tr>';
+          });
+      }
+
+      function submitDecision(id, action, reason) {
+        fetch(API_BASE + '/api/admin/client-uploads/' + id + '/decision', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: action, reason: reason })
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.success) {
+              if (rejectModal) rejectModal.hide();
+              pendingRejectId = null;
+              loadUploads();
+              var al = document.getElementById('uploadsAlert');
+              al.textContent = action === 'accept' ? 'Request #' + id + ' accepted.' : 'Request #' + id + ' rejected.';
+              al.classList.remove('d-none', 'alert-danger');
+              al.classList.add('alert-success');
+            } else {
+              alert(data.message || 'Failed.');
+            }
+          })
+          .catch(function () { alert('Request failed.'); });
+      }
+
+      (function initRejectModal() {
+        var modalEl = document.getElementById('rejectModal');
+        if (modalEl && typeof bootstrap !== 'undefined') rejectModal = new bootstrap.Modal(modalEl);
+        var confirmBtn = document.getElementById('rejectConfirmBtn');
+        if (confirmBtn) {
+          confirmBtn.addEventListener('click', function () {
+            var reason = (document.getElementById('rejectReasonInput').value || '').trim();
+            if (!reason) {
+              alert('Please enter a reason for rejecting this request.');
+              return;
+            }
+            if (pendingRejectId) {
+              submitDecision(pendingRejectId, 'reject', reason);
+            }
+          });
+        }
+      })();
+
+      function loadRequests() {
+        fetch(API_BASE + '/api/admin/processing-requests')
+          .then(function (r) { return r.json(); })
+          .then(function (rows) {
+            var tbody = document.getElementById('requestsTableBody');
+            if (!rows || rows.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No processing requests yet. When you process a client upload, the result is delivered to the client (not to the map).</td></tr>';
+              return;
+            }
+            tbody.innerHTML = rows.map(function (r) {
+              var requested = r.requested_at ? new Date(r.requested_at).toLocaleString() : '–';
+              var result = r.result_tileset_url ? '<a href="' + escapeHtml(r.result_tileset_url) + '" target="_blank">View tileset</a>' : '–';
+              var delivered = r.delivered_at ? new Date(r.delivered_at).toLocaleString() + (r.delivery_notes ? '<br><small class="text-muted">' + escapeHtml(r.delivery_notes) + '</small>' : '') : '–';
+              var actionBtn = (r.status === 'completed' && !r.delivered_at)
+                ? '<button type="button" class="btn btn-sm btn-outline-success mark-delivered-btn" data-request-id="' + r.id + '">Mark as delivered</button>'
+                : r.delivered_at ? '<span class="text-success">Delivered</span>' : '–';
+              return '<tr><td>' + r.id + '</td><td>' + r.upload_id + '</td><td><span class="badge bg-label-' + (r.status === 'completed' ? 'success' : r.status === 'failed' ? 'danger' : 'warning') + '">' + r.status + '</span></td><td>' + requested + '</td><td>' + result + '</td><td>' + delivered + '</td><td>' + actionBtn + '</td></tr>';
+            }).join('');
+
+            tbody.querySelectorAll('.mark-delivered-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                var requestId = btn.getAttribute('data-request-id');
+                if (!requestId) return;
+                var notes = (prompt('Optional: delivery notes (e.g. download link or method):') || '').trim() || null;
+                fetch(API_BASE + '/api/admin/processing-requests/' + requestId + '/delivery', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ delivery_notes: notes })
+                }).then(function (res) { return res.json(); }).then(function (data) {
+                  if (data.success) loadRequests();
+                  else alert(data.message || 'Failed to mark as delivered.');
+                }).catch(function () { alert('Request failed.'); });
+              });
+            });
+          })
+          .catch(function () {
+            document.getElementById('requestsTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-muted">Could not load processing requests.</td></tr>';
+          });
+      }
+
+      loadUploads();
+      loadRequests();
+    })();
+  </script>
+</body>
+</html>

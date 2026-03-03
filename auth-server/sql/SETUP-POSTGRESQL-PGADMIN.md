@@ -44,7 +44,7 @@ You should now see **Databases → Temadigital_Data_Portal** in the left panel.
 
 You need to run **two** scripts **in order**, both while connected to the database `Temadigital_Data_Portal`.
 
-### 3a. Create MapData table (for 3D models)
+### 3a. Create MapData table (for 3D models on the overview map)
 
 1. In the left tree, click on **Temadigital_Data_Portal** (the database).
 2. Top menu: **Tools** → **Query Tool** (or right‑click the database → **Query Tool**).
@@ -56,6 +56,7 @@ You need to run **two** scripts **in order**, both while connected to the databa
 5. You should see a success message. In the left tree, expand **Temadigital_Data_Portal** → **Schemas** → **public** → **Tables**. You should see **MapData**.
 
 ### 3b. Create admin tables (ClientUploads, ProcessingRequests)
+For the custom image-to-3D processing service: clients submit images; admin processes and delivers the 3D model back to the client (paid service; not added to the map).
 
 1. In the same Query Tool (or open a new one for `Temadigital_Data_Portal`):
    - **File → Open** and open:  
@@ -97,7 +98,7 @@ Replace `your_actual_postgres_password` with the same password you use in pgAdmi
 2. In the console you should see something like:
    - `MapData & admin: using PostgreSQL database Temadigital_Data_Portal`
 3. Open the admin page:  
-   **http://localhost:3000/html/vertical-menu-template/add-3d-model.html**
+   **http://localhost:3000/html/admin-data-portal/add-3d-model.html**
 4. Add a test 3D model (ID, title, coordinates, tileset URL) and click **Save 3D Model**.
 5. In pgAdmin: right‑click the **MapData** table → **View/Edit Data** → **All Rows**. You should see your new row.
 
@@ -114,7 +115,7 @@ From now on, any new 3D model you add from the admin side is **automatically sto
 | 3a | Run `Temadigital_Data_Portal_PostgreSQL.sql` in Query Tool |
 | 3b | Run `03-admin-tables-postgres.sql` in Query Tool |
 | 4 | Set `PG_HOST`, `PG_PORT`, `PG_USER`, `PG_PASSWORD`, `PG_DATABASE` in `auth-server/.env` |
-| 5 | Run `npm start` in auth-server and add a 3D model from admin; check MapData in pgAdmin |
+| 5 | Run `npm start` in auth-server and add a 3D model from admin; check **MapData** in pgAdmin |
 
 ---
 
