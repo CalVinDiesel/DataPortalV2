@@ -1,0 +1,23 @@
+/**
+ * Client-facing pages: ensure nav and content stay visible and usable at half screen / small viewports.
+ */
+@media (max-width: 1199.98px) {
+  /* Keep navbar toolbar (buttons, theme) visible when collapsed */
+  nav.layout-navbar .navbar.landing-navbar .navbar-nav.ms-auto {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 991.98px) {
+  /* Collapsed menu and overlay above page content */
+  nav.layout-navbar .navbar.landing-navbar .landing-nav-menu {
+    z-index: 9999;
+  }
+  nav.layout-navbar .navbar.landing-navbar .landing-menu-overlay {
+    z-index: 9998;
+  }
+  /* Ensure toggler is always visible and clickable */
+  nav.layout-navbar .navbar-toggler {
+    z-index: 1;
+  }
+}

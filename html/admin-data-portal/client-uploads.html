@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="../../assets/vendor/fonts/iconify-icons.css" />
   <link rel="stylesheet" href="../../assets/vendor/css/core.css" />
   <link rel="stylesheet" href="../../assets/css/demo.css" />
+  <link rel="stylesheet" href="../../assets/css/admin-responsive.css" />
   <script src="../../assets/vendor/js/helpers.js"></script>
   <script src="../../assets/vendor/libs/jquery/jquery.js"></script>
   <script src="../../assets/vendor/js/bootstrap.js"></script>
@@ -63,7 +64,10 @@
       </aside>
       <div class="layout-page">
         <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme">
-          <div class="navbar-nav-right d-flex align-items-center">
+          <div class="navbar-brand demo d-flex align-items-center py-0 me-3">
+            <button class="admin-menu-toggle btn btn-icon d-xl-none me-2 border-0 bg-transparent p-0" type="button" aria-label="Toggle menu"><i class="bx bx-menu icon-lg"></i></button>
+          </div>
+          <div class="navbar-nav-right d-flex align-items-center ms-auto">
             <a href="index.html" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
           </div>
         </nav>
@@ -316,5 +320,6 @@
       loadRequests();
     })();
   </script>
+  <script src="../../assets/js/admin-responsive.js"></script>
 </body>
 </html>
