@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="../../assets/vendor/fonts/iconify-icons.css" />
   <link rel="stylesheet" href="../../assets/vendor/css/core.css" />
   <link rel="stylesheet" href="../../assets/css/demo.css" />
+  <link rel="stylesheet" href="../../assets/css/admin-responsive.css" />
   <script src="../../assets/vendor/js/helpers.js"></script>
   <script src="../../assets/vendor/libs/jquery/jquery.js"></script>
   <script src="../../assets/vendor/js/bootstrap.js"></script>
@@ -63,6 +64,10 @@
       </aside>
       <div class="layout-page">
         <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme">
+          <div class="navbar-brand demo d-flex align-items-center py-0 me-3">
+            <button class="admin-menu-toggle btn btn-icon d-xl-none me-2 border-0 bg-transparent p-0" type="button" aria-label="Toggle menu"><i class="bx bx-menu icon-lg"></i></button>
+          </div>
+          <div class="navbar-nav-right d-flex align-items-center ms-auto">
           <div class="navbar-nav-right d-flex align-items-center">
             <a href="index.html" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
           </div>
@@ -101,6 +106,15 @@
                       <input type="url" class="form-control" id="tilesetUrl" name="3dTiles" placeholder="https://example.com/tileset.json" required />
                     </div>
                     <div class="col-12">
+                      <label class="form-label">Thumbnail image (overview map &amp; showcase)</label>
+                      <div class="mb-2">
+                        <input type="file" class="form-control" id="thumbnailFile" name="thumbnail" accept="image/jpeg,image/png,image/gif,image/webp" />
+                        <div class="form-text">Upload an image (JPEG, PNG, GIF, WebP; max 5MB). Used for the map pin and showcase tile.</div>
+                      </div>
+                      <div class="mb-0">
+                        <label class="form-label small text-muted">Or paste a thumbnail URL</label>
+                        <input type="url" class="form-control" id="thumbNailUrl" name="thumbNailUrl" placeholder="Optional: image URL if not uploading" />
+                      </div>
                       <label class="form-label" for="thumbNailUrl">Thumbnail image URL</label>
                       <input type="url" class="form-control" id="thumbNailUrl" name="thumbNailUrl" placeholder="Optional image URL for map pin" />
                     </div>
@@ -139,6 +153,10 @@
           formMessage.classList.add('text-danger');
           return;
         }
+        var thumbNailUrl = document.getElementById('thumbNailUrl').value.trim();
+        var thumbnailFile = document.getElementById('thumbnailFile');
+        var file = thumbnailFile && thumbnailFile.files && thumbnailFile.files[0];
+        if (isNaN(parseFloat(document.getElementById('yAxis').value)) || isNaN(parseFloat(document.getElementById('xAxis').value))) {
         var payload = {
           mapDataID: mapDataID,
           title: document.getElementById('title').value.trim() || mapDataID,
@@ -154,6 +172,62 @@
           return;
         }
         submitBtn.disabled = true;
+        function saveMapData(finalThumbUrl) {
+          var payload = {
+            mapDataID: mapDataID,
+            title: document.getElementById('title').value.trim() || mapDataID,
+            description: document.getElementById('description').value.trim(),
+            yAxis: parseFloat(document.getElementById('yAxis').value),
+            xAxis: parseFloat(document.getElementById('xAxis').value),
+            '3dTiles': document.getElementById('tilesetUrl').value.trim(),
+            thumbNailUrl: finalThumbUrl || ''
+          };
+          return fetch(API_BASE + '/api/map-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }).then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); });
+        }
+        function done(x) {
+          if (x.status === 200 && x.body.success) {
+            formMessage.textContent = 'Saved. The model will appear on the overview map and can be added to the showcase.';
+            formMessage.classList.add('text-success');
+            form.reset();
+            if (thumbnailFile) thumbnailFile.value = '';
+          } else {
+            formMessage.textContent = x.body.message || 'Save failed.';
+            formMessage.classList.add('text-danger');
+          }
+        }
+        if (file) {
+          var fd = new FormData();
+          fd.append('thumbnail', file);
+          fd.append('mapDataID', mapDataID);
+          fetch(API_BASE + '/api/admin/upload-map-thumbnail', { method: 'POST', body: fd })
+            .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
+            .then(function (up) {
+              if (up.status === 200 && up.body.success && up.body.url) {
+                var fullUrl = (up.body.url.indexOf('http') === 0) ? up.body.url : (API_BASE + up.body.url);
+                return saveMapData(fullUrl).then(done);
+              }
+              formMessage.textContent = up.body.message || 'Thumbnail upload failed.';
+              formMessage.classList.add('text-danger');
+            })
+            .catch(function (err) {
+              formMessage.textContent = 'Thumbnail upload failed: ' + (err.message || 'check server');
+              formMessage.classList.add('text-danger');
+            })
+            .finally(function () { submitBtn.disabled = false; });
+        } else {
+          saveMapData(thumbNailUrl).then(done).catch(function (err) {
+            formMessage.textContent = 'Request failed: ' + (err.message || 'check server');
+            formMessage.classList.add('text-danger');
+          }).finally(function () { submitBtn.disabled = false; });
+        }
+      });
+    })();
+  </script>
+  <script src="../../assets/js/admin-responsive.js"></script>
         fetch(API_BASE + '/api/map-data', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

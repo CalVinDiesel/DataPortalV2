@@ -1,0 +1,94 @@
+/**
+ * Admin data portal: responsive sidebar like landing page – overlays from the very top when hamburger is clicked.
+ * Below 1200px the sidebar is off-canvas; opens as a full-height overlay on top of everything (including navbar).
+ */
+@media (max-width: 1199.98px) {
+  .layout-wrapper.layout-content-navbar .layout-container {
+    position: relative;
+  }
+  /* When menu is open, keep top navbar below overlay and sidebar so left panel is fully visible */
+  .layout-wrapper.layout-content-navbar.layout-menu-open .layout-navbar {
+    z-index: 1000 !important;
+  }
+  /* Sidebar: fixed at very top of viewport, overlays navbar and content (same as landing page) */
+  .layout-wrapper.layout-content-navbar #layout-menu {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0;
+    z-index: 1110;
+    width: 280px;
+    max-width: 85vw;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: none;
+    background: var(--bs-body-bg, #fff);
+    overflow-y: auto;
+  }
+  .layout-wrapper.layout-content-navbar.layout-menu-open #layout-menu {
+    transform: translateX(0);
+    box-shadow: 0.25rem 0 1.5rem rgba(34, 48, 62, 0.2);
+  }
+  /* Close (X) button at top-right of sidebar – like landing page */
+  .layout-wrapper.layout-content-navbar #layout-menu .admin-menu-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 10;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--bs-body-color, #697a8d);
+    cursor: pointer;
+    border-radius: 0.25rem;
+    padding: 0;
+  }
+  .layout-wrapper.layout-content-navbar #layout-menu .admin-menu-close:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: var(--bs-heading-color, #566a7f);
+  }
+  .layout-wrapper.layout-content-navbar #layout-menu .admin-menu-close i {
+    font-size: 1.5rem;
+  }
+  .layout-wrapper.layout-content-navbar #layout-menu .app-brand.demo {
+    padding-right: 2.75rem;
+  }
+  /* Overlay behind sidebar – covers entire viewport including navbar */
+  .layout-wrapper.layout-content-navbar .layout-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1100;
+    background: rgba(34, 48, 62, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+  .layout-wrapper.layout-content-navbar.layout-menu-open .layout-menu-overlay {
+    opacity: 1;
+    visibility: visible;
+  }
+  /* Ensure layout-page uses full width when sidebar is hidden */
+  .layout-wrapper.layout-content-navbar .layout-page {
+    width: 100%;
+    margin-inline-start: 0 !important;
+  }
+}
+@media (min-width: 1200px) {
+  .layout-wrapper.layout-content-navbar .layout-menu-overlay {
+    display: none !important;
+  }
+  .layout-wrapper.layout-content-navbar .admin-menu-toggle {
+    display: none !important;
+  }
+  /* Hide close (X) button when sidebar is always visible – it's only for overlay mode on small screens */
+  .layout-wrapper.layout-content-navbar #layout-menu .admin-menu-close {
+    display: none !important;
+  }
+}

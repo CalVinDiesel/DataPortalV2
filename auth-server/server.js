@@ -23,6 +23,7 @@ const MAPDATA_FILE = path.join(__dirname, 'data', 'map-data.json');
 const MAPDATA_DB_PATH = path.join(__dirname, 'data', 'Temadigital_Data_Portal.sqlite');
 const PROJECT_ROOT = path.join(__dirname, '..');
 const UPLOAD_DIR = path.join(PROJECT_ROOT, process.env.UPLOAD_DIR || 'uploads');
+const MAP_THUMBNAIL_DIR = path.join(PROJECT_ROOT, 'uploads', 'map-thumbnails');
 
 let mapDataDb = null; // SQLite (sql.js) instance when DB file exists
 
@@ -322,6 +323,24 @@ app.get('/api/map-data/:id', async (req, res) => {
     console.error('GET /api/map-data/:id', e);
     res.status(500).json({ error: 'Failed to load map data.' });
   }
+});
+
+// ---- Admin: upload thumbnail image for a map pin (overview map + showcase). Returns URL to store in MapData.thumbNailUrl. ----
+fs.mkdirSync(MAP_THUMBNAIL_DIR, { recursive: true });
+const mapThumbStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, MAP_THUMBNAIL_DIR),
+  filename: (req, file, cb) => {
+    const id = (req.body && req.body.mapDataID || '').trim().replace(/[^a-zA-Z0-9_-]/g, '-') || 'pin';
+    const ext = (path.extname(file.originalname) || '').toLowerCase() || '.jpg';
+    const safeExt = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext) ? ext : '.jpg';
+    cb(null, id + '_' + Date.now() + safeExt);
+  }
+});
+const uploadMapThumb = multer({ storage: mapThumbStorage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
+app.post('/api/admin/upload-map-thumbnail', uploadMapThumb.single('thumbnail'), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'No thumbnail file uploaded.' });
+  const url = '/uploads/map-thumbnails/' + req.file.filename;
+  res.json({ success: true, url, message: 'Thumbnail uploaded.' });
 });
 
 // ---- Admin: create 3D model (add to MapData for overview map / showcases) ----
