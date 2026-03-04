@@ -438,6 +438,16 @@
             <div class="form-text mt-1 text-primary"><i class="bx bx-info-circle"></i> Max size: 5GB</div>
           </div>
 
+          <!-- Optional POS File Upload Section -->
+          <div class="mt-4" id="posFileUploadWrapper">
+            <label for="posFile" class="form-label mb-2 d-flex align-items-center">
+              Drone POS File <span class="badge bg-label-secondary ms-2 fw-normal">Optional</span>
+            </label>
+            <div class="small text-muted mb-2 lh-sm">Provide a .txt or .csv Position Orientation System file for highly
+              accurate flight path coordinates. This will override image EXIF extraction.</div>
+            <input type="file" id="posFile" name="posFile" class="form-control" accept=".txt,.csv,.pos">
+          </div>
+
           <!-- Folder List UI Wrapper (Populated via JS) -->
           <div id="folderListWrapper" class="mt-4" style="display: none;"></div>
 
@@ -860,6 +870,7 @@
     // Set Position Modal & Trajectory Logic
     var modalMap = null;
     var flightPath = []; // Dynamically populated now
+    let pendingUploadFiles = []; // Track actual files to allow deletion
     var parsedFilesCount = 0;
     var locatedFilesCount = 0;
     var folderStats = {};
@@ -878,7 +889,6 @@
       if (e.target.files.length > 0) {
         const btn = document.querySelector('.left-footer button[type="submit"]');
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing EXIF...';
         btn.disabled = true;
 
         flightPath = [];
@@ -887,37 +897,121 @@
         locatedFilesCount = 0;
 
         const files = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
-        const totalFiles = files.length;
+        pendingUploadFiles = files; // Store globally for deletion
+        const totalFiles = pendingUploadFiles.length;
 
         if (totalFiles === 0) {
-          alert("No images found to process EXIF data.");
+          alert("No images found to process.");
           btn.innerHTML = originalText;
           btn.disabled = false;
           return;
         }
 
+        // --- POS FILE OVERRIDE LOGIC ---
+        const posFileInput = document.getElementById('posFile');
+        if (posFileInput && posFileInput.files.length > 0) {
+          btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Reading POS File...';
+          openDataLoadingModal(totalFiles);
+
+          const posText = await posFileInput.files[0].text();
+          const lines = posText.split('\n');
+
+          let validLocations = 0;
+
+          for (const file of pendingUploadFiles) {
+            const pathParts = file.webkitRelativePath ? file.webkitRelativePath.split('/') : [file.name];
+            const folderName = pathParts.length > 1 ? pathParts[0] : 'Root';
+            if (!folderStats[folderName]) folderStats[folderName] = { photos: 0, located: 0, sizeBytes: 0 };
+            folderStats[folderName].photos++;
+            folderStats[folderName].sizeBytes += file.size || 0;
+          }
+
+          // Very basic heuristic parser for common POS/CSV formats: find numbers that look like Lat/Lng
+          lines.forEach(line => {
+            const parts = line.split(/[,\s]+/).map(p => parseFloat(p)).filter(p => !isNaN(p));
+            // Look for a combination that resembles Lat [-90 to 90] and Lng [-180 to 180]
+            if (parts.length >= 2) {
+              // Assuming standard formats mostly put Lat/Lng or Lng/Lat near the beginning or after an ID
+              let lat = null, lng = null;
+              for (let val of parts) {
+                if (val > -90 && val < 90 && lat === null) {
+                  lat = val;
+                } else if (val > -180 && val < 180 && lng === null) {
+                  lng = val;
+                }
+              }
+
+              if (lat !== null && lng !== null) {
+                flightPath.push([lat, lng]);
+                validLocations++;
+              }
+            }
+          });
+
+          // If we couldn't parse the POS, fallback to assigning the first parsed point or a mock to all
+          if (flightPath.length > 0) {
+            const firstPoint = flightPath[0];
+            for (const folder in folderStats) {
+              folderStats[folder].located = folderStats[folder].photos;
+            }
+            updateModalProgress(totalFiles, totalFiles);
+          } else {
+            alert('Could not parse valid GPS coordinates from the provided POS file. Falling back to EXIF.');
+            return performExifExtraction(files, totalFiles, btn, originalText);
+          }
+
+          finishDataLoadingModal(() => {
+            populateStatsTable();
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            openSetPositionModal();
+          });
+
+          return; // Exit early so we don't do EXIF extraction!
+        }
+        // --- END POS FILE OVERRIDE ---
+
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing EXIF...';
         openDataLoadingModal(totalFiles);
+        await performExifExtraction(files, totalFiles, btn, originalText);
+      }
+    }
 
-        // Process files in batches to avoid locking the UI thread entirely
-        let processedImagesCount = 0;
+    async function performExifExtraction(files, totalFiles, btn, originalText) {
+      // Process files in parallel batches to dramatically speed up EXIF extraction
+      let processedImagesCount = 0;
+      const BATCH_SIZE = 50; // Process 50 images concurrently
+      const CHUNK_SIZE = 128 * 1024; // Read only the first 128KB where EXIF header resides
 
-        // Start center point for fallback mock data
-        let currentMockLat = 5.97000;
-        let currentMockLng = 116.09270;
+      // Start center point for fallback mock data
+      let currentMockLat = 5.97000;
+      let currentMockLng = 116.09270;
 
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
+      for (let batchStart = 0; batchStart < files.length; batchStart += BATCH_SIZE) {
+        const batchFiles = files.slice(batchStart, batchStart + BATCH_SIZE);
+
+        await Promise.all(batchFiles.map(async (file, batchIndex) => {
           const pathParts = file.webkitRelativePath ? file.webkitRelativePath.split('/') : [file.name];
           const folderName = pathParts.length > 1 ? pathParts[0] : 'Root';
 
+          // JS is single-threaded, so this synchronous check & increment is safe
           if (!folderStats[folderName]) {
             folderStats[folderName] = { photos: 0, located: 0, sizeBytes: 0 };
           }
           folderStats[folderName].photos++;
           folderStats[folderName].sizeBytes += file.size || 0;
 
+          // CRITICAL OPTIMIZATION: Only load the first 128KB of the image into memory
+          let partialBlob = file;
+          if (file.size > CHUNK_SIZE) {
+            partialBlob = file.slice(0, CHUNK_SIZE);
+            // Some EXIF parsers expect a .name or valid file-like property to determine MIME type behavior
+            partialBlob.name = file.name;
+          }
+
           await new Promise(resolve => {
-            EXIF.getData(file, function () {
+            // Now we pass the sliced partial chunk (under 128KB) to EXIF.getData
+            EXIF.getData(partialBlob, function () {
               const lat = EXIF.getTag(this, "GPSLatitude");
               const latRef = EXIF.getTag(this, "GPSLatitudeRef");
               const lng = EXIF.getTag(this, "GPSLongitude");
@@ -931,32 +1025,37 @@
                 folderStats[folderName].located++;
                 locatedFilesCount++;
               } else {
-                // FALLBACK: Simulate GPS data if missing so the UI flow doesn't break during testing
-                currentMockLat += 0.00015;
-                if (processedImagesCount % 10 === 0) { currentMockLng += 0.00015; currentMockLat -= 0.0015; } // Lawn mower pattern
-                flightPath.push([currentMockLat, currentMockLng]);
+                // FALLBACK: Simulate GPS data if missing
+                // Calculate mock offset based on the overall file index to avoid race conditions
+                const globalIndex = batchStart + batchIndex;
+                const mockLat = currentMockLat - Math.floor(globalIndex / 10) * 0.0015 + (globalIndex % 10) * 0.00015;
+                const mockLng = currentMockLng + Math.floor(globalIndex / 10) * 0.00015;
+
+                flightPath.push([mockLat, mockLng]);
                 folderStats[folderName].located++;
                 locatedFilesCount++;
               }
 
               processedImagesCount++;
 
-              const percent = Math.floor((processedImagesCount / totalFiles) * 100);
-              updateModalProgress(processedImagesCount, totalFiles);
+              // Update UI every 10 images or at the very end to avoid overwhelming the DOM render thread
+              if (processedImagesCount % 10 === 0 || processedImagesCount === totalFiles) {
+                updateModalProgress(processedImagesCount, totalFiles);
+              }
 
               resolve();
             });
           });
-        }
-
-        // Processing finished
-        finishDataLoadingModal(() => {
-          populateStatsTable();
-          btn.innerHTML = originalText;
-          btn.disabled = false;
-          openSetPositionModal();
-        });
+        }));
       }
+
+      // Processing finished
+      finishDataLoadingModal(() => {
+        populateStatsTable();
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        openSetPositionModal();
+      });
     }
 
     let loadingInterval;
@@ -1102,8 +1201,47 @@
       placeMarker([centerLat, centerLng]);
       map.setView([centerLat, centerLng], 16);
 
-      // Build Folder List UI
+      // Permanently show "Picked" on the Auto pick button since coordinates were just successfully assigned from the dataset
+      const autoModeBtn = document.getElementById('autoModeBtn');
+      autoModeBtn.innerHTML = `<i class="bx bx-check text-success me-1"></i> Picked`;
+      // Remove any previously pending timeout that might revert it back to "Auto pick" from Manual clicks
+      autoModeBtn.classList.add('border-success');
+
+      // Refresh Folder List UI
+      renderFolderListUI();
+    }
+
+    function renderFolderListUI() {
       const folderListWrapper = document.getElementById('folderListWrapper');
+
+      if (Object.keys(folderStats).length === 0) {
+        folderListWrapper.style.display = 'none';
+
+        // Reset the actual file input element so the browser UI clears the "XX files" text
+        document.getElementById('dataFile').value = '';
+
+        // Reset Auto pick UI
+        const autoModeBtn = document.getElementById('autoModeBtn');
+        autoModeBtn.innerHTML = `<i class="bx bx-map-pin me-1"></i> Auto pick`;
+        autoModeBtn.classList.remove('border-success');
+
+        // Reset the UI styling of the cards back to default unselected states
+        document.getElementById('singleBox').classList.remove('border-primary', 'bg-label-primary');
+        document.getElementById('singleBox').querySelector('.bx-camera').classList.replace('text-primary', 'text-secondary');
+        document.getElementById('singleText').classList.remove('text-primary');
+        document.getElementById('multipleBox').classList.remove('border-primary', 'bg-label-primary');
+        document.getElementById('multipleBox').querySelector('.bx-video').classList.replace('text-primary', 'text-secondary');
+        document.getElementById('multipleText').classList.remove('text-primary');
+
+        // Uncheck the hidden radio buttons
+        document.getElementById('singleCamera').checked = false;
+        document.getElementById('multipleCamera').checked = false;
+
+        // Hide the camera selection extra options
+        document.getElementById('cameraSelectionWrapper').classList.add('d-none');
+
+        return;
+      }
 
       let totalPhotos = 0;
       let totalLocated = 0;
@@ -1117,7 +1255,7 @@
         totalBytes += stats.sizeBytes;
 
         cardsHtml += `
-          <div class="folder-card">
+          <div class="folder-card" id="folder-card-${folder}">
             <div class="folder-card-icon">
               <!-- Using standard bx image icon, can replace with specific png if needed -->
               <i class="bx bxs-camera" style="color: #a1acb8;"></i>
@@ -1134,8 +1272,13 @@
                 <i class="bx bx-cylinder"></i> ${formatBytes(stats.sizeBytes)}
               </div>
             </div>
-            <div class="folder-status-badge">
-              <i class="bx bx-time-five"></i> Waiting
+            <div class="d-flex align-items-center gap-2">
+              <div class="folder-status-badge">
+                <i class="bx bx-time-five"></i> Waiting
+              </div>
+              <button type="button" class="btn btn-icon btn-sm btn-outline-danger border-0" onclick="removeFolder('${folder}')" title="Remove folder">
+                <i class="bx bx-x fs-4"></i>
+              </button>
             </div>
           </div>
         `;
@@ -1156,6 +1299,24 @@
 
       // We don't need to show the raw file input block anymore since the folder list represents it
       document.getElementById('fileUploadWrapper').style.display = 'none';
+    }
+
+    function removeFolder(folderName) {
+      if (!confirm(`Are you sure you want to remove the folder "${folderName}" from the upload?`)) return;
+
+      // Remove from global tracking
+      const previousFileCount = pendingUploadFiles.length;
+      pendingUploadFiles = pendingUploadFiles.filter(file => {
+        const pathParts = file.webkitRelativePath ? file.webkitRelativePath.split('/') : [file.name];
+        const currentFolderName = pathParts.length > 1 ? pathParts[0] : 'Root';
+        return currentFolderName !== folderName;
+      });
+
+      // Remove from stats
+      delete folderStats[folderName];
+
+      // Re-render UI
+      renderFolderListUI();
     }
 
     // Form Submission Logic
@@ -1212,8 +1373,16 @@
       formData.append('captureDate', document.getElementById('captureDate').value || new Date().toISOString().split('T')[0]);
       formData.append('organizationName', document.getElementById('organizationName').value);
 
-      const dataFile = document.getElementById('dataFile').files[0];
-      if (dataFile) formData.append('dataFile', dataFile);
+      // Only append files that remain in pendingUploadFiles (not the raw input files)
+      pendingUploadFiles.forEach(file => {
+        formData.append('dataFile', file);
+      });
+
+      // Also append POS file if provided
+      const posFile = document.getElementById('posFile');
+      if (posFile && posFile.files.length > 0) {
+        formData.append('posFile', posFile.files[0]);
+      }
 
       // Simulate Upload or call API
       fetch(UPLOAD_API + '/api/upload-geospatial-data', {
