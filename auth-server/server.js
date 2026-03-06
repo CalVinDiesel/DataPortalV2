@@ -306,9 +306,11 @@ app.post("/api/auth/login", express.json(), (req, res) => {
 // ─── Microsoft OAuth ──────────────────────────────────────────────────────────
 app.get("/auth/microsoft/login", async (req, res) => {
   try {
-    // Store flow intent in session so callback knows where to redirect
     req.session.msFlow = req.query.flow || 'login';
-    const authUrl = await getMicrosoftAuthUrl();
+    const { authUrl, state } = await getMicrosoftAuthUrl();
+    req.session.msState = state; // save state for callback verification
+    console.log("MS Flow set to:", req.session.msFlow);
+    console.log("Microsoft Auth URL:", authUrl);
     res.redirect(authUrl);
   } catch (err) {
     console.error("Microsoft login error:", err);
@@ -318,14 +320,14 @@ app.get("/auth/microsoft/login", async (req, res) => {
 
 // ↓ REPLACED: now uses MicrosoftUsers table instead of Users table
 app.get("/auth/microsoft/callback", async (req, res) => {
-  const { code, error, error_description } = req.query;
+  const { code, error, error_description, state } = req.query;
   if (error) {
     console.error("Microsoft OAuth error:", error, error_description);
     return res.redirect(FRONT_END_URL + "?auth_error=" + encodeURIComponent(error_description));
   }
   if (!code) return res.status(400).json({ error: "No authorization code received" });
   try {
-    const msUser = await handleMicrosoftCallback(code);
+    const msUser = await handleMicrosoftCallback(code, state);
     const result = await pgQuery(`
       INSERT INTO public."MicrosoftUsers" (microsoft_id, email, name, "updatedAt")
       VALUES ($1, $2, $3, NOW())
@@ -367,6 +369,56 @@ app.get("/auth/microsoft/callback", async (req, res) => {
   } catch (err) {
     console.error("Microsoft callback error:", err);
     res.redirect(FRONT_END_URL + "?auth_error=microsoft_auth_failed");
+  }
+});
+
+// Check if the currently logged-in user has completed registration
+app.get("/api/auth/check-registered", async (req, res) => {
+  try {
+    // Check Better Auth session (Google users)
+    const betterAuthSession = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+    });
+
+    let email = null;
+    let provider = null;
+
+    if (betterAuthSession?.user) {
+      email = betterAuthSession.user.email;
+      provider = 'google';
+    } else if (req.session?.user) {
+      email = req.session.user.email;
+      provider = req.session.user.provider;
+    }
+
+    if (!email) {
+      return res.json({ registered: false });
+    }
+
+    // Local/email users are always fully registered
+    if (provider === 'local') {
+      return res.json({ registered: true });
+    }
+
+    // Google users: Better Auth stores them in the DB, consider them registered
+    if (provider === 'google') {
+      return res.json({ registered: true });
+    }
+
+    // Microsoft users: check if they completed the register form in users.json
+    if (provider === 'microsoft') {
+      const users = readUsers();
+      const found = users.some(u =>
+        (u.email || '').toLowerCase() === email.toLowerCase() &&
+        u.username  // must have username = completed the form
+      );
+      return res.json({ registered: found });
+    }
+
+    res.json({ registered: false });
+  } catch (e) {
+    console.error("check-registered error:", e);
+    res.json({ registered: false });
   }
 });
 

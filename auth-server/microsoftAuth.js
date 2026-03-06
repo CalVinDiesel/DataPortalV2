@@ -7,11 +7,13 @@ import * as msal from "@azure/msal-node";
 // ─── MSAL Configuration ───────────────────────────────────────────────────────
 
 const msalConfig = {
-  auth: {
-    clientId: process.env.MICROSOFT_CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID}`,
-    clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
-  },
+    auth: {
+      clientId: process.env.MICROSOFT_CLIENT_ID,
+      authority: `https://login.microsoftonline.com/common`,
+      clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
+      validateAuthority: false,  // required when using /common with personal accounts
+    },
+
   system: {
     loggerOptions: {
       loggerCallback(loglevel, message) {
@@ -36,14 +38,26 @@ const SCOPES = ["openid", "profile", "email", "User.Read"];
  * Call this when the user clicks "Sign in with Microsoft".
  * Returns a URL to redirect the user to Microsoft's login page.
  */
+// Store PKCE verifier in memory (keyed by state) so callback can use it
+const pkceStore = {};
+
 export async function getMicrosoftAuthUrl() {
+  const cryptoProvider = new msal.CryptoProvider();
+  const { verifier, challenge } = await cryptoProvider.generatePkceCodes();
+
+  const state = Math.random().toString(36).substring(2);
+  pkceStore[state] = verifier; // save verifier for callback
+
   const authUrlParams = {
     scopes: SCOPES,
     redirectUri: process.env.MICROSOFT_REDIRECT_URI,
+    codeChallenge: challenge,
+    codeChallengeMethod: "S256",
+    state,
   };
 
   const authUrl = await msalClient.getAuthCodeUrl(authUrlParams);
-  return authUrl;
+  return { authUrl, state };
 }
 
 // ─── Step 2: Exchange Code for Token + User Info ──────────────────────────────
@@ -55,24 +69,26 @@ export async function getMicrosoftAuthUrl() {
  *
  * Returns a normalized user object: { id, email, name, provider }
  */
-export async function handleMicrosoftCallback(code) {
-  const tokenRequest = {
-    code,
-    scopes: SCOPES,
-    redirectUri: process.env.MICROSOFT_REDIRECT_URI,
-  };
-
-  const tokenResponse = await msalClient.acquireTokenByCode(tokenRequest);
-
-  // ID token claims contain the user's profile
-  const claims = tokenResponse.idTokenClaims;
-
-  const user = {
-    id: claims.oid,           // Unique Azure AD object ID (stable, use as primary key)
-    email: claims.email || claims.preferred_username,
-    name: claims.name,
-    provider: "microsoft",
-  };
-
-  return user;
-}
+export async function handleMicrosoftCallback(code, state) {
+    const verifier = pkceStore[state];
+    if (verifier) delete pkceStore[state]; // clean up
+  
+    const tokenRequest = {
+      code,
+      scopes: SCOPES,
+      redirectUri: process.env.MICROSOFT_REDIRECT_URI,
+      codeVerifier: verifier,
+    };
+  
+    const tokenResponse = await msalClient.acquireTokenByCode(tokenRequest);
+    const claims = tokenResponse.idTokenClaims;
+  
+    const user = {
+      id: claims.oid,
+      email: claims.email || claims.preferred_username || claims.upn || null,
+      name: claims.name || claims.given_name || "Microsoft User",
+      provider: "microsoft",
+    };
+  
+    return user;
+  }

@@ -1455,14 +1455,6 @@
   </div>
 </footer>
 <!-- Footer: End -->
-
-
-    
-      <!--<div class="buy-now">
-        <a href="https://themeselection.com/item/sneat-dashboard-pro-bootstrap/" target="_blank" class="btn btn-danger btn-buy-now">Buy Now</a>
-      </div>-->
-    
-
     
 
     <!-- Core JS -->
@@ -1492,6 +1484,59 @@
 
     <!-- Page JS -->
     <script src="../../assets/js/front-page-landing.js"></script>
+
+    <!-- Auth guard: block unregistered or unauthenticated users -->
+    <script>
+      (function() {
+        var AUTH_API = 'http://localhost:3000';
+        var LOGIN_URL = '/html/front-pages/login.html';
+        var REGISTER_URL = '/html/front-pages/register.html';
+  
+    // Check URL params first (coming from OAuth redirect)
+        var params = new URLSearchParams(window.location.search);
+        var authError = params.get('auth_error') || params.get('error');
+  
+    // If there's an auth error in the URL, redirect to login
+        if (authError) {
+          window.location.href = LOGIN_URL + '?error=' + encodeURIComponent(authError);
+        return;
+       }
+  
+    // Check session with server
+    fetch(AUTH_API + '/api/auth/me', { credentials: 'include' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.loggedIn) {
+          // Not logged in — redirect to login page
+          window.location.href = LOGIN_URL;
+          return;
+        }
+  
+        // Logged in — check if they have completed registration in users.json
+        // by checking if they exist as a fully registered user
+        fetch(AUTH_API + '/api/auth/check-registered', { credentials: 'include' })
+          .then(function(r) { return r.json(); })
+          .then(function(regData) {
+            if (!regData.registered) {
+              // Authenticated via OAuth but never completed the register form
+              window.location.href = REGISTER_URL +
+                '?logged_in=1' +
+                '&email=' + encodeURIComponent(data.email || '') +
+                '&name=' + encodeURIComponent(data.name || '') +
+                '&provider=' + encodeURIComponent(data.provider || '');
+            }
+            // else: fully registered — allow access, do nothing
+          })
+          .catch(function() {
+            // If check fails, allow access to avoid blocking legitimate users
+          });
+      })
+      .catch(function() {
+        // Can't reach server — redirect to login
+        window.location.href = LOGIN_URL;
+      });
+  })();
+  </script>
 
     <!-- Load showcase tiles from API (admin-managed); fallback = static tiles above -->
     <script>
