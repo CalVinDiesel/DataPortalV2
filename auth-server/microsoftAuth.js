@@ -8,9 +8,9 @@ import * as msal from "@azure/msal-node";
 
 const msalConfig = {
   auth: {
-    clientId: process.env.MICROSOFT_CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID}`,
-    clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
+    clientId: process.env.MICROSOFT_CLIENT_ID || "placeholder-client-id",
+    authority: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID || "common"}`,
+    clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "placeholder-client-secret",
   },
   system: {
     loggerOptions: {
