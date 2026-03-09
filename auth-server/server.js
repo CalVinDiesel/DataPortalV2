@@ -47,6 +47,47 @@ function writeUsers(users) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
 }
 
+/** Get role for an email from users.json. Returns "admin" or "client" (default). */
+function getRoleForEmail(email) {
+  if (!email) return 'client';
+  const users = readUsers();
+  const u = users.find(x => (x.email || '').toLowerCase() === String(email).toLowerCase());
+  return (u && (u.role === 'admin')) ? 'admin' : 'client';
+}
+
+/** Middleware: set req.user from Better Auth or express-session; 401 if not logged in. */
+async function requireAuth(req, res, next) {
+  try {
+    const betterAuthSession = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+    if (betterAuthSession?.user) {
+      req.user = {
+        email: betterAuthSession.user.email ?? null,
+        name: betterAuthSession.user.name ?? null,
+        role: getRoleForEmail(betterAuthSession.user.email),
+      };
+      return next();
+    }
+    const local = req.session?.user;
+    if (local && (local.email || local.id)) {
+      req.user = {
+        email: local.email,
+        name: local.name,
+        role: local.role || getRoleForEmail(local.email),
+      };
+      return next();
+    }
+  } catch (e) {
+    console.error('requireAuth', e);
+  }
+  res.status(401).json({ success: false, message: 'You must be logged in.' });
+}
+
+/** Middleware: require req.user.role === 'admin'. Use after requireAuth. */
+function requireAdmin(req, res, next) {
+  if (req.user && req.user.role === 'admin') return next();
+  res.status(403).json({ success: false, message: 'Admin access only.' });
+}
+
 // ---- MapData (Temadigital_Data_Portal.MapData – from SQLite table or map-data.json) ----
 // These ids were used as temporary demo locations and should never appear on the live overview map.
 const REMOVED_MAPDATA_IDS = new Set([
@@ -164,15 +205,19 @@ app.get("/api/auth/me", async (req, res) => {
       headers: fromNodeHeaders(req.headers),
     });
     if (betterAuthSession?.user) {
+      const email = betterAuthSession.user.email ?? null;
+      const role = getRoleForEmail(email);
       return res.json({
         loggedIn: true,
-        email: betterAuthSession.user.email ?? null,
+        email,
         name: betterAuthSession.user.name ?? null,
+        role,
       });
     }
     const localUser = req.session?.user;
     if (localUser && (localUser.email || localUser.id)) {
-      return res.json({ loggedIn: true, email: localUser.email, name: localUser.name });
+      const role = localUser.role || getRoleForEmail(localUser.email);
+      return res.json({ loggedIn: true, email: localUser.email, name: localUser.name, role });
     }
   } catch (e) {
     console.error("GET /api/auth/me", e);
@@ -234,6 +279,7 @@ app.get("/api/auth/google-callback-done", async (req, res) => {
 });
 
 // ---- Email/password register and login (unchanged API contract; store session in express-session) ----
+// Role: "client" | "admin". Admin only if ADMIN_REGISTRATION_CODE matches.
 app.post("/api/auth/register", express.json(), (req, res) => {
   const rawName = (req.body.name || '').trim();
   const rawContact = (req.body.contactNumber || '').trim();
@@ -241,6 +287,8 @@ app.post("/api/auth/register", express.json(), (req, res) => {
   const rawEmail = (req.body.email || '').trim();
   const email = rawEmail.toLowerCase();
   const password = req.body.password;
+  const roleRequested = (req.body.role || 'client').toLowerCase() === 'admin' ? 'admin' : 'client';
+  const adminCode = (req.body.adminCode || '').trim();
 
   if (!rawName) {
     return res.status(400).json({ success: false, message: 'Please enter your name.' });
@@ -266,6 +314,15 @@ app.post("/api/auth/register", express.json(), (req, res) => {
     return res.status(400).json({ success: false, message: 'That username is already taken. Choose another one.' });
   }
 
+  let role = 'client';
+  if (roleRequested === 'admin') {
+    const secret = (process.env.ADMIN_REGISTRATION_CODE || '').trim();
+    if (!secret || adminCode !== secret) {
+      return res.status(403).json({ success: false, message: 'Admin registration requires a valid approval code. Sign up as Client or contact an administrator.' });
+    }
+    role = 'admin';
+  }
+
   const passwordHash = bcrypt.hashSync(password, 10);
   users.push({
     email,
@@ -273,7 +330,8 @@ app.post("/api/auth/register", express.json(), (req, res) => {
     name: rawName,
     contactNumber: rawContact,
     passwordHash,
-    provider: 'local'
+    provider: 'local',
+    role,
   });
   writeUsers(users);
   res.json({ success: true, message: 'Account created. You can now log in.' });
@@ -299,7 +357,8 @@ app.post("/api/auth/login", express.json(), (req, res) => {
   if (!bcrypt.compareSync(password, user.passwordHash)) {
     return res.status(401).json({ success: false, message: 'Invalid email/username or password.' });
   }
-  req.session.user = { provider: "local", email: user.email, name: user.name };
+  const role = (user.role === 'admin') ? 'admin' : 'client';
+  req.session.user = { provider: "local", email: user.email, name: user.name, role };
   res.json({ success: true, redirect: FRONT_END_URL });
 });
 
@@ -338,11 +397,13 @@ app.get("/auth/microsoft/callback", async (req, res) => {
       RETURNING *
     `, [msUser.id, msUser.email, msUser.name]);
     const dbUser = result.rows[0];
+    const role = getRoleForEmail(dbUser.email);
     req.session.user = {
       id:       dbUser.id,
       email:    dbUser.email,
       name:     dbUser.name,
       provider: "microsoft",
+      role,
     };
 
     req.session.save((err) => {
@@ -370,6 +431,26 @@ app.get("/auth/microsoft/callback", async (req, res) => {
     console.error("Microsoft callback error:", err);
     res.redirect(FRONT_END_URL + "?auth_error=microsoft_auth_failed");
   }
+});
+
+// Logout: destroy express session (local/Microsoft).
+app.post("/api/auth/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) console.error("logout session.destroy", err);
+    res.json({ success: true });
+  });
+});
+
+// GET /api/auth/sign-out: clear express and Better Auth sessions, then redirect to callbackURL (avoids 404 from Better Auth's internal path).
+app.get("/api/auth/sign-out", async (req, res) => {
+  const callbackURL = (req.query.callbackURL || FRONT_END_URL).toString();
+  req.session.destroy(() => {});
+  try {
+    await auth.api.signOut({ headers: fromNodeHeaders(req.headers) });
+  } catch (e) {
+    console.error("sign-out Better Auth", e);
+  }
+  res.redirect(302, callbackURL);
 });
 
 // Check if the currently logged-in user has completed registration
@@ -453,6 +534,10 @@ app.get('/api/map-data/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to load map data.' });
   }
 });
+
+// ---- Protect routes: upload requires login; admin requires admin role ----
+app.use('/api/admin', requireAuth, requireAdmin);
+app.use('/api/upload', requireAuth);
 
 // ---- Admin: upload thumbnail image for a map pin (overview map + showcase). Returns URL to store in MapData.thumbNailUrl. ----
 fs.mkdirSync(MAP_THUMBNAIL_DIR, { recursive: true });
