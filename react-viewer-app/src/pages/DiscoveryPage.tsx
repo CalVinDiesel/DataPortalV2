@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import CesiumNavigation from 'cesium-navigation-es6';
 import {
     Viewer,
@@ -2021,10 +2021,10 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
     return (
         <div className="discovery-page">
             <header className="discovery-header">
-                <Link to="/" className="back-button">
+                <a href="/html/front-pages/landing-page.html#landingShowCase" className="back-button">
                     <ArrowLeft size={20} />
                     <span>Back to Showcases</span>
-                </Link>
+                </a>
                 <h1 className="discovery-title">{siteTitle} - Data Discovery</h1>
             </header>
 
