@@ -1235,7 +1235,11 @@ app.post('/api/upload/finalize', express.json(), async (req, res) => {
     // Assemble each file
     for (const fileDef of filesMapping) {
       const safeFilename = fileDef.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const finalFilePath = path.join(finalDir, safeFilename);
+      // Extract just the original basename (e.g. "1_Das1105076.jpg") from the flattened name
+      // The client sends "FolderName_subfolder_file.jpg" — we want only the last segment
+      const originalBasename = path.basename(fileDef.filename.replace(/\\/g, '/'));
+      const safeBasename = originalBasename.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const finalFilePath = path.join(finalDir, safeBasename);
 
       // Create a write stream for the final file
       const writeStream = fs.createWriteStream(finalFilePath);
@@ -1264,7 +1268,7 @@ app.post('/api/upload/finalize', express.json(), async (req, res) => {
       }
 
       // File assembled successfully — store path relative to project root (always "uploads/...") so download can resolve reliably
-      const relativePath = `uploads/${finalSubdir}/${safeFilename}`;
+      const relativePath = `uploads/${finalSubdir}/${safeBasename}`;
 
       if (safeFilename.toLowerCase().endsWith('.txt') || safeFilename.toLowerCase().endsWith('.csv')) {
         dronePosFilePath = relativePath;
@@ -1300,6 +1304,13 @@ app.post('/api/upload/finalize', express.json(), async (req, res) => {
         ]
       );
     }
+
+    // DEBUG LOGS
+    console.log('[finalize] Final dir:', finalDir);
+    console.log('[finalize] Files to assemble:', filesMapping.map(f => f.filename));
+    const tempFiles = await fsPromises.readdir(tempDir);
+    console.log('[finalize] Temp dir contents:', tempFiles.slice(0, 20));
+    console.log('[finalize] finalFilePaths:', finalFilePaths);
 
     // Cleanup temporary directory
     try {
