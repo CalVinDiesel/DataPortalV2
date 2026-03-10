@@ -388,6 +388,13 @@ app.get("/api/auth/google-callback-done", async (req, res) => {
           `http://localhost:3000/html/front-pages/register.html?logged_in=1&email=${encodeURIComponent(session.user.email || '')}&name=${encodeURIComponent(session.user.name || '')}&provider=google`
         );
       }
+      // Login flow: only allow if this email is already registered (same as Microsoft)
+      const emailNorm = (session.user.email || '').trim().toLowerCase();
+      const users = await getUsersAsync();
+      const emailRegistered = users.some(u => (u.email || '').toLowerCase() === emailNorm);
+      if (!emailRegistered) {
+        return res.redirect(LOGIN_PAGE_URL + "?auth_error=email_not_registered&email=" + encodeURIComponent(session.user.email || ''));
+      }
       const url = new URL(thenUrl);
       url.searchParams.set("logged_in", "1");
       if (session.user.email) url.searchParams.set("email", session.user.email);
@@ -495,13 +502,13 @@ app.post("/api/auth/login", express.json(), async (req, res) => {
     user = users.find(u => (u.username || '').toLowerCase() === lower);
   }
   if (!user) {
-    return res.status(401).json({ success: false, message: 'Invalid email/username or password.' });
+    return res.status(401).json({ success: false, message: 'Invalid email or password.' });
   }
   if (!user.passwordHash) {
     return res.status(401).json({ success: false, message: 'This account uses Google or Microsoft sign-in. Use one of those buttons to log in.' });
   }
   if (!bcrypt.compareSync(password, user.passwordHash)) {
-    return res.status(401).json({ success: false, message: 'Invalid email/username or password.' });
+    return res.status(401).json({ success: false, message: 'Invalid email or password.' });
   }
   const role = (user.role === 'admin') ? 'admin' : 'client';
   req.session.user = { provider: "local", email: user.email, name: user.name, role };
@@ -1207,13 +1214,13 @@ app.post('/api/upload/finalize', express.json(), async (req, res) => {
         return res.status(400).json({ success: false, message: `Failed to assemble file ${fileDef.filename}. Missing chunks.` });
       }
 
-      // File assembled successfully
-      const relativePath = `${process.env.UPLOAD_DIR || 'uploads'}/${finalSubdir}/${safeFilename}`;
+      // File assembled successfully — store path relative to project root (always "uploads/...") so download can resolve reliably
+      const relativePath = `uploads/${finalSubdir}/${safeFilename}`;
 
       if (safeFilename.toLowerCase().endsWith('.txt') || safeFilename.toLowerCase().endsWith('.csv')) {
-        dronePosFilePath = relativePath.replace(/\\/g, '/');
+        dronePosFilePath = relativePath;
       } else {
-        finalFilePaths.push(relativePath.replace(/\\/g, '/'));
+        finalFilePaths.push(relativePath);
         actualFileCount++;
       }
     }
@@ -1322,11 +1329,15 @@ app.get('/api/admin/client-uploads/:id/download', async (req, res) => {
     const uploadDirResolved = path.resolve(UPLOAD_DIR);
     const projectRootResolved = path.resolve(PROJECT_ROOT);
     for (const rel of filePaths) {
-      const normalized = path.normalize(rel).replace(/^(\.\.(\/|\\))+/, '');
+      const normalized = path.normalize(rel).replace(/^(\.\.(\/|\\))+/, '').replace(/\\/g, '/');
+      // Try: (1) path under project root e.g. PROJECT_ROOT/uploads/project_xxx/file.jpg
+      // (2) path under UPLOAD_DIR when stored path is "uploads/project_xxx/file.jpg" -> strip "uploads/" only
+      const withoutUploadsPrefix = normalized.replace(/^uploads\/?/, '');
       const candidates = [
         resolveUnderDir(normalized, projectRootResolved),
-        path.join(uploadDirResolved, normalized),
-        path.join(uploadDirResolved, normalized.replace(/^([^/\\]+[/\\])+/, ''))
+        path.join(projectRootResolved, normalized),
+        path.join(uploadDirResolved, withoutUploadsPrefix),
+        path.join(uploadDirResolved, normalized)
       ];
       const seen = new Set();
       for (const full of candidates) {

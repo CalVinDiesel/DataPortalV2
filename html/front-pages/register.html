@@ -61,28 +61,69 @@
                 <div class="step-dot" id="dot2"></div>
               </div>
 
-              <!-- ─── STEP 1: Choose auth provider ─────────────────────────── -->
+              <!-- ─── STEP 1: Sign up with email OR social ───────────────────── -->
               <div id="step1">
-                <div class="text-center mb-4">
+                <div class="mb-4">
+                  <h4 class="mb-2">Sign up with Email</h4>
+                  <form id="emailSignupForm" novalidate>
+                    <div class="mb-3">
+                      <label class="form-label" for="emailSignupEmail">Email <span class="text-danger">*</span></label>
+                      <input type="email" class="form-control" id="emailSignupEmail" name="email" placeholder="your@email.com" autocomplete="email">
+                      <div class="invalid-feedback">Please enter a valid email address.</div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label" for="emailSignupContact">Contact number <span class="text-danger">*</span></label>
+                      <input type="tel" class="form-control" id="emailSignupContact" name="contactNumber" placeholder="e.g. +60 12-345 6789" autocomplete="tel">
+                      <div class="invalid-feedback">Please enter a valid contact number (7–20 digits, + - ( ) and spaces allowed).</div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label" for="emailSignupPassword">Password <span class="text-danger">*</span></label>
+                      <div class="position-relative">
+                        <input type="password" class="form-control pe-5" id="emailSignupPassword" name="password" placeholder="At least 8 characters" autocomplete="new-password">
+                        <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-body p-0 pe-2 password-toggle-btn" data-target="emailSignupPassword" aria-label="Show password" title="Show password">
+                          <i class="bx bx-show-alt icon-lg"></i>
+                        </button>
+                      </div>
+                      <div class="invalid-feedback">Password must be at least 8 characters.</div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label" for="emailSignupConfirm">Confirm password <span class="text-danger">*</span></label>
+                      <div class="position-relative">
+                        <input type="password" class="form-control pe-5" id="emailSignupConfirm" name="confirm" placeholder="Repeat password" autocomplete="new-password">
+                        <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-body p-0 pe-2 password-toggle-btn" data-target="emailSignupConfirm" aria-label="Show password" title="Show password">
+                          <i class="bx bx-show-alt icon-lg"></i>
+                        </button>
+                      </div>
+                      <div class="invalid-feedback">Passwords do not match.</div>
+                    </div>
+                    <div class="d-grid">
+                      <button type="submit" class="btn btn-primary" id="emailSignupSubmit">Create account with email</button>
+                    </div>
+                    <p id="emailSignupMessage" class="small mt-2 mb-0 text-center"></p>
+                  </form>
+                </div>
+
+                <p class="text-center text-body small my-3 mb-0">— or —</p>
+                <div class="text-center mb-2">
                   <h4 class="mb-1">Create your account</h4>
-                  <p class="text-body small mb-0">Start by verifying your identity with Google or Microsoft.</p>
+                  <p class="text-body small mb-0">Continue with Google or Microsoft.</p>
                 </div>
 
                 <div class="d-grid gap-3 mb-3">
                   <a href="#" id="btnGoogle" class="btn btn-google btn-social">
-                    <i class="bx bxl-google icon-base" style="font-size: 1.25rem;"></i>
-                    Continue with Google
+                    <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.16 7.09-10.27 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                    Register with Google
                   </a>
                   <a href="#" id="btnMicrosoft" class="btn btn-social btn-microsoft" style="background-color:#fff; color:#3c4043; border:1px solid #dadce0;">
                     <img src="https://learn.microsoft.com/en-us/entra/identity-platform/media/howto-add-branding-in-apps/ms-symbollockup_mssymbol_19.png" alt="Microsoft" width="18" height="18">
-                    Continue with Microsoft
+                    Register with Microsoft
                   </a>
                 </div>
 
                 <p id="step1Message" class="small mt-2 mb-0 text-center"></p>
 
                 <p class="small text-body text-center mt-3 mb-0">
-                  Step 1 of 2 — We'll pre-fill your name and email after verification.
+                  Using Google or Microsoft? You'll complete your profile in step 2.
                 </p>
               </div>
 
@@ -143,12 +184,6 @@
                     <label class="form-label" for="regContact">Contact number <span class="text-danger">*</span></label>
                     <input type="tel" class="form-control" id="regContact" name="contactNumber" placeholder="e.g. +60 12-345 6789">
                     <div class="invalid-feedback">Please enter a valid contact number.</div>
-                  </div>
-
-                  <div class="mb-3">
-                    <label class="form-label" for="regUsername">Username <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="regUsername" name="username" placeholder="Choose a username" autocomplete="username">
-                    <div class="invalid-feedback">Username must be 3–30 characters (letters, numbers, ._-).</div>
                   </div>
 
                   <div class="mb-3">
@@ -304,7 +339,93 @@
       }).catch(function() {});
     }
 
-    // ── Step 1: OAuth buttons ─────────────────────────────────────────────────
+    // ── Step 1: Email signup (skip step 2 — account created immediately) ───────
+    document.getElementById('emailSignupForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var emailEl = document.getElementById('emailSignupEmail');
+      var contactEl = document.getElementById('emailSignupContact');
+      var passEl = document.getElementById('emailSignupPassword');
+      var confirmEl = document.getElementById('emailSignupConfirm');
+      var msgEl = document.getElementById('emailSignupMessage');
+      var btn = document.getElementById('emailSignupSubmit');
+
+      var emailVal = (emailEl.value || '').trim();
+      var emailLower = emailVal.toLowerCase();
+      var contactVal = (contactEl.value || '').trim();
+      var pass = passEl.value;
+      var confirmVal = confirmEl.value;
+
+      msgEl.textContent = '';
+      msgEl.className = 'small mt-2 mb-0 text-center';
+      var valid = true;
+
+      var emailOk = emailVal && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
+      emailEl.classList.toggle('is-invalid', !emailOk);
+      if (!emailOk) valid = false;
+
+      var contactOk = /^[0-9+\-\s()]{7,20}$/.test(contactVal);
+      contactEl.classList.toggle('is-invalid', !contactOk);
+      if (!contactOk) valid = false;
+
+      var passOk = typeof pass === 'string' && pass.length >= 8;
+      passEl.classList.toggle('is-invalid', !passOk);
+      if (!passOk) valid = false;
+
+      var confirmOk = pass === confirmVal;
+      confirmEl.classList.toggle('is-invalid', !confirmOk);
+      if (!confirmOk) valid = false;
+
+      if (!valid) return;
+
+      // Derive name/username/contact for API (server requires them; email-only flow skips step 2)
+      var localPart = emailVal.split('@')[0] || 'user';
+      var nameVal = localPart.replace(/[^a-zA-Z0-9\s]/g, ' ').trim() || 'User';
+      if (nameVal.length > 50) nameVal = nameVal.slice(0, 50);
+      var baseUser = localPart.replace(/\W/g, '_').slice(0, 24);
+      if (baseUser.length < 3) baseUser = baseUser + '12';
+      var usernameVal = (baseUser + '_' + Math.random().toString(36).slice(2, 6)).slice(0, 30);
+
+      btn.disabled = true;
+      msgEl.textContent = 'Creating your account…';
+
+      var payload = {
+        name: nameVal,
+        contactNumber: contactVal,
+        username: usernameVal,
+        email: emailLower,
+        password: pass,
+        provider: 'local',
+        role: 'client'
+      };
+
+      fetch(AUTH_API + '/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'include'
+      })
+        .then(function(r) { return r.json().then(function(j) { return { status: r.status, body: j }; }); })
+        .then(function(x) {
+          if (x.body.success) {
+            msgEl.className = 'small mt-2 mb-0 text-center text-success';
+            msgEl.textContent = 'Account created! Redirecting to login…';
+            setTimeout(function() {
+              window.location.href = 'login.html?registered=1';
+            }, 1200);
+          } else {
+            msgEl.className = 'small mt-2 mb-0 text-center text-danger';
+            msgEl.textContent = x.body.message || 'Registration failed.';
+            btn.disabled = false;
+          }
+        })
+        .catch(function() {
+          msgEl.className = 'small mt-2 mb-0 text-center text-danger';
+          msgEl.textContent = 'Cannot reach server. Is the auth server running?';
+          btn.disabled = false;
+        });
+    });
+
+    // ── Step 1: OAuth buttons (proceed to step 2 after OAuth) ──────────────────
     document.getElementById('btnGoogle').addEventListener('click', function(e) {
       e.preventDefault();
       window.location.href = AUTH_GOOGLE_URL + '?flow=register';
@@ -362,7 +483,6 @@
 
       var nameEl    = document.getElementById('regName');
       var contactEl = document.getElementById('regContact');
-      var usernameEl= document.getElementById('regUsername');
       var emailEl   = document.getElementById('regEmail');
       var password  = document.getElementById('regPassword');
       var confirm   = document.getElementById('regConfirm');
@@ -381,13 +501,16 @@
 
       var nameVal    = nameEl.value.trim();
       var contactVal = contactEl.value.trim();
-      var usernameVal= usernameEl.value.trim();
       var emailVal   = emailEl.value.trim();
       var providerVal= document.getElementById('oauthProvider').value;
+      // Derive username from email (no username field in step 2)
+      var localPart = emailVal.split('@')[0] || 'user';
+      var baseUser = localPart.replace(/\W/g, '_').slice(0, 24);
+      if (baseUser.length < 3) baseUser = baseUser + '12';
+      var usernameVal = (baseUser + '_' + Math.random().toString(36).slice(2, 6)).slice(0, 30);
 
       markInvalid(nameEl,     !nameVal);
       markInvalid(contactEl,  !/^[0-9+\-\s()]{7,20}$/.test(contactVal));
-      markInvalid(usernameEl, !/^[a-zA-Z0-9_.-]{3,30}$/.test(usernameVal));
 
       password.classList.toggle('is-invalid', password.value.length < 8);
       if (password.value.length < 8) ok = false;
