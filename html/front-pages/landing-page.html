@@ -140,8 +140,14 @@
           <li class="nav-item">
             <a class="nav-link fw-medium" href="landing-page.html#landingShowCase">ShowCase</a>
           </li>
-          <li class="nav-item" id="navUpload" style="display:none;">
-            <a class="nav-link fw-medium" href="upload-data.html">Upload</a>
+          <li class="nav-item dropdown" id="navUpload" style="display:none;">
+            <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
+              Upload
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="upload-data.html">New Upload</a></li>
+              <li><a class="dropdown-item" href="my-uploads.html">My Uploads</a></li>
+            </ul>
           </li>
           <!--<li class="nav-item">
             <a class="nav-link fw-medium" href="landing-page.html#landingMap">Map</a>
