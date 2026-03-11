@@ -215,7 +215,7 @@
       function actionCells(r) {
         var status = (r.request_status || 'pending').toLowerCase();
         var detailsBtn = '<button type="button" class="btn btn-sm btn-outline-secondary me-1 details-btn" data-upload-id="' + r.id + '">Details</button>';
-        var downloadBtn = '<a href="' + API_BASE + '/api/admin/client-uploads/' + r.id + '/download" class="btn btn-sm btn-outline-primary me-1" target="_blank" rel="noopener">Download images</a>';
+        var downloadBtn = '<button type="button" class="btn btn-sm btn-outline-primary me-1 download-btn" data-upload-id="' + r.id + '">Download images</button>';
         if (status === 'pending') {
           return detailsBtn + downloadBtn + '<button type="button" class="btn btn-sm btn-success me-1 accept-btn" data-upload-id="' + r.id + '">Accept</button>' +
             '<button type="button" class="btn btn-sm btn-outline-danger reject-btn" data-upload-id="' + r.id + '">Reject</button>';
@@ -232,9 +232,15 @@
         detailsModalUploadId = row.id;
         var downloadLink = document.getElementById('detailsModalDownloadLink');
         if (downloadLink) {
-          downloadLink.href = API_BASE + '/api/admin/client-uploads/' + row.id + '/download';
-          downloadLink.target = '_blank';
-          downloadLink.rel = 'noopener';
+          downloadLink.onclick = function(e) {
+            e.preventDefault();
+            var link = document.createElement('a');
+            link.href = API_BASE + '/api/admin/client-uploads/' + row.id + '/download';
+            link.download = 'upload-' + row.id + '.zip';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          };
         }
         function text(v) { return (v != null && v !== '') ? escapeHtml(String(v)) : '–'; }
         function num(v) { return (v != null && v !== '' && !isNaN(Number(v))) ? String(v) : '–'; }
@@ -289,6 +295,17 @@
                 if (uploadsRowsById[id]) showDetailsModal(uploadsRowsById[id]);
               });
             });
+            tbody.querySelectorAll('.download-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+              var id = this.getAttribute('data-upload-id');
+              var link = document.createElement('a');
+              link.href = API_BASE + '/api/admin/client-uploads/' + id + '/download';
+              link.download = 'upload-' + id + '.zip';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            });
+           });
             tbody.querySelectorAll('.accept-btn').forEach(function (btn) {
               btn.addEventListener('click', function () { submitDecision(this.getAttribute('data-upload-id'), 'accept', ''); });
             });

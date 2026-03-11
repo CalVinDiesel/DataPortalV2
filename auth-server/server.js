@@ -18,6 +18,8 @@ import multer from "multer";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { auth, baseURL, frontEndUrl, googleClientId, googleClientSecret } from "./auth.config.js";
 import { getMicrosoftAuthUrl, handleMicrosoftCallback } from "./microsoftAuth.js";
+import { S3Client, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, ".env"), override: true });
@@ -34,6 +36,27 @@ console.log('[startup] __dirname:', __dirname);
 console.log('[startup] PROJECT_ROOT:', PROJECT_ROOT);
 console.log('[startup] UPLOAD_DIR:', UPLOAD_DIR);
 const MAP_THUMBNAIL_DIR = path.join(PROJECT_ROOT, 'uploads', 'map-thumbnails');
+const b2Client = process.env.B2_KEY_ID ? new S3Client({
+  endpoint: `https://${process.env.B2_ENDPOINT || 's3.us-west-004.backblazeb2.com'}`,
+  region: 'us-west-004',
+  credentials: {
+    accessKeyId: process.env.B2_KEY_ID,
+    secretAccessKey: process.env.B2_APP_KEY,
+  },
+}) : null;
+
+const B2_BUCKET = process.env.B2_BUCKET_NAME || 'temadataportal-uploads';
+console.log('[startup] B2 storage:', b2Client ? 'enabled (bucket: ' + B2_BUCKET + ')' : 'DISABLED (B2_KEY_ID not set)');
+
+// Helper: convert a readable stream to a Buffer
+async function streamToBuffer(stream) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on('data', (chunk) => chunks.push(chunk));
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+    stream.on('error', reject);
+  });
+}
 
 let mapDataDb = null; // SQLite (sql.js) instance when DB file exists
 
@@ -1163,7 +1186,7 @@ app.post('/api/upload/init', express.json(), async (req, res) => {
 });
 
 // We need multer to handle the chunk file upload since it's multipart/form-data
-const chunkStorage = multer.diskStorage({
+const chunkStorage = multer.memoryStorage({
   destination: async (req, file, cb) => {
     const uploadId = req.body.uploadId;
     if (!uploadId) return cb(new Error('Missing uploadId'));
@@ -1188,7 +1211,7 @@ const chunkStorage = multer.diskStorage({
 const uploadChunkMulter = multer({ storage: chunkStorage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB limits for 10MB chunks (extra padding for metadata)
 
 app.post('/api/upload/chunk', (req, res) => {
-  uploadChunkMulter.single('chunk')(req, res, function (err) {
+  uploadChunkMulter.single('chunk')(req, res, async function (err) {
     if (err instanceof multer.MulterError) {
       console.error('Multer Error in chunk upload:', err);
       return res.status(500).json({ success: false, message: 'Multer parsing error: ' + err.message });
@@ -1196,8 +1219,6 @@ app.post('/api/upload/chunk', (req, res) => {
       console.error('Unknown Error in chunk upload:', err);
       return res.status(500).json({ success: false, message: 'Unknown parsing error: ' + err.message });
     }
-
-    // Everything went fine with parsing
     try {
       const uploadId = req.body.uploadId;
       const filename = req.body.filename;
@@ -1208,11 +1229,33 @@ app.post('/api/upload/chunk', (req, res) => {
         return res.status(400).json({ success: false, message: 'Missing required chunk parameters.' });
       }
 
-      console.log(`[chunk] req.file:`, req.file ? { path: req.file.path, size: req.file.size, fieldname: req.file.fieldname } : 'MISSING');
+      const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+      if (b2Client) {
+        // Upload chunk to B2
+        const chunkKey = `temp/${uploadId}/${safeFilename}.part${chunkIndex}`;
+        const upload = new Upload({
+          client: b2Client,
+          params: {
+            Bucket: B2_BUCKET,
+            Key: chunkKey,
+            Body: req.file.buffer,
+          },
+        });
+        await upload.done();
+        console.log(`[chunk] Uploaded to B2: ${chunkKey} (${req.file.size} bytes)`);
+      } else {
+        // Fallback to local disk
+        const tempDir = path.join(UPLOAD_DIR, `temp_${uploadId}`);
+        await fsPromises.mkdir(tempDir, { recursive: true });
+        const chunkPath = path.join(tempDir, `${safeFilename}.part${chunkIndex}`);
+        await fsPromises.writeFile(chunkPath, req.file.buffer);
+        console.log(`[chunk] Saved locally: ${chunkPath}`);
+      }
 
       res.json({ success: true, message: `Chunk ${chunkIndex} received.` });
     } catch (e) {
-      console.error('POST /api/upload/chunk saving error:', e);
+      console.error('POST /api/upload/chunk error:', e);
       res.status(500).json({ success: false, message: 'Failed to save chunk.' });
     }
   });
@@ -1223,114 +1266,179 @@ app.post('/api/upload/finalize', express.json(), async (req, res) => {
     const uploadId = req.body.uploadId;
     if (!uploadId) return res.status(400).json({ success: false, message: 'Missing uploadId' });
 
-    console.log('[finalize] UPLOAD_DIR:', UPLOAD_DIR);
-    console.log('[finalize] PROJECT_ROOT:', PROJECT_ROOT);
-    console.log('[finalize] __dirname:', __dirname);
-
-    const tempDir = path.join(UPLOAD_DIR, `temp_${uploadId}`);
-    const filesMapping = req.body.files; // Array of { filename, totalChunks }
-
+    const filesMapping = req.body.files;
     if (!filesMapping || !Array.isArray(filesMapping)) {
       return res.status(400).json({ success: false, message: 'Missing files mapping array' });
     }
 
     const finalSubdir = `project_${Date.now()}_${uploadId.substring(0, 6)}`;
-    const finalDir = path.join(UPLOAD_DIR, finalSubdir);
-    await fsPromises.mkdir(finalDir, { recursive: true });
-
     const finalFilePaths = [];
     let dronePosFilePath = null;
     let actualFileCount = 0;
 
-    // Assemble each file
-    for (const fileDef of filesMapping) {
-      const safeFilename = fileDef.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-      // Extract just the original basename (e.g. "1_Das1105076.jpg") from the flattened name
-      // The client sends "FolderName_subfolder_file.jpg" — we want only the last segment
-      const originalBasename = path.basename(fileDef.filename.replace(/\\/g, '/'));
-      const safeBasename = originalBasename.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const finalFilePath = path.join(finalDir, safeBasename);
+    if (b2Client) {
+      // ---- B2 path: download chunks, assemble in memory, upload final file ----
+      for (const fileDef of filesMapping) {
+        const safeFilename = fileDef.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const originalBasename = path.basename(fileDef.filename.replace(/\\/g, '/'));
+        const safeBasename = originalBasename.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const finalKey = `uploads/${finalSubdir}/${safeBasename}`;
 
-      // Create a write stream for the final file
-      const writeStream = fs.createWriteStream(finalFilePath);
+        // Download and concatenate all chunks
+        const chunks = [];
+        for (let i = 0; i < fileDef.totalChunks; i++) {
+          const chunkKey = `temp/${uploadId}/${safeFilename}.part${i}`;
+          try {
+            const cmd = new GetObjectCommand({ Bucket: B2_BUCKET, Key: chunkKey });
+            const response = await b2Client.send(cmd);
+            const chunkData = await streamToBuffer(response.Body);
+            chunks.push(chunkData);
+          } catch (e) {
+            console.error(`[finalize] Missing chunk ${i} for ${safeFilename}:`, e.message);
+            return res.status(400).json({ success: false, message: `Missing chunk ${i} for file ${fileDef.filename}.` });
+          }
+        }
 
-      let assemblyFailed = false;
-      for (let i = 0; i < fileDef.totalChunks; i++) {
-        const chunkPath = path.join(tempDir, `${safeFilename}.part${i}`);
-        try {
-          await new Promise((resolve, reject) => {
-            const readStream = fs.createReadStream(chunkPath);
-            readStream.on('error', reject);
-            readStream.on('end', resolve);
-            readStream.pipe(writeStream, { end: false });
-          });
-        } catch (e) {
-          console.error(`Missing chunk ${i} for file ${safeFilename} in upload ${uploadId}`, e);
-          assemblyFailed = true;
-          break;
+        // Upload assembled file to B2
+        const assembledBuffer = Buffer.concat(chunks);
+        const upload = new Upload({
+          client: b2Client,
+          params: {
+            Bucket: B2_BUCKET,
+            Key: finalKey,
+            Body: assembledBuffer,
+          },
+        });
+        await upload.done();
+        console.log(`[finalize] Uploaded to B2: ${finalKey} (${assembledBuffer.length} bytes)`);
+
+        // Clean up chunks from B2
+        for (let i = 0; i < fileDef.totalChunks; i++) {
+          const chunkKey = `temp/${uploadId}/${safeFilename}.part${i}`;
+          try {
+            await b2Client.send(new DeleteObjectCommand({ Bucket: B2_BUCKET, Key: chunkKey }));
+          } catch (e) { /* ignore cleanup errors */ }
+        }
+
+        const relativePath = `b2:${finalKey}`;
+        if (safeBasename.toLowerCase().endsWith('.txt') || safeBasename.toLowerCase().endsWith('.csv')) {
+          dronePosFilePath = relativePath;
+        } else {
+          finalFilePaths.push(relativePath);
+          actualFileCount++;
         }
       }
 
-      writeStream.end();
-
-      if (assemblyFailed) {
-        return res.status(400).json({ success: false, message: `Failed to assemble file ${fileDef.filename}. Missing chunks.` });
+      // Read metadata from B2
+      let metadata = {};
+      try {
+        const metaCmd = new GetObjectCommand({ Bucket: B2_BUCKET, Key: `temp/${uploadId}/metadata.json` });
+        const metaResponse = await b2Client.send(metaCmd);
+        const metaStr = await streamToBuffer(metaResponse.Body);
+        metadata = JSON.parse(metaStr.toString('utf8'));
+        // Clean up metadata from B2
+        await b2Client.send(new DeleteObjectCommand({ Bucket: B2_BUCKET, Key: `temp/${uploadId}/metadata.json` }));
+      } catch (e) {
+        console.warn('[finalize] Could not read metadata from B2 for', uploadId);
       }
 
-      // File assembled successfully — store path relative to project root (always "uploads/...") so download can resolve reliably
-      const relativePath = `uploads/${finalSubdir}/${safeBasename}`;
+      if (!metadata.projectTitle) metadata.projectTitle = metadata.projectID;
 
-      if (safeFilename.toLowerCase().endsWith('.txt') || safeFilename.toLowerCase().endsWith('.csv')) {
-        dronePosFilePath = relativePath;
-      } else {
-        finalFilePaths.push(relativePath);
-        actualFileCount++;
+      if (process.env.PG_DATABASE) {
+        await pgQuery(
+          `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`,
+          [
+            metadata.projectID, metadata.projectTitle, metadata.uploadType, actualFileCount,
+            finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
+            metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
+            isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
+            metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath
+          ]
+        );
       }
+
+      console.log(`[upload] B2 upload saved: ${actualFileCount} files in ${finalSubdir}`);
+      return res.json({ success: true, message: 'Upload successfully assembled and saved.', projectId: metadata.projectID, fileCount: actualFileCount });
+
+    } else {
+      // ---- Local disk fallback ----
+      const tempDir = path.join(UPLOAD_DIR, `temp_${uploadId}`);
+      const finalDir = path.join(UPLOAD_DIR, finalSubdir);
+      await fsPromises.mkdir(finalDir, { recursive: true });
+
+      for (const fileDef of filesMapping) {
+        const safeFilename = fileDef.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const originalBasename = path.basename(fileDef.filename.replace(/\\/g, '/'));
+        const safeBasename = originalBasename.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const finalFilePath = path.join(finalDir, safeBasename);
+        const writeStream = fs.createWriteStream(finalFilePath);
+
+        let assemblyFailed = false;
+        for (let i = 0; i < fileDef.totalChunks; i++) {
+          const chunkPath = path.join(tempDir, `${safeFilename}.part${i}`);
+          try {
+            await new Promise((resolve, reject) => {
+              const readStream = fs.createReadStream(chunkPath);
+              readStream.on('error', reject);
+              readStream.pipe(writeStream, { end: false });
+              readStream.on('end', resolve);
+            });
+          } catch (e) {
+            console.error(`Missing chunk ${i} for file ${safeFilename}`, e);
+            assemblyFailed = true;
+            break;
+          }
+        }
+
+        await new Promise((resolve, reject) => {
+          writeStream.on('finish', resolve);
+          writeStream.on('error', reject);
+          writeStream.end();
+        });
+
+        if (assemblyFailed) {
+          return res.status(400).json({ success: false, message: `Failed to assemble file ${fileDef.filename}.` });
+        }
+
+        const relativePath = `uploads/${finalSubdir}/${safeBasename}`;
+        if (safeBasename.toLowerCase().endsWith('.txt') || safeBasename.toLowerCase().endsWith('.csv')) {
+          dronePosFilePath = relativePath;
+        } else {
+          finalFilePaths.push(relativePath);
+          actualFileCount++;
+        }
+      }
+
+      const metadataPath = path.join(tempDir, 'metadata.json');
+      let metadata = {};
+      try {
+        const metaStr = await fsPromises.readFile(metadataPath, 'utf8');
+        metadata = JSON.parse(metaStr);
+      } catch (e) {
+        console.warn('Could not read metadata for', uploadId);
+      }
+
+      if (!metadata.projectTitle) metadata.projectTitle = metadata.projectID;
+
+      if (process.env.PG_DATABASE) {
+        await pgQuery(
+          `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`,
+          [
+            metadata.projectID, metadata.projectTitle, metadata.uploadType, actualFileCount,
+            finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
+            metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
+            isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
+            metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath
+          ]
+        );
+      }
+
+      try { await fsPromises.rm(tempDir, { recursive: true, force: true }); } catch (e) { /* ignore */ }
+      console.log(`[upload] Local upload saved: ${actualFileCount} files at ${finalDir}`);
+      return res.json({ success: true, message: 'Upload successfully assembled and saved.', projectId: metadata.projectID, fileCount: actualFileCount });
     }
-
-    // Read metadata
-    const metadataPath = path.join(tempDir, 'metadata.json');
-    let metadata = {};
-    try {
-      const metaStr = await fsPromises.readFile(metadataPath, 'utf8');
-      metadata = JSON.parse(metaStr);
-    } catch (e) {
-      console.warn("Could not read metadata for", uploadId);
-    }
-
-    if (!metadata.projectTitle) metadata.projectTitle = metadata.projectID;
-
-    // Save to DB
-    if (process.env.PG_DATABASE) {
-      await pgQuery(
-        `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`,
-        [
-          metadata.projectID, metadata.projectTitle, metadata.uploadType, actualFileCount,
-          finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
-          metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
-          isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
-          metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath
-        ]
-      );
-    }
-
-    // DEBUG LOGS
-    console.log('[finalize] Final dir:', finalDir);
-    console.log('[finalize] Files to assemble:', filesMapping.map(f => f.filename));
-    const tempFiles = await fsPromises.readdir(tempDir);
-    console.log('[finalize] Temp dir contents:', tempFiles.slice(0, 20));
-    console.log('[finalize] finalFilePaths:', finalFilePaths);
-
-    // Cleanup temporary directory
-    try {
-      await fsPromises.rm(tempDir, { recursive: true, force: true });
-    } catch (e) {
-      console.warn("Failed to cleanup temp dir", tempDir, e);
-    }
-
-    console.log("[upload] Client upload saved: " + actualFileCount + " files at " + finalDir + " (Admin can download from Client Uploads)");
-    res.json({ success: true, message: 'Upload successfully assembled and saved.', projectId: metadata.projectID, fileCount: actualFileCount });
 
   } catch (e) {
     console.error('POST /api/upload/finalize', e);
@@ -1392,65 +1500,70 @@ app.get('/api/admin/client-uploads/:id/download', async (req, res) => {
     const q = await pgQuery('SELECT id, project_id, project_title, COALESCE(to_json(file_paths), \'[]\'::json) AS file_paths, drone_pos_file_path FROM public."ClientUploads" WHERE id = $1', [id]);
     const row = q && q.rows && q.rows[0];
     if (!row) return res.status(404).json({ success: false, message: 'Client upload not found.' });
+
     const filePaths = parseFilePaths(row.file_paths);
     const dronePath = (row.drone_pos_file_path || '').trim();
     if (dronePath) filePaths.push(dronePath);
-    const filesToAdd = [];
-    const uploadDirResolved = path.resolve(UPLOAD_DIR);
-    const projectRootResolved = path.resolve(PROJECT_ROOT);
-    for (const rel of filePaths) {
-      const normalized = path.normalize(rel).replace(/^(\.\.(\/|\\))+/, '').replace(/\\/g, '/');
-      // Try: (1) path under project root e.g. PROJECT_ROOT/uploads/project_xxx/file.jpg
-      // (2) path under UPLOAD_DIR when stored path is "uploads/project_xxx/file.jpg" -> strip "uploads/" only
-      const withoutUploadsPrefix = normalized.replace(/^uploads\/?/, '');
-      const candidates = [
-        resolveUnderDir(normalized, projectRootResolved),
-        path.join(projectRootResolved, normalized),
-        path.join(uploadDirResolved, withoutUploadsPrefix),
-        path.join(uploadDirResolved, normalized)
-      ];
-      const seen = new Set();
-      for (const full of candidates) {
-        const fullResolved = path.resolve(full);
-        if (seen.has(fullResolved)) continue;
-        seen.add(fullResolved);
-        if (!isPathUnderDir(fullResolved, uploadDirResolved) && !isPathUnderDir(fullResolved, projectRootResolved)) continue;
-        try {
-          const stat = await fs.promises.stat(fullResolved);
-          if (stat.isFile()) {
-            filesToAdd.push({ full: fullResolved, name: path.basename(fullResolved) });
-            break;
-          }
-        } catch (err) {
-          if (process.env.NODE_ENV !== 'production') {
-            console.warn('[download] Upload #%s path "%s" -> %s: %s', id, rel, fullResolved, err.code || err.message);
-          }
-        }
-      }
+
+    if (filePaths.length === 0) {
+      return res.status(404).json({ success: false, message: 'No files found for this upload.' });
     }
-    if (filesToAdd.length === 0) {
-      console.warn('[download] Upload #%s: no files found. DB file_paths=%s, drone_pos_file_path=%s. UPLOAD_DIR=%s, PROJECT_ROOT=%s. Parsed paths: %s',
-        id, JSON.stringify(row.file_paths), dronePath || '(none)', uploadDirResolved, projectRootResolved, JSON.stringify(filePaths));
-      return res.status(404).json({ success: false, message: 'No files found for this upload. Check that file_paths in the database point to existing files under the uploads directory.' });
-    }
+
     let archiver;
     try {
       archiver = (await import('archiver')).default;
     } catch (e) {
       return res.status(503).json({ success: false, message: 'Download requires the archiver package. Run: npm install archiver' });
     }
+
     const zipName = 'upload-' + id + '-' + (row.project_id || 'files').replace(/[^a-zA-Z0-9_-]/g, '_') + '.zip';
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="' + zipName + '"');
+
     const archive = archiver('zip', { zlib: { level: 6 } });
     archive.on('error', (e) => {
       console.error('archiver error', e);
       if (!res.headersSent) res.status(500).end();
     });
     archive.pipe(res);
-    for (const { full, name } of filesToAdd) {
-      archive.file(full, { name });
+
+    if (b2Client) {
+      // Stream files from B2
+      for (const rel of filePaths) {
+        const b2Key = rel.startsWith('b2:') ? rel.slice(3) : rel;
+        try {
+          const cmd = new GetObjectCommand({ Bucket: B2_BUCKET, Key: b2Key });
+          const response = await b2Client.send(cmd);
+          const filename = path.basename(b2Key);
+          archive.append(response.Body, { name: filename });
+          console.log(`[download] Streaming from B2: ${b2Key}`);
+        } catch (e) {
+          console.warn(`[download] Could not get B2 file ${b2Key}:`, e.message);
+        }
+      }
+    } else {
+      // Local disk fallback
+      const uploadDirResolved = path.resolve(UPLOAD_DIR);
+      const projectRootResolved = path.resolve(PROJECT_ROOT);
+      for (const rel of filePaths) {
+        const normalized = path.normalize(rel).replace(/^(\.\.(\/|\\))+/, '').replace(/\\/g, '/');
+        const withoutUploadsPrefix = normalized.replace(/^uploads\/?/, '');
+        const candidates = [
+          path.join(projectRootResolved, normalized),
+          path.join(uploadDirResolved, withoutUploadsPrefix),
+        ];
+        for (const full of candidates) {
+          try {
+            const stat = await fs.promises.stat(full);
+            if (stat.isFile()) {
+              archive.file(full, { name: path.basename(full) });
+              break;
+            }
+          } catch (e) { /* try next */ }
+        }
+      }
     }
+
     await archive.finalize();
   } catch (e) {
     console.error('GET /api/admin/client-uploads/:id/download', e);
