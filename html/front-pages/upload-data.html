@@ -454,7 +454,7 @@
           <input type="hidden" id="longitude" name="longitude" required>
 
           <div class="form-section-title mt-0">Upload photos</div>
-          <p class="help-text">Select the import type that matches your single-lens or multi-lens (oblique) photos.</p>
+          <p class="help-text">Choose your drone's camera payload configuration to accurately process the flight dataset.</p>
 
 
           <!-- Upload Type Selection Cards -->
@@ -626,6 +626,8 @@
       <div class="left-footer">
         <button type="button" id="btnCancelUpload" class="btn btn-secondary text-white fw-medium border-0 px-4"
           style="background:#8b9eb0;" onclick="handleCancelClick()">Cancel</button>
+        <button type="button" id="btnPauseUpload" class="btn btn-warning fw-medium text-white border-0 px-4 ms-2 d-none"
+          onclick="handlePauseClick()">Pause</button>
         <button type="button" id="uploadPageLogoutBtn" class="btn btn-outline-secondary fw-medium px-3 ms-auto me-2"
           title="Log out and return to public landing page"><i class="bx bx-log-out me-1"></i>Log out</button>
         <button type="submit" form="uploadForm" class="btn btn-primary fw-medium px-4">Upload</button>
@@ -836,25 +838,37 @@
 
     function handleCancelClick() {
       if (!isUploadActive) {
-        window.location.href = 'landing-page.html';
-      } else {
-        isUploadPaused = !isUploadPaused;
-        const btn = document.getElementById('btnCancelUpload');
-        const statusText = document.getElementById('uploadStatusText');
-
-        if (isUploadPaused) {
-          btn.textContent = 'Resume';
-          btn.classList.remove('btn-secondary');
-          btn.classList.add('btn-warning');
-          btn.style.background = ''; // remove inline style to let bootstrap warning color show
-          if (statusText) statusText.textContent = 'Upload Paused';
+        if (pendingUploadFiles.length > 0) {
+          if (confirm("Are you sure you want to clear your selected files and reset the form?")) {
+            window.location.reload();
+          }
         } else {
-          btn.textContent = 'Pause';
-          btn.classList.remove('btn-warning');
-          btn.classList.add('btn-secondary');
-          btn.style.background = '#8b9eb0';
-          if (statusText) statusText.textContent = 'Resuming upload...';
+          // If the form is completely empty, act as a "Go Back" button
+          window.location.href = 'landing-page.html';
         }
+      } else {
+        if (confirm("Are you sure you want to cancel the active upload completely?")) {
+           window.location.reload(); // Instantly aborts upload and clears state
+        }
+      }
+    }
+
+    function handlePauseClick() {
+      if (!isUploadActive) return;
+      isUploadPaused = !isUploadPaused;
+      const btn = document.getElementById('btnPauseUpload');
+      const statusText = document.getElementById('uploadStatusText');
+
+      if (isUploadPaused) {
+        btn.textContent = 'Resume';
+        btn.classList.remove('btn-warning');
+        btn.classList.add('btn-info');
+        if (statusText) statusText.textContent = 'Upload Paused';
+      } else {
+        btn.textContent = 'Pause';
+        btn.classList.remove('btn-info');
+        btn.classList.add('btn-warning');
+        if (statusText) statusText.textContent = 'Resuming upload...';
       }
     }
 
@@ -1042,28 +1056,44 @@
         const originalText = btn.innerHTML;
         btn.disabled = true;
 
-        flightPath = [];
-        folderStats = {};
-        rootFolderStats = {};
-        parsedFilesCount = 0;
-        locatedFilesCount = 0;
-
         const files = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
-        pendingUploadFiles = files; // Store globally for deletion
-        const totalFiles = pendingUploadFiles.length;
+        
+        // Immediately clear the input value. This ensures that if the user deletes a folder 
+        // from the UI list and tries to re-upload the EXACT SAME folder, the browser will 
+        // register it as a "change" event and trigger this function again.
+        e.target.value = '';
 
-        if (totalFiles === 0) {
+        if (files.length === 0) {
           alert("No images found to process.");
           btn.innerHTML = originalText;
           btn.disabled = false;
           return;
         }
 
-        // --- POS FILE OVERRIDE LOGIC ---
         const posFileInput = document.getElementById('posFile');
-        if (posFileInput && posFileInput.files.length > 0) {
+        const isPosActive = posFileInput && posFileInput.files.length > 0;
+
+        // Only wipe state completely if using POS file matching, otherwise append to allow multiple folders
+        if (isPosActive) {
+          flightPath = [];
+          folderStats = {};
+          rootFolderStats = {};
+        }
+
+        parsedFilesCount = 0;
+        locatedFilesCount = 0;
+
+        const flightPathOffset = flightPath.length;
+
+        // Append to global tracked files instead of overwriting
+        pendingUploadFiles = pendingUploadFiles.concat(files);
+        const totalPendingFiles = pendingUploadFiles.length;
+        const newFilesCount = files.length;
+
+        // --- POS FILE OVERRIDE LOGIC ---
+        if (isPosActive) {
           btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Reading POS File...';
-          openDataLoadingModal(totalFiles);
+          openDataLoadingModal(totalPendingFiles);
 
           const posText = await posFileInput.files[0].text();
           const lines = posText.split('\n');
@@ -1115,10 +1145,10 @@
             for (const rootFolder in rootFolderStats) {
               rootFolderStats[rootFolder].located = rootFolderStats[rootFolder].photos;
             }
-            updateModalProgress(totalFiles, totalFiles);
+            updateModalProgress(totalPendingFiles, totalPendingFiles);
           } else {
             alert('Could not parse valid GPS coordinates from the provided POS file. Falling back to EXIF.');
-            return performExifExtraction(files, totalFiles, btn, originalText);
+            return performExifExtraction(pendingUploadFiles, totalPendingFiles, btn, originalText, 0);
           }
 
           finishDataLoadingModal(() => {
@@ -1133,12 +1163,12 @@
         // --- END POS FILE OVERRIDE ---
 
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing EXIF...';
-        openDataLoadingModal(totalFiles);
-        await performExifExtraction(files, totalFiles, btn, originalText);
+        openDataLoadingModal(newFilesCount);
+        await performExifExtraction(files, newFilesCount, btn, originalText, flightPathOffset);
       }
     }
 
-    async function performExifExtraction(files, totalFiles, btn, originalText) {
+    async function performExifExtraction(files, totalFiles, btn, originalText, flightPathOffset = 0) {
       // Process files in parallel batches to dramatically speed up EXIF extraction
       let processedImagesCount = 0;
       const BATCH_SIZE = 50; // Process 50 images concurrently
@@ -1185,7 +1215,7 @@
               const lng = EXIF.getTag(this, "GPSLongitude");
               const lngRef = EXIF.getTag(this, "GPSLongitudeRef");
 
-              const globalIndex = batchStart + batchIndex;
+              const globalIndex = flightPathOffset + batchStart + batchIndex;
 
               if (lat && lng && latRef && lngRef) {
                 // Real EXIF found
@@ -1306,23 +1336,23 @@
           maxZoom: 19
         }).addTo(modalMap);
 
-        // Draw trajectory (Light Blue dashed line)
-        var polyline = L.polyline(flightPath, { color: '#00d2ff', weight: 3, dashArray: '5, 8' }).addTo(modalMap);
+        // Draw trajectory (Neon Green dashed line)
+        var polyline = L.polyline(flightPath, { color: '#39ff14', weight: 4, dashArray: '6, 8', opacity: 0.9 }).addTo(modalMap);
 
-        // Draw Map Bounds Coverage Area
+        // Draw Map Bounds Coverage Area (Cyan)
         L.rectangle(polyline.getBounds(), {
           color: 'transparent',
-          fillColor: '#3b82f6',
-          fillOpacity: 0.25
+          fillColor: '#00ffff',
+          fillOpacity: 0.15
         }).addTo(modalMap);
 
-        // Add dots (White center, blue border)
+        // Add dots (White center, Electric Cyan border)
         flightPath.forEach(latlng => {
           L.circleMarker(latlng, {
-            radius: 4,
+            radius: 4.5,
             fillColor: "#ffffff",
-            color: "#00d2ff",
-            weight: 2,
+            color: "#00ffff",
+            weight: 2.5,
             opacity: 1,
             fillOpacity: 1
           }).addTo(modalMap);
@@ -1391,8 +1421,15 @@
       placeMarker([centerLat, centerLng]);
 
       if (flightPath.length > 1) {
-        // Draw trajectory (Light Blue dashed line)
-        const polyline = L.polyline(flightPath, { color: '#00d2ff', weight: 3, dashArray: '5, 8' }).addTo(map);
+        // Clear previous overlays safely using a centralized LayerGroup
+        if (window.gpsLayerGroup) {
+          window.gpsLayerGroup.clearLayers();
+        } else {
+          window.gpsLayerGroup = L.layerGroup().addTo(map);
+        }
+
+        // Draw trajectory (Neon Green dashed line)
+        const polyline = L.polyline(flightPath, { color: '#39ff14', weight: 4, dashArray: '6, 8', opacity: 0.9 }).addTo(window.gpsLayerGroup);
 
         // Use fitBounds with padding so the flight path isn't hidden under the floating left panel
         map.fitBounds(polyline.getBounds(), {
@@ -1401,23 +1438,23 @@
           maxZoom: 16
         });
 
-        // Ensure the light blue bounding box is drawn on the main map too (optional visual enhancement)
+        // Ensure the bounding box is drawn on the main map too (Cyan)
         L.rectangle(polyline.getBounds(), {
           color: 'transparent',
-          fillColor: '#3b82f6',
+          fillColor: '#00ffff',
           fillOpacity: 0.15
-        }).addTo(map);
+        }).addTo(window.gpsLayerGroup);
 
-        // Add dots (White center, blue border)
+        // Add dots (White center, Electric Cyan border)
         flightPath.forEach(latlng => {
           L.circleMarker(latlng, {
-            radius: 4,
+            radius: 4.5,
             fillColor: "#ffffff",
-            color: "#00d2ff",
-            weight: 2,
+            color: "#00ffff",
+            weight: 2.5,
             opacity: 1,
             fillOpacity: 1
-          }).addTo(map);
+          }).addTo(window.gpsLayerGroup);
         });
 
       } else {
@@ -1543,6 +1580,10 @@
       if (Object.keys(rootFolderStats).length === 0) {
         folderStats = {};
         flightPath = [];
+        // Safely wipe GPS map overlays
+        if (window.gpsLayerGroup) {
+           window.gpsLayerGroup.clearLayers();
+        }
       }
 
       // Re-render UI
@@ -1593,6 +1634,7 @@
       submitBtn.disabled = true;
       isUploadActive = true;
       isUploadPaused = false;
+      document.getElementById('btnPauseUpload').classList.remove('d-none');
       progressContainer.style.display = 'block';
       progressBar.style.width = '0%';
       percentText.textContent = '0%';
@@ -1786,13 +1828,13 @@
           msgDiv.className = 'small mt-2 mb-0 text-center text-secondary';
           msgDiv.textContent = 'Upload aborted by user.';
 
-          // Reset cancel button just in case
-          const btnCancel = document.getElementById('btnCancelUpload');
-          if (btnCancel) {
-            btnCancel.textContent = 'Cancel';
-            btnCancel.classList.remove('btn-warning');
-            btnCancel.classList.add('btn-secondary');
-            btnCancel.style.background = '#8b9eb0';
+          // Hide pause button on abort
+          const btnPause = document.getElementById('btnPauseUpload');
+          if (btnPause) {
+            btnPause.classList.add('d-none');
+            btnPause.textContent = 'Pause';
+            btnPause.classList.remove('btn-info');
+            btnPause.classList.add('btn-warning');
           }
           return;
         }
@@ -1832,13 +1874,13 @@
         console.error('Upload Process Error:', err);
         isUploadActive = false;
         isUploadPaused = false;
-        // Reset cancel button just in case
-        const btnCancel = document.getElementById('btnCancelUpload');
-        if (btnCancel) {
-          btnCancel.textContent = 'Cancel';
-          btnCancel.classList.remove('btn-warning');
-          btnCancel.classList.add('btn-secondary');
-          btnCancel.style.background = '#8b9eb0';
+        // Reset pause button just in case
+        const btnPause = document.getElementById('btnPauseUpload');
+        if (btnPause) {
+          btnPause.classList.add('d-none');
+          btnPause.textContent = 'Pause';
+          btnPause.classList.remove('btn-info');
+          btnPause.classList.add('btn-warning');
         }
 
         if (document.getElementById('uploadStatusText')) {
