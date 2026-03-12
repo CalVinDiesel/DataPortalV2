@@ -1165,11 +1165,7 @@ const crypto = require('crypto');
 app.post('/api/upload/init', express.json(), async (req, res) => {
   try {
     const uploadId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
-    const tempDir = path.join(UPLOAD_DIR, `temp_${uploadId}`);
-    await fsPromises.mkdir(tempDir, { recursive: true });
 
-    // Store metadata for later finalization
-    const metadataPath = path.join(tempDir, 'metadata.json');
     const metadata = {
       projectID: (req.body.projectID || '').trim() || `upload_${Date.now()}`,
       projectTitle: (req.body.projectTitle || '').trim(),
@@ -1188,7 +1184,25 @@ app.post('/api/upload/init', express.json(), async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
-    await fsPromises.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+    if (b2Client) {
+      const { Upload } = await import('@aws-sdk/lib-storage');
+      const upload = new Upload({
+        client: b2Client,
+        params: {
+          Bucket: B2_BUCKET,
+          Key: `temp/${uploadId}/metadata.json`,
+          Body: JSON.stringify(metadata, null, 2),
+        },
+      });
+      await upload.done();
+      console.log(`[init] Metadata saved to B2: temp/${uploadId}/metadata.json`);
+    } else {
+      const tempDir = path.join(UPLOAD_DIR, `temp_${uploadId}`);
+      await fsPromises.mkdir(tempDir, { recursive: true });
+      const metadataPath = path.join(tempDir, 'metadata.json');
+      await fsPromises.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+      console.log(`[init] Metadata saved locally: ${metadataPath}`);
+    }
 
     res.json({ success: true, uploadId, message: 'Upload initialized' });
   } catch (e) {
@@ -1198,29 +1212,9 @@ app.post('/api/upload/init', express.json(), async (req, res) => {
 });
 
 // We need multer to handle the chunk file upload since it's multipart/form-data
-const chunkStorage = multer.memoryStorage({
-  destination: async (req, file, cb) => {
-    const uploadId = req.body.uploadId;
-    if (!uploadId) return cb(new Error('Missing uploadId'));
-    const tempDir = path.join(UPLOAD_DIR, `temp_${uploadId}`);
-    try {
-      await fsPromises.mkdir(tempDir, { recursive: true });
-      cb(null, tempDir);
-    } catch (e) {
-      cb(e);
-    }
-  },
-  filename: (req, file, cb) => {
-    // Generate a temporary name for this specific chunk
-    const filename = req.body.filename || 'unknown';
-    const chunkIndex = req.body.chunkIndex || 0;
-    // Keep it safe
-    const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-    cb(null, `${safeFilename}.part${chunkIndex}`);
-  }
-});
+const chunkStorage = multer.memoryStorage();
 
-const uploadChunkMulter = multer({ storage: chunkStorage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB limits for 10MB chunks (extra padding for metadata)
+const uploadChunkMulter = multer({ storage: chunkStorage, limits: { fileSize: 50 * 1024 * 1024 } });
 
 app.post('/api/upload/chunk', (req, res) => {
   uploadChunkMulter.single('chunk')(req, res, async function (err) {
