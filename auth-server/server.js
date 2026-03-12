@@ -1321,6 +1321,7 @@ app.post('/api/upload/init', express.json(), async (req, res) => {
       areaCoverage: (req.body.areaCoverage || '').trim(),
       imageMetadata: (req.body.imageMetadata || '').trim(),
       totalFiles: req.body.totalFiles || 0,
+      totalSizeBytes: req.body.totalSizeBytes || 0,
       createdAt: new Date().toISOString()
     };
 
@@ -1492,14 +1493,14 @@ app.post('/api/upload/finalize', express.json(), async (req, res) => {
 
       if (process.env.PG_DATABASE) {
         await pgQuery(
-          `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`,
+          `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id`,
           [
             metadata.projectID, metadata.projectTitle, metadata.uploadType, actualFileCount,
             finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
             metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
             isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
-            metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath
+            metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0
           ]
         );
       }
@@ -1569,14 +1570,14 @@ app.post('/api/upload/finalize', express.json(), async (req, res) => {
 
       if (process.env.PG_DATABASE) {
         await pgQuery(
-          `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`,
+          `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id`,
           [
             metadata.projectID, metadata.projectTitle, metadata.uploadType, actualFileCount,
             finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
             metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
             isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
-            metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath
+            metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0
           ]
         );
       }
@@ -1598,7 +1599,7 @@ app.get('/api/admin/client-uploads', async (req, res) => {
     return res.json([]);
   }
   try {
-    const q = await pgQuery('SELECT id, project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_at, created_by_email, request_status, rejected_reason, decided_at, decided_by, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path FROM public."ClientUploads" ORDER BY created_at DESC');
+    const q = await pgQuery('SELECT id, project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_at, created_by_email, request_status, rejected_reason, decided_at, decided_by, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes FROM public."ClientUploads" ORDER BY created_at DESC');
     res.json((q && q.rows) ? q.rows : []);
   } catch (e) {
     console.error('GET /api/admin/client-uploads', e);
@@ -1613,11 +1614,46 @@ app.get('/api/user/my-uploads', requireAuth, async (req, res) => {
   }
   try {
     const email = req.user.email;
-    const q = await pgQuery('SELECT id, project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_at, created_by_email, request_status, rejected_reason, decided_at, decided_by, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path FROM public."ClientUploads" WHERE LOWER(created_by_email) = LOWER($1) ORDER BY created_at DESC', [email]);
+    const q = await pgQuery('SELECT id, project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_at, created_by_email, request_status, rejected_reason, decided_at, decided_by, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes FROM public."ClientUploads" WHERE LOWER(created_by_email) = LOWER($1) ORDER BY created_at DESC', [email]);
     res.json((q && q.rows) ? q.rows : []);
   } catch (e) {
     console.error('GET /api/user/my-uploads', e);
     res.status(500).json({ error: 'Failed to load user uploads.' });
+  }
+});
+
+// ---- User: update personal client upload metadata ----
+app.patch('/api/user/my-uploads/:id', requireAuth, async (req, res) => {
+  if (!process.env.PG_DATABASE) {
+    return res.status(500).json({ success: false, message: 'Database not configured.' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid ID.' });
+
+  const { project_title, project_description } = req.body;
+  if (!project_title) {
+    return res.status(400).json({ success: false, message: 'Project title is required.' });
+  }
+
+  try {
+    const email = req.user.email;
+    
+    // Verify ownership
+    const q1 = await pgQuery('SELECT id FROM public."ClientUploads" WHERE id = $1 AND LOWER(created_by_email) = LOWER($2)', [id, email]);
+    if (!q1 || !q1.rows || q1.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Project not found or you do not have permission to edit it.' });
+    }
+    
+    // Update metadata
+    await pgQuery(
+      'UPDATE public."ClientUploads" SET project_title = $1, project_description = $2 WHERE id = $3',
+      [project_title, project_description || '', id]
+    );
+    
+    res.json({ success: true, message: 'Project updated successfully.' });
+  } catch (e) {
+    console.error('PATCH /api/user/my-uploads/:id', e);
+    res.status(500).json({ success: false, message: 'Failed to update project.' });
   }
 });
 

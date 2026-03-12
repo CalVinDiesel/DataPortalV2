@@ -1709,7 +1709,8 @@
         cameraModels: document.getElementById('multipleCamera').checked ? (document.getElementById('cameraModels').value || '') : '',
         captureDate: document.getElementById('captureDate').value || new Date().toISOString().split('T')[0],
         organizationName: document.getElementById('organizationName').value,
-        totalFiles: pendingUploadFiles.length
+        totalFiles: pendingUploadFiles.length,
+        totalSizeBytes: pendingUploadFiles.reduce((acc, f) => acc + (f.size || 0), 0)
       };
 
       try {
@@ -1921,7 +1922,7 @@
           }
         }
 
-        setTimeout(() => window.location.href = 'landing-page.html', 1500);
+        setTimeout(() => window.location.href = 'my-uploads.html', 1500);
 
       } catch (err) {
         console.error('Upload Process Error:', err);
