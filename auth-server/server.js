@@ -19,8 +19,6 @@ import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import Stripe from "stripe";
 import { auth, baseURL, frontEndUrl, googleClientId, googleClientSecret } from "./auth.config.js";
 import { getMicrosoftAuthUrl, handleMicrosoftCallback } from "./microsoftAuth.js";
-import { S3Client, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { Upload } from '@aws-sdk/lib-storage';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, ".env"), override: true });
@@ -38,17 +36,6 @@ console.log('[startup] PROJECT_ROOT:', PROJECT_ROOT);
 console.log('[startup] UPLOAD_DIR:', UPLOAD_DIR);
 const MAP_THUMBNAIL_DIR = path.join(PROJECT_ROOT, 'uploads', 'map-thumbnails');
 const PROCESSED_RESULTS_DIR = path.join(UPLOAD_DIR, 'processed-results');
-const b2Client = process.env.B2_KEY_ID ? new S3Client({
-  endpoint: `https://${process.env.B2_ENDPOINT || 's3.us-west-004.backblazeb2.com'}`,
-  region: 'us-west-004',
-  credentials: {
-    accessKeyId: process.env.B2_KEY_ID,
-    secretAccessKey: process.env.B2_APP_KEY,
-  },
-}) : null;
-
-const B2_BUCKET = process.env.B2_BUCKET_NAME || 'temadataportal-uploads';
-console.log('[startup] B2 storage:', b2Client ? 'enabled (bucket: ' + B2_BUCKET + ')' : 'DISABLED (B2_KEY_ID not set)');
 
 // ---- Stripe + token config (for subscriber uploads and 3D model purchases) ----
 const TOKEN_MYR_RATE = Number(process.env.TOKEN_MYR_RATE || '2'); // 1 token = 2 MYR by default
@@ -1730,25 +1717,11 @@ app.post('/api/upload/init', express.json(), async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
-    if (b2Client) {
-      const { Upload } = await import('@aws-sdk/lib-storage');
-      const upload = new Upload({
-        client: b2Client,
-        params: {
-          Bucket: B2_BUCKET,
-          Key: `temp/${uploadId}/metadata.json`,
-          Body: JSON.stringify(metadata, null, 2),
-        },
-      });
-      await upload.done();
-      console.log(`[init] Metadata saved to B2: temp/${uploadId}/metadata.json`);
-    } else {
-      const tempDir = path.join(UPLOAD_DIR, `temp_${uploadId}`);
-      await fsPromises.mkdir(tempDir, { recursive: true });
-      const metadataPath = path.join(tempDir, 'metadata.json');
-      await fsPromises.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
-      console.log(`[init] Metadata saved locally: ${metadataPath}`);
-    }
+    const tempDir = path.join(UPLOAD_DIR, `temp_${uploadId}`);
+    await fsPromises.mkdir(tempDir, { recursive: true });
+    const metadataPath = path.join(tempDir, 'metadata.json');
+    await fsPromises.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+    console.log(`[init] Metadata saved locally: ${metadataPath}`);
 
     res.json({ success: true, uploadId, message: 'Upload initialized' });
   } catch (e) {
@@ -1783,27 +1756,12 @@ app.post('/api/upload/chunk', (req, res) => {
 
       const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-      if (b2Client) {
-        // Upload chunk to B2
-        const chunkKey = `temp/${uploadId}/${safeFilename}.part${chunkIndex}`;
-        const upload = new Upload({
-          client: b2Client,
-          params: {
-            Bucket: B2_BUCKET,
-            Key: chunkKey,
-            Body: req.file.buffer,
-          },
-        });
-        await upload.done();
-        console.log(`[chunk] Uploaded to B2: ${chunkKey} (${req.file.size} bytes)`);
-      } else {
-        // Fallback to local disk
-        const tempDir = path.join(UPLOAD_DIR, `temp_${uploadId}`);
-        await fsPromises.mkdir(tempDir, { recursive: true });
-        const chunkPath = path.join(tempDir, `${safeFilename}.part${chunkIndex}`);
-        await fsPromises.writeFile(chunkPath, req.file.buffer);
-        console.log(`[chunk] Saved locally: ${chunkPath}`);
-      }
+      // Save chunk to local disk
+      const tempDir = path.join(UPLOAD_DIR, `temp_${uploadId}`);
+      await fsPromises.mkdir(tempDir, { recursive: true });
+      const chunkPath = path.join(tempDir, `${safeFilename}.part${chunkIndex}`);
+      await fsPromises.writeFile(chunkPath, req.file.buffer);
+      console.log(`[chunk] Saved locally: ${chunkPath}`);
 
       res.json({ success: true, message: `Chunk ${chunkIndex} received.` });
     } catch (e) {
@@ -1816,7 +1774,9 @@ app.post('/api/upload/chunk', (req, res) => {
 app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) => {
   try {
     const uploadId = req.body.uploadId;
-    if (!uploadId) return res.status(400).json({ success: false, message: 'Missing uploadId' });
+    if (!uploadId) {
+      return res.status(400).json({ success: false, message: 'Missing uploadId' });
+    }
 
     const filesMapping = req.body.files;
     if (!filesMapping || !Array.isArray(filesMapping)) {
@@ -1834,7 +1794,9 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
     if (process.env.PG_DATABASE && usePgUsers()) {
       try {
         ensurePgForWallet();
-        if (!email) return res.status(401).json({ success: false, message: 'You must be logged in to submit an upload.' });
+        if (!email) {
+          return res.status(401).json({ success: false, message: 'You must be logged in to submit an upload.' });
+        }
         await applyTokenDelta(email, -tokensRequired, 'upload_charge', {
           referenceType: 'client_upload',
           referenceId: uploadId,
@@ -1843,7 +1805,11 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
       } catch (e) {
         const status = e.statusCode || 400;
         if (e.message && e.message.includes('Insufficient')) {
-          return res.status(status).json({ success: false, message: 'Insufficient token balance. Please top up your tokens before uploading.', code: 'INSUFFICIENT_TOKENS' });
+          return res.status(status).json({
+            success: false,
+            message: 'Insufficient token balance. Please top up your tokens before uploading.',
+            code: 'INSUFFICIENT_TOKENS',
+          });
         }
         console.error('Upload token charge failed', e);
         return res.status(status).json({ success: false, message: e.message || 'Failed to charge tokens for upload.' });
@@ -1855,179 +1821,93 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
     let dronePosFilePath = null;
     let actualFileCount = 0;
 
-    if (b2Client) {
-      // ---- B2 path: download chunks, assemble in memory, upload final file ----
-      for (const fileDef of filesMapping) {
-        const safeFilename = fileDef.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const originalBasename = path.basename(fileDef.filename.replace(/\\/g, '/'));
-        const safeBasename = originalBasename.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const finalKey = `uploads/${finalSubdir}/${safeBasename}`;
+    // ---- Local disk storage ----
+    const tempDir = path.join(UPLOAD_DIR, `temp_${uploadId}`);
+    const finalDir = path.join(UPLOAD_DIR, finalSubdir);
+    await fsPromises.mkdir(finalDir, { recursive: true });
 
-        // Download and concatenate all chunks
-        const chunks = [];
-        for (let i = 0; i < fileDef.totalChunks; i++) {
-          const chunkKey = `temp/${uploadId}/${safeFilename}.part${i}`;
-          try {
-            const cmd = new GetObjectCommand({ Bucket: B2_BUCKET, Key: chunkKey });
-            const response = await b2Client.send(cmd);
-            const chunkData = await streamToBuffer(response.Body);
-            chunks.push(chunkData);
-          } catch (e) {
-            console.error(`[finalize] Missing chunk ${i} for ${safeFilename}:`, e.message);
-            return res.status(400).json({ success: false, message: `Missing chunk ${i} for file ${fileDef.filename}.` });
-          }
-        }
+    for (const fileDef of filesMapping) {
+      const safeFilename = fileDef.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const originalBasename = path.basename(fileDef.filename.replace(/\\/g, '/'));
+      const safeBasename = originalBasename.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const finalFilePath = path.join(finalDir, safeBasename);
+      const writeStream = fs.createWriteStream(finalFilePath);
 
-        // Upload assembled file to B2
-        const assembledBuffer = Buffer.concat(chunks);
-        const upload = new Upload({
-          client: b2Client,
-          params: {
-            Bucket: B2_BUCKET,
-            Key: finalKey,
-            Body: assembledBuffer,
-          },
-        });
-        await upload.done();
-        console.log(`[finalize] Uploaded to B2: ${finalKey} (${assembledBuffer.length} bytes)`);
-
-        // Clean up chunks from B2
-        for (let i = 0; i < fileDef.totalChunks; i++) {
-          const chunkKey = `temp/${uploadId}/${safeFilename}.part${i}`;
-          try {
-            await b2Client.send(new DeleteObjectCommand({ Bucket: B2_BUCKET, Key: chunkKey }));
-          } catch (e) { /* ignore cleanup errors */ }
-        }
-
-        const relativePath = `b2:${finalKey}`;
-        if (safeBasename.toLowerCase().endsWith('.txt') || safeBasename.toLowerCase().endsWith('.csv')) {
-          dronePosFilePath = relativePath;
-        } else {
-          finalFilePaths.push(relativePath);
-          actualFileCount++;
+      let assemblyFailed = false;
+      for (let i = 0; i < fileDef.totalChunks; i++) {
+        const chunkPath = path.join(tempDir, `${safeFilename}.part${i}`);
+        try {
+          await new Promise((resolve, reject) => {
+            const readStream = fs.createReadStream(chunkPath);
+            readStream.on('error', reject);
+            readStream.pipe(writeStream, { end: false });
+            readStream.on('end', () => resolve());
+          });
+        } catch (e) {
+          console.error(`Missing chunk ${i} for file ${safeFilename}`, e);
+          assemblyFailed = true;
+          break;
         }
       }
 
-      // Read metadata from B2
-      let metadata = {};
-      try {
-        const metaCmd = new GetObjectCommand({ Bucket: B2_BUCKET, Key: `temp/${uploadId}/metadata.json` });
-        const metaResponse = await b2Client.send(metaCmd);
-        const metaStr = await streamToBuffer(metaResponse.Body);
-        metadata = JSON.parse(metaStr.toString('utf8'));
-        // Clean up metadata from B2
-        await b2Client.send(new DeleteObjectCommand({ Bucket: B2_BUCKET, Key: `temp/${uploadId}/metadata.json` }));
-      } catch (e) {
-        console.warn('[finalize] Could not read metadata from B2 for', uploadId);
+      await new Promise((resolve, reject) => {
+        writeStream.on('finish', () => resolve());
+        writeStream.on('error', reject);
+        writeStream.end();
+      });
+
+      if (assemblyFailed) {
+        return res.status(400).json({ success: false, message: `Failed to assemble file ${fileDef.filename}.` });
       }
 
-      if (!metadata.projectTitle) metadata.projectTitle = metadata.projectID;
-      if (email) metadata.createdByEmail = email;
-
-      if (process.env.PG_DATABASE) {
-        const tokensChargedVal = (usePgUsers() ? tokensRequired : null);
-        await pgQuery(
-          `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes, tokens_charged)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
-          [
-            metadata.projectID, metadata.projectTitle, metadata.uploadType, actualFileCount,
-            finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
-            metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
-            isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
-            metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0,
-            tokensChargedVal
-          ]
-        );
+      const relativePath = `uploads/${finalSubdir}/${safeBasename}`;
+      if (safeBasename.toLowerCase().endsWith('.txt') || safeBasename.toLowerCase().endsWith('.csv')) {
+        dronePosFilePath = relativePath;
+      } else {
+        finalFilePaths.push(relativePath);
+        actualFileCount++;
       }
-
-      console.log(`[upload] B2 upload saved: ${actualFileCount} files in ${finalSubdir}`);
-      return res.json({ success: true, message: 'Upload successfully assembled and saved.', projectId: metadata.projectID, fileCount: actualFileCount });
-
-    } else {
-      // ---- Local disk fallback ----
-      const tempDir = path.join(UPLOAD_DIR, `temp_${uploadId}`);
-      const finalDir = path.join(UPLOAD_DIR, finalSubdir);
-      await fsPromises.mkdir(finalDir, { recursive: true });
-
-      for (const fileDef of filesMapping) {
-        const safeFilename = fileDef.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const originalBasename = path.basename(fileDef.filename.replace(/\\/g, '/'));
-        const safeBasename = originalBasename.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const finalFilePath = path.join(finalDir, safeBasename);
-        const writeStream = fs.createWriteStream(finalFilePath);
-
-        let assemblyFailed = false;
-        for (let i = 0; i < fileDef.totalChunks; i++) {
-          const chunkPath = path.join(tempDir, `${safeFilename}.part${i}`);
-          try {
-            await new Promise((resolve, reject) => {
-              const readStream = fs.createReadStream(chunkPath);
-              readStream.on('error', reject);
-              readStream.pipe(writeStream, { end: false });
-              readStream.on('end', resolve);
-            });
-          } catch (e) {
-            console.error(`Missing chunk ${i} for file ${safeFilename}`, e);
-            assemblyFailed = true;
-            break;
-          }
-        }
-
-        await new Promise((resolve, reject) => {
-          writeStream.on('finish', resolve);
-          writeStream.on('error', reject);
-          writeStream.end();
-        });
-
-        if (assemblyFailed) {
-          return res.status(400).json({ success: false, message: `Failed to assemble file ${fileDef.filename}.` });
-        }
-
-        const relativePath = `uploads/${finalSubdir}/${safeBasename}`;
-        if (safeBasename.toLowerCase().endsWith('.txt') || safeBasename.toLowerCase().endsWith('.csv')) {
-          dronePosFilePath = relativePath;
-        } else {
-          finalFilePaths.push(relativePath);
-          actualFileCount++;
-        }
-      }
-
-      const metadataPath = path.join(tempDir, 'metadata.json');
-      let metadata = {};
-      try {
-        const metaStr = await fsPromises.readFile(metadataPath, 'utf8');
-        metadata = JSON.parse(metaStr);
-      } catch (e) {
-        console.warn('Could not read metadata for', uploadId);
-      }
-
-      if (!metadata.projectTitle) metadata.projectTitle = metadata.projectID;
-      if (email) metadata.createdByEmail = email;
-
-      if (process.env.PG_DATABASE) {
-        const tokensChargedVal = (usePgUsers() ? tokensRequired : null);
-        await pgQuery(
-          `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes, tokens_charged)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
-          [
-            metadata.projectID, metadata.projectTitle, metadata.uploadType, actualFileCount,
-            finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
-            metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
-            isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
-            metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0,
-            tokensChargedVal
-          ]
-        );
-      }
-
-      try { await fsPromises.rm(tempDir, { recursive: true, force: true }); } catch (e) { /* ignore */ }
-      console.log(`[upload] Local upload saved: ${actualFileCount} files at ${finalDir}`);
-      return res.json({ success: true, message: 'Upload successfully assembled and saved.', projectId: metadata.projectID, fileCount: actualFileCount });
     }
 
+    const metadataPath = path.join(tempDir, 'metadata.json');
+    let metadata = {};
+    try {
+      const metaStr = await fsPromises.readFile(metadataPath, 'utf8');
+      metadata = JSON.parse(metaStr);
+    } catch (e) {
+      console.warn('Could not read metadata for', uploadId);
+    }
+
+    if (!metadata.projectTitle) metadata.projectTitle = metadata.projectID;
+    if (email) metadata.createdByEmail = email;
+
+    if (process.env.PG_DATABASE) {
+      const tokensChargedVal = (usePgUsers() ? tokensRequired : null);
+      await pgQuery(
+        `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes, tokens_charged)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
+        [
+          metadata.projectID, metadata.projectTitle, metadata.uploadType, actualFileCount,
+          finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
+          metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
+          isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
+          metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0,
+          tokensChargedVal,
+        ],
+      );
+    }
+
+    try {
+      await fsPromises.rm(tempDir, { recursive: true, force: true });
+    } catch (e) {
+      // ignore cleanup errors
+    }
+
+    console.log(`[upload] Local upload saved: ${actualFileCount} files at ${finalDir}`);
+    return res.json({ success: true, message: 'Upload successfully assembled and saved.', projectId: metadata.projectID, fileCount: actualFileCount });
   } catch (e) {
     console.error('POST /api/upload/finalize', e);
-    res.status(500).json({ success: false, message: e.message || 'Failed to finalize upload.' });
+    return res.status(500).json({ success: false, message: e.message || 'Failed to finalize upload.' });
   }
 });
 
@@ -2269,40 +2149,24 @@ app.get('/api/admin/client-uploads/:id/download', async (req, res) => {
     });
     archive.pipe(res);
 
-    if (b2Client) {
-      // Stream files from B2
-      for (const rel of filePaths) {
-        const b2Key = rel.startsWith('b2:') ? rel.slice(3) : rel;
+    // Local disk storage
+    const uploadDirResolved = path.resolve(UPLOAD_DIR);
+    const projectRootResolved = path.resolve(PROJECT_ROOT);
+    for (const rel of filePaths) {
+      const normalized = path.normalize(rel).replace(/^(\.\.(\/|\\))+/, '').replace(/\\/g, '/');
+      const withoutUploadsPrefix = normalized.replace(/^uploads\/?/, '');
+      const candidates = [
+        path.join(projectRootResolved, normalized),
+        path.join(uploadDirResolved, withoutUploadsPrefix),
+      ];
+      for (const full of candidates) {
         try {
-          const cmd = new GetObjectCommand({ Bucket: B2_BUCKET, Key: b2Key });
-          const response = await b2Client.send(cmd);
-          const filename = path.basename(b2Key);
-          archive.append(response.Body, { name: filename });
-          console.log(`[download] Streaming from B2: ${b2Key}`);
-        } catch (e) {
-          console.warn(`[download] Could not get B2 file ${b2Key}:`, e.message);
-        }
-      }
-    } else {
-      // Local disk fallback
-      const uploadDirResolved = path.resolve(UPLOAD_DIR);
-      const projectRootResolved = path.resolve(PROJECT_ROOT);
-      for (const rel of filePaths) {
-        const normalized = path.normalize(rel).replace(/^(\.\.(\/|\\))+/, '').replace(/\\/g, '/');
-        const withoutUploadsPrefix = normalized.replace(/^uploads\/?/, '');
-        const candidates = [
-          path.join(projectRootResolved, normalized),
-          path.join(uploadDirResolved, withoutUploadsPrefix),
-        ];
-        for (const full of candidates) {
-          try {
-            const stat = await fs.promises.stat(full);
-            if (stat.isFile()) {
-              archive.file(full, { name: path.basename(full) });
-              break;
-            }
-          } catch (e) { /* try next */ }
-        }
+          const stat = await fs.promises.stat(full);
+          if (stat.isFile()) {
+            archive.file(full, { name: path.basename(full) });
+            break;
+          }
+        } catch (e) { /* try next */ }
       }
     }
 
