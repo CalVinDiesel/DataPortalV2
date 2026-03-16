@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manage Map Pins - Admin | TemaDataPortal</title>
+  <title>Manage Map Pins - Admin | 3DHub</title>
   <link rel="icon" type="image/x-icon" href="../../assets/img/favicon/favicon.ico" />
   <link rel="stylesheet" href="../../assets/vendor/fonts/iconify-icons.css" />
   <link rel="stylesheet" href="../../assets/vendor/css/core.css" />
@@ -19,8 +19,9 @@
     <div class="layout-container">
       <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
         <div class="app-brand demo py-4">
-          <a href="index.html" class="app-brand-link">
-            <span class="app-brand-text demo menu-text fw-bold ms-2">Data Portal Admin</span>
+          <a href="index.html" class="app-brand-link d-flex align-items-center">
+            <span class="app-brand-logo demo me-2"><img src="../../assets/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+            <span class="app-brand-text demo menu-text fw-bold">3DHub Admin</span>
           </a>
         </div>
         <div class="menu-inner-shadow"></div>
@@ -53,6 +54,12 @@
             <a href="client-uploads.html" class="menu-link">
               <i class="menu-icon tf-icons bx bx-cloud-upload"></i>
               <div>Client Uploads</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-users.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-user"></i>
+              <div>Manage Users</div>
             </a>
           </li>
           <li class="menu-item">
@@ -140,7 +147,7 @@
               <input type="url" class="form-control" id="editTilesetUrl" required />
             </div>
             <div class="mb-3">
-              <label class="form-label">Thumbnail image (overview map &amp; showcase)</label>
+              <label class="form-label" for="editThumbnailFile">Thumbnail image (overview map &amp; showcase)</label>
               <div class="mb-2">
                 <div class="d-flex align-items-start gap-3 flex-wrap">
                   <div class="flex-shrink-0">
@@ -154,7 +161,7 @@
                 </div>
               </div>
               <div>
-                <label class="form-label small text-muted">Or paste thumbnail URL</label>
+                <label class="form-label small text-muted" for="editThumbNailUrl">Or paste thumbnail URL</label>
                 <input type="url" class="form-control" id="editThumbNailUrl" placeholder="e.g. /uploads/map-thumbnails/pin_123.jpg or full URL" />
               </div>
             </div>

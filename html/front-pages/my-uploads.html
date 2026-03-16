@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-  <title>My Uploads | TemaDigital Data Portal</title>
+  <title>My Uploads | 3DHub Data Portal</title>
 
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="../../assets/img/favicon/favicon.ico">
@@ -91,6 +91,8 @@
       box-shadow: 0 6px 16px rgba(105, 108, 255, 0.1);
       transform: translateY(-2px);
     }
+    .back-btn:hover { color: #696cff !important; background-color: #f8f9fa !important; }
+    .back-btn:hover i { color: inherit !important; }
 
     .stat-icon {
       width: 50px;
@@ -211,7 +213,7 @@
   <!-- Hero Section -->
   <div class="hero-bg">
     <div class="container">
-      <a href="landing-page.html" class="btn btn-label-secondary btn-sm mb-4 fw-medium border shadow-sm" style="background: white;">
+      <a href="landing-page.html" class="btn btn-label-secondary btn-sm mb-4 fw-medium border shadow-sm back-btn" style="background: white; color: #566a7f;">
         <i class="bx bx-arrow-back me-1"></i> Back
       </a>
       <div class="d-flex justify-content-between align-items-center mb-0">
@@ -490,7 +492,7 @@
             const itemSizeBytes = parseInt(item.total_size_bytes) || (count * 1024 * 1024 * 3.5);
             totalBytes += itemSizeBytes;
 
-            // Status Logic (In reality, mapped from request_status / external engine)
+            // Status Logic (request_status: pending → accepted → processing → sent (Received) → completed)
             let statusHtml = '';
             let statusVal = (item.request_status || 'pending').toLowerCase();
             
@@ -499,11 +501,21 @@
                 <span class="badge bg-label-warning"><i class="bx bx-time-five me-1"></i> Pending</span>
                 <div class="text-muted mt-1" style="font-size: 0.7rem;">Waiting for Admin</div>
               `;
+            } else if (statusVal === 'accepted') {
+              statusHtml = `
+                <span class="badge bg-label-info"><i class="bx bx-check me-1"></i> Accepted</span>
+                <div class="text-muted mt-1" style="font-size: 0.7rem;">Admin will process</div>
+              `;
             } else if (statusVal === 'processing') {
               processingJobs++;
               statusHtml = `
                 <span class="badge-status status-processing"><i class="bx bx-loader-alt bx-spin me-1"></i> Processing</span>
-                <div class="text-muted mt-1" style="font-size: 0.7rem;">In 3D Engine Queue</div>
+                <div class="text-muted mt-1" style="font-size: 0.7rem;">3D model in progress</div>
+              `;
+            } else if (statusVal === 'sent') {
+              statusHtml = `
+                <span class="badge bg-label-info"><i class="bx bx-package me-1"></i> Received</span>
+                <div class="text-muted mt-1" style="font-size: 0.7rem;">Download 3D model below, then confirm</div>
               `;
             } else if (statusVal === 'completed') {
               statusHtml = `
@@ -511,8 +523,8 @@
               `;
             } else if (statusVal === 'rejected') {
               statusHtml = `
-                <span class="badge-status status-failed"><i class="bx bx-x-circle me-1"></i> Failed</span>
-                <div class="text-danger mt-1" style="font-size: 0.7rem text-truncate" style="max-width: 150px" title="${item.rejected_reason || 'Unknown error'}">${item.rejected_reason || 'Rejected by System'}</div>
+                <span class="badge-status status-failed"><i class="bx bx-x-circle me-1"></i> Rejected</span>
+                <div class="text-danger mt-1 text-truncate" style="font-size: 0.7rem; max-width: 150px;" title="${(item.rejected_reason || 'Unknown').replace(/"/g, '&quot;')}">${(item.rejected_reason || 'Rejected by admin').replace(/</g, '&lt;')}</div>
               `;
             }
 
@@ -548,10 +560,16 @@
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                     ${statusVal === 'completed' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="landing-page.html#landingMap"><i class="bx bx-map"></i> View Live Map</a></li>' : ''}
+<<<<<<< Updated upstream
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showProjectDetails(${item.id})"><i class="bx bx-info-circle text-info"></i> View Details</a></li>
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showEditModal(${item.id})"><i class="bx bx-edit text-secondary"></i> Edit Metadata</a></li>
+=======
+                    ${(item.processing_has_result && item.processing_result_download_url) ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="' + item.processing_result_download_url + '"><i class="bx bx-download"></i> Download 3D model</a></li>' : ''}
+                    ${statusVal === 'sent' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="javascript:void(0);" onclick="confirmReceived(' + item.id + ')"><i class="bx bx-check-circle"></i> Confirm received</a></li>' : ''}
+                    <li><a class="dropdown-item btn-dropdown-link" href="#"><i class="bx bx-edit text-secondary"></i> Edit Metadata</a></li>
+>>>>>>> Stashed changes
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item btn-dropdown-link text-danger" href="javascript:void(0);" onclick="deleteProject(${item.id})"><i class="bx bx-trash"></i> Delete Project completely</a></li>
+                    <li><a class="dropdown-item btn-dropdown-link text-danger" href="javascript:void(0);" onclick="deleteProject(' + item.id + ')"><i class="bx bx-trash"></i> Delete Project completely</a></li>
                   </ul>
                 </div>
               </td>
@@ -577,12 +595,31 @@
         });
     }
 
+    function confirmReceived(uploadId) {
+      if (!confirm("Confirm that you have received the 3D model? This will mark the request as completed.")) return;
+      var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
+      fetch(AUTH_API + '/api/user/my-uploads/' + uploadId + '/confirm-received', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.success) {
+            fetchUploadsList();
+          } else {
+            alert(data.message || "Could not confirm.");
+          }
+        })
+        .catch(function () { alert("Request failed."); });
+    }
+
     function deleteProject(projectId) {
       if (!confirm("Are you sure you want to permanently delete this project? This will erase all project data and cannot be undone.")) {
         return;
       }
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
-      
+
       fetch(AUTH_API + '/api/user/my-uploads/' + projectId, {
         method: 'DELETE',
         credentials: 'include'

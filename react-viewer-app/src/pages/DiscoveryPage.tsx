@@ -104,7 +104,7 @@ export default function DiscoveryPageWrapper() {
 
     const stateSiteTitle = (location.state as { siteTitle?: string })?.siteTitle;
 
-    const [locationData, setLocationData] = useState<{ name: string, description: string, tileset: string | undefined, fromApi?: boolean } | null>(null);
+    const [locationData, setLocationData] = useState<{ name: string, description: string, tileset: string | undefined, fromApi?: boolean, purchase_price_tokens?: number } | null>(null);
     const [loadingData, setLoadingData] = useState(true);
     const [dataError, setDataError] = useState<string | null>(null);
 
@@ -124,11 +124,13 @@ export default function DiscoveryPageWrapper() {
                 const apiRes = await fetch(`${API_BASE}/api/map-data/${encodeURIComponent(modelId)}`);
                 if (apiRes.ok) {
                     const mapData = await apiRes.json();
+                    const priceTokens = mapData.purchase_price_tokens != null ? Number(mapData.purchase_price_tokens) : 0;
                     setLocationData({
                         name: mapData.title,
                         description: mapData.description || '',
                         tileset: mapData['3dTiles'],
-                        fromApi: true
+                        fromApi: true,
+                        purchase_price_tokens: priceTokens
                     });
                     setLoadingData(false);
                     return;
@@ -191,7 +193,7 @@ export default function DiscoveryPageWrapper() {
 }
 
 function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
-    locationData: { name: string, description: string, tileset: string | undefined, fromApi?: boolean },
+    locationData: { name: string, description: string, tileset: string | undefined, fromApi?: boolean, purchase_price_tokens?: number },
     modelId: string | null,
     stateSiteTitle: string | undefined
 }) {
@@ -2026,6 +2028,23 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                     <span>Back to Showcases</span>
                 </a>
                 <h1 className="discovery-title">{siteTitle} - Data Discovery</h1>
+                <div className="discovery-header-right">
+                    <span className="discovery-price">
+                        {locationData.purchase_price_tokens != null && locationData.purchase_price_tokens > 0
+                            ? `${locationData.purchase_price_tokens} token${locationData.purchase_price_tokens !== 1 ? 's' : ''} (RM ${(locationData.purchase_price_tokens * 2).toFixed(2)})`
+                            : locationData.purchase_price_tokens === 0
+                                ? 'Free'
+                                : '—'}
+                    </span>
+                    <a
+                        href={`${typeof window !== 'undefined' ? window.location.origin : ''}/html/front-pages/purchase-3d-model.html${modelId ? '?id=' + encodeURIComponent(modelId) : ''}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="discovery-purchase-btn"
+                    >
+                        Purchase
+                    </a>
+                </div>
             </header>
 
             <div className="discovery-content">
@@ -2101,6 +2120,8 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                         });
                     }}
                     onTilesetLoad={setLoadedTileset}
+                    purchasePriceTokens={locationData.purchase_price_tokens}
+                    modelId={modelId}
                 />
                 <div className="cesium-container">
                     <AnnotationToolbar

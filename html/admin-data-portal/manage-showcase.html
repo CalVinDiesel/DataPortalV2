@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manage Showcase - Admin | TemaDataPortal</title>
+  <title>Manage Showcase - Admin | 3DHub</title>
   <link rel="icon" type="image/x-icon" href="../../assets/img/favicon/favicon.ico" />
   <link rel="stylesheet" href="../../assets/vendor/fonts/iconify-icons.css" />
   <link rel="stylesheet" href="../../assets/vendor/css/core.css" />
@@ -18,8 +18,9 @@
     <div class="layout-container">
       <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
         <div class="app-brand demo py-4">
-          <a href="index.html" class="app-brand-link">
-            <span class="app-brand-text demo menu-text fw-bold ms-2">Data Portal Admin</span>
+          <a href="index.html" class="app-brand-link d-flex align-items-center">
+            <span class="app-brand-logo demo me-2"><img src="../../assets/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+            <span class="app-brand-text demo menu-text fw-bold">3DHub Admin</span>
           </a>
         </div>
         <div class="menu-inner-shadow"></div>
@@ -29,6 +30,7 @@
           <li class="menu-item"><a href="manage-map-pins.html" class="menu-link"><i class="menu-icon tf-icons bx bx-map-pin"></i><div>Manage Map Pins</div></a></li>
           <li class="menu-item active"><a href="manage-showcase.html" class="menu-link"><i class="menu-icon tf-icons bx bx-grid-alt"></i><div>Manage Showcase</div></a></li>
           <li class="menu-item"><a href="client-uploads.html" class="menu-link"><i class="menu-icon tf-icons bx bx-cloud-upload"></i><div>Client Uploads</div></a></li>
+          <li class="menu-item"><a href="manage-users.html" class="menu-link"><i class="menu-icon tf-icons bx bx-user"></i><div>Manage Users</div></a></li>
           <li class="menu-item"><a href="../front-pages/landing-page.html" class="menu-link" target="_blank"><i class="menu-icon tf-icons bx bx-map"></i><div>View Portal</div></a></li>
         </ul>
       </aside>
@@ -76,11 +78,11 @@
         <div class="modal-header"><h5 class="modal-title">Add to showcase</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
           <p class="text-muted small">Choose a map pin to show in the landing page showcase. It must exist in <a href="manage-map-pins.html">Manage Map Pins</a> first.</p>
-          <label class="form-label">Map location</label>
+          <label class="form-label" for="addMapDataId">Map location</label>
           <select class="form-select" id="addMapDataId">
             <option value="">-- Select a location --</option>
           </select>
-          <label class="form-label mt-2">Display order (0 = first, 1 = second, …)</label>
+          <label class="form-label mt-2" for="addDisplayOrder">Display order (0 = first, 1 = second, …)</label>
           <input type="number" class="form-control" id="addDisplayOrder" value="0" min="0" />
         </div>
         <div class="modal-footer">

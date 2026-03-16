@@ -37,7 +37,7 @@
     <meta property="og:title" content="Sneat Bootstrap 5 Dashboard PRO by ThemeSelection" />
     <meta property="og:type" content="product" />
     <meta property="og:url" content="https://themeselection.com/item/sneat-dashboard-pro-bootstrap/" />
-    <meta property="og:image" content="https://temadigital.my/wp-content/uploads/2025/01/temadigital_logo.png" />
+    <meta property="og:image" content="../../assets/img/front-pages/landing-page/3DHub%20logo1.png" />
     <meta property="og:description" content="Sneat is the best bootstrap 5 dashboard for responsive web apps. Streamline your app development process with ease." />
     <meta property="og:site_name" content="ThemeSelection" />
     <link rel="canonical" href="https://themeselection.com/item/sneat-dashboard-pro-bootstrap/" />
@@ -74,6 +74,38 @@
   
     <!-- Custom Cesium Map CSS -->
     <link rel="stylesheet" href="../../assets/css/cesium-map.css" />
+    <!-- Ensure 3DHub logo is fully visible and not clipped by navbar/footer brand box -->
+    <style>
+      .navbar-brand.app-brand .app-brand-link { overflow: visible; display: flex; align-items: center; }
+      .navbar-brand.app-brand .app-brand-logo { overflow: visible; display: flex; align-items: center; flex-shrink: 0; }
+      .landing-footer .app-brand-link { overflow: visible; }
+      .landing-footer .app-brand-logo { overflow: visible; display: flex; align-items: center; }
+      /* Footer logo only: make "3D" and full logo visible on dark footer – strong brightness + light outline */
+      .landing-footer .app-brand-logo img {
+        filter: brightness(4.2) contrast(1.35) drop-shadow(0 0 2px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));
+      }
+      /* Upload nav: hidden for everyone by default; only JS reveals for subscriber/admin */
+      .nav-upload-subscriber-only {
+        display: none !important;
+      }
+      @media (min-width: 992px) {
+        .nav-upload-subscriber-only.nav-upload-visible.d-lg-block {
+          display: block !important;
+        }
+      }
+      @media (max-width: 991.98px) {
+        li.nav-upload-subscriber-only.nav-upload-visible.d-lg-none {
+          display: list-item !important;
+        }
+      }
+      .nav-upload-mobile-sub {
+        padding-left: 1rem;
+        border-left: 2px solid rgba(105, 108, 255, 0.3);
+        margin: 0.25rem 0 0.5rem 0;
+      }
+      .nav-upload-mobile-sub .nav-link { padding-top: 0.35rem; padding-bottom: 0.35rem; font-size: 0.9375rem; }
+      #navUploadCollapse .nav-link:hover { color: var(--bs-primary); }
+    </style>
   
     <!-- CesiumJS 1.138
          ✅ CHANGED: Added defer so Cesium no longer blocks page rendering.
@@ -122,9 +154,9 @@
         <!-- Mobile menu toggle: End-->
         <a href="landing-page.html" class="app-brand-link">
           <span class="app-brand-logo demo">
-            <img src="../../assets/img/front-pages/landing-page/temadigital_logo.png" alt="TemaDigital Logo" style="height: 40px; display: block;" />
+            <img src="../../assets/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub Logo" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;" />
           </span>
-          <span class="app-brand-text demo menu-text fw-bold ms-2 ps-1">Temadigital</span>
+          <span class="app-brand-text demo menu-text fw-bold ms-2 ps-1">3DHub</span>
         </a>
       </div>
       <!-- Menu logo wrapper: End -->
@@ -140,7 +172,7 @@
           <li class="nav-item">
             <a class="nav-link fw-medium" href="landing-page.html#landingShowCase">ShowCase</a>
           </li>
-          <li class="nav-item dropdown" id="navUpload" style="display:none;">
+          <li class="nav-item dropdown d-none d-lg-block nav-upload-subscriber-only" id="navUpload">
             <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
               Upload
             </a>
@@ -148,6 +180,16 @@
               <li><a class="dropdown-item" href="upload-data.html">New Upload</a></li>
               <li><a class="dropdown-item" href="my-uploads.html">My Uploads</a></li>
             </ul>
+          </li>
+          <!-- Upload box for collapsed navbar: same as full page – parent "Upload" with New Upload / My Uploads inside -->
+          <li class="nav-item d-lg-none navUpload-mobile nav-upload-subscriber-only">
+            <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navUploadCollapse" aria-expanded="false" aria-controls="navUploadCollapse" id="navUploadMobileToggle">
+              Upload
+            </a>
+            <div class="collapse nav-upload-mobile-sub" id="navUploadCollapse">
+              <a class="nav-link fw-medium" href="upload-data.html">New Upload</a>
+              <a class="nav-link fw-medium" href="my-uploads.html">My Uploads</a>
+            </div>
           </li>
           <!--<li class="nav-item">
             <a class="nav-link fw-medium" href="landing-page.html#landingMap">Map</a>
@@ -234,14 +276,7 @@
         <div class="container">
           <div class="hero-text-box text-center position-relative">
             <h1 class="text-primary hero-title display-6 fw-extrabold">One Dashboard to Get All Your 3D Model Data</h1>
-            <!--<h2 class="hero-sub-title h6 mb-6">
-              Pre-Ready 3D Model Data or Customize Model Data<br class="d-none d-lg-block" />
-              Based on User Preference.
-            </h2>
-            <div class="landing-hero-btn d-inline-block position-relative">
-              <span class="hero-btn-item position-absolute d-none d-md-flex fw-medium">Join community <img src="../../assets/img/front-pages/icons/Join-community-arrow.png" alt="Join community arrow" class="scaleX-n1-rtl" /></span>
-              <a href="#landingPricing" class="btn btn-primary btn-lg">Get early access</a>
-            </div>-->
+            
           </div>
           <!-- 3D Map Start Here -->
           <div id="heroMapContainer">
@@ -291,14 +326,6 @@
           </div>
           <!-- 3D Map End Here -->
 
-          <!--<div id="heroDashboardAnimation" class="hero-animation-img">
-            <a href="/html/admin-data-portal/index.html" target="_blank">
-              <div id="heroAnimationImg" class="position-relative hero-dashboard-img">
-                <img src="../../assets/img/front-pages/landing-page/hero-dashboard-light.png" alt="hero dashboard" class="animation-img" data-app-light-img="front-pages/landing-page/hero-dashboard-light.png" data-app-dark-img="front-pages/landing-page/hero-dashboard-dark.png" />
-                <img src="../../assets/img/front-pages/landing-page/hero-elements-light.png" alt="hero elements" class="position-absolute hero-elements-img animation-img top-0 start-0" data-app-light-img="front-pages/landing-page/hero-elements-light.png" data-app-dark-img="front-pages/landing-page/hero-elements-dark.png" />
-              </div>
-            </a>
-          </div>-->
         </div>
       </div>
       <!--<div class="landing-hero-blank"></div>-->
@@ -594,70 +621,6 @@
     </section>
     <!-- Real customers reviews: End -->
 
-    <!-- Our Staff Involved: Start Here -->
-    <!--<section id="landingStaff" class="section-py landing-staff">
-      <div class="container">
-        <div class="text-center mb-4">
-          <span class="badge bg-label-primary">Our Staff Involved</span>
-        </div>
-        <h4 class="text-center mb-1">
-          <span class="position-relative fw-extrabold z-1"
-            >Behind the Scenes
-            <img src="../../assets/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
-          </span>
-          Who Makes It All Possible
-        </h4>
-        <p class="text-center mb-md-11 pb-0 pb-xl-12">Who is behind these great-looking interfaces?</p>
-        <div class="row gy-12 mt-2">
-          <div class="col-lg-3 col-sm-6">
-            <div class="card mt-3 mt-lg-0 shadow-none">
-              <div class="bg-label-primary border border-bottom-0 border-primary-subtle position-relative team-image-box">
-                <img src="../../assets/img/front-pages/landing-page/team-member-1.png" class="position-absolute card-img-position bottom-0 start-50" alt="human image" />
-              </div>
-              <div class="card-body border border-top-0 border-primary-subtle text-center py-5">
-                <h5 class="card-title mb-0">Sophie Gilbert</h5>
-                <p class="text-body-secondary mb-0">Project Manager</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-3 col-sm-6">
-            <div class="card mt-3 mt-lg-0 shadow-none">
-              <div class="bg-label-info border border-bottom-0 border-info-subtle position-relative team-image-box">
-                <img src="../../assets/img/front-pages/landing-page/team-member-2.png" class="position-absolute card-img-position bottom-0 start-50" alt="human image" />
-              </div>
-              <div class="card-body border border-top-0 border-info-subtle text-center py-5">
-                <h5 class="card-title mb-0">Paul Miles</h5>
-                <p class="text-body-secondary mb-0">UI Designer</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-3 col-sm-6">
-            <div class="card mt-3 mt-lg-0 shadow-none">
-              <div class="bg-label-danger border border-bottom-0 border-danger-subtle position-relative team-image-box">
-                <img src="../../assets/img/front-pages/landing-page/team-member-3.png" class="position-absolute card-img-position bottom-0 start-50" alt="human image" />
-              </div>
-              <div class="card-body border border-top-0 border-danger-subtle text-center py-5">
-                <h5 class="card-title mb-0">Nannie Ford</h5>
-                <p class="text-body-secondary mb-0">Development Lead</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-3 col-sm-6">
-            <div class="card mt-3 mt-lg-0 shadow-none">
-              <div class="bg-label-success border border-bottom-0 border-success-subtle position-relative team-image-box">
-                <img src="../../assets/img/front-pages/landing-page/team-member-4.png" class="position-absolute card-img-position bottom-0 start-50" alt="human image" />
-              </div>
-              <div class="card-body border border-top-0 border-success-subtle text-center py-5">
-                <h5 class="card-title mb-0">Chris Watkins</h5>
-                <p class="text-body-secondary mb-0">Marketing Manager</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>-->
-    <!-- Our Staff Involved: End Here -->
-
     <!-- Pricing plans: Start -->
     <section id="landingPricing" class="section-py bg-body landing-pricing">
       <style>
@@ -700,25 +663,7 @@
           that you need
         </h4>
         <p class="text-center pb-2 mb-7">All plans include 40+ showcase that you could download or request for new one.<br />Request to upload your raw data for 3d model processing and reload your token for more work to be done.<br />Choose the best plan to fit your needs.</p>
-        <!--<div class="text-center mb-12">
-          <div class="position-relative d-inline-block pt-3 pt-md-0">
-            <label class="switch switch-sm switch-primary me-0">
-              <span class="switch-label fs-6 text-body me-3">Pay Monthly</span>
-              <input type="checkbox" class="switch-input price-duration-toggler" checked />
-              <span class="switch-toggle-slider">
-                <span class="switch-on"></span>
-                <span class="switch-off"></span>
-              </span>
-              <span class="switch-label fs-6 text-body ms-3">Pay Annual</span>
-            </label>
-            <div class="pricing-plans-item position-absolute d-flex">
-              <img src="../../assets/img/front-pages/icons/pricing-plans-arrow.png" alt="pricing plans arrow" class="scaleX-n1-rtl" />
-              <span class="fw-medium mt-2 ms-1"> Save 25%</span>
-            </div>
-          </div>
-        </div>-->
         <div class="row g-6 pt-lg-5">
-          <!-- Basic Plan: Start -->
           <div class="col-xl-4 col-lg-6">
             <div class="card pricing-plan-card">
               <div class="card-header">
@@ -726,12 +671,8 @@
                   <img src="../../assets/img/front-pages/icons/paper-airplane.png" alt="paper airplane icon" class="mb-8 pb-2" />
                   <h4 class="mb-0">Sign-up(Free)</h4>
                   <div class="d-flex align-items-center justify-content-center">
-                    <span class="price-monthly h2 text-primary fw-extrabold mb-0">0 Token</span>
-                    <span class="price-yearly h2 text-primary fw-extrabold mb-0 d-none">$14</span>
-                    <sub class="h6 text-body-secondary mb-n1 ms-1">/mo</sub>
-                  </div>
-                  <div class="position-relative pt-2">
-                    <div class="price-yearly text-body-secondary price-yearly-toggle d-none">$ 168 / year</div>
+                    <span class="price-monthly h2 text-primary fw-extrabold mb-0">0 Token Required</span>
+                    <sub class="h6 text-body-secondary mb-n1 ms-1"></sub>
                   </div>
                 </div>
               </div>
@@ -746,38 +687,9 @@
                   <li>
                     <h6 class="d-flex align-items-center mb-3">
                       <span class="badge badge-center rounded-pill bg-label-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      ShowCase 3D Model                  </h6>
-                  </li>
-                  <!--<li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-label-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                       
+                      ShowCase 3D Model
                     </h6>
                   </li>
-                  <li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-label-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Email marketing
-                    </h6>
-                  </li>
-                  <li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-label-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Custom Forms
-                    </h6>
-                  </li>
-                  <li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-label-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Traffic analytics
-                    </h6>
-                  </li>
-                  <li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-label-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Basic Support
-                    </h6>
-                  </li>-->
                 </ul>
                 <div class="d-grid mt-8">
                   <a href="register.html" class="btn btn-label-primary" id="pricingGetStartedBtn">Get Started</a>
@@ -785,9 +697,7 @@
               </div>
             </div>
           </div>
-          <!-- Basic Plan: End -->
 
-          <!-- Favourite Plan: Start -->
           <div class="col-xl-4 col-lg-6">
             <div class="card pricing-plan-card">
               <div class="card-header">
@@ -795,12 +705,8 @@
                   <img src="../../assets/img/front-pages/icons/plane.png" alt="plane icon" class="mb-8 pb-2" />
                   <h4 class="mb-0">Subscriber/Upload Raw Data</h4>
                   <div class="d-flex align-items-center justify-content-center">
-                    <span class="price-monthly h2 text-primary fw-extrabold mb-0">100 Token</span>
-                    <span class="price-yearly h2 text-primary fw-extrabold mb-0 d-none">$22</span>
-                    <sub class="h6 text-body-secondary mb-n1 ms-1">/mo</sub>
-                  </div>
-                  <div class="position-relative pt-2">
-                    <div class="price-yearly text-body-secondary price-yearly-toggle d-none">$ 264 / year</div>
+                    <span class="price-monthly h2 text-primary fw-extrabold mb-0">0 Token Required</span>
+                    <sub class="h6 text-body-secondary mb-n1 ms-1"></sub>
                   </div>
                 </div>
               </div>
@@ -818,36 +724,6 @@
                       Request for Raw Data Upload Processing
                     </h6>
                   </li>
-                  <!--<li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Advanced search
-                    </h6>
-                  </li>
-                  <li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Marketing automation
-                    </h6>
-                  </li>
-                  <li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Advanced chatbot
-                    </h6>
-                  </li>
-                  <li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Campaign management
-                    </h6>
-                  </li>
-                  <li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Collaboration tools
-                    </h6>
-                  </li>-->
                 </ul>
                 <div class="d-grid mt-8">
                   <button type="button" class="btn btn-label-primary" id="pricingSubscribeBtn">Subscribe</button>
@@ -855,9 +731,7 @@
               </div>
             </div>
           </div>
-          <!-- Favourite Plan: End -->
 
-          <!-- Standard Plan: Start -->
           <div class="col-xl-4 col-lg-6">
             <div class="card pricing-plan-card">
               <div class="card-header">
@@ -866,11 +740,7 @@
                   <h4 class="mb-0">Reload Token</h4>
                   <div class="d-flex align-items-center justify-content-center">
                     <span class="price-monthly h2 text-primary fw-extrabold mb-0">RM2</span>
-                    <span class="price-yearly h2 text-primary fw-extrabold mb-0 d-none">$37</span>
                     <sub class="h6 text-body-secondary mb-n1 ms-1">/token</sub>
-                  </div>
-                  <div class="position-relative pt-2">
-                    <div class="price-yearly text-body-secondary price-yearly-toggle d-none">$ 444 / year</div>
                   </div>
                 </div>
               </div>
@@ -888,36 +758,6 @@
                       Auto Create Wallet for Token
                     </h6>
                   </li>
-                  <!--<li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-label-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Fuzzy search
-                    </h6>
-                  </li>
-                  <li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-label-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      A/B testing sanbox
-                    </h6>
-                  </li>
-                  <li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-label-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Custom permissions
-                    </h6>
-                  </li>
-                  <li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-label-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Social media automation
-                    </h6>
-                  </li>
-                  <li>
-                    <h6 class="d-flex align-items-center mb-3">
-                      <span class="badge badge-center rounded-pill bg-label-primary p-0 me-3"><i class="icon-base bx bx-check icon-12px"></i></span>
-                      Sales automation tools
-                    </h6>
-                  </li>-->
                 </ul>
                 <div class="d-grid mt-8">
                   <a href="payment-page.html" class="btn btn-label-primary">Purchase/Reload</a>
@@ -925,7 +765,6 @@
               </div>
             </div>
           </div>
-          <!-- Standard Plan: End -->
         </div>
       </div>
     </section>
@@ -1089,85 +928,15 @@
 
 <!-- Footer: Start -->
 <footer class="landing-footer bg-body footer-text">
-  <div class="footer-top position-relative overflow-hidden z-1">
-    <img src="../../assets/img/front-pages/backgrounds/footer-bg.png" alt="footer bg" class="footer-bg banner-bg-img z-n1" />
-    <div class="container">
-      <div class="row gx-0 gy-6 g-lg-10">
-        <div class="col-lg-5">
-          <a href="landing-page.html" class="app-brand-link mb-6 d-flex align-items-center">
-            <span class="app-brand-logo demo">
-              <img src="../../assets/img/front-pages/landing-page/temadigital_logo.png" alt="TemaDigital Logo" style="height: 40px; display: block;" />
-            </span>
-            <span class="app-brand-text demo text-white fw-bold ms-2 ps-1">Temadigital</span>
-          </a>
-          <p class="footer-text footer-logo-description mb-6">Most developer friendly & highly customisable Admin Dashboard Template.</p>
-          <form class="footer-form">
-            <label for="footer-email" class="small">Subscribe to newsletter</label>
-            <div class="d-flex mt-1">
-              <input type="email" class="form-control rounded-0 rounded-start-bottom rounded-start-top" id="footer-email" placeholder="Your email" />
-              <button type="submit" class="btn btn-primary shadow-none rounded-0 rounded-end-bottom rounded-end-top">Subscribe</button>
-            </div>
-          </form>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6">
-          <h6 class="footer-title mb-6">Demos</h6>
-          <ul class="list-unstyled">
-            <li class="mb-4" id="footerAdmin" style="display:none;">
-              <a href="/html/admin-data-portal/index.html" target="_blank" class="footer-link">Admin Data Portal</a>
-            </li>
-            <li class="mb-4">
-              <a href="../horizontal-menu-template/" target="_blank" class="footer-link">Horizontal Layout</a>
-            </li>
-            <li class="mb-4">
-              <a href="../vertical-menu-template-bordered/" target="_blank" class="footer-link">Bordered Layout</a>
-            </li>
-            <li class="mb-4">
-              <a href="../vertical-menu-template-semi-dark/" target="_blank" class="footer-link">Semi Dark Layout</a>
-            </li>
-            <li>
-              <a href="../vertical-menu-template-dark/" target="_blank" class="footer-link">Dark Layout</a>
-            </li>
-          </ul>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6">
-          <h6 class="footer-title mb-6">Pages</h6>
-          <ul class="list-unstyled">
-            <li class="mb-4">
-              <a href="pricing-page.html" class="footer-link">Pricing</a>
-            </li>
-            <li class="mb-4">
-              <a href="payment-page.html" class="footer-link">Payment<span class="badge bg-primary ms-2">New</span></a>
-            </li>
-            <li class="mb-4">
-              <a href="checkout-page.html" class="footer-link">Checkout</a>
-            </li>
-            <li class="mb-4">
-              <a href="help-center-landing.html" class="footer-link">Help Center</a>
-            </li>
-            <li>
-              <a href="login.html" class="footer-link">Login/Register</a>
-            </li>
-          </ul>
-        </div>
-        <div class="col-lg-3 col-md-4">
-          <h6 class="footer-title mb-6">Download our app</h6>
-          <a href="javascript:void(0);" class="d-block mb-4"><img src="../../assets/img/front-pages/landing-page/apple-icon.png" alt="apple icon" /></a>
-          <a href="javascript:void(0);" class="d-block"><img src="../../assets/img/front-pages/landing-page/google-play-icon.png" alt="google play icon" /></a>
-        </div>
-      </div>
-    </div>
-  </div>
   <div class="footer-bottom py-3 py-md-5">
-    <div class="container d-flex flex-wrap justify-content-between flex-md-row flex-column text-center text-md-start">
-      <div class="mb-2 mb-md-0">
-        <span class="footer-bottom-text"
-          >©
-          <script>
-            document.write(new Date().getFullYear());
-          </script>
-        </span>
-        <a href="https://themeselection.com" target="_blank" class="text-white">ThemeSelection,</a>
-        <span class="footer-bottom-text"> Made with ❤️ for a better web.</span>
+    <div class="container d-flex flex-wrap justify-content-between flex-md-row flex-column text-center text-md-start align-items-center">
+      <div class="mb-2 mb-md-0 d-flex align-items-center flex-wrap justify-content-center justify-content-md-start gap-2">
+        <a href="landing-page.html" class="app-brand-link d-flex align-items-center">
+          <span class="app-brand-logo demo">
+            <img src="../../assets/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; filter: brightness(4.2) contrast(1.35) drop-shadow(0 0 2px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));" />
+          </span>
+        </a>
+        <span class="footer-bottom-text mb-0">© 3D Hub Developed by Temadigital</span>
       </div>
       <div>
         <a href="https://github.com/themeselection" class="me-4 text-white" target="_blank">
@@ -1257,12 +1026,22 @@
           window.location.href = LOGIN_URL + '?error=' + encodeURIComponent(authError);
           return;
         }
-        // Public visitors can view landing; Upload/Admin nav shown only when logged in (Admin only for admin role)
+        // Upload nav is hidden by CSS for everyone; only subscriber/admin get it visible via class.
+        function setUploadNavVisible(visible) {
+          var navUpload = document.getElementById('navUpload');
+          var navUploadMobile = document.querySelectorAll('.navUpload-mobile');
+          var toggle = visible ? 'add' : 'remove';
+          if (navUpload) navUpload.classList[toggle]('nav-upload-visible');
+          navUploadMobile.forEach(function (el) { el.classList[toggle]('nav-upload-visible'); });
+        }
+        setUploadNavVisible(false);
         fetch(AUTH_API + '/api/auth/me', { credentials: 'include' })
           .then(function(r) { return r.json(); })
           .then(function(data) {
             window.__authLoggedIn = !!data.loggedIn;
             window.__authRole = data.role || 'client';
+            // Show Upload only for subscriber or admin; normal visitors and clients never see it
+            setUploadNavVisible(data.role === 'subscriber' || data.role === 'admin');
             if (!data.loggedIn) return;
             fetch(AUTH_API + '/api/auth/check-registered', { credentials: 'include' })
               .then(function(r) { return r.json(); })
@@ -1273,12 +1052,6 @@
                     '&name=' + encodeURIComponent(data.name || '') +
                     '&provider=' + encodeURIComponent(data.provider || '');
                   return;
-                }
-                var navUpload = document.getElementById('navUpload');
-                if (data.role === 'subscriber' || data.role === 'admin') {
-                  if (navUpload) navUpload.style.display = '';
-                } else {
-                  if (navUpload) navUpload.style.display = 'none';
                 }
                 if (data.role === 'admin') {
                   var navAdmin = document.getElementById('navAdmin');
@@ -1297,7 +1070,9 @@
               })
               .catch(function() {});
           })
-          .catch(function() {});
+          .catch(function() {
+            setUploadNavVisible(false);
+          });
       })();
     </script>
     <script>

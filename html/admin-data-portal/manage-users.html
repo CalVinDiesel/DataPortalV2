@@ -3,14 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manage Users - Admin | TemaDataPortal</title>
+  <title>Manage Users - Admin | 3DHub</title>
   <link rel="icon" type="image/x-icon" href="../../assets/img/favicon/favicon.ico" />
   <link rel="stylesheet" href="../../assets/vendor/fonts/iconify-icons.css" />
   <link rel="stylesheet" href="../../assets/vendor/css/core.css" />
   <link rel="stylesheet" href="../../assets/css/demo.css" />
   <link rel="stylesheet" href="../../assets/css/admin-responsive.css" />
   <script src="../../assets/vendor/js/helpers.js"></script>
-  <script src="../../assets/vendor/libs/jquery/jquery.js"></script>
   <script src="../../assets/vendor/js/bootstrap.js"></script>
 </head>
 <body>
@@ -18,8 +17,9 @@
     <div class="layout-container">
       <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
         <div class="app-brand demo py-4">
-          <a href="index.html" class="app-brand-link">
-            <span class="app-brand-text demo menu-text fw-bold ms-2">Data Portal Admin</span>
+          <a href="index.html" class="app-brand-link d-flex align-items-center">
+            <span class="app-brand-logo demo me-2"><img src="../../assets/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+            <span class="app-brand-text demo menu-text fw-bold">3DHub Admin</span>
           </a>
         </div>
         <div class="menu-inner-shadow"></div>
@@ -80,8 +80,8 @@
         <div class="content-wrapper">
           <div class="container-xxl flex-grow-1 container-p-y">
             <h4 class="fw-bold mb-4">Manage Users</h4>
-            <p class="text-muted mb-4">Users who signed up with email/password (or completed the register form with Google/Microsoft) are listed below. The <strong>Role</strong> column shows <span class="badge bg-label-secondary">Client</span> or <span class="badge bg-label-success">Admin</span>. Only users with role <strong>Client</strong> get a <strong>Promote to admin</strong> button so they can access the admin portal.</p>
-            <div id="usersNoClientsNote" class="alert alert-info d-none mb-4">All users listed are admins. To see &quot;Client&quot; and &quot;Promote to admin&quot;, you need at least one user with role <strong>Client</strong> (e.g. register a new account and choose &quot;Sign up as: Client&quot;).</div>
+            <p class="text-muted mb-4">Users who signed up with email/password (or completed the register form with Google/Microsoft) are listed below. The <strong>Role</strong> column shows <span class="badge bg-label-secondary">Client</span> (account created, not yet subscriber), <span class="badge bg-label-primary">Subscriber</span> (upgraded to subscriber), or <span class="badge bg-label-success">Admin</span>. Only users with role Client or Subscriber get a <strong>Promote to admin</strong> button.</p>
+            <div id="usersNoClientsNote" class="alert alert-info d-none mb-4">All users listed are admins. To see Client, Subscriber, and &quot;Promote to admin&quot;, you need at least one user with role Client or Subscriber.</div>
             <div id="usersAlert" class="alert d-none mb-4"></div>
             <div class="card">
               <div class="table-responsive">
@@ -127,12 +127,12 @@
               tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">No users in the system yet.</td></tr>';
               return;
             }
-            var hasAnyClient = users.some(function(u) { return (u.role || 'client') !== 'admin'; });
-            document.getElementById('usersNoClientsNote').classList.toggle('d-none', hasAnyClient);
+            var hasAnyNonAdmin = users.some(function(u) { return (u.role || 'client') !== 'admin'; });
+            document.getElementById('usersNoClientsNote').classList.toggle('d-none', hasAnyNonAdmin);
             tbody.innerHTML = users.map(function(u) {
               var role = (u.role || 'client');
               var isAdmin = role === 'admin';
-              var roleBadge = isAdmin ? '<span class="badge bg-label-success">Admin</span>' : '<span class="badge bg-label-secondary">Client</span>';
+              var roleBadge = isAdmin ? '<span class="badge bg-label-success">Admin</span>' : (role === 'subscriber' ? '<span class="badge bg-label-primary">Subscriber</span>' : '<span class="badge bg-label-secondary">Client</span>');
               var action = isAdmin
                 ? '<span class="text-muted small">—</span>'
                 : '<button type="button" class="btn btn-sm btn-outline-primary promote-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Promote to admin</button>';
@@ -173,5 +173,6 @@
       loadUsers();
     })();
   </script>
+  <script src="../../assets/js/admin-responsive.js"></script>
 </body>
 </html>

@@ -16,6 +16,7 @@ import cors from "cors";
 import bcrypt from "bcryptjs";
 import multer from "multer";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
+import Stripe from "stripe";
 import { auth, baseURL, frontEndUrl, googleClientId, googleClientSecret } from "./auth.config.js";
 import { getMicrosoftAuthUrl, handleMicrosoftCallback } from "./microsoftAuth.js";
 import { S3Client, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
@@ -36,6 +37,7 @@ console.log('[startup] __dirname:', __dirname);
 console.log('[startup] PROJECT_ROOT:', PROJECT_ROOT);
 console.log('[startup] UPLOAD_DIR:', UPLOAD_DIR);
 const MAP_THUMBNAIL_DIR = path.join(PROJECT_ROOT, 'uploads', 'map-thumbnails');
+const PROCESSED_RESULTS_DIR = path.join(UPLOAD_DIR, 'processed-results');
 const b2Client = process.env.B2_KEY_ID ? new S3Client({
   endpoint: `https://${process.env.B2_ENDPOINT || 's3.us-west-004.backblazeb2.com'}`,
   region: 'us-west-004',
@@ -47,6 +49,23 @@ const b2Client = process.env.B2_KEY_ID ? new S3Client({
 
 const B2_BUCKET = process.env.B2_BUCKET_NAME || 'temadataportal-uploads';
 console.log('[startup] B2 storage:', b2Client ? 'enabled (bucket: ' + B2_BUCKET + ')' : 'DISABLED (B2_KEY_ID not set)');
+
+// ---- Stripe + token config (for subscriber uploads and 3D model purchases) ----
+const TOKEN_MYR_RATE = Number(process.env.TOKEN_MYR_RATE || '2'); // 1 token = 2 MYR by default
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  try {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16',
+    });
+    console.log('[startup] Stripe initialized for token top-ups.');
+  } catch (e) {
+    console.error('[startup] Failed to init Stripe:', e.message || e);
+    stripe = null;
+  }
+} else {
+  console.log('[startup] Stripe not configured (STRIPE_SECRET_KEY not set) – token top-ups disabled until configured.');
+}
 
 // Helper: convert a readable stream to a Buffer
 async function streamToBuffer(stream) {
@@ -149,6 +168,107 @@ async function getUsersAsync() {
     }
   }
   return readUsers();
+}
+
+// ---- Token wallet helpers (PostgreSQL only) ----
+
+/** Ensure we are in PostgreSQL mode for wallet operations. */
+function ensurePgForWallet() {
+  if (!usePgUsers()) {
+    const err = new Error('Token wallet requires PostgreSQL (PG_DATABASE must be set).');
+    err.statusCode = 500;
+    throw err;
+  }
+}
+
+/** Get or create a TokenWallet row for the given email. */
+async function getOrCreateWallet(email) {
+  ensurePgForWallet();
+  const emailNorm = String(email || '').trim().toLowerCase();
+  if (!emailNorm) throw new Error('Missing email for wallet.');
+  const existing = await pgQuery(
+    'SELECT id, user_email, token_balance FROM public."TokenWallet" WHERE LOWER(user_email) = $1 LIMIT 1',
+    [emailNorm]
+  );
+  let row = existing?.rows?.[0];
+  if (!row) {
+    const ins = await pgQuery(
+      'INSERT INTO public."TokenWallet" (user_email, token_balance) VALUES ($1, 0) RETURNING id, user_email, token_balance',
+      [emailNorm]
+    );
+    row = ins?.rows?.[0];
+  }
+  return {
+    id: row.id,
+    email: row.user_email,
+    balance: Number(row.token_balance || 0),
+  };
+}
+
+/** Create a token transaction and update wallet balance atomically. Returns { transactionId, balance }. */
+async function applyTokenDelta(email, amount, type, options = {}) {
+  ensurePgForWallet();
+  const emailNorm = String(email || '').trim().toLowerCase();
+  if (!emailNorm) throw new Error('Missing email for wallet.');
+  const delta = Number(amount);
+  if (!delta || !isFinite(delta)) throw new Error('Invalid token amount.');
+
+  const client = await pgQuery('BEGIN').then(() => pgQuery); // reuse pgQuery; relies on single connection pool
+  try {
+    const wallet = await getOrCreateWallet(emailNorm);
+    const newBalance = wallet.balance + delta;
+    if (newBalance < 0) {
+      throw Object.assign(new Error('Insufficient token balance.'), { statusCode: 400 });
+    }
+    await pgQuery(
+      'UPDATE public."TokenWallet" SET token_balance = $1, updated_at = NOW() WHERE id = $2',
+      [newBalance, wallet.id]
+    );
+    const ins = await pgQuery(
+      `INSERT INTO public."TokenTransactions"
+       (user_email, amount, balance_after, type, reference_type, reference_id, stripe_payment_intent_id, myr_amount, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id`,
+      [
+        emailNorm,
+        delta,
+        newBalance,
+        type,
+        options.referenceType || null,
+        options.referenceId || null,
+        options.stripePaymentIntentId || null,
+        options.myrAmount != null ? Number(options.myrAmount) : null,
+        options.metadata ? JSON.stringify(options.metadata) : null,
+      ]
+    );
+    await pgQuery('COMMIT');
+    const txId = ins?.rows?.[0]?.id;
+    return { transactionId: txId, balance: newBalance };
+  } catch (e) {
+    try { await pgQuery('ROLLBACK'); } catch (_) {}
+    throw e;
+  }
+}
+
+/** Simple helper to compute how many tokens correspond to a MYR amount at current rate. */
+function tokensFromMyr(amountMyr) {
+  const a = Number(amountMyr || 0);
+  if (!a || !isFinite(a) || a <= 0 || !TOKEN_MYR_RATE) return 0;
+  return a / TOKEN_MYR_RATE;
+}
+
+/** Simple helper to compute MYR price for a token amount. */
+function myrFromTokens(tokens) {
+  const t = Number(tokens || 0);
+  if (!t || !isFinite(t) || t <= 0 || !TOKEN_MYR_RATE) return 0;
+  return t * TOKEN_MYR_RATE;
+}
+
+/** Tokens required for a client upload: 1 token per 50 images (or part thereof), minimum 1. Configurable via env UPLOAD_TOKENS_PER_IMAGE (default 50). */
+function computeUploadTokens(fileCount) {
+  const n = Math.max(0, parseInt(String(fileCount), 10) || 0);
+  const per = Math.max(1, parseInt(process.env.UPLOAD_TOKENS_PER_IMAGE || '50', 10) || 50);
+  return Math.max(1, Math.ceil(n / per));
 }
 
 /** Insert a new user (register). Used when usePgUsers(). */
@@ -321,7 +441,7 @@ async function readMapDataFromPg() {
   if (!process.env.PG_DATABASE) return null;
   try {
     const res = await pgQuery(
-      'SELECT "mapDataID", title, description, "xAxis" as "xAxis", "yAxis" as "yAxis", "3dTiles" as "3dTiles", "thumbNailUrl", "updateDateTime" FROM public."MapData" ORDER BY "updateDateTime" DESC'
+      'SELECT "mapDataID", title, description, "xAxis" as "xAxis", "yAxis" as "yAxis", "3dTiles" as "3dTiles", "thumbNailUrl", "updateDateTime", COALESCE(purchase_price_tokens, 0) AS purchase_price_tokens FROM public."MapData" ORDER BY "updateDateTime" DESC'
     );
     if (!res || !res.rows || res.rows.length === 0) return null;
     const rows = res.rows.map(r => ({
@@ -332,7 +452,8 @@ async function readMapDataFromPg() {
       yAxis: r.yAxis,
       '3dTiles': r['3dTiles'] || '',
       thumbNailUrl: r.thumbNailUrl || '',
-      updateDateTime: r.updateDateTime ? new Date(r.updateDateTime).toISOString() : null
+      updateDateTime: r.updateDateTime ? new Date(r.updateDateTime).toISOString() : null,
+      purchase_price_tokens: r.purchase_price_tokens != null ? Number(r.purchase_price_tokens) : 0
     }));
     return filterMapDataRows(rows);
   } catch (e) {
@@ -419,10 +540,254 @@ app.get("/api/auth/profile", async (req, res) => {
       contactNumber: user.contactNumber || '',
       role: user.role || 'client',
       provider: user.provider || 'local',
+      hasPassword: !!user.passwordHash,
     });
   } catch (e) {
     console.error('GET /api/auth/profile', e);
     return res.status(500).json({ success: false, message: 'Failed to load profile.' });
+  }
+});
+
+// ---- Token wallet & payments API (subscriber tokens for uploads and 3D model purchases) ----
+
+// GET /api/token/wallet - current token balance and rate for logged-in user
+app.get('/api/token/wallet', requireAuth, async (req, res) => {
+  try {
+    ensurePgForWallet();
+    const wallet = await getOrCreateWallet(req.user.email);
+    res.json({
+      success: true,
+      email: wallet.email,
+      balance: wallet.balance,
+      tokenMyrRate: TOKEN_MYR_RATE,
+      stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || null,
+    });
+  } catch (e) {
+    const status = e.statusCode || 500;
+    console.error('GET /api/token/wallet', e);
+    res.status(status).json({ success: false, message: e.message || 'Failed to load wallet.' });
+  }
+});
+
+// POST /api/token/topup-intent - create Stripe PaymentIntent to buy tokens
+// Body: { tokens?: number, amountMyr?: number }
+app.post('/api/token/topup-intent', requireAuth, express.json(), async (req, res) => {
+  try {
+    ensurePgForWallet();
+    if (!stripe) {
+      return res.status(500).json({ success: false, message: 'Stripe is not configured on the server.' });
+    }
+    const { tokens, amountMyr } = req.body || {};
+    let tokensDesired = Number(tokens || 0);
+    let myr = Number(amountMyr || 0);
+    if (!tokensDesired && myr > 0) {
+      tokensDesired = tokensFromMyr(myr);
+    }
+    if (!tokensDesired || !isFinite(tokensDesired) || tokensDesired <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid token amount.' });
+    }
+    if (!myr || !isFinite(myr) || myr <= 0) {
+      myr = myrFromTokens(tokensDesired);
+    }
+    const amountInSen = Math.round(myr * 100);
+    if (amountInSen < 100) {
+      return res.status(400).json({ success: false, message: 'Minimum top-up is MYR 1.00.' });
+    }
+
+    const email = String(req.user.email || '').trim().toLowerCase();
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountInSen,
+      currency: 'myr',
+      receipt_email: email,
+      description: `3DHub token top-up (${tokensDesired.toFixed(2)} tokens @ ${TOKEN_MYR_RATE} MYR/token)`,
+      metadata: {
+        tokensDesired: tokensDesired.toString(),
+        email,
+      },
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+
+    // Record Stripe payment in pending state (actual credit will happen on webhook or Confirm API)
+    await pgQuery(
+      `INSERT INTO public."StripePayments"
+       (user_email, stripe_payment_intent_id, stripe_customer_id, amount_myr, tokens_credited, status)
+       VALUES ($1, $2, $3, $4, $5, 'pending')
+       ON CONFLICT (stripe_payment_intent_id) DO NOTHING`,
+      [
+        email,
+        paymentIntent.id,
+        paymentIntent.customer || null,
+        myr,
+        tokensDesired,
+      ]
+    );
+
+    res.json({
+      success: true,
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+      amountMyr: myr,
+      tokens: tokensDesired,
+    });
+  } catch (e) {
+    console.error('POST /api/token/topup-intent', e);
+    res.status(500).json({ success: false, message: e.message || 'Failed to create payment intent.' });
+  }
+});
+
+// POST /api/token/stripe-webhook - Stripe webhook endpoint to credit wallets after successful payment
+// Set STRIPE_WEBHOOK_SECRET in .env when using this in production.
+app.post('/api/token/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!stripe) {
+    return res.status(500).send('Stripe not configured.');
+  }
+  const sig = req.headers['stripe-signature'];
+  let event = null;
+  try {
+    if (process.env.STRIPE_WEBHOOK_SECRET) {
+      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    } else {
+      // Fallback: accept event without verification (for local testing only)
+      event = req.body;
+    }
+  } catch (err) {
+    console.error('Stripe webhook signature verification failed:', err.message || err);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    if (event.type === 'payment_intent.succeeded') {
+      const pi = event.data.object;
+      const piId = pi.id;
+      const email = (pi.metadata && pi.metadata.email) ? String(pi.metadata.email).toLowerCase() : (pi.receipt_email || '').toLowerCase();
+      const tokensDesired = pi.metadata && pi.metadata.tokensDesired ? Number(pi.metadata.tokensDesired) : tokensFromMyr(pi.amount_received / 100);
+      const myr = pi.amount_received / 100;
+
+      if (email && tokensDesired > 0) {
+        ensurePgForWallet();
+        // Mark Stripe payment as succeeded if not already
+        await pgQuery(
+          `UPDATE public."StripePayments"
+           SET status = 'succeeded', updated_at = NOW(), amount_myr = $2, tokens_credited = $3
+           WHERE stripe_payment_intent_id = $1`,
+          [piId, myr, tokensDesired]
+        );
+        // Credit wallet (idempotent-ish: rely on ON CONFLICT + a check in TokenTransactions)
+        const existingTx = await pgQuery(
+          `SELECT id FROM public."TokenTransactions"
+           WHERE stripe_payment_intent_id = $1 AND type = 'topup' LIMIT 1`,
+          [piId]
+        );
+        if (!existingTx?.rows?.length) {
+          await applyTokenDelta(email, tokensDesired, 'topup', {
+            referenceType: 'stripe_payment',
+            referenceId: piId,
+            stripePaymentIntentId: piId,
+            myrAmount: myr,
+            metadata: { source: 'stripe-webhook' },
+          });
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Error handling Stripe webhook event', e);
+    return res.status(500).send('Webhook handler error.');
+  }
+  res.json({ received: true });
+});
+
+// POST /api/token/purchase-map-data - pay tokens to purchase an existing 3D model (MapData row)
+// Body: { mapDataID: string }
+app.post('/api/token/purchase-map-data', requireAuth, express.json(), async (req, res) => {
+  try {
+    ensurePgForWallet();
+    const role = req.user.role || 'client';
+    if (role !== 'subscriber' && role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only subscribers (or admins) can purchase 3D models.' });
+    }
+    const mapDataID = String(req.body?.mapDataID || '').trim();
+    if (!mapDataID) {
+      return res.status(400).json({ success: false, message: 'mapDataID is required.' });
+    }
+
+    // Load MapData price (in tokens)
+    const q = await pgQuery(
+      'SELECT "mapDataID", title, "3dTiles", COALESCE(purchase_price_tokens, 0) AS price_tokens FROM public."MapData" WHERE "mapDataID" = $1 LIMIT 1',
+      [mapDataID]
+    );
+    const row = q?.rows?.[0];
+    if (!row) {
+      return res.status(404).json({ success: false, message: '3D model not found.' });
+    }
+    const priceTokens = Number(row.price_tokens || 0);
+    if (!priceTokens || !isFinite(priceTokens) || priceTokens <= 0) {
+      return res.status(400).json({ success: false, message: 'This 3D model is not configured with a token price yet.' });
+    }
+
+    const email = String(req.user.email || '').toLowerCase();
+
+    // Check if already purchased
+    const existing = await pgQuery(
+      `SELECT id FROM public."MapDataPurchases"
+       WHERE LOWER(user_email) = LOWER($1) AND map_data_id = $2 LIMIT 1`,
+      [email, mapDataID]
+    );
+    if (existing?.rows?.length) {
+      return res.json({ success: true, alreadyOwned: true, message: 'You have already purchased this 3D model.' });
+    }
+
+    // Debit tokens
+    const delta = -priceTokens;
+    const result = await applyTokenDelta(email, delta, 'purchase_3d', {
+      referenceType: 'map_data_purchase',
+      referenceId: mapDataID,
+      metadata: { mapDataID, title: row.title },
+    });
+
+    // Insert purchase record
+    const ins = await pgQuery(
+      `INSERT INTO public."MapDataPurchases"
+       (user_email, map_data_id, tokens_paid, token_transaction_id)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id`,
+      [email, mapDataID, priceTokens, result.transactionId || null]
+    );
+
+    res.json({
+      success: true,
+      purchaseId: ins?.rows?.[0]?.id,
+      mapDataID,
+      tokensPaid: priceTokens,
+      balance: result.balance,
+    });
+  } catch (e) {
+    const status = e.statusCode || 500;
+    const msg = e.message || 'Failed to purchase 3D model.';
+    const payload = { success: false, message: msg };
+    if (msg.includes('Insufficient')) payload.code = 'INSUFFICIENT_TOKENS';
+    console.error('POST /api/token/purchase-map-data', e);
+    res.status(status).json(payload);
+  }
+});
+
+// GET /api/token/quote-upload - return tokens required for an upload by file count (for display before upload)
+app.get('/api/token/quote-upload', requireAuth, (req, res) => {
+  try {
+    const fileCount = Math.max(0, parseInt(req.query.fileCount, 10) || 0);
+    const tokensRequired = computeUploadTokens(fileCount);
+    const myrEquivalent = myrFromTokens(tokensRequired);
+    res.json({
+      success: true,
+      fileCount,
+      tokensRequired,
+      myrEquivalent,
+      tokenMyrRate: TOKEN_MYR_RATE,
+    });
+  } catch (e) {
+    console.error('GET /api/token/quote-upload', e);
+    res.status(500).json({ success: false, message: e.message || 'Failed to get quote.' });
   }
 });
 
@@ -485,6 +850,33 @@ app.put("/api/auth/profile/contact", express.json(), async (req, res) => {
   } catch (e) {
     console.error('PUT /api/auth/profile/contact', e);
     return res.status(500).json({ success: false, message: 'Failed to update contact number.' });
+  }
+});
+
+// ---- Auth: PUT /api/auth/profile/name (change display name) ----
+app.put("/api/auth/profile/name", express.json(), async (req, res) => {
+  const email = await getCurrentUserEmail(req);
+  if (!email) return res.status(401).json({ success: false, message: 'Not logged in.' });
+  const name = (req.body?.name ?? '').trim();
+  if (!name) return res.status(400).json({ success: false, message: 'Please enter a name.' });
+  try {
+    if (usePgUsers()) {
+      await pgQuery(
+        `UPDATE public."DataPortalUsers" SET name = $1, updated_at = NOW() WHERE LOWER(email) = LOWER($2)`,
+        [name, email]
+      );
+    } else {
+      const users = readUsers();
+      const idx = users.findIndex(u => (u.email || '').toLowerCase() === email.toLowerCase());
+      if (idx >= 0) {
+        users[idx].name = name;
+        writeUsers(users);
+      }
+    }
+    return res.json({ success: true, message: 'Name updated.', name });
+  } catch (e) {
+    console.error('PUT /api/auth/profile/name', e);
+    return res.status(500).json({ success: false, message: 'Failed to update name.' });
   }
 });
 
@@ -960,7 +1352,7 @@ app.get('/api/admin/users', async (req, res) => {
       email: u.email || '',
       name: u.name || '',
       username: u.username || '',
-      role: u.role === 'admin' ? 'admin' : 'client',
+      role: u.role === 'admin' ? 'admin' : (u.role === 'subscriber' ? 'subscriber' : 'client'),
     }));
     res.json(list);
   } catch (e) {
@@ -1029,6 +1421,19 @@ app.post('/api/admin/upload-map-thumbnail', (req, res, next) => {
     res.status(500).json({ success: false, message: e.message || 'Thumbnail upload failed.' });
   }
 });
+
+// ---- Admin: upload completed 3D model for a processing request (saved under uploads/processed-results) ----
+fs.mkdirSync(PROCESSED_RESULTS_DIR, { recursive: true });
+const processedResultStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, PROCESSED_RESULTS_DIR),
+  filename: (req, file, cb) => {
+    const requestId = (req.params && req.params.id) || '0';
+    const ext = (path.extname(file.originalname) || '').toLowerCase() || '.zip';
+    const safe = /^[a-zA-Z0-9_.-]+$/.test(ext) ? ext : '.zip';
+    cb(null, 'req_' + requestId + '_' + Date.now() + safe);
+  }
+});
+const uploadProcessedResult = multer({ storage: processedResultStorage, limits: { fileSize: 500 * 1024 * 1024 } }); // 500MB
 
 // ---- Admin: create 3D model (add to MapData for overview map / showcases) ----
 app.post('/api/map-data', express.json(), async (req, res) => {
@@ -1408,7 +1813,7 @@ app.post('/api/upload/chunk', (req, res) => {
   });
 });
 
-app.post('/api/upload/finalize', express.json(), async (req, res) => {
+app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) => {
   try {
     const uploadId = req.body.uploadId;
     if (!uploadId) return res.status(400).json({ success: false, message: 'Missing uploadId' });
@@ -1416,6 +1821,33 @@ app.post('/api/upload/finalize', express.json(), async (req, res) => {
     const filesMapping = req.body.files;
     if (!filesMapping || !Array.isArray(filesMapping)) {
       return res.status(400).json({ success: false, message: 'Missing files mapping array' });
+    }
+
+    // Compute token charge from number of image files (exclude .txt/.csv drone pos)
+    const imageFileCount = filesMapping.filter((f) => {
+      const fn = (f.filename || '').toLowerCase();
+      return !fn.endsWith('.txt') && !fn.endsWith('.csv');
+    }).length;
+    const tokensRequired = computeUploadTokens(imageFileCount);
+    const email = (req.user && req.user.email) ? String(req.user.email).trim().toLowerCase() : null;
+
+    if (process.env.PG_DATABASE && usePgUsers()) {
+      try {
+        ensurePgForWallet();
+        if (!email) return res.status(401).json({ success: false, message: 'You must be logged in to submit an upload.' });
+        await applyTokenDelta(email, -tokensRequired, 'upload_charge', {
+          referenceType: 'client_upload',
+          referenceId: uploadId,
+          metadata: { fileCount: imageFileCount },
+        });
+      } catch (e) {
+        const status = e.statusCode || 400;
+        if (e.message && e.message.includes('Insufficient')) {
+          return res.status(status).json({ success: false, message: 'Insufficient token balance. Please top up your tokens before uploading.', code: 'INSUFFICIENT_TOKENS' });
+        }
+        console.error('Upload token charge failed', e);
+        return res.status(status).json({ success: false, message: e.message || 'Failed to charge tokens for upload.' });
+      }
     }
 
     const finalSubdir = `project_${Date.now()}_${uploadId.substring(0, 6)}`;
@@ -1490,17 +1922,20 @@ app.post('/api/upload/finalize', express.json(), async (req, res) => {
       }
 
       if (!metadata.projectTitle) metadata.projectTitle = metadata.projectID;
+      if (email) metadata.createdByEmail = email;
 
       if (process.env.PG_DATABASE) {
+        const tokensChargedVal = (usePgUsers() ? tokensRequired : null);
         await pgQuery(
-          `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id`,
+          `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes, tokens_charged)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
           [
             metadata.projectID, metadata.projectTitle, metadata.uploadType, actualFileCount,
             finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
             metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
             isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
-            metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0
+            metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0,
+            tokensChargedVal
           ]
         );
       }
@@ -1567,17 +2002,20 @@ app.post('/api/upload/finalize', express.json(), async (req, res) => {
       }
 
       if (!metadata.projectTitle) metadata.projectTitle = metadata.projectID;
+      if (email) metadata.createdByEmail = email;
 
       if (process.env.PG_DATABASE) {
+        const tokensChargedVal = (usePgUsers() ? tokensRequired : null);
         await pgQuery(
-          `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id`,
+          `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes, tokens_charged)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
           [
             metadata.projectID, metadata.projectTitle, metadata.uploadType, actualFileCount,
             finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
             metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
             isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
-            metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0
+            metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0,
+            tokensChargedVal
           ]
         );
       }
@@ -1599,7 +2037,7 @@ app.get('/api/admin/client-uploads', async (req, res) => {
     return res.json([]);
   }
   try {
-    const q = await pgQuery('SELECT id, project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_at, created_by_email, request_status, rejected_reason, decided_at, decided_by, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes FROM public."ClientUploads" ORDER BY created_at DESC');
+    const q = await pgQuery('SELECT id, project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_at, created_by_email, request_status, rejected_reason, decided_at, decided_by, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes, tokens_charged FROM public."ClientUploads" ORDER BY created_at DESC');
     res.json((q && q.rows) ? q.rows : []);
   } catch (e) {
     console.error('GET /api/admin/client-uploads', e);
@@ -1607,15 +2045,36 @@ app.get('/api/admin/client-uploads', async (req, res) => {
   }
 });
 
-// ---- User: list personal client uploads ----
+// ---- User: list personal client uploads (with processing result / delivery info for subscriber download) ----
 app.get('/api/user/my-uploads', requireAuth, async (req, res) => {
   if (!process.env.PG_DATABASE) {
     return res.json([]);
   }
   try {
     const email = req.user.email;
-    const q = await pgQuery('SELECT id, project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_at, created_by_email, request_status, rejected_reason, decided_at, decided_by, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes FROM public."ClientUploads" WHERE LOWER(created_by_email) = LOWER($1) ORDER BY created_at DESC', [email]);
-    res.json((q && q.rows) ? q.rows : []);
+    const q = await pgQuery(
+      `SELECT cu.id, cu.project_id, cu.project_title, cu.upload_type, cu.file_count, cu.file_paths, cu.camera_models, cu.capture_date, cu.organization_name, cu.created_at, cu.created_by_email, cu.request_status, cu.rejected_reason, cu.decided_at, cu.decided_by, cu.project_description, cu.category, cu.latitude, cu.longitude, cu.area_coverage, cu.image_metadata, cu.drone_pos_file_path, cu.tokens_charged,
+              pr.id AS processing_request_id, pr.status AS processing_status, pr.result_tileset_url AS processing_result_tileset_url, pr.delivered_at AS processing_delivered_at, pr.delivery_notes AS processing_delivery_notes
+       FROM public."ClientUploads" cu
+       LEFT JOIN LATERAL (SELECT id, status, result_tileset_url, delivered_at, delivery_notes FROM public."ProcessingRequests" WHERE upload_id = cu.id ORDER BY id DESC LIMIT 1) pr ON true
+       WHERE LOWER(cu.created_by_email) = LOWER($1)
+       ORDER BY cu.created_at DESC`,
+      [email]
+    );
+    const rows = (q && q.rows) ? q.rows : [];
+    const baseUrl = (req.get('x-forwarded-proto') && req.get('x-forwarded-host')) ? (req.get('x-forwarded-proto') + '://' + req.get('x-forwarded-host')) : (req.protocol + '://' + req.get('host') || '');
+    const out = rows.map((r) => {
+      const row = { ...r };
+      if (row.processing_result_tileset_url) {
+        row.processing_result_download_url = baseUrl + '/api/user/my-uploads/' + row.id + '/download-result';
+        row.processing_has_result = true;
+      } else {
+        row.processing_result_download_url = null;
+        row.processing_has_result = false;
+      }
+      return row;
+    });
+    res.json(out);
   } catch (e) {
     console.error('GET /api/user/my-uploads', e);
     res.status(500).json({ error: 'Failed to load user uploads.' });
@@ -1637,23 +2096,52 @@ app.patch('/api/user/my-uploads/:id', requireAuth, async (req, res) => {
 
   try {
     const email = req.user.email;
-    
-    // Verify ownership
     const q1 = await pgQuery('SELECT id FROM public."ClientUploads" WHERE id = $1 AND LOWER(created_by_email) = LOWER($2)', [id, email]);
     if (!q1 || !q1.rows || q1.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Project not found or you do not have permission to edit it.' });
     }
-    
-    // Update metadata
     await pgQuery(
       'UPDATE public."ClientUploads" SET project_title = $1, project_description = $2 WHERE id = $3',
       [project_title, project_description || '', id]
     );
-    
     res.json({ success: true, message: 'Project updated successfully.' });
   } catch (e) {
     console.error('PATCH /api/user/my-uploads/:id', e);
     res.status(500).json({ success: false, message: 'Failed to update project.' });
+  }
+});
+
+// ---- User: download completed 3D model for one of their uploads (subscriber) ----
+app.get('/api/user/my-uploads/:uploadId/download-result', requireAuth, async (req, res) => {
+  const uploadId = req.params.uploadId && parseInt(req.params.uploadId, 10);
+  if (!uploadId || isNaN(uploadId) || !process.env.PG_DATABASE) {
+    return res.status(400).json({ success: false, message: 'Invalid upload id.' });
+  }
+  try {
+    const email = req.user.email;
+    const cu = await pgQuery('SELECT id FROM public."ClientUploads" WHERE id = $1 AND LOWER(created_by_email) = LOWER($2)', [uploadId, email]);
+    if (!cu || !cu.rows || !cu.rows[0]) return res.status(404).json({ success: false, message: 'Upload not found or access denied.' });
+    const pr = await pgQuery('SELECT result_tileset_url FROM public."ProcessingRequests" WHERE upload_id = $1 AND result_tileset_url IS NOT NULL AND result_tileset_url <> \'\' ORDER BY id DESC LIMIT 1', [uploadId]);
+    const url = pr && pr.rows && pr.rows[0] && pr.rows[0].result_tileset_url;
+    if (!url) return res.status(404).json({ success: false, message: 'No 3D model result available for this upload.' });
+    if (url.toLowerCase().startsWith('http://') || url.toLowerCase().startsWith('https://')) {
+      return res.redirect(url);
+    }
+    const relPath = path.normalize(url).replace(/^(\.\.(\/|\\))+/, '').replace(/\\/g, '/');
+    const fullPath = path.resolve(UPLOAD_DIR, relPath);
+    if (!isPathUnderDir(fullPath, path.resolve(UPLOAD_DIR))) {
+      return res.status(403).json({ success: false, message: 'Invalid result path.' });
+    }
+    const stat = await fs.promises.stat(fullPath).catch(() => null);
+    if (!stat || !stat.isFile()) return res.status(404).json({ success: false, message: 'Result file not found.' });
+    const name = path.basename(fullPath);
+    res.setHeader('Content-Disposition', 'attachment; filename="' + name.replace(/"/g, '\\"') + '"');
+    res.sendFile(fullPath, (err) => {
+      if (err && !res.headersSent) res.status(500).json({ success: false, message: 'Download failed.' });
+    });
+  } catch (e) {
+    console.error('GET /api/user/my-uploads/:uploadId/download-result', e);
+    if (!res.headersSent) res.status(500).json({ success: false, message: 'Download failed.' });
   }
 });
 
@@ -1835,22 +2323,34 @@ app.post('/api/admin/client-uploads/:id/decision', express.json(), async (req, r
   }
   const actionLower = String(action).toLowerCase();
   
-  const validActions = ['processing', 'completed', 'reject'];
+  const validActions = ['accept', 'processing', 'reject'];
   if (!validActions.includes(actionLower)) {
-    return res.status(400).json({ success: false, message: 'action must be "processing", "completed", or "reject".' });
+    return res.status(400).json({ success: false, message: 'action must be "accept", "processing", or "reject".' });
   }
   if (actionLower === 'reject' && !reason.trim()) {
     return res.status(400).json({ success: false, message: 'A reason is required when rejecting a request.' });
   }
   const decidedBy = (req.user && req.user.email) ? req.user.email : (req.body && req.body.decided_by) || 'admin';
   try {
-    let finalStatus = actionLower === 'reject' ? 'rejected' : actionLower;
+    const finalStatus = actionLower === 'reject' ? 'rejected' : (actionLower === 'accept' ? 'accepted' : 'processing');
     const r = await pgQuery(
       `UPDATE public."ClientUploads" SET request_status = $1, rejected_reason = $2, decided_at = NOW(), decided_by = $3 WHERE id = $4 RETURNING id, request_status, decided_at`,
       [finalStatus, actionLower === 'reject' ? reason.trim() : null, decidedBy, id]
     );
     const row = r && r.rows && r.rows[0];
     if (!row) return res.status(404).json({ success: false, message: 'Client upload not found.' });
+    if (actionLower === 'processing') {
+      try {
+        await pgQuery(
+          `INSERT INTO public."ProcessingRequests" (upload_id, status, requested_by)
+           SELECT $1, 'processing', $2
+           WHERE NOT EXISTS (SELECT 1 FROM public."ProcessingRequests" WHERE upload_id = $1)`,
+          [id, decidedBy]
+        );
+      } catch (prErr) {
+        console.error('Create ProcessingRequest on Begin Processing', prErr);
+      }
+    }
     res.json({ success: true, id: row.id, request_status: row.request_status, decided_at: row.decided_at });
   } catch (e) {
     console.error('POST /api/admin/client-uploads/:id/decision', e);
@@ -1894,7 +2394,43 @@ app.get('/api/admin/processing-requests', async (req, res) => {
   }
 });
 
-// ---- Admin: mark processing request as delivered to client ----
+// ---- Admin: complete processing request (upload 3D model file or set result URL) ----
+app.post('/api/admin/processing-requests/:id/complete', (req, res, next) => {
+  uploadProcessedResult.single('file')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ success: false, message: 'File too large. Maximum 500MB.' });
+      return next(err);
+    }
+    next();
+  });
+}, async (req, res) => {
+  const id = req.params.id && parseInt(req.params.id, 10);
+  if (!id || isNaN(id) || !process.env.PG_DATABASE) {
+    return res.status(400).json({ success: false, message: 'Valid processing request id is required.' });
+  }
+  const resultUrlFromBody = (req.body && (req.body.result_tileset_url || req.body.resultUrl || '')).trim() || null;
+  let resultTilesetUrl = resultUrlFromBody;
+  if (req.file && req.file.filename) {
+    resultTilesetUrl = 'processed-results/' + req.file.filename;
+  }
+  if (!resultTilesetUrl) {
+    return res.status(400).json({ success: false, message: 'Upload a 3D model file or provide a result URL.' });
+  }
+  try {
+    const r = await pgQuery(
+      `UPDATE public."ProcessingRequests" SET status = 'completed', completed_at = NOW(), result_tileset_url = $1 WHERE id = $2 RETURNING id, status, completed_at, result_tileset_url`,
+      [resultTilesetUrl, id]
+    );
+    const row = r && r.rows && r.rows[0];
+    if (!row) return res.status(404).json({ success: false, message: 'Processing request not found.' });
+    res.json({ success: true, id: row.id, status: row.status, completed_at: row.completed_at, result_tileset_url: row.result_tileset_url });
+  } catch (e) {
+    console.error('POST /api/admin/processing-requests/:id/complete', e);
+    res.status(500).json({ success: false, message: e.message || 'Failed to complete.' });
+  }
+});
+
+// ---- Admin: mark processing request as delivered to client (sets ClientUploads.request_status to 'sent'; subscriber sees "Received") ----
 app.post('/api/admin/processing-requests/:id/delivery', express.json(), async (req, res) => {
   const id = req.params.id && parseInt(req.params.id, 10);
   if (!id || isNaN(id) || !process.env.PG_DATABASE) {
@@ -1903,15 +2439,40 @@ app.post('/api/admin/processing-requests/:id/delivery', express.json(), async (r
   const deliveryNotes = (req.body && (req.body.delivery_notes || req.body.notes || '')).trim() || null;
   try {
     const r = await pgQuery(
-      `UPDATE public."ProcessingRequests" SET delivered_at = COALESCE(delivered_at, NOW()), delivery_notes = COALESCE($1, delivery_notes) WHERE id = $2 RETURNING id, delivered_at, delivery_notes`,
+      `UPDATE public."ProcessingRequests" SET delivered_at = COALESCE(delivered_at, NOW()), delivery_notes = COALESCE($1, delivery_notes) WHERE id = $2 RETURNING id, upload_id, delivered_at, delivery_notes`,
       [deliveryNotes, id]
     );
     const row = r && r.rows && r.rows[0];
     if (!row) return res.status(404).json({ success: false, message: 'Processing request not found.' });
-    res.json({ success: true, id: row.id, delivered_at: row.delivered_at, delivery_notes: row.delivery_notes });
+    await pgQuery(
+      `UPDATE public."ClientUploads" SET request_status = 'sent', decided_at = NOW() WHERE id = $1`,
+      [row.upload_id]
+    );
+    res.json({ success: true, id: row.id, upload_id: row.upload_id, delivered_at: row.delivered_at, delivery_notes: row.delivery_notes });
   } catch (e) {
     console.error('POST /api/admin/processing-requests/:id/delivery', e);
     res.status(500).json({ success: false, message: e.message || 'Failed to update delivery.' });
+  }
+});
+
+// ---- User: confirm received (subscriber clicks "Confirm received" after downloading 3D model; sets status to completed on both sides) ----
+app.post('/api/user/my-uploads/:id/confirm-received', requireAuth, async (req, res) => {
+  const uploadId = req.params.id && parseInt(req.params.id, 10);
+  if (!uploadId || isNaN(uploadId) || !process.env.PG_DATABASE) {
+    return res.status(400).json({ success: false, message: 'Invalid upload id.' });
+  }
+  try {
+    const email = req.user.email;
+    const r = await pgQuery(
+      `UPDATE public."ClientUploads" SET request_status = 'completed', decided_at = NOW() WHERE id = $1 AND LOWER(created_by_email) = LOWER($2) AND request_status = 'sent' RETURNING id, request_status`,
+      [uploadId, email]
+    );
+    const row = r && r.rows && r.rows[0];
+    if (!row) return res.status(404).json({ success: false, message: 'Upload not found, access denied, or status is not Received (cannot confirm).' });
+    res.json({ success: true, id: row.id, request_status: row.request_status });
+  } catch (e) {
+    console.error('POST /api/user/my-uploads/:id/confirm-received', e);
+    res.status(500).json({ success: false, message: 'Failed to confirm.' });
   }
 });
 

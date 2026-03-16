@@ -3,14 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Add 3D Model - Admin | TemaDataPortal</title>
+  <title>Add 3D Model - Admin | 3DHub</title>
   <link rel="icon" type="image/x-icon" href="../../assets/img/favicon/favicon.ico" />
   <link rel="stylesheet" href="../../assets/vendor/fonts/iconify-icons.css" />
   <link rel="stylesheet" href="../../assets/vendor/css/core.css" />
   <link rel="stylesheet" href="../../assets/css/demo.css" />
   <link rel="stylesheet" href="../../assets/css/admin-responsive.css" />
   <script src="../../assets/vendor/js/helpers.js"></script>
-  <script src="../../assets/vendor/libs/jquery/jquery.js"></script>
   <script src="../../assets/vendor/js/bootstrap.js"></script>
 </head>
 <body>
@@ -18,8 +17,9 @@
     <div class="layout-container">
       <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
         <div class="app-brand demo py-4">
-          <a href="index.html" class="app-brand-link">
-            <span class="app-brand-text demo menu-text fw-bold ms-2">Data Portal Admin</span>
+          <a href="index.html" class="app-brand-link d-flex align-items-center">
+            <span class="app-brand-logo demo me-2"><img src="../../assets/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+            <span class="app-brand-text demo menu-text fw-bold">3DHub Admin</span>
           </a>
         </div>
         <div class="menu-inner-shadow"></div>
@@ -52,6 +52,12 @@
             <a href="client-uploads.html" class="menu-link">
               <i class="menu-icon tf-icons bx bx-cloud-upload"></i>
               <div>Client Uploads</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-users.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-user"></i>
+              <div>Manage Users</div>
             </a>
           </li>
           <li class="menu-item">
@@ -106,17 +112,13 @@
                       <input type="url" class="form-control" id="tilesetUrl" name="3dTiles" placeholder="https://example.com/tileset.json" required />
                     </div>
                     <div class="col-12">
-                      <label class="form-label">Thumbnail image (overview map &amp; showcase)</label>
+                      <label class="form-label" for="thumbnailFile">Thumbnail image (overview map &amp; showcase)</label>
                       <div class="mb-2">
                         <input type="file" class="form-control" id="thumbnailFile" name="thumbnail" accept="image/jpeg,image/png,image/gif,image/webp" />
                         <div class="form-text">Upload an image (JPEG, PNG, GIF, WebP; max 5MB). Used for the map pin and showcase tile.</div>
                       </div>
-                      <div class="mb-0">
-                        <label class="form-label small text-muted">Or paste a thumbnail URL</label>
-                        <input type="url" class="form-control" id="thumbNailUrl" name="thumbNailUrl" placeholder="Optional: image URL if not uploading" />
-                      </div>
-                      <label class="form-label" for="thumbNailUrl">Thumbnail image URL</label>
-                      <input type="url" class="form-control" id="thumbNailUrl" name="thumbNailUrl" placeholder="Optional image URL for map pin" />
+                      <label class="form-label small text-muted" for="thumbNailUrl">Or paste a thumbnail URL</label>
+                      <input type="url" class="form-control" id="thumbNailUrl" name="thumbNailUrl" placeholder="Optional: image URL if not uploading" />
                     </div>
                     <div class="col-12">
                       <button type="submit" class="btn btn-primary" id="submitBtn">Save 3D Model</button>
@@ -156,7 +158,6 @@
         var thumbNailUrl = document.getElementById('thumbNailUrl').value.trim();
         var thumbnailFile = document.getElementById('thumbnailFile');
         var file = thumbnailFile && thumbnailFile.files && thumbnailFile.files[0];
-        if (isNaN(parseFloat(document.getElementById('yAxis').value)) || isNaN(parseFloat(document.getElementById('xAxis').value))) {
         var payload = {
           mapDataID: mapDataID,
           title: document.getElementById('title').value.trim() || mapDataID,
@@ -228,29 +229,5 @@
     })();
   </script>
   <script src="../../assets/js/admin-responsive.js"></script>
-        fetch(API_BASE + '/api/map-data', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
-          .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
-          .then(function (x) {
-            if (x.status === 200 && x.body.success) {
-              formMessage.textContent = 'Saved. The model will appear on the overview map.';
-              formMessage.classList.add('text-success');
-              form.reset();
-            } else {
-              formMessage.textContent = x.body.message || 'Save failed.';
-              formMessage.classList.add('text-danger');
-            }
-          })
-          .catch(function (err) {
-            formMessage.textContent = 'Request failed: ' + (err.message || 'check server');
-            formMessage.classList.add('text-danger');
-          })
-          .finally(function () { submitBtn.disabled = false; });
-      });
-    })();
-  </script>
 </body>
 </html>

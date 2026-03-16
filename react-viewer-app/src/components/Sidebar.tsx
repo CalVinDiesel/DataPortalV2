@@ -47,6 +47,10 @@ interface SidebarProps {
     onDeleteAnnotation: (type: 'marker' | 'line' | 'polygon', index: number) => void;
     onPanToAnnotation: (type: 'marker' | 'line' | 'polygon', index: number) => void;
     onEditItem: (type: 'measurement' | 'annotation', subtype: string, index: number) => void;
+    /** Token price for this 3D model (from MapData.purchase_price_tokens). Used to show price and link to token wallet. */
+    purchasePriceTokens?: number;
+    /** Current model id (mapDataID). Used for purchase context. */
+    modelId?: string | null;
 }
 
 interface LayerState {

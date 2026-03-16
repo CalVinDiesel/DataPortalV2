@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-  <title>Account Profile | TemaDigital Data Portal</title>
+  <title>Account Profile | 3DHub Data Portal</title>
 
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="../../assets/img/favicon/favicon.ico">
@@ -59,6 +59,37 @@
       margin-bottom: 1.5rem;
     }
     .profile-card h5 { margin-bottom: 1rem; font-weight: 600; }
+    .profile-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.5rem 1rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .profile-row:last-child { border-bottom: none; }
+    .profile-label {
+      font-weight: 500;
+      color: #566a7f;
+      min-width: 140px;
+    }
+    .profile-value {
+      color: #333;
+      flex: 1;
+      min-width: 0;
+    }
+    .profile-actions { flex-shrink: 0; }
+    .profile-inline-form {
+      margin-top: 0.5rem;
+      padding: 0.75rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      max-width: 400px;
+    }
+    .profile-inline-form .form-control { margin-bottom: 0.5rem; }
+    .profile-inline-form .btn { margin-right: 0.5rem; margin-top: 0.25rem; }
+    .back-btn:hover { color: #696cff !important; background-color: #f8f9fa !important; }
+    .back-btn:hover i { color: inherit !important; }
   </style>
 </head>
 
@@ -66,70 +97,98 @@
 
   <div class="hero-bg">
     <div class="container">
-      <a href="landing-page.html" class="btn btn-label-secondary btn-sm mb-4 fw-medium border shadow-sm" style="background: white;">
+      <a href="landing-page.html" class="btn btn-label-secondary btn-sm mb-4 fw-medium border shadow-sm back-btn" style="background: white; color: #566a7f;">
         <i class="bx bx-arrow-back me-1"></i> Back
       </a>
       <h2 class="h3 fw-bold text-dark mb-2">Account profile</h2>
-      <p class="text-muted mb-0">Manage your account: change password, contact number, or email.</p>
+      <p class="text-muted mb-0">View and manage your personal details. You can change your name, password, contact number, or email from the options beside each field.</p>
     </div>
   </div>
 
   <div class="container mt-4 mb-5 pb-5">
     <div id="profileLoadError" class="alert alert-danger d-none" role="alert"></div>
 
-    <!-- Change Password -->
     <div class="profile-card">
-      <h5><i class="bx bx-lock-alt me-2"></i>Change password</h5>
-      <p class="text-muted small mb-3">If you signed up with email and password, you can set a new password here. Accounts that use only Google or Microsoft sign-in do not have a password; you can still set one for email login.</p>
-      <form id="formPassword" class="row g-3">
-        <div class="col-md-6">
-          <label for="currentPassword" class="form-label">Current password</label>
-          <input type="password" class="form-control" id="currentPassword" name="currentPassword" autocomplete="current-password" required>
-        </div>
-        <div class="col-md-6">
-          <label for="newPassword" class="form-label">New password</label>
-          <input type="password" class="form-control" id="newPassword" name="newPassword" minlength="8" autocomplete="new-password" required>
-        </div>
-        <div class="col-12">
-          <button type="submit" class="btn btn-primary" id="btnPasswordSubmit">Update password</button>
-          <span id="passwordMessage" class="ms-2 small"></span>
-        </div>
-      </form>
-    </div>
+      <h5><i class="bx bx-user me-2"></i>Personal details</h5>
+      <p class="text-muted small mb-4">Details from your sign-up. Name, password, contact number, and email can be changed.</p>
 
-    <!-- Change Contact Number -->
-    <div class="profile-card">
-      <h5><i class="bx bx-phone me-2"></i>Contact number</h5>
-      <form id="formContact" class="row g-3">
-        <div class="col-md-6">
-          <label for="contactNumber" class="form-label">Contact number</label>
-          <input type="tel" class="form-control" id="contactNumber" name="contactNumber" placeholder="e.g. +60 12-345 6789" autocomplete="tel">
-        </div>
-        <div class="col-12">
-          <button type="submit" class="btn btn-primary" id="btnContactSubmit">Update contact number</button>
-          <span id="contactMessage" class="ms-2 small"></span>
-        </div>
-      </form>
-    </div>
+      <!-- Name: value + Edit name beside it -->
+      <div class="profile-row">
+        <span class="profile-label">Name</span>
+        <span class="profile-value" id="profile-name">—</span>
+        <span class="profile-actions">
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnChangeName">Edit name</button>
+        </span>
+      </div>
+      <div id="inlineFormName" class="profile-inline-form d-none">
+        <label class="form-label small">Display name</label>
+        <input type="text" class="form-control form-control-sm" id="newName" placeholder="Your full name">
+        <button type="button" class="btn btn-sm btn-primary" id="btnNameSubmit">Update name</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnNameCancel">Cancel</button>
+        <span id="nameMessage" class="small ms-2"></span>
+      </div>
 
-    <!-- Change Email -->
-    <div class="profile-card">
-      <h5><i class="bx bx-envelope me-2"></i>Email address</h5>
-      <p class="text-muted small mb-3">Changing your email will update it across the Data Portal. If you use Google or Microsoft sign-in, our records will be updated to the new email; you will need to sign in again after the change.</p>
-      <form id="formEmail" class="row g-3">
-        <div class="col-md-6">
-          <label for="currentEmail" class="form-label">Current email</label>
-          <input type="email" class="form-control" id="currentEmail" readonly disabled>
-        </div>
-        <div class="col-md-6">
-          <label for="newEmail" class="form-label">New email address</label>
-          <input type="email" class="form-control" id="newEmail" name="newEmail" placeholder="new@email.com" required>
-        </div>
-        <div class="col-12">
-          <button type="submit" class="btn btn-primary" id="btnEmailSubmit">Update email</button>
-          <span id="emailMessage" class="ms-2 small"></span>
-        </div>
-      </form>
+      <!-- Email: value + Change email beside it -->
+      <div class="profile-row">
+        <span class="profile-label">Email</span>
+        <span class="profile-value" id="profile-email">—</span>
+        <span class="profile-actions">
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnChangeEmail">Change email</button>
+        </span>
+      </div>
+      <div id="inlineFormEmail" class="profile-inline-form d-none">
+        <label class="form-label small">New email address</label>
+        <input type="email" class="form-control form-control-sm" id="newEmail" placeholder="new@email.com">
+        <button type="button" class="btn btn-sm btn-primary" id="btnEmailSubmit">Update email</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnEmailCancel">Cancel</button>
+        <span id="emailMessage" class="small ms-2"></span>
+      </div>
+
+      <!-- Contact: value + Change contact beside it -->
+      <div class="profile-row">
+        <span class="profile-label">Contact number</span>
+        <span class="profile-value" id="profile-contact">—</span>
+        <span class="profile-actions">
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnChangeContact">Change contact</button>
+        </span>
+      </div>
+      <div id="inlineFormContact" class="profile-inline-form d-none">
+        <label class="form-label small">New contact number</label>
+        <input type="tel" class="form-control form-control-sm" id="contactNumber" placeholder="e.g. +60 12-345 6789">
+        <button type="button" class="btn btn-sm btn-primary" id="btnContactSubmit">Update contact</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnContactCancel">Cancel</button>
+        <span id="contactMessage" class="small ms-2"></span>
+      </div>
+
+      <!-- Password: masked or "Not set" + Change password beside it -->
+      <div class="profile-row">
+        <span class="profile-label">Password</span>
+        <span class="profile-value" id="profile-password">—</span>
+        <span class="profile-actions">
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnChangePassword">Change password</button>
+        </span>
+      </div>
+      <div id="inlineFormPassword" class="profile-inline-form d-none">
+        <label class="form-label small">Current password</label>
+        <input type="password" class="form-control form-control-sm" id="currentPassword" autocomplete="current-password" placeholder="Current password">
+        <label class="form-label small mt-2">New password</label>
+        <input type="password" class="form-control form-control-sm" id="newPassword" minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
+        <button type="button" class="btn btn-sm btn-primary" id="btnPasswordSubmit">Update password</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPasswordCancel">Cancel</button>
+        <span id="passwordMessage" class="small ms-2"></span>
+      </div>
+
+      <!-- Role (read-only) -->
+      <div class="profile-row">
+        <span class="profile-label">Account role</span>
+        <span class="profile-value" id="profile-role">—</span>
+      </div>
+
+      <!-- Sign-in method (read-only) -->
+      <div class="profile-row">
+        <span class="profile-label">Sign-in method</span>
+        <span class="profile-value" id="profile-provider">—</span>
+      </div>
     </div>
   </div>
 
@@ -145,7 +204,14 @@
         var el = document.getElementById(elId);
         if (!el) return;
         el.textContent = text || '';
-        el.className = 'ms-2 small ' + (isError ? 'text-danger' : 'text-success');
+        el.className = 'small ms-2 ' + (isError ? 'text-danger' : 'text-success');
+      }
+
+      function hideInlineForms() {
+        document.getElementById('inlineFormName').classList.add('d-none');
+        document.getElementById('inlineFormPassword').classList.add('d-none');
+        document.getElementById('inlineFormContact').classList.add('d-none');
+        document.getElementById('inlineFormEmail').classList.add('d-none');
       }
 
       function loadProfile() {
@@ -157,8 +223,16 @@
               document.getElementById('profileLoadError').textContent = data.message || 'Failed to load profile.';
               return;
             }
-            document.getElementById('currentEmail').value = data.email || '';
-            document.getElementById('contactNumber').value = data.contactNumber || '';
+            document.getElementById('profile-name').textContent = data.name || '—';
+            document.getElementById('profile-email').textContent = data.email || '—';
+            document.getElementById('profile-contact').textContent = data.contactNumber || '—';
+            document.getElementById('profile-password').textContent = data.hasPassword ? '••••••••' : 'Not set (sign in with Google/Microsoft)';
+            document.getElementById('profile-role').textContent = (data.role || 'client').charAt(0).toUpperCase() + (data.role || '').slice(1);
+            var providerLabel = (data.provider || 'local').toLowerCase();
+            if (providerLabel === 'local') providerLabel = 'Email';
+            else if (providerLabel === 'google') providerLabel = 'Google';
+            else if (providerLabel === 'microsoft') providerLabel = 'Microsoft';
+            document.getElementById('profile-provider').textContent = providerLabel;
           })
           .catch(function () {
             document.getElementById('profileLoadError').classList.remove('d-none');
@@ -169,26 +243,82 @@
       document.addEventListener('DOMContentLoaded', function () {
         loadProfile();
 
-        document.getElementById('formPassword').addEventListener('submit', function (e) {
-          e.preventDefault();
-          var btn = document.getElementById('btnPasswordSubmit');
-          var msg = document.getElementById('passwordMessage');
+        document.getElementById('btnChangeName').addEventListener('click', function () {
+          hideInlineForms();
+          document.getElementById('newName').value = document.getElementById('profile-name').textContent;
+          if (document.getElementById('profile-name').textContent === '—') document.getElementById('newName').value = '';
+          document.getElementById('inlineFormName').classList.remove('d-none');
+          showMessage('nameMessage', '');
+        });
+        document.getElementById('btnNameCancel').addEventListener('click', function () {
+          document.getElementById('inlineFormName').classList.add('d-none');
+          showMessage('nameMessage', '');
+        });
+        document.getElementById('btnNameSubmit').addEventListener('click', function () {
+          var btn = document.getElementById('btnNameSubmit');
+          var name = document.getElementById('newName').value.trim();
+          if (!name) {
+            showMessage('nameMessage', 'Please enter a name.', true);
+            return;
+          }
           btn.disabled = true;
-          msg.textContent = '';
-          fetch(AUTH_API + '/api/auth/profile/password', {
+          showMessage('nameMessage', '');
+          fetch(AUTH_API + '/api/auth/profile/name', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({
-              currentPassword: document.getElementById('currentPassword').value,
-              newPassword: document.getElementById('newPassword').value
-            })
+            body: JSON.stringify({ name: name })
           })
             .then(function (r) { return r.json(); })
             .then(function (data) {
               if (data.success) {
-                showMessage('passwordMessage', data.message, false);
-                document.getElementById('formPassword').reset();
+                showMessage('nameMessage', data.message || 'Name updated.', false);
+                document.getElementById('profile-name').textContent = data.name || name;
+                document.getElementById('inlineFormName').classList.add('d-none');
+              } else {
+                showMessage('nameMessage', data.message || 'Update failed.', true);
+              }
+            })
+            .catch(function () { showMessage('nameMessage', 'Network error.', true); })
+            .finally(function () { btn.disabled = false; });
+        });
+
+        document.getElementById('btnChangePassword').addEventListener('click', function () {
+          hideInlineForms();
+          document.getElementById('inlineFormPassword').classList.remove('d-none');
+          document.getElementById('currentPassword').value = '';
+          document.getElementById('newPassword').value = '';
+          showMessage('passwordMessage', '');
+        });
+        document.getElementById('btnPasswordCancel').addEventListener('click', function () {
+          document.getElementById('inlineFormPassword').classList.add('d-none');
+          showMessage('passwordMessage', '');
+        });
+        document.getElementById('btnPasswordSubmit').addEventListener('click', function () {
+          var btn = document.getElementById('btnPasswordSubmit');
+          var msg = document.getElementById('passwordMessage');
+          var current = document.getElementById('currentPassword').value;
+          var newPw = document.getElementById('newPassword').value;
+          if (!current || !newPw) {
+            showMessage('passwordMessage', 'Please fill both fields.', true);
+            return;
+          }
+          btn.disabled = true;
+          showMessage('passwordMessage', '');
+          fetch(AUTH_API + '/api/auth/profile/password', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ currentPassword: current, newPassword: newPw })
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (data.success) {
+                showMessage('passwordMessage', data.message || 'Password updated.', false);
+                document.getElementById('inlineFormPassword').classList.add('d-none');
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('profile-password').textContent = '••••••••';
               } else {
                 showMessage('passwordMessage', data.message || 'Update failed.', true);
               }
@@ -197,22 +327,35 @@
             .finally(function () { btn.disabled = false; });
         });
 
-        document.getElementById('formContact').addEventListener('submit', function (e) {
-          e.preventDefault();
+        document.getElementById('btnChangeContact').addEventListener('click', function () {
+          hideInlineForms();
+          document.getElementById('contactNumber').value = document.getElementById('profile-contact').textContent;
+          if (document.getElementById('profile-contact').textContent === '—') document.getElementById('contactNumber').value = '';
+          document.getElementById('inlineFormContact').classList.remove('d-none');
+          showMessage('contactMessage', '');
+        });
+        document.getElementById('btnContactCancel').addEventListener('click', function () {
+          document.getElementById('inlineFormContact').classList.add('d-none');
+          showMessage('contactMessage', '');
+        });
+        document.getElementById('btnContactSubmit').addEventListener('click', function () {
           var btn = document.getElementById('btnContactSubmit');
           var msg = document.getElementById('contactMessage');
+          var contact = document.getElementById('contactNumber').value.trim();
           btn.disabled = true;
-          msg.textContent = '';
+          showMessage('contactMessage', '');
           fetch(AUTH_API + '/api/auth/profile/contact', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ contactNumber: document.getElementById('contactNumber').value.trim() })
+            body: JSON.stringify({ contactNumber: contact })
           })
             .then(function (r) { return r.json(); })
             .then(function (data) {
               if (data.success) {
                 showMessage('contactMessage', data.message || 'Updated.', false);
+                document.getElementById('profile-contact').textContent = contact || '—';
+                document.getElementById('inlineFormContact').classList.add('d-none');
               } else {
                 showMessage('contactMessage', data.message || 'Update failed.', true);
               }
@@ -221,14 +364,25 @@
             .finally(function () { btn.disabled = false; });
         });
 
-        document.getElementById('formEmail').addEventListener('submit', function (e) {
-          e.preventDefault();
+        document.getElementById('btnChangeEmail').addEventListener('click', function () {
+          hideInlineForms();
+          document.getElementById('newEmail').value = '';
+          document.getElementById('inlineFormEmail').classList.remove('d-none');
+          showMessage('emailMessage', '');
+        });
+        document.getElementById('btnEmailCancel').addEventListener('click', function () {
+          document.getElementById('inlineFormEmail').classList.add('d-none');
+          showMessage('emailMessage', '');
+        });
+        document.getElementById('btnEmailSubmit').addEventListener('click', function () {
           var btn = document.getElementById('btnEmailSubmit');
-          var msg = document.getElementById('emailMessage');
           var newEmail = document.getElementById('newEmail').value.trim();
-          if (!newEmail) return;
+          if (!newEmail) {
+            showMessage('emailMessage', 'Please enter a new email.', true);
+            return;
+          }
           btn.disabled = true;
-          msg.textContent = '';
+          showMessage('emailMessage', '');
           fetch(AUTH_API + '/api/auth/profile/email', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -239,6 +393,8 @@
             .then(function (data) {
               if (data.success) {
                 showMessage('emailMessage', data.message || 'Updated.', false);
+                document.getElementById('profile-email').textContent = newEmail;
+                document.getElementById('inlineFormEmail').classList.add('d-none');
                 if (data.requireRelogin) {
                   setTimeout(function () {
                     window.location.href = LOGIN_URL + '?message=email_updated';
