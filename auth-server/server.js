@@ -1885,7 +1885,6 @@ app.post('/api/upload/init', express.json(), async (req, res) => {
       category: (req.body.category || '').trim(),
       latitude: req.body.latitude != null && req.body.latitude !== '' ? parseFloat(req.body.latitude) : null,
       longitude: req.body.longitude != null && req.body.longitude !== '' ? parseFloat(req.body.longitude) : null,
-      areaCoverage: (req.body.areaCoverage || '').trim(),
       imageMetadata: (req.body.imageMetadata || '').trim(),
       totalFiles: req.body.totalFiles || 0,
       totalSizeBytes: req.body.totalSizeBytes || 0,
@@ -2074,7 +2073,7 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
           finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
           metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
           isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
-          metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0,
+          'Unknown', metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0,
           tokensChargedVal,
         ],
       );
@@ -2128,6 +2127,46 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
     return res.status(500).json({ success: false, message: e.message || 'Failed to finalize upload.' });
   }
 });
+
+// ---- SFTP Project Support ----
+app.post('/api/upload/test-sftp', requireAuth, express.json(), async (req, res) => {
+  const { host, port, username, password } = req.body;
+  if (!host || !username) return res.status(400).json({ success: false, message: 'Missing host/user' });
+  
+  const sftp = new SftpClient();
+  try {
+    await sftp.connect({ host, port: parseInt(port) || 22, username, password });
+    await sftp.end();
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/upload/sftp-project', requireAuth, express.json(), async (req, res) => {
+  if (!process.env.PG_DATABASE) return res.status(500).json({ success: false, message: 'DB not configured' });
+  
+  try {
+    const { projectTitle, projectDescription, category, latitude, longitude, sftpDetails } = req.body;
+    const projectID = `sftp_${Date.now()}`;
+    const email = req.user.email;
+
+    await pgQuery(
+      `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, created_by_email, project_description, category, latitude, longitude, image_metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        projectID, projectTitle, 'sftp', email, projectDescription, category,
+        parseFloat(latitude), parseFloat(longitude), JSON.stringify({ sftp: sftpDetails })
+      ]
+    );
+
+    res.json({ success: true, message: 'SFTP Project created.' });
+  } catch (e) {
+    console.error('SFTP Project Creation Error:', e);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 
 // ---- Admin: list client uploads ----
 app.get('/api/admin/client-uploads', async (req, res) => {
