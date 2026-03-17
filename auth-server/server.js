@@ -2151,7 +2151,7 @@ app.get('/api/user/my-uploads', requireAuth, async (req, res) => {
   try {
     const email = req.user.email;
     const q = await pgQuery(
-      `SELECT cu.id, cu.project_id, cu.project_title, cu.upload_type, cu.file_count, cu.file_paths, cu.camera_models, cu.capture_date, cu.organization_name, cu.created_at, cu.created_by_email, cu.request_status, cu.rejected_reason, cu.decided_at, cu.decided_by, cu.project_description, cu.category, cu.latitude, cu.longitude, cu.area_coverage, cu.image_metadata, cu.drone_pos_file_path, cu.tokens_charged,
+      `SELECT cu.id, cu.project_id, cu.project_title, cu.upload_type, cu.file_count, cu.file_paths, cu.camera_models, cu.capture_date, cu.organization_name, cu.created_at, cu.created_by_email, cu.request_status, cu.rejected_reason, cu.decided_at, cu.decided_by, cu.project_description, cu.category, cu.latitude, cu.longitude, cu.area_coverage, cu.image_metadata, cu.drone_pos_file_path, cu.total_size_bytes, cu.tokens_charged,
               pr.id AS processing_request_id, pr.status AS processing_status, pr.result_tileset_url AS processing_result_tileset_url, pr.delivered_at AS processing_delivered_at, pr.delivery_notes AS processing_delivery_notes
        FROM public."ClientUploads" cu
        LEFT JOIN LATERAL (SELECT id, status, result_tileset_url, delivered_at, delivery_notes FROM public."ProcessingRequests" WHERE upload_id = cu.id ORDER BY id DESC LIMIT 1) pr ON true
