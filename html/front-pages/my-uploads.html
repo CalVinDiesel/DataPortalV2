@@ -560,14 +560,11 @@
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                     ${statusVal === 'completed' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="landing-page.html#landingMap"><i class="bx bx-map"></i> View Live Map</a></li>' : ''}
-<<<<<<< Updated upstream
-                    <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showProjectDetails(${item.id})"><i class="bx bx-info-circle text-info"></i> View Details</a></li>
-                    <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showEditModal(${item.id})"><i class="bx bx-edit text-secondary"></i> Edit Metadata</a></li>
-=======
+                    ${statusVal === 'completed' ? `<li><a class="dropdown-item btn-dropdown-link text-primary fw-medium" href="${AUTH_API}/api/user/my-uploads/${item.id}/download" download><i class="bx bx-download"></i> Download All Files (ZIP)</a></li>` : ''}
                     ${(item.processing_has_result && item.processing_result_download_url) ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="' + item.processing_result_download_url + '"><i class="bx bx-download"></i> Download 3D model</a></li>' : ''}
                     ${statusVal === 'sent' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="javascript:void(0);" onclick="confirmReceived(' + item.id + ')"><i class="bx bx-check-circle"></i> Confirm received</a></li>' : ''}
-                    <li><a class="dropdown-item btn-dropdown-link" href="#"><i class="bx bx-edit text-secondary"></i> Edit Metadata</a></li>
->>>>>>> Stashed changes
+                    <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showProjectDetails(${item.id})"><i class="bx bx-info-circle text-info"></i> View Details</a></li>
+                    <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showEditModal(${item.id})"><i class="bx bx-edit text-secondary"></i> Edit Metadata</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item btn-dropdown-link text-danger" href="javascript:void(0);" onclick="deleteProject(' + item.id + ')"><i class="bx bx-trash"></i> Delete Project completely</a></li>
                   </ul>

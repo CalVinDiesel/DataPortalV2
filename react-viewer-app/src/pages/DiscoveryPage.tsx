@@ -28,47 +28,8 @@ import {
     Math as CesiumMath,
 } from 'cesium';
 import { ArrowLeft } from 'lucide-react';
-import { api } from '../services/api';
 import Sidebar from '../components/Sidebar';
-// ... rest of imports
 
-// Helper: Convert Cartesian3 to [lon, lat, alt] (degrees)
-const cartesianToCoords = (cartesian: Cartesian3) => {
-    const cartographic = Cartographic.fromCartesian(cartesian);
-    return [
-        (cartographic.longitude * 180) / Math.PI,
-        (cartographic.latitude * 180) / Math.PI,
-        cartographic.height
-    ];
-};
-
-// Helper: Convert positions to GeoJSON Geometry
-const toGeoJSON = (type: string, positions: Cartesian3[]) => {
-    const coords = positions.map(cartesianToCoords);
-
-    if (type === 'marker') {
-        return { type: 'Point', coordinates: coords[0] };
-    }
-    // Circle needs center and radius (or a point on perimeter). 
-    // For simplicity in GeoJSON, we can store it as a LineString of [center, perimeterPoint] 
-    // which allows us to reconstruct the radius.
-    if (type === 'circle') {
-        return { type: 'LineString', coordinates: coords };
-    }
-    if (type === 'line' || type === 'length' || type === 'height') {
-        return { type: 'LineString', coordinates: coords };
-    }
-    if (type === 'polygon' || type === 'area' || type === 'triangle') {
-        // Close the polygon if not closed
-        if (coords.length > 0 &&
-            (coords[0][0] !== coords[coords.length - 1][0] ||
-                coords[0][1] !== coords[coords.length - 1][1])) {
-            coords.push(coords[0]);
-        }
-        return { type: 'Polygon', coordinates: [coords] };
-    }
-    return null;
-};
 
 import MeasurementToolbar from '../components/MeasurementToolbar';
 import AnnotationToolbar from '../components/AnnotationToolbar';
@@ -203,7 +164,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
     const viewerRef = useRef<Viewer | null>(null);
     const handlerRef = useRef<ScreenSpaceEventHandler | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [isViewerReady, setIsViewerReady] = useState(false);
+
     const [activeTool, setActiveTool] = useState<string | null>(null);
     const [loadedTileset, setLoadedTileset] = useState<any | null>(null); // Use any to avoid importing Cesium3DTileset type explicitly if it causes issues, or we can use Cesium3DTileset since we export it from cesium
     const [, setDrawingPoints] = useState<Cartesian3[]>([]);
@@ -274,399 +235,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         name: string;
     } | null>(null);
 
-    // Debug State
-    const [debugStatus, setDebugStatus] = useState<string>("Initializing...");
-    const [lastFetchCount, setLastFetchCount] = useState<number | null>(null);
 
-    // Load features on mount
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchFeatures = async () => {
-            setDebugStatus("Fetching...");
-            try {
-                const features = await api.getFeatures();
-                console.log("Fetched features from API:", features);
-                setLastFetchCount(features.length);
-                setDebugStatus(`Loaded ${features.length} items.`);
-
-                if (!isMounted) return;
-                if (!viewerRef.current) {
-                    setDebugStatus("Loaded items but viewer not ready.");
-                    return;
-                }
-                const viewer = viewerRef.current;
-
-                // Clear existing entities from state-tracked lists to be safe? 
-                // Better to assume we are initializing.
-                // But if this runs twice, we might duplicate.
-                // Ideally we should clear the entities we previously added?
-                // Since this only runs on mount (or viewer ready), just proceeding with isMounted should prevent the double-add from the async gap.
-
-                const newDrawn: DrawnMeasurements = { length: [], height: [], triangle: [], area: [], circle: [] };
-                const newAnnotations: UserAnnotations = { markers: [], lines: [], polygons: [] };
-
-                // Track max counters - Reset to 1 so if all deleted, next is 1
-                const counters = {
-                    length: 1,
-                    height: 1,
-                    triangle: 1,
-                    area: 1,
-                    circle: 1,
-                    markers: 1,
-                    lines: 1,
-                    polygons: 1,
-                };
-
-                features.forEach(f => {
-                    try {
-                        if (!isMounted) return;
-                        // ... (existing parsing logic) ...
-                        // GeoJSON parsing depends on type
-                        let entity: Entity | null = null;
-                        let parsedPositions: Cartesian3[] = [];
-
-                        if (f.geom.type === 'Point') {
-                            const [lon, lat, alt] = f.geom.coordinates;
-                            parsedPositions = [Cartesian3.fromDegrees(lon, lat, alt)];
-                        } else if (f.geom.type === 'LineString') {
-                            parsedPositions = f.geom.coordinates.map((c: number[]) => Cartesian3.fromDegrees(c[0], c[1], c[2]));
-                        } else if (f.geom.type === 'Polygon') {
-                            parsedPositions = f.geom.coordinates[0].map((c: number[]) => Cartesian3.fromDegrees(c[0], c[1], c[2]));
-                            // Remove last point (closure) for Cesium which accepts open array for polygon hierarchy? 
-                            // Cesium PolygonHierarchy handles it, but let's keep it safe.
-                            parsedPositions.pop();
-                        }
-
-                        // Create Entity based on type
-                        if (f.type === 'length') {
-                            // ... (existing length creation) ...
-                            const distance = Cartesian3.distance(parsedPositions[0], parsedPositions[1]);
-                            const midpoint = Cartesian3.midpoint(parsedPositions[0], parsedPositions[1], new Cartesian3());
-                            entity = viewer.entities.add({
-                                polyline: new PolylineGraphics({
-                                    positions: parsedPositions,
-                                    width: 3,
-                                    material: Color.ORANGE,
-                                    clampToGround: true,
-                                }),
-                                label: new LabelGraphics({
-                                    text: convertDistance(distance),
-                                    font: '14px sans-serif',
-                                    fillColor: Color.BLACK,
-                                    showBackground: true,
-                                    backgroundColor: Color.WHITE,
-                                    backgroundPadding: new Cartesian2(7, 5),
-                                    style: 0,
-                                    pixelOffset: new Cartesian2(0, -10),
-                                    horizontalOrigin: HorizontalOrigin.CENTER,
-                                    verticalOrigin: VerticalOrigin.BOTTOM,
-                                    disableDepthTestDistance: Number.POSITIVE_INFINITY,
-                                }),
-                                position: midpoint,
-                            });
-                            newDrawn.length.push(entity);
-                        }
-                        // ... (other types omitted for brevity in this replace block, need to be careful not to overwrite them if I don't include them) ...
-                        // WAIT: replace_file_content must be exact. I cannot omit lines.
-                        // I will target a smaller block to add the log, or use multi_replace.
-                        // Actually, let's just add the log at the top of fetchFeatures and inside the loop.
-                        else if (f.type === 'height') {
-                            const cartographic1 = Cartographic.fromCartesian(parsedPositions[0]);
-                            const cartographic2 = Cartographic.fromCartesian(parsedPositions[1]);
-                            const heightDiff = Math.abs(cartographic1.height - cartographic2.height);
-                            const midpoint = Cartesian3.midpoint(parsedPositions[0], parsedPositions[1], new Cartesian3());
-                            entity = viewer.entities.add({
-                                polyline: new PolylineGraphics({
-                                    positions: parsedPositions,
-                                    width: 3,
-                                    material: Color.PURPLE,
-                                }),
-                                label: new LabelGraphics({
-                                    text: convertDistance(heightDiff),
-                                    font: '14px sans-serif',
-                                    fillColor: Color.BLACK,
-                                    showBackground: true,
-                                    backgroundColor: Color.WHITE,
-                                    backgroundPadding: new Cartesian2(7, 5),
-                                    style: 0,
-                                    pixelOffset: new Cartesian3(10, 0, 0),
-                                    horizontalOrigin: HorizontalOrigin.LEFT,
-                                    verticalOrigin: VerticalOrigin.CENTER,
-                                }),
-                                position: midpoint,
-                            });
-                            newDrawn.height.push(entity);
-                        } else if (f.type === 'triangle') {
-                        } else if (f.type === 'triangle') {
-                            if (parsedPositions.length < 2) return;
-                            const p1 = parsedPositions[0];
-                            const p2 = parsedPositions[1];
-
-                            const carto1 = Cartographic.fromCartesian(p1);
-                            const carto2 = Cartographic.fromCartesian(p2);
-                            const cartoRight = new Cartographic(carto2.longitude, carto2.latitude, carto1.height);
-                            const p3 = Cartesian3.fromRadians(cartoRight.longitude, cartoRight.latitude, cartoRight.height);
-
-                            const slantDist = Cartesian3.distance(p1, p2);
-                            const vertDist = Math.abs(carto2.height - carto1.height);
-                            const horizDist = Cartesian3.distance(p1, p3);
-
-                            const midSlant = Cartesian3.midpoint(p1, p2, new Cartesian3());
-                            const midVert = Cartesian3.midpoint(p2, p3, new Cartesian3());
-                            const midHoriz = Cartesian3.midpoint(p1, p3, new Cartesian3());
-
-                            const labelStyle: Partial<LabelGraphics.ConstructorOptions> = {
-                                font: '13px sans-serif',
-                                fillColor: Color.BLACK,
-                                showBackground: true,
-                                backgroundColor: Color.WHITE,
-                                backgroundPadding: new Cartesian2(7, 5),
-                                style: 0,
-                                horizontalOrigin: HorizontalOrigin.CENTER,
-                                verticalOrigin: VerticalOrigin.BOTTOM,
-                                pixelOffset: new Cartesian2(0, -6),
-                                disableDepthTestDistance: Number.POSITIVE_INFINITY,
-                            };
-
-                            const slantEntity = viewer.entities.add({
-                                polyline: new PolylineGraphics({ positions: [p1, p2], width: 3, material: Color.WHITE }),
-                                position: midSlant,
-                                label: new LabelGraphics({ ...labelStyle, text: convertDistance(slantDist) }),
-                            });
-
-                            const vertEntity = viewer.entities.add({
-                                polyline: new PolylineGraphics({ positions: [p2, p3], width: 3, material: Color.WHITE }),
-                                position: midVert,
-                                label: new LabelGraphics({ ...labelStyle, text: convertDistance(vertDist) }),
-                            });
-
-                            const horizEntity = viewer.entities.add({
-                                polyline: new PolylineGraphics({
-                                    positions: [p1, p3],
-                                    width: 3,
-                                    material: new PolylineDashMaterialProperty({ color: Color.WHITE, dashLength: 16 }),
-                                }),
-                                position: midHoriz,
-                                label: new LabelGraphics({ ...labelStyle, text: convertDistance(horizDist) }),
-                            });
-
-                            const dot = (pos: Cartesian3) => viewer.entities.add({
-                                position: pos,
-                                point: new PointGraphics({
-                                    pixelSize: 10,
-                                    color: Color.WHITE,
-                                    outlineColor: Color.BLACK,
-                                    outlineWidth: 1,
-                                    disableDepthTestDistance: Number.POSITIVE_INFINITY,
-                                }),
-                            });
-                            const d1 = dot(p1);
-                            const d2 = dot(p2);
-                            const d3 = dot(p3);
-
-                            entity = slantEntity;
-                            (entity as any).subEntities = [vertEntity, horizEntity, d1, d2, d3];
-                            newDrawn.triangle.push(entity);
-                        } else if (f.type === 'area') {
-                            let perimeter = 0;
-                            for (let i = 0; i < parsedPositions.length; i++) {
-                                const j = (i + 1) % parsedPositions.length;
-                                perimeter += Cartesian3.distance(parsedPositions[i], parsedPositions[j]);
-                            }
-                            const area = perimeter * perimeter / 16; // Approx
-                            let lonSum = 0;
-                            let latSum = 0;
-                            let minHeight = Number.POSITIVE_INFINITY;
-                            const cartos = parsedPositions.map(p => Cartographic.fromCartesian(p));
-                            cartos.forEach(c => {
-                                lonSum += c.longitude;
-                                latSum += c.latitude;
-                                if (c.height < minHeight) minHeight = c.height;
-                            });
-                            const centroid = Cartesian3.fromRadians(
-                                lonSum / cartos.length,
-                                latSum / cartos.length,
-                                minHeight
-                            );
-
-                            entity = viewer.entities.add({
-                                polygon: new PolygonGraphics({
-                                    hierarchy: parsedPositions,
-                                    material: Color.CYAN.withAlpha(0.5),
-                                    outline: true,
-                                    outlineColor: Color.CYAN,
-                                    outlineWidth: 2,
-                                    classificationType: ClassificationType.CESIUM_3D_TILE,
-                                }),
-                                label: new LabelGraphics({
-                                    text: `Area: ${convertArea(area)}\nPerimeter: ${convertDistance(perimeter)}`,
-                                    font: '14px sans-serif',
-                                    fillColor: Color.BLACK,
-                                    showBackground: true,
-                                    backgroundColor: Color.WHITE,
-                                    backgroundPadding: new Cartesian2(7, 5),
-                                    style: 0,
-                                    horizontalOrigin: HorizontalOrigin.CENTER,
-                                    verticalOrigin: VerticalOrigin.CENTER,
-                                    disableDepthTestDistance: Number.POSITIVE_INFINITY,
-                                }),
-                                position: centroid,
-                            });
-                            newDrawn.area.push(entity);
-                        } else if (f.type === 'circle') {
-                            if (parsedPositions.length < 2) {
-                                console.warn("Skipping invalid circle with < 2 points:", f);
-                                return; // Skip this item
-                            }
-                            const radius = Cartesian3.distance(parsedPositions[0], parsedPositions[1]);
-                            const area = Math.PI * radius * radius;
-                            entity = viewer.entities.add({
-                                position: parsedPositions[0],
-                                ellipse: new EllipseGraphics({
-                                    semiMajorAxis: radius,
-                                    semiMinorAxis: radius,
-                                    material: Color.GREEN.withAlpha(0.5),
-                                    outline: true,
-                                    outlineColor: Color.GREEN,
-                                    outlineWidth: 2,
-                                    classificationType: ClassificationType.CESIUM_3D_TILE,
-                                }),
-                                label: new LabelGraphics({
-                                    text: `Radius: ${convertDistance(radius)}\nArea: ${convertArea(area)}`,
-                                    font: '14px sans-serif',
-                                    fillColor: Color.BLACK,
-                                    showBackground: true,
-                                    backgroundColor: Color.WHITE,
-                                    backgroundPadding: new Cartesian2(7, 5),
-                                    style: 0,
-                                    pixelOffset: new Cartesian2(0, -10),
-                                    horizontalOrigin: HorizontalOrigin.CENTER,
-                                    verticalOrigin: VerticalOrigin.CENTER,
-                                    disableDepthTestDistance: Number.POSITIVE_INFINITY,
-                                }),
-                            });
-                            newDrawn.circle.push(entity);
-                        } else if (f.type === 'marker') {
-                            entity = viewer.entities.add({
-                                position: parsedPositions[0],
-                                point: new PointGraphics({
-                                    pixelSize: 12,
-                                    color: Color.RED,
-                                    outlineColor: Color.WHITE,
-                                    outlineWidth: 2,
-                                    disableDepthTestDistance: Number.POSITIVE_INFINITY,
-                                }),
-                                label: new LabelGraphics({
-                                    text: f.name,
-                                    font: '14px sans-serif',
-                                    fillColor: Color.BLACK,
-                                    showBackground: true,
-                                    backgroundColor: Color.WHITE,
-                                    backgroundPadding: new Cartesian2(7, 5),
-                                    style: 0,
-                                    pixelOffset: new Cartesian2(0, -20),
-                                    disableDepthTestDistance: Number.POSITIVE_INFINITY,
-                                }),
-                            });
-                            newAnnotations.markers.push(entity);
-                        } else if (f.type === 'line') {
-                            entity = viewer.entities.add({
-                                polyline: new PolylineGraphics({
-                                    positions: parsedPositions,
-                                    width: 3,
-                                    material: Color.ORANGE,
-                                    clampToGround: true,
-                                }),
-                            });
-                            newAnnotations.lines.push(entity);
-                        } else if (f.type === 'polygon') {
-                            entity = viewer.entities.add({
-                                polygon: new PolygonGraphics({
-                                    hierarchy: parsedPositions,
-                                    material: Color.PURPLE.withAlpha(0.5),
-                                    outline: true,
-                                    outlineColor: Color.PURPLE,
-                                    outlineWidth: 2,
-                                    classificationType: ClassificationType.CESIUM_3D_TILE,
-                                }),
-                            });
-                            newAnnotations.polygons.push(entity);
-                        }
-
-                        if (entity) {
-                            // (entity as any).id = f.id; // REMOVED: Entity.id is read-only
-                            (entity as any).dbId = f.id;
-                            (entity as any).measurementName = f.name;
-                            (entity as any).measurementDescription = f.description;
-                            (entity as any).measurementType = f.type;
-                            if (f.category === 'annotation') {
-                                (entity as any).annotationName = f.name;
-                                (entity as any).annotationDescription = f.description;
-                                (entity as any).annotationType = f.type;
-                            }
-
-                            // Update counter
-                            // Name format assumption: "Type N"
-                            const match = f.name.match(/(\d+)$/);
-                            if (match) {
-                                const num = parseInt(match[1]);
-                                // Map type to counter key
-                                let key = f.type;
-                                if (f.type === 'marker') key = 'markers';
-                                if (f.type === 'line') key = 'lines';
-                                if (f.type === 'polygon' && f.category === 'annotation') key = 'polygons';
-
-                                if ((counters as any)[key] <= num) {
-                                    (counters as any)[key] = num + 1;
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        console.error("Error processing feature", f, e);
-                    }
-                });
-
-                // Sort entities by their number suffix to ensure correct order
-                const sortByNumber = (a: Entity, b: Entity) => {
-                    const nameA = (a as any).measurementName || (a as any).annotationName || '';
-                    const nameB = (b as any).measurementName || (b as any).annotationName || '';
-                    const numA = parseInt(nameA.match(/(\d+)$/)?.[1] || '0');
-                    const numB = parseInt(nameB.match(/(\d+)$/)?.[1] || '0');
-                    return numA - numB;
-                };
-
-                newDrawn.length.sort(sortByNumber);
-                newDrawn.height.sort(sortByNumber);
-                newDrawn.triangle.sort(sortByNumber);
-                newDrawn.area.sort(sortByNumber);
-                newDrawn.circle.sort(sortByNumber);
-
-                newAnnotations.markers.sort(sortByNumber);
-                newAnnotations.lines.sort(sortByNumber);
-                newAnnotations.polygons.sort(sortByNumber);
-
-                setDrawnMeasurements(newDrawn);
-                setUserAnnotations(newAnnotations);
-                measurementCounters.current = counters;
-
-                // alert(`Loaded ${features.length} features from database.`); // Removed alert
-
-            } catch (err: any) {
-                console.error("Failed to load features:", err);
-                setDebugStatus(`Error: ${err.message}`);
-                // alert("Failed to load features: " + err.message); // Removed alert
-            }
-        };
-
-        if (isViewerReady && viewerRef.current) {
-            fetchFeatures();
-        }
-
-        return () => {
-            isMounted = false;
-        };
-    }, [isViewerReady]); // Run when viewer is ready
 
     // Handle click events for selection
     useEffect(() => {
@@ -807,54 +376,44 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const { type, subtype, index } = editingItem;
 
-        // DB ID lookup
-        let dbId: string | undefined;
-
+        // Update the actual state
         if (type === 'measurement') {
             setDrawnMeasurements(prev => {
                 const key = subtype as keyof DrawnMeasurements;
                 const newArray = [...prev[key]];
-                const entity = newArray[index];
-                if (entity) {
-                    (entity as any).measurementName = name;
-                    (entity as any).measurementDescription = description;
-                    dbId = (entity as any).dbId;
+                if (newArray[index]) {
+                    (newArray[index] as any).measurementName = name;
+                    (newArray[index] as any).measurementDescription = description;
+                    
+                    // Update label if it exists
+                    const entity = newArray[index];
+                    if (entity.label) {
+                        // Keep value, just update name if it was part of text? 
+                        // Actually labels for measurements usually show the value (distance/area).
+                        // Name is usually for the sidebar.
+                    }
                 }
-                return {
-                    ...prev,
-                    [key]: newArray
-                };
+                return { ...prev, [key]: newArray };
             });
         } else if (type === 'annotation') {
             setUserAnnotations(prev => {
-                let key: keyof UserAnnotations;
-                if (subtype === 'marker') key = 'markers';
-                else if (subtype === 'line') key = 'lines';
-                else key = 'polygons';
-
+                const key = subtype === 'marker' ? 'markers' : subtype === 'line' ? 'lines' : 'polygons' as keyof UserAnnotations;
                 const newArray = [...prev[key]];
-                const entity = newArray[index];
-                if (entity) {
-                    (entity as any).annotationName = name;
-                    (entity as any).annotationDescription = description;
-                    dbId = (entity as any).dbId;
+                if (newArray[index]) {
+                    (newArray[index] as any).annotationName = name;
+                    (newArray[index] as any).annotationDescription = description;
+                    
+                    // Update label for markers
+                    const entity = newArray[index];
+                    if (entity.label) {
+                        entity.label.text = name as any;
+                    }
                 }
-                return {
-                    ...prev,
-                    [key]: newArray
-                };
+                return { ...prev, [key]: newArray };
             });
         }
 
-        // Call API
-        if (dbId) {
-            api.updateFeature(dbId, { name, description }).catch(e => {
-                console.error("Update failed", e);
-                alert("Update failed: " + e.message);
-            });
-        }
-
-        // Update selectedEntity ...
+        // Update selectedEntity (for immediate popup update)
         if (selectedEntity &&
             selectedEntity.type === type &&
             selectedEntity.subtype === subtype &&
@@ -868,18 +427,12 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         }
     };
 
-    // ... createCircleMeasurement (omitted for brevity, skipped persistence for now for circle as discussed) ...
 
     const executeDeleteMeasurement = (type: 'length' | 'height' | 'triangle' | 'area' | 'circle', index: number) => {
         if (!viewerRef.current) return;
 
         const entity = drawnMeasurements[type][index];
         if (entity) {
-            // API Delete
-            if ((entity as any).dbId) {
-                api.deleteFeature((entity as any).dbId).catch(e => console.error("Delete failed", e));
-            }
-
             // Remove from Cesium viewer
             viewerRef.current.entities.remove(entity);
             if ((entity as any).subEntities) {
@@ -914,18 +467,12 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             }
         }
     };
-
     const executeDeleteAnnotation = (type: 'marker' | 'line' | 'polygon', index: number) => {
         if (!viewerRef.current) return;
 
         const annotationType = type === 'marker' ? 'markers' : type === 'line' ? 'lines' : 'polygons';
         const entity = userAnnotations[annotationType][index];
         if (entity) {
-            // API Delete
-            if ((entity as any).dbId) {
-                api.deleteFeature((entity as any).dbId).catch(e => console.error("Delete failed", e));
-            }
-
             viewerRef.current.entities.remove(entity);
 
             setUserAnnotations(prev => {
@@ -938,13 +485,6 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             });
         }
     };
-
-
-
-    // ... existing code ...
-
-    // ... render return ...
-
 
     // Unit conversion utility functions
     const convertDistance = (meters: number): string => {
@@ -991,7 +531,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         });
 
         viewerRef.current = viewer;
-        setIsViewerReady(true);
+
 
         // Remove Earth imagery — pure black background, 3D model only
         viewer.imageryLayers.removeAll();
@@ -1409,20 +949,6 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         (entity as any).measurementType = 'length';
         (entity as any).measurementName = name;
 
-        // SAVE TO API
-        api.createFeature({
-            name: name,
-            description: '',
-            type: 'length',
-            category: 'measurement',
-            geom: toGeoJSON('length', points)
-        }).then(saved => {
-            (entity as any).dbId = saved.id;
-        }).catch(e => {
-            console.error("Failed to save", e);
-            alert("Failed to save measurement: " + e.message);
-        });
-
         // Optimistic update
         setDrawnMeasurements(prev => {
             // Create new array with entity
@@ -1473,20 +999,6 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         (entity as any).measurementType = 'height';
         (entity as any).measurementName = name;
-
-        // SAVE TO API
-        api.createFeature({
-            name: name,
-            description: '',
-            type: 'height',
-            category: 'measurement',
-            geom: toGeoJSON('height', points)
-        }).then(saved => {
-            (entity as any).dbId = saved.id;
-        }).catch(e => {
-            console.error("Failed to save", e);
-            alert("Failed to save measurement: " + e.message);
-        });
 
         setDrawnMeasurements(prev => {
             const newArray = [...prev.height, entity];
@@ -1595,21 +1107,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const entity = slantEntity;
         (entity as any).measurementType = 'triangle';
         (entity as any).measurementName = name;
-        // Keep references to sub-entities for deletion
         (entity as any).subEntities = [vertEntity, horizEntity, d1, d2, d3];
-
-        // SAVE TO API
-        api.createFeature({
-            name,
-            description: '',
-            type: 'triangle',
-            category: 'measurement',
-            geom: toGeoJSON('line', [p1, p2]),
-        }).then(saved => {
-            (entity as any).dbId = saved.id;
-        }).catch(e => {
-            console.error('Failed to save', e);
-        });
 
         setDrawnMeasurements(prev => ({
             ...prev,
@@ -1676,22 +1174,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             position: centroid,
         });
 
-        (entity as any).measurementType = 'area';
         (entity as any).measurementName = name;
-
-        // SAVE TO API
-        api.createFeature({
-            name: name,
-            description: '',
-            type: 'area',
-            category: 'measurement',
-            geom: toGeoJSON('area', points)
-        }).then(saved => {
-            (entity as any).dbId = saved.id;
-        }).catch(e => {
-            console.error("Failed to save", e);
-            alert("Failed to save measurement: " + e.message);
-        });
 
         setDrawnMeasurements(prev => {
             const newArray = [...prev.area, entity];
@@ -1734,22 +1217,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const counter = measurementCounters.current.markers++;
         const name = `Point ${counter}`;
-        (entity as any).annotationType = 'marker';
         (entity as any).annotationName = name;
-
-        // SAVE TO API
-        api.createFeature({
-            name: name,
-            description: '',
-            type: 'marker',
-            category: 'annotation',
-            geom: toGeoJSON('marker', [position])
-        }).then(saved => {
-            (entity as any).dbId = saved.id;
-        }).catch(e => {
-            console.error("Failed to save", e);
-            alert("Failed to save measurement: " + e.message);
-        });
 
         setUserAnnotations(prev => ({
             ...prev,
@@ -1772,22 +1240,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const counter = measurementCounters.current.lines++;
         const name = `Line ${counter}`;
-        (entity as any).annotationType = 'line';
         (entity as any).annotationName = name;
-
-        // SAVE TO API
-        api.createFeature({
-            name: name,
-            description: '',
-            type: 'line',
-            category: 'annotation',
-            geom: toGeoJSON('line', points)
-        }).then(saved => {
-            (entity as any).dbId = saved.id;
-        }).catch(e => {
-            console.error("Failed to save", e);
-            alert("Failed to save measurement: " + e.message);
-        });
 
         setUserAnnotations(prev => ({
             ...prev,
@@ -1812,22 +1265,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const counter = measurementCounters.current.polygons++;
         const name = `Polygon ${counter}`;
-        (entity as any).annotationType = 'polygon';
         (entity as any).annotationName = name;
-
-        // SAVE TO API
-        api.createFeature({
-            name: name,
-            description: '',
-            type: 'polygon',
-            category: 'annotation',
-            geom: toGeoJSON('polygon', points)
-        }).then(saved => {
-            (entity as any).dbId = saved.id;
-        }).catch(e => {
-            console.error("Failed to save", e);
-            alert("Failed to save measurement: " + e.message);
-        });
 
         setUserAnnotations(prev => ({
             ...prev,
@@ -1885,29 +1323,6 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         (entity as any).measurementType = 'circle';
         (entity as any).measurementName = name;
-
-        // Optimistic update
-        setDrawnMeasurements(prev => {
-            const newArray = [...prev.circle, entity];
-            return {
-                ...prev,
-                circle: newArray,
-            };
-        });
-
-        // SAVE TO DATABASE
-        api.createFeature({
-            name: name,
-            description: '',
-            type: 'circle',
-            category: 'measurement',
-            geom: toGeoJSON('circle', points)
-        }).then(saved => {
-            (entity as any).dbId = saved.id;
-        }).catch(e => {
-            console.error("Failed to save circle:", e);
-            alert("Failed to save Circle: " + e.message);
-        });
         // Increment persistent counter
         measurementCounters.current.circle++;
     };
@@ -2048,36 +1463,6 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             </header>
 
             <div className="discovery-content">
-                {/* Manual Reload Button & Debug HUD */}
-                <div style={{
-                    position: 'absolute',
-                    top: '10px',
-                    right: '400px', // Left of the measurement toolbar
-                    zIndex: 1000,
-                    background: 'white',
-                    padding: '10px',
-                    borderRadius: '4px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                    maxWidth: '300px',
-                    fontSize: '12px'
-                }}>
-                    <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>Debug Status:</div>
-                    <div style={{ marginBottom: '5px' }}>{debugStatus}</div>
-                    {lastFetchCount !== null && (
-                        <div style={{ marginBottom: '5px' }}>Items in Last Fetch: {lastFetchCount}</div>
-                    )}
-                    <button
-                        onClick={() => {
-                            console.log("Manual reload triggered");
-                            setDebugStatus("Forcing reload...");
-                            window.location.reload();
-                        }}
-                        style={{ padding: '5px 10px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                    >
-                        Force Page Reload
-                    </button>
-                </div>
-
                 {/* Sidebar */}
                 <Sidebar
                     isOpen={sidebarOpen}

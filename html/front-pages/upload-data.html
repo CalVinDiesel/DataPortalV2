@@ -546,10 +546,16 @@
           <div class="form-section-title">Data Settings</div>
 
           <div class="mb-3">
-            <label class="form-label" for="projectID">Project Name <span class="text-danger">*</span></label>
+            <label class="form-label" for="projectTitle">Project Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" id="projectTitle" name="projectTitle"
+              placeholder="e.g., Riverside Survey A" required oninput="generateProjectID()">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="projectID">Project ID <span class="text-danger">*</span></label>
             <input type="text" class="form-control form-control-sm" id="projectID" name="projectID"
-              placeholder="e.g., my-project-id" required>
-            <div class="form-text text-muted mb-1" style="font-size: 0.75rem;">Unique identifier. Used in URLs.</div>
+              placeholder="e.g., riverside-survey-a" required>
+            <div class="form-text text-muted mb-1" style="font-size: 0.75rem;">Unique technical identifier. Auto-generated from title.</div>
           </div>
 
           <div class="mb-3">
@@ -1697,8 +1703,8 @@
       // 1. Prepare Metadata for Initialization
       const catVal = document.getElementById('category').value;
       const initMetadata = {
-        projectID: document.getElementById('projectID').value || 'proj-' + Date.now(),
-        projectTitle: document.getElementById('projectID').value.trim(),
+        projectID: document.getElementById('projectID').value.trim() || 'proj-' + Date.now(),
+        projectTitle: document.getElementById('projectTitle').value.trim(),
         projectDescription: document.getElementById('projectDescription').value.trim() || 'No description',
         category: catVal === 'Other' ? document.getElementById('categoryOther').value.trim() : catVal,
         latitude: latInput.value,
@@ -1947,6 +1953,19 @@
         submitBtn.disabled = false;
       }
     });
+    function generateProjectID() {
+      const title = document.getElementById('projectTitle').value;
+      const idInput = document.getElementById('projectID');
+      
+      // Basic slugification: lowercase, replace spaces/special chars with hyphens
+      const slug = title.toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+        
+      idInput.value = slug;
+    }
   </script>
 </body>
 
