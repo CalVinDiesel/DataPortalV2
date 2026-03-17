@@ -1966,6 +1966,11 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
     const tokensRequired = computeUploadTokens(imageFileCount);
     const email = (req.user && req.user.email) ? String(req.user.email).trim().toLowerCase() : null;
 
+    // ====================================================================
+    // TESTING MODE: Upload token payment gate temporarily disabled.
+    // Uncomment the block below to re-enable token charging for uploads.
+    // ====================================================================
+    /*
     if (process.env.PG_DATABASE && usePgUsers()) {
       try {
         ensurePgForWallet();
@@ -1990,6 +1995,7 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
         return res.status(status).json({ success: false, message: e.message || 'Failed to charge tokens for upload.' });
       }
     }
+    */
 
     const finalSubdir = `project_${Date.now()}_${uploadId.substring(0, 6)}`;
     const finalFilePaths = [];
@@ -2057,7 +2063,9 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
     if (email) metadata.createdByEmail = email;
 
     if (process.env.PG_DATABASE) {
-      const tokensChargedVal = (usePgUsers() ? tokensRequired : null);
+      //const tokensChargedVal = (usePgUsers() ? tokensRequired : null);
+      const tokensChargedVal = null; // TESTING MODE: token charging disabled
+      // const tokensChargedVal = (usePgUsers() ? tokensRequired : null);
       await pgQuery(
         `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, file_count, file_paths, camera_models, capture_date, organization_name, created_by_email, project_description, category, latitude, longitude, area_coverage, image_metadata, drone_pos_file_path, total_size_bytes, tokens_charged)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
