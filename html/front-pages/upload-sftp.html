@@ -127,6 +127,81 @@
       padding: 1.5rem;
       margin-bottom: 1.5rem;
     }
+
+    /* Premium Success View Styles */
+    .success-icon-wrap {
+      width: 90px;
+      height: 90px;
+      background: linear-gradient(135deg, #2ed573 0%, #7bed9f 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      box-shadow: 0 10px 20px -5px rgba(46, 213, 115, 0.5);
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .success-icon-wrap i {
+      color: #fff;
+      font-size: 3.5rem;
+    }
+
+    .info-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: #f0f2f5;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #566a7f;
+      margin-bottom: 10px;
+    }
+
+    .premium-credential-card {
+      background: #ffffff;
+      border: 1px solid #e1e4e8;
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cred-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #a1acb8;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .cred-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #32475c;
+    }
+    
+    .cred-value-primary {
+      color: #696cff;
+      font-size: 1.25rem;
+      word-break: break-all;
+    }
+
+    .target-path-wrapper {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px dashed #d9dee3;
+      margin-top: 1rem;
+    }
   </style>
 </head>
 
@@ -134,48 +209,51 @@
   <div class="split-layout">
     <div class="left-panel">
       <div class="left-header">
-        <h4 class="mb-1 fw-bold">Create Provisioned SFTP Project</h4>
-        <p class="text-muted small mb-0">Fill in the project details below. We will provide you with a dedicated SFTP drop-folder for your files.</p>
+        <h4 class="mb-1 fw-bold">Create Project using SFTP</h4>
+        <p class="text-muted small mb-0">Fill in your project details and the system will securely provision a target folder for you. Use the credentials below to upload your data later.</p>
       </div>
       <div class="left-content">
-        <div id="successView" style="display: none;" class="text-center">
-          <div class="mb-4 mt-2">
-            <i class="bx bx-check-circle text-success" style="font-size: 5rem;"></i>
+        <div id="successView" style="display: none;" class="text-center pt-2">
+          <div class="mb-4">
+            <div class="success-icon-wrap">
+              <i class="bx bx-check"></i>
+            </div>
           </div>
-          <h3 class="mb-2 fw-bold text-success">Project Provisioned!</h3>
-          <p class="text-muted mb-4">Your dedicated SFTP folder is ready. Use any SFTP client (like FileZilla) to upload your datasets directly to the path below.</p>
+          <h3 class="fw-bold mb-3" style="color: #2e3b4e; font-size: 1.75rem;">Project Provisioned</h3>
+          <p class="text-muted mb-4 px-2" style="font-size: 0.95rem; line-height: 1.6;">Your private data folder is ready on the server. Connect via any SFTP client to start uploading your flights securely.</p>
           
-          <div class="sftp-fields-card text-start">
-            <div class="row g-3">
-              <div class="col-md-9">
-                <label class="form-label text-muted small">Host / IP Address</label>
-                <div class="fw-bold fs-5 text-dark" id="resHost">-</div>
-              </div>
-              <div class="col-md-3">
-                <label class="form-label text-muted small">Port</label>
-                <div class="fw-bold fs-5 text-dark" id="resPort">-</div>
+          <div class="premium-credential-card text-start mb-4">
+            <div class="row g-4">
+              <div class="col-md-6">
+                <div class="cred-label">Host / IP Address</div>
+                <div class="cred-value" id="resHost">-</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label text-muted small">Username</label>
-                <div class="fw-bold fs-5 text-dark" id="resUser">-</div>
+                <div class="cred-label">Port</div>
+                <div class="cred-value" id="resPort">-</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label text-muted small">Password</label>
-                <div class="fw-bold fs-5 text-dark" id="resPass">-</div>
+                <div class="cred-label">Username</div>
+                <div class="cred-value" id="resUser">-</div>
               </div>
-              <div class="col-12 mt-3">
-                <label class="form-label text-muted small">Target Remote Path / Drop Folder</label>
-                <div class="fw-bold fs-5 text-primary" id="resPath" style="word-break: break-all;">-</div>
+              <div class="col-md-6">
+                <div class="cred-label">Password</div>
+                <div class="cred-value" id="resPass">-</div>
+              </div>
+              <div class="col-12 mt-2">
+                <div class="cred-label">Target Directory</div>
+                <div class="cred-value" id="resPath" style="word-break: break-all;">-</div>
               </div>
             </div>
           </div>
-          <p class="small text-danger mt-3 fw-bold"><i class="bx bx-error-circle"></i> Save these details now! For security reasons, the password will not be shown again.</p>
+          
+          <div class="d-inline-flex align-items-center text-danger bg-label-danger py-2 px-3 rounded-pill" style="font-size: 0.85rem; font-weight: 600;">
+            <i class="bx bx-shield-quarter me-2"></i> Save your credentials, this is the only time they are shown!
+          </div>
         </div>
 
         <form id="sftpForm" novalidate>
-
-
-          <div class="form-section-title">Project Details</div>
+          <div class="form-section-title mt-0">Project Details</div>
           <div class="mb-3">
             <label class="form-label" for="projectTitle">Project Title <span class="text-danger">*</span></label>
             <input type="text" id="projectTitle" class="form-control" placeholder="e.g., Riverside Survey A" required>
@@ -204,7 +282,7 @@
         </form>
       </div>
       <div class="left-footer" id="formFooter">
-        <button type="button" class="btn btn-label-secondary" onclick="window.location.href='create-project.html'">Cancel</button>
+        <button type="button" class="btn btn-secondary text-white fw-medium border-0 px-4" style="background:#8b9eb0;" onclick="window.location.href='create-project.html'">Cancel</button>
         <button type="submit" form="sftpForm" id="btnSubmitForm" class="btn btn-primary px-5">Submit Project</button>
       </div>
       <div class="left-footer" id="successFooter" style="display: none;">
@@ -267,7 +345,7 @@
           document.getElementById('successView').style.display = 'block';
           document.getElementById('successFooter').style.display = 'flex';
           
-          // Populate details
+          // Populate details directly from DB / backend
           document.getElementById('resHost').innerText = data.sftpDetails.host;
           document.getElementById('resPort').innerText = data.sftpDetails.port;
           document.getElementById('resUser').innerText = data.sftpDetails.username;
