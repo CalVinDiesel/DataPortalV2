@@ -628,7 +628,7 @@
       <!-- Action Footer -->
       <div class="left-footer">
         <button type="button" id="btnCancelUpload" class="btn btn-secondary text-white fw-medium border-0 px-4"
-          style="background:#8b9eb0;" onclick="handleCancelClick()">Cancel</button>
+          style="background:#8b9eb0;" onclick="window.location.href='create-project.html'">Cancel</button>
         <button type="button" id="btnPauseUpload" class="btn btn-warning fw-medium text-white border-0 px-4 ms-2 d-none"
           onclick="handlePauseClick()">Pause</button>
         <button type="button" id="uploadPageLogoutBtn" class="btn btn-outline-secondary fw-medium px-3 ms-auto me-2"
@@ -1838,7 +1838,8 @@
                 if (chunkRes.ok) {
                   chunkSuccess = true;
                   chunksUploaded++;
-                  const percent = Math.round((chunksUploaded / totalChunksToUpload) * 100);
+                  let percent = Math.round((chunksUploaded / totalChunksToUpload) * 100);
+                  if (percent === 100) percent = 99; // Cap at 99% until fully assembled
 
                   // Update Visual Progress Bar
                   progressBar.style.width = `${percent}%`;
@@ -1910,6 +1911,8 @@
 
         msgDiv.className = 'small mt-2 mb-0 text-center text-success pb-3 fw-bold';
         msgDiv.textContent = '✓ Upload successful!';
+        progressBar.style.width = '100%';
+        percentText.textContent = '100%';
         isUploadActive = false;
 
         // Mark the very last folder as completed
@@ -1954,11 +1957,17 @@
       const idInput = document.getElementById('projectID');
       
       // Basic slugification: lowercase, replace spaces/special chars with hyphens
-      const slug = title.toLowerCase()
+      let slug = title.toLowerCase()
         .trim()
         .replace(/[^\w\s-]/g, '')
         .replace(/[\s_-]+/g, '-')
         .replace(/^-+|-+$/g, '');
+        
+      if (slug.length > 0) {
+        // Append a random 4-character string to guarantee uniqueness
+        const randomChars = Math.random().toString(36).substring(2, 6);
+        slug += '-' + randomChars;
+      }
         
       idInput.value = slug;
     }

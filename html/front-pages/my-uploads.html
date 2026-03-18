@@ -414,6 +414,26 @@
     </div>
   </div>
 
+  <!-- Delete Confirmation Modal -->
+  <div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow-lg text-center p-3">
+        <div class="modal-body p-4 text-center">
+          <div class="mb-3 mt-2">
+            <i class="bx bx-trash text-danger" style="font-size: 3.5rem; background: rgba(255, 62, 29, 0.1); padding: 1rem; border-radius: 50%;"></i>
+          </div>
+          <h5 class="fw-bold mb-2 text-dark">Are you absolutely sure?</h5>
+          <p class="text-muted mb-4" style="font-size: 0.9rem;">This will permanently delete your project and erase all associated data. This action <strong>cannot be undone</strong>.</p>
+          <input type="hidden" id="deleteProjectId">
+          <div class="d-flex flex-column gap-2">
+            <button type="button" class="btn btn-danger w-100 fw-medium" id="confirmDeleteBtn" onclick="executeDeleteProject()">Yes, Delete Project</button>
+            <button type="button" class="btn btn-label-secondary w-100 fw-medium" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Core Scripts -->
   <script src="../../assets/vendor/libs/jquery/jquery.js"></script>
   <script src="../../assets/vendor/libs/popper/popper.js"></script>
@@ -571,7 +591,7 @@
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showProjectDetails(${item.id})"><i class="bx bx-info-circle text-info"></i> View Details</a></li>
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showEditModal(${item.id})"><i class="bx bx-edit text-secondary"></i> Edit Metadata</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item btn-dropdown-link text-danger" href="javascript:void(0);" onclick="deleteProject(' + item.id + ')"><i class="bx bx-trash"></i> Delete Project completely</a></li>
+                    <li><a class="dropdown-item btn-dropdown-link text-danger" href="javascript:void(0);" onclick="deleteProject('${item.id}')"><i class="bx bx-trash"></i> Delete Project completely</a></li>
                   </ul>
                 </div>
               </td>
@@ -617,9 +637,19 @@
     }
 
     function deleteProject(projectId) {
-      if (!confirm("Are you sure you want to permanently delete this project? This will erase all project data and cannot be undone.")) {
-        return;
-      }
+      document.getElementById('deleteProjectId').value = projectId;
+      const deleteModal = new bootstrap.Modal(document.getElementById('deleteProjectModal'));
+      deleteModal.show();
+    }
+
+    function executeDeleteProject() {
+      const projectId = document.getElementById('deleteProjectId').value;
+      const deleteBtn = document.getElementById('confirmDeleteBtn');
+      const originalText = deleteBtn.innerHTML;
+      
+      deleteBtn.disabled = true;
+      deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting...';
+
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
 
       fetch(AUTH_API + '/api/user/my-uploads/' + projectId, {
@@ -629,7 +659,7 @@
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          alert("Project successfully deleted.");
+          bootstrap.Modal.getInstance(document.getElementById('deleteProjectModal')).hide();
           fetchUploadsList(); // Automatically reload the table UI after deletion
         } else {
           alert("Could not delete project: " + (data.message || "Unknown error"));
@@ -638,6 +668,10 @@
       .catch(err => {
         console.error("Delete Error:", err);
         alert("A network error occurred while trying to erase the project.");
+      })
+      .finally(() => {
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = originalText;
       });
     }
 

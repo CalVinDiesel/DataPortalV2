@@ -18,12 +18,6 @@
   <link rel="stylesheet" href="../../assets/css/client-responsive.css">
   <link rel="stylesheet" href="../../assets/vendor/css/pages/front-page.css">
 
-  <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
   <script src="../../assets/vendor/js/helpers.js"></script>
   <script src="../../assets/js/front-config.js"></script>
   <script>
@@ -65,13 +59,15 @@
 
     .left-panel {
       position: absolute;
-      top: 24px;
-      left: 24px;
-      width: 580px;
-      height: calc(100vh - 48px);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      max-width: 800px;
+      max-height: calc(100vh - 48px);
       display: flex;
       flex-direction: column;
-      background: rgba(255, 255, 255, 0.90);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       z-index: 10;
@@ -131,12 +127,6 @@
       padding: 1.5rem;
       margin-bottom: 1.5rem;
     }
-
-    #mapPicker {
-      height: 100%;
-      width: 100%;
-      z-index: 1;
-    }
   </style>
 </head>
 
@@ -144,42 +134,46 @@
   <div class="split-layout">
     <div class="left-panel">
       <div class="left-header">
-        <h4 class="mb-1 fw-bold">Create Project using SFTP</h4>
-        <p class="text-muted small mb-0">Enter your SFTP details for automated data fetching.</p>
+        <h4 class="mb-1 fw-bold">Create Provisioned SFTP Project</h4>
+        <p class="text-muted small mb-0">Fill in the project details below. We will provide you with a dedicated SFTP drop-folder for your files.</p>
       </div>
       <div class="left-content">
-        <form id="sftpForm" novalidate>
-          <div class="form-section-title mt-0">SFTP Credentials</div>
-          <div class="sftp-fields-card">
+        <div id="successView" style="display: none;" class="text-center">
+          <div class="mb-4 mt-2">
+            <i class="bx bx-check-circle text-success" style="font-size: 5rem;"></i>
+          </div>
+          <h3 class="mb-2 fw-bold text-success">Project Provisioned!</h3>
+          <p class="text-muted mb-4">Your dedicated SFTP folder is ready. Use any SFTP client (like FileZilla) to upload your datasets directly to the path below.</p>
+          
+          <div class="sftp-fields-card text-start">
             <div class="row g-3">
               <div class="col-md-9">
-                <label class="form-label" for="sftpHost">Host / IP Address <span class="text-danger">*</span></label>
-                <input type="text" id="sftpHost" class="form-control" placeholder="e.g. sftp.yourserver.com" required>
+                <label class="form-label text-muted small">Host / IP Address</label>
+                <div class="fw-bold fs-5 text-dark" id="resHost">-</div>
               </div>
               <div class="col-md-3">
-                <label class="form-label" for="sftpPort">Port <span class="text-danger">*</span></label>
-                <input type="number" id="sftpPort" class="form-control" value="22" required>
+                <label class="form-label text-muted small">Port</label>
+                <div class="fw-bold fs-5 text-dark" id="resPort">-</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="sftpUsername">Username <span class="text-danger">*</span></label>
-                <input type="text" id="sftpUsername" class="form-control" placeholder="Username" required>
+                <label class="form-label text-muted small">Username</label>
+                <div class="fw-bold fs-5 text-dark" id="resUser">-</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="sftpPassword">Password <span class="text-danger">*</span></label>
-                <input type="password" id="sftpPassword" class="form-control" placeholder="••••••••" required>
+                <label class="form-label text-muted small">Password</label>
+                <div class="fw-bold fs-5 text-dark" id="resPass">-</div>
               </div>
-              <div class="col-12">
-                <label class="form-label" for="sftpRemotePath">Remote Project Path <span class="text-danger">*</span></label>
-                <input type="text" id="sftpRemotePath" class="form-control" placeholder="/home/user/drone_project_a/" required>
-                <small class="text-muted">The absolute path where your photos are stored.</small>
-              </div>
-              <div class="col-12 mt-4 text-center">
-                <button type="button" id="btnTestConnection" class="btn btn-outline-info w-100">
-                  <i class="bx bx-podcast me-1"></i> Test Connection
-                </button>
+              <div class="col-12 mt-3">
+                <label class="form-label text-muted small">Target Remote Path / Drop Folder</label>
+                <div class="fw-bold fs-5 text-primary" id="resPath" style="word-break: break-all;">-</div>
               </div>
             </div>
           </div>
+          <p class="small text-danger mt-3 fw-bold"><i class="bx bx-error-circle"></i> Save these details now! For security reasons, the password will not be shown again.</p>
+        </div>
+
+        <form id="sftpForm" novalidate>
+
 
           <div class="form-section-title">Project Details</div>
           <div class="mb-3">
@@ -191,32 +185,33 @@
             <textarea id="projectDescription" class="form-control" rows="3" placeholder="Describe the survey area or purpose..."></textarea>
           </div>
           <div class="mb-3">
-            <label class="form-label" for="category">Category</label>
-            <select id="category" class="form-select">
-              <option value="Survey">Survey</option>
-              <option value="Construction">Construction</option>
-              <option value="Agriculture">Agriculture</option>
-              <option value="Inspection">Inspection</option>
+            <label class="form-label" for="category">Category <span class="text-danger">*</span></label>
+            <select class="form-select" id="category" name="category" required
+              onchange="toggleOtherInput('category', 'categoryOtherDiv', 'categoryOther')">
+              <option value="">-- Select a category --</option>
+              <option value="Agricultural">Agricultural</option>
+              <option value="Coastal">Coastal Area</option>
+              <option value="Environmental">Environmental</option>
+              <option value="Infrastructure">Infrastructure</option>
+              <option value="Urban">Urban Development</option>
               <option value="Other">Other</option>
             </select>
           </div>
-
-          <div class="form-section-title">Location Selection</div>
-          <p class="text-muted small mb-3">Pick the center point of the survey area on the map.</p>
-          <div style="height: 200px; border-radius: 12px; overflow: hidden; border: 1px solid #ebedf2; margin-bottom: 2rem;">
-             <div id="miniMapPicker" style="height: 100%;"></div>
+          <div class="mb-3 d-none" id="categoryOtherDiv">
+            <input type="text" class="form-control" id="categoryOther" name="categoryOther"
+              placeholder="Enter custom category">
           </div>
-          <input type="hidden" id="latitude" required>
-          <input type="hidden" id="longitude" required>
         </form>
       </div>
-      <div class="left-footer">
+      <div class="left-footer" id="formFooter">
         <button type="button" class="btn btn-label-secondary" onclick="window.location.href='create-project.html'">Cancel</button>
-        <button type="submit" form="sftpForm" class="btn btn-primary px-5">Submit Project</button>
+        <button type="submit" form="sftpForm" id="btnSubmitForm" class="btn btn-primary px-5">Submit Project</button>
       </div>
-    </div>
-    <div class="right-panel">
-      <div id="mapPicker"></div>
+      <div class="left-footer" id="successFooter" style="display: none;">
+        <div class="w-100 text-center">
+          <button type="button" class="btn btn-primary w-100" onclick="window.location.href='my-uploads.html'">Done Workspace</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -224,78 +219,36 @@
   <script src="../../assets/vendor/libs/popper/popper.js"></script>
   <script src="../../assets/vendor/js/bootstrap.js"></script>
   <script>
-    var map = L.map('mapPicker', { zoomControl: false }).setView([5.9804, 116.0735], 13);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri',
-      maxZoom: 19
-    }).addTo(map);
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-    var marker = null;
-    map.on('click', function(e) {
-      if (marker) map.removeLayer(marker);
-      marker = L.marker(e.latlng).addTo(map);
-      document.getElementById('latitude').value = e.latlng.lat.toFixed(6);
-      document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
-    });
-
-    document.getElementById('btnTestConnection').addEventListener('click', async function() {
-      const btn = this;
-      const originalHtml = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testing...';
-
-      const payload = {
-        host: document.getElementById('sftpHost').value,
-        port: document.getElementById('sftpPort').value,
-        username: document.getElementById('sftpUsername').value,
-        password: document.getElementById('sftpPassword').value
-      };
-
-      try {
-        const res = await fetch('/api/upload/test-sftp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (data.success) {
-          alert('✓ Connection Successful!');
-          btn.innerHTML = '<i class="bx bx-check me-1"></i> Connected';
-          btn.className = 'btn btn-success w-100';
-        } else {
-          alert('✗ Connection Failed: ' + data.message);
-          btn.disabled = false;
-          btn.innerHTML = originalHtml;
-        }
-      } catch (e) {
-        alert('Error testing connection.');
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-      }
-    });
-
     document.getElementById('sftpForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      if (!document.getElementById('latitude').value) {
-        alert('Please pick a location on the map.');
+      
+      if (!document.getElementById('projectTitle').value) {
+        alert("Please enter a project title.");
         return;
       }
-      
+
+      const btn = document.getElementById('btnSubmitForm');
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Provisioning...';
+
+      let categoryVal = document.getElementById('category').value;
+      if (categoryVal === 'Other') {
+        categoryVal = document.getElementById('categoryOther').value;
+      }
+
+      if (!categoryVal || categoryVal.trim() === '') {
+        alert("Please select or specify a category.");
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        return;
+      }
+
       const payload = {
         type: 'sftp',
         projectTitle: document.getElementById('projectTitle').value,
         projectDescription: document.getElementById('projectDescription').value,
-        category: document.getElementById('category').value,
-        latitude: document.getElementById('latitude').value,
-        longitude: document.getElementById('longitude').value,
-        sftpDetails: {
-          host: document.getElementById('sftpHost').value,
-          port: document.getElementById('sftpPort').value,
-          username: document.getElementById('sftpUsername').value,
-          password: document.getElementById('sftpPassword').value,
-          remotePath: document.getElementById('sftpRemotePath').value
-        }
+        category: categoryVal
       };
 
       try {
@@ -305,16 +258,49 @@
           body: JSON.stringify(payload)
         });
         const data = await res.json();
-        if (data.success) {
-          alert('Project created successfully!');
-          window.location.href = 'my-uploads.html';
+        
+        if (data.success && data.sftpDetails) {
+          // Hide form, show results
+          document.getElementById('sftpForm').style.display = 'none';
+          document.getElementById('formFooter').style.display = 'none';
+          
+          document.getElementById('successView').style.display = 'block';
+          document.getElementById('successFooter').style.display = 'flex';
+          
+          // Populate details
+          document.getElementById('resHost').innerText = data.sftpDetails.host;
+          document.getElementById('resPort').innerText = data.sftpDetails.port;
+          document.getElementById('resUser').innerText = data.sftpDetails.username;
+          document.getElementById('resPass').innerText = data.sftpDetails.password;
+          document.getElementById('resPath').innerText = data.sftpDetails.remotePath;
+          
         } else {
           alert('Error: ' + data.message);
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
         }
       } catch (err) {
         alert('Server error.');
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
       }
     });
+
+    function toggleOtherInput(selectId, divId, inputId, targetValue = 'Other') {
+      const selectElem = document.getElementById(selectId);
+      const otherDiv = document.getElementById(divId);
+      const otherInput = document.getElementById(inputId);
+      if (!selectElem || !otherDiv || !otherInput) return;
+
+      if (selectElem.value === targetValue) {
+        otherDiv.classList.remove('d-none');
+        otherInput.required = true;
+      } else {
+        otherDiv.classList.add('d-none');
+        otherInput.required = false;
+        otherInput.value = '';
+      }
+    }
   </script>
 </body>
 
