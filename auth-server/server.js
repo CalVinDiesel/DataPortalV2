@@ -1885,7 +1885,6 @@ app.post('/api/upload/init', express.json(), async (req, res) => {
       category: (req.body.category || '').trim(),
       latitude: req.body.latitude != null && req.body.latitude !== '' ? parseFloat(req.body.latitude) : null,
       longitude: req.body.longitude != null && req.body.longitude !== '' ? parseFloat(req.body.longitude) : null,
-      areaCoverage: (req.body.areaCoverage || '').trim(),
       imageMetadata: (req.body.imageMetadata || '').trim(),
       totalFiles: req.body.totalFiles || 0,
       totalSizeBytes: req.body.totalSizeBytes || 0,
@@ -2074,7 +2073,7 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
           finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
           metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
           isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
-          metadata.areaCoverage, metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0,
+          'Unknown', metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0,
           tokensChargedVal,
         ],
       );
@@ -2129,6 +2128,46 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
   }
 });
 
+// ---- SFTP Project Support ----
+app.post('/api/upload/test-sftp', requireAuth, express.json(), async (req, res) => {
+  const { host, port, username, password } = req.body;
+  if (!host || !username) return res.status(400).json({ success: false, message: 'Missing host/user' });
+  
+  const sftp = new SftpClient();
+  try {
+    await sftp.connect({ host, port: parseInt(port) || 22, username, password });
+    await sftp.end();
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/upload/sftp-project', requireAuth, express.json(), async (req, res) => {
+  if (!process.env.PG_DATABASE) return res.status(500).json({ success: false, message: 'DB not configured' });
+  
+  try {
+    const { projectTitle, projectDescription, category, latitude, longitude, sftpDetails } = req.body;
+    const projectID = `sftp_${Date.now()}`;
+    const email = req.user.email;
+
+    await pgQuery(
+      `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, created_by_email, project_description, category, latitude, longitude, image_metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        projectID, projectTitle, 'sftp', email, projectDescription, category,
+        parseFloat(latitude), parseFloat(longitude), JSON.stringify({ sftp: sftpDetails })
+      ]
+    );
+
+    res.json({ success: true, message: 'SFTP Project created.' });
+  } catch (e) {
+    console.error('SFTP Project Creation Error:', e);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+
 // ---- Admin: list client uploads ----
 app.get('/api/admin/client-uploads', async (req, res) => {
   if (!process.env.PG_DATABASE) {
@@ -2151,7 +2190,7 @@ app.get('/api/user/my-uploads', requireAuth, async (req, res) => {
   try {
     const email = req.user.email;
     const q = await pgQuery(
-      `SELECT cu.id, cu.project_id, cu.project_title, cu.upload_type, cu.file_count, cu.file_paths, cu.camera_models, cu.capture_date, cu.organization_name, cu.created_at, cu.created_by_email, cu.request_status, cu.rejected_reason, cu.decided_at, cu.decided_by, cu.project_description, cu.category, cu.latitude, cu.longitude, cu.area_coverage, cu.image_metadata, cu.drone_pos_file_path, cu.tokens_charged,
+      `SELECT cu.id, cu.project_id, cu.project_title, cu.upload_type, cu.file_count, cu.file_paths, cu.camera_models, cu.capture_date, cu.organization_name, cu.created_at, cu.created_by_email, cu.request_status, cu.rejected_reason, cu.decided_at, cu.decided_by, cu.project_description, cu.category, cu.latitude, cu.longitude, cu.area_coverage, cu.image_metadata, cu.drone_pos_file_path, cu.total_size_bytes, cu.tokens_charged,
               pr.id AS processing_request_id, pr.status AS processing_status, pr.result_tileset_url AS processing_result_tileset_url, pr.delivered_at AS processing_delivered_at, pr.delivery_notes AS processing_delivery_notes
        FROM public."ClientUploads" cu
        LEFT JOIN LATERAL (SELECT id, status, result_tileset_url, delivered_at, delivery_notes FROM public."ProcessingRequests" WHERE upload_id = cu.id ORDER BY id DESC LIMIT 1) pr ON true

@@ -452,7 +452,7 @@
           <input type="hidden" id="latitude" name="latitude" required>
           <input type="hidden" id="longitude" name="longitude" required>
 
-          <div class="form-section-title mt-0">Upload photos</div>
+          <div class="form-section-title mt-0">Create Project using Data Portal</div>
           <p class="help-text">Choose your drone's camera payload configuration to accurately process the flight dataset.</p>
 
 
@@ -593,11 +593,7 @@
             </select>
           </div>
 
-          <div class="mb-3">
-            <label class="form-label" for="areaCoverage">Area Coverage</label>
-            <input type="text" class="form-control form-control-sm" id="areaCoverage" name="areaCoverage"
-              placeholder="e.g., 4.2 km²">
-          </div>
+
 
 
           <div class="mb-3">
@@ -1709,7 +1705,7 @@
         category: catVal === 'Other' ? document.getElementById('categoryOther').value.trim() : catVal,
         latitude: latInput.value,
         longitude: lngInput.value,
-        areaCoverage: document.getElementById('areaCoverage').value.trim() || 'Unknown',
+        areaCoverage: 'Unknown',
         imageMetadata: document.getElementById('imageMetadata').value,
         cameraConfiguration: document.querySelector('input[name="cameraConfiguration"]:checked').value,
         cameraModels: document.getElementById('multipleCamera').checked ? (document.getElementById('cameraModels').value || '') : '',
