@@ -273,6 +273,134 @@ function myrFromTokens(tokens) {
   return t * TOKEN_MYR_RATE;
 }
 
+// ---- SFTP Account Auto-Creation (SFTPGo API) ----
+
+const SFTP_API_BASE = 'https://sg-dp-tdsb.geovidia.my/api/v2';
+const SFTP_ADMIN_USER = 'dataportal_admin';
+const SFTP_ADMIN_PASS = process.env.SFTP_ADMIN_PASSWORD || '';
+
+/** Step 1: Get SFTPGo access token using Basic Auth */
+async function getSftpToken() {
+  const credentials = Buffer.from(`${SFTP_ADMIN_USER}:${SFTP_ADMIN_PASS}`).toString('base64');
+  const response = await fetch(`${SFTP_API_BASE}/token`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Basic ${credentials}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to get SFTP token: ${response.status} ${response.statusText}`);
+  }
+  const data = await response.json();
+  if (!data.access_token) {
+    throw new Error('No access_token in SFTP token response.');
+  }
+  return data.access_token;
+}
+
+/** Generate a random strong password */
+function generateSftpPassword(length = 12) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}
+
+/** Generate SFTP username from full name (lowercase, no spaces, max 30 chars) */
+function generateSftpUsername(fullName, email) {
+  // Try to use full name first
+  let base = (fullName || '').trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')        // spaces to underscores
+    .replace(/[^a-z0-9_]/g, '')  // remove special chars
+    .slice(0, 24);
+
+  // Fallback to email local part if name is too short
+  if (base.length < 3) {
+    base = (email || '').split('@')[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '')
+      .slice(0, 24);
+  }
+
+  // Add random suffix to avoid duplicates
+  const suffix = Math.random().toString(36).slice(2, 6);
+  return `${base}_${suffix}`.slice(0, 30);
+}
+
+/** Step 2: Create SFTPGo user account */
+async function createSftpUser(accessToken, { username, email, password }) {
+  const homeDir = `C:\\SFTPGo\\${username}`;
+  const body = {
+    username: username,
+    email: email,
+    password: password,
+    has_password: true,
+    status: 1,
+    home_dir: homeDir,
+    groups: [
+      {
+        name: "Data Portal User",
+        type: 1
+      }
+    ],
+    virtual_folders: [],
+    permissions: {
+      "/": ["*"]
+    }
+  };
+
+  const response = await fetch(`${SFTP_API_BASE}/users`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Failed to create SFTP user: ${response.status} - ${errText}`);
+  }
+
+  return await response.json();
+}
+
+/** Main function: create SFTP account for a new portal user */
+async function autoCreateSftpAccount(fullName, email) {
+  try {
+    // Step 1: Get token
+    const accessToken = await getSftpToken();
+
+    // Step 2: Generate credentials
+    const sftpUsername = generateSftpUsername(fullName, email);
+    const sftpPassword = generateSftpPassword(12);
+
+    // Step 3: Create user
+    await createSftpUser(accessToken, {
+      username: sftpUsername,
+      email: email,
+      password: sftpPassword
+    });
+
+    console.log(`[sftp] Created SFTP account for ${email}: username=${sftpUsername}`);
+
+    return {
+      success: true,
+      sftpUsername,
+      sftpPassword
+    };
+  } catch (e) {
+    // Don't block registration if SFTP fails — just log it
+    console.error('[sftp] Failed to create SFTP account:', e.message);
+    return { success: false, error: e.message };
+  }
+}
+
 /** Tokens required for a client upload: 1 token per 50 images (or part thereof), minimum 1. Configurable via env UPLOAD_TOKENS_PER_IMAGE (default 50). */
 function computeUploadTokens(fileCount) {
   const n = Math.max(0, parseInt(String(fileCount), 10) || 0);
@@ -1060,6 +1188,7 @@ app.post("/api/auth/register", express.json(), async (req, res) => {
     provider: (req.body.provider || 'local').toLowerCase() === 'google' ? 'google' : (req.body.provider || 'local').toLowerCase() === 'microsoft' ? 'microsoft' : 'local',
     role,
   };
+
   if (usePgUsers()) {
     try {
       await insertUserPG(newUser);
@@ -1074,7 +1203,38 @@ app.post("/api/auth/register", express.json(), async (req, res) => {
     users.push(newUser);
     writeUsers(users);
   }
-  res.json({ success: true, message: 'Account created. You can now log in.' });
+
+  // ---- Auto-create SFTP account for new user ----
+  let sftpUsername = null;
+  let sftpPassword = null;
+  if (process.env.SFTP_ADMIN_PASSWORD) {
+    const sftpResult = await autoCreateSftpAccount(rawName, email);
+    if (sftpResult.success) {
+      sftpUsername = sftpResult.sftpUsername;
+      sftpPassword = sftpResult.sftpPassword;
+      // Save SFTP credentials to database
+      if (usePgUsers()) {
+        try {
+          await pgQuery(
+            `UPDATE public."DataPortalUsers" 
+             SET sftp_username = $1, sftp_password = $2 
+             WHERE LOWER(email) = LOWER($3)`,
+            [sftpUsername, sftpPassword, email]
+          );
+        } catch (e) {
+          console.error('[sftp] Failed to save SFTP credentials to DB:', e.message);
+        }
+      }
+    }
+  }
+
+  res.json({
+    success: true,
+    message: 'Account created. You can now log in.',
+    // Return SFTP credentials so frontend can show them to user
+    sftpUsername: sftpUsername || null,
+    sftpPassword: sftpPassword || null,
+  });
 });
 
 app.post("/api/auth/login", express.json(), async (req, res) => {

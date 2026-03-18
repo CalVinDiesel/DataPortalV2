@@ -408,11 +408,23 @@
         .then(function(x) {
           if (x.body.success) {
             msgEl.className = 'small mt-2 mb-0 text-center text-success';
-            msgEl.textContent = 'Account created! Redirecting to login…';
-            setTimeout(function() {
-              window.location.href = 'login.html?registered=1';
-            }, 1200);
-          } else {
+            // Show SFTP credentials if created
+            if (x.body.sftpUsername && x.body.sftpPassword) {
+              msgEl.innerHTML =
+                'Account created! Your SFTP credentials:<br>' +
+                '<strong>Username:</strong> ' + x.body.sftpUsername + '<br>' +
+                '<strong>Password:</strong> ' + x.body.sftpPassword + '<br>' +
+                '<span class="text-warning">⚠️ Save these credentials now! Redirecting in 10 seconds…</span>';
+              setTimeout(function() {
+                window.location.href = 'login.html?registered=1';
+              }, 10000); // 10 seconds so user can save credentials
+            } else {
+              msgEl.textContent = 'Account created! Redirecting to login…';
+              setTimeout(function() {
+                window.location.href = 'login.html?registered=1';
+              }, 1200);
+            }
+         } else {
             msgEl.className = 'small mt-2 mb-0 text-center text-danger';
             msgEl.textContent = x.body.message || 'Registration failed.';
             btn.disabled = false;
@@ -550,12 +562,23 @@
         .then(function(x) {
           if (x.body.success) {
             msg.className = 'small mt-2 mb-0 text-center text-success';
-            msg.textContent = 'Account created! Redirecting…';
-            sessionStorage.removeItem('registerFlow');
-            setTimeout(function() {
-              // Already logged in via OAuth — go straight to the portal
-              window.location.href = 'landing-page.html?logged_in=1&email=' + encodeURIComponent(emailVal);
-            }, 1200);
+            if (x.body.sftpUsername && x.body.sftpPassword) {
+              msg.innerHTML =
+                'Account created! Your SFTP credentials:<br>' +
+                '<strong>Username:</strong> ' + x.body.sftpUsername + '<br>' +
+                '<strong>Password:</strong> ' + x.body.sftpPassword + '<br>' +
+                '<span class="text-warning">⚠️ Save these credentials now! Redirecting in 10 seconds…</span>';
+              sessionStorage.removeItem('registerFlow');
+              setTimeout(function() {
+                window.location.href = 'landing-page.html?logged_in=1&email=' + encodeURIComponent(emailVal);
+              }, 10000);
+            } else {
+              msg.textContent = 'Account created! Redirecting…';
+              sessionStorage.removeItem('registerFlow');
+              setTimeout(function() {
+                window.location.href = 'landing-page.html?logged_in=1&email=' + encodeURIComponent(emailVal);
+              }, 1200);
+            }
           } else {
             msg.className = 'small mt-2 mb-0 text-center text-danger';
             msg.textContent = x.body.message || 'Registration failed.';
