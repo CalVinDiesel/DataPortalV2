@@ -2425,34 +2425,73 @@ app.post('/api/upload/test-sftp', requireAuth, express.json(), async (req, res) 
   }
 });
 
+app.get('/api/upload/sftp-credentials', requireAuth, async (req, res) => {
+  if (!process.env.PG_DATABASE) return res.json({ success: false });
+  try {
+    const email = (req.user.email || '').toLowerCase().trim();
+    const userRes = await pgQuery(
+      `SELECT sftp_username, sftp_password FROM public."DataPortalUsers" WHERE LOWER(email) = $1 LIMIT 1`,
+      [email]
+    );
+    res.json({
+      success: true,
+      host: process.env.REMOTE_SFTP_HOST || '',
+      port: process.env.REMOTE_SFTP_PORT || 22,
+      username: userRes.rows[0]?.sftp_username || 'Pending Generation',
+      password: userRes.rows[0]?.sftp_password || 'Pending Generation'
+    });
+  } catch(e) {
+    res.json({ success: false });
+  }
+});
+
 app.post('/api/upload/sftp-project', requireAuth, express.json(), async (req, res) => {
   if (!process.env.PG_DATABASE) return res.status(500).json({ success: false, message: 'DB not configured' });
   
   try {
-    const { projectTitle, projectDescription, category } = req.body;
+    const { projectTitle, projectDescription, category, sftpDetails } = req.body;
     const projectID = `sftp_${Date.now()}`;
-    const email = req.user.email;
+    const email = (req.user.email || '').toLowerCase().trim();
     
-    // Create the logical directory
-    const remoteBase = process.env.REMOTE_SFTP_BASE_PATH || '';
-    const remoteDir = path.posix.join(remoteBase, projectID);
-    
-    // Provide actual details if configured, otherwise fake
-    const generatedSftpDetails = {
-      host: remoteSftpConfig.host || 'sftp.ourdomain.com',
-      port: remoteSftpConfig.port || 22,
-      username: remoteSftpConfig.username || 'client_upload',
-      password: remoteSftpConfig.password || crypto.randomBytes(8).toString('hex'),
-      remotePath: remoteDir
+    // Fetch the client's actual SFTP credentials from their user profile
+    const userRes = await pgQuery(
+      `SELECT sftp_username, sftp_password FROM public."DataPortalUsers" WHERE LOWER(email) = $1 LIMIT 1`,
+      [email]
+    );
+    const sftpUsername = userRes.rows[0]?.sftp_username;
+    const sftpPassword = userRes.rows[0]?.sftp_password;
+    if (!sftpUsername || !sftpPassword) {
+      return res.status(400).json({ success: false, message: 'Could not find your associated SFTP account. Please contact support.' });
+    }
+
+    // Build the target path dynamically based on the project ID (like data portal uploads)
+    const targetPath = `/${projectID}`;
+
+    // Construct the actual connection details
+    const actualSftpDetails = {
+      host: process.env.REMOTE_SFTP_HOST,
+      port: process.env.REMOTE_SFTP_PORT || 22,
+      username: sftpUsername,
+      password: sftpPassword,
+      remotePath: targetPath
     };
 
-    // Spin up an empty folder automatically on the backend SFTP server if actually configured
-    if (remoteSftpConfig.host) {
-      const sftp = await getRemoteSftpClient();
-      if (sftp) {
-        try { await sftp.mkdir(remoteDir, true); } 
-        catch (e) { console.error('[sftp] Could not make remote dir', e); }
-        finally { await sftp.end(); }
+    // Create the logical directory
+    if (actualSftpDetails.host) {
+      const sftp = new SftpClient();
+      sftp.on('error', () => {}); // Suppress global error spam
+      try {
+        await sftp.connect({
+          host: actualSftpDetails.host,
+          port: parseInt(actualSftpDetails.port) || 22,
+          username: actualSftpDetails.username,
+          password: actualSftpDetails.password
+        });
+        await sftp.mkdir(actualSftpDetails.remotePath, true);
+      } catch (e) {
+        console.error('[sftp provision] Could not make remote dir', e);
+      } finally {
+        await sftp.end();
       }
     }
 
@@ -2461,11 +2500,11 @@ app.post('/api/upload/sftp-project', requireAuth, express.json(), async (req, re
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         projectID, projectTitle, 'sftp', email, projectDescription, category,
-        null, null, JSON.stringify({ sftp: generatedSftpDetails })
+        null, null, JSON.stringify({ sftp: actualSftpDetails })
       ]
     );
 
-    res.json({ success: true, message: 'SFTP Project created.', sftpDetails: generatedSftpDetails });
+    res.json({ success: true, message: 'SFTP Project folder created successfully.', sftpDetails: actualSftpDetails });
   } catch (e) {
     console.error('SFTP Project Creation Error:', e);
     res.status(500).json({ success: false, message: e.message });
@@ -2492,6 +2531,12 @@ app.get('/api/user/my-uploads', requireAuth, async (req, res) => {
   if (!process.env.PG_DATABASE) {
     return res.json([]);
   }
+
+  // Instantly trigger background SFTP scan when user visits their dashboard
+  setImmediate(() => {
+    runProcessingPulse().catch(e => console.error('[pulse-immediate]', e));
+  });
+
   try {
     const email = req.user.email;
     const q = await pgQuery(
@@ -3072,6 +3117,92 @@ async function runProcessingPulse() {
     } finally {
       if (sftp) await sftp.end();
     }
+
+    // 3. Scan All Uploads (SFTP and Web) to Calculate File Count & Size Dynamically
+    try {
+      const q = await pgQuery(`
+        SELECT cu.id, cu.project_id, cu.total_size_bytes, cu.file_count, cu.upload_type, cu.file_paths, du.sftp_username, du.sftp_password 
+        FROM public."ClientUploads" cu 
+        LEFT JOIN public."DataPortalUsers" du ON LOWER(cu.created_by_email) = LOWER(du.email)
+        WHERE cu.request_status = 'pending'
+      `);
+      const pendingProjects = q?.rows || [];
+      for (const project of pendingProjects) {
+        let authConfig = null;
+        let targetPath = null;
+
+        if (project.upload_type === 'sftp') {
+          if (!project.sftp_username || !project.sftp_password) continue;
+          authConfig = {
+            host: process.env.REMOTE_SFTP_HOST,
+            port: parseInt(process.env.REMOTE_SFTP_PORT) || 22,
+            username: project.sftp_username,
+            password: project.sftp_password
+          };
+          targetPath = `/${project.project_id}`;
+        } else {
+          // Relayed web uploads reside in the admin SFTP base directory
+          let pathsStr = project.file_paths || '';
+          if (typeof pathsStr !== 'string') pathsStr = String(pathsStr);
+          const match = pathsStr.match(/(project_[0-9]+_[a-zA-Z0-9]+)/);
+          if (!match) continue;
+          const folderName = match[1];
+          
+          Object.assign(authConfig = {}, {
+            host: process.env.REMOTE_SFTP_HOST,
+            port: parseInt(process.env.REMOTE_SFTP_PORT) || 22,
+            username: process.env.REMOTE_SFTP_USER,
+            password: process.env.REMOTE_SFTP_PASS
+          });
+          targetPath = path.posix.join(process.env.REMOTE_SFTP_BASE_PATH || '', folderName);
+        }
+        
+        const sftpClient = new SftpClient();
+        sftpClient.on('error', () => {}); 
+        try {
+          await sftpClient.connect(authConfig);
+
+          let totalSize = 0;
+          let fileCount = 0;
+
+          // Note: defining recursive inside loop scope avoids hoisting clashes
+          const sumRecursive = async (dirPath) => {
+            try {
+              const list = await sftpClient.list(dirPath);
+              for (const item of list) {
+                if (item.type === '-') {
+                  totalSize += item.size;
+                  const lower = item.name.toLowerCase();
+                  if (lower.match(/\.(jpg|jpeg|png|tif|tiff)$/)) {
+                    fileCount++;
+                  }
+                } else if (item.type === 'd' && item.name !== '.' && item.name !== '..') {
+                  await sumRecursive(path.posix.join(dirPath, item.name));
+                }
+              }
+            } catch (e) { /* ignore unreachable paths */ }
+          };
+
+          await sumRecursive(targetPath);
+
+          const currentSize = parseInt(project.total_size_bytes || 0, 10);
+          const currentCount = parseInt(project.file_count || 0, 10);
+          if (totalSize !== currentSize || fileCount !== currentCount) {
+            await pgQuery(
+              `UPDATE public."ClientUploads" SET total_size_bytes = $1, file_count = $2 WHERE id = $3`,
+              [totalSize, fileCount, project.id]
+            );
+            console.log(`[pulse-sync] Auto-updated capacity for ${project.project_id}: ${fileCount} images, ${totalSize} bytes`);
+          }
+        } catch (err) {
+          console.error(`[pulse-sync] Error scanning ${project.project_id}:`, err.message);
+        } finally {
+          try { await sftpClient.end(); } catch(e) {}
+        }
+      }
+    } catch (err) {
+      console.error('[pulse-sync] Master scan error:', err.message);
+    }
   }
 }
 
@@ -3100,11 +3231,11 @@ async function updateProjectCompletion(folderName, finalRelativePath) {
 }
 
 function startProcessingPulse() {
-  console.log('[pulse] Starting background result scanner (interval: 1m)...');
+  console.log('[pulse] Starting background result scanner (interval: 10s)...');
   // Run once on startup
   setTimeout(runProcessingPulse, 5000);
-  // Then every minute
-  setInterval(runProcessingPulse, 60000);
+  // Then every 10 seconds
+  setInterval(runProcessingPulse, 10000);
 }
 
 // Load SQLite MapData DB (Temadigital_Data_Portal.MapData) if file exists

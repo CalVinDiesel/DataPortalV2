@@ -41,13 +41,6 @@
           window.location.href = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/landing-page.html?message=subscriber_required';
         }
       }).catch(function () { });
-      document.getElementById('uploadPageLogoutBtn').addEventListener('click', function () {
-        if (!confirm('Are you sure you want to log out? You will need to sign in again to use Upload.')) return;
-        this.disabled = true;
-        fetch(AUTH_API + '/api/auth/logout', { method: 'POST', credentials: 'include' })
-          .then(function () { window.location.href = AUTH_API + '/api/auth/sign-out?callbackURL=' + encodeURIComponent(LANDING_URL); })
-          .catch(function () { window.location.href = LANDING_URL; });
-      });
     })();
   </script>
   <style>
@@ -631,8 +624,7 @@
           style="background:#8b9eb0;" onclick="window.location.href='create-project.html'">Cancel</button>
         <button type="button" id="btnPauseUpload" class="btn btn-warning fw-medium text-white border-0 px-4 ms-2 d-none"
           onclick="handlePauseClick()">Pause</button>
-        <button type="button" id="uploadPageLogoutBtn" class="btn btn-outline-secondary fw-medium px-3 ms-auto me-2"
-          title="Log out and return to public landing page"><i class="bx bx-log-out me-1"></i>Log out</button>
+        <div class="ms-auto me-2"></div>
         <button type="submit" form="uploadForm" class="btn btn-primary fw-medium px-4">Upload</button>
       </div>
     </div>
