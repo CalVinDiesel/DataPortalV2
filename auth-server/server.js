@@ -66,6 +66,11 @@ const remoteSftpConfig = {
 async function getRemoteSftpClient() {
   if (!remoteSftpConfig.host) return null;
   const sftp = new SftpClient();
+  
+  // Attach an empty error listener to override the default "Global error listener" spam 
+  // that happens when the SSH socket drops automatically (ECONNRESET)
+  sftp.on('error', () => {});
+
   try {
     await sftp.connect(remoteSftpConfig);
     return sftp;
@@ -2239,39 +2244,34 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
       );
     }
 
-    // ---- NEW: SFTP Relay Push ----
+    // ---- NEW: SFTP Relay Push (Background) ----
     if (remoteSftpConfig.host) {
-      let sftp;
-      try {
-        console.log(`[sfpt-relay] Connecting to remote host ${remoteSftpConfig.host}...`);
-        sftp = await getRemoteSftpClient();
-        if (sftp) {
-          const remoteBase = process.env.REMOTE_SFTP_BASE_PATH || '';
-          const remoteDir = path.posix.join(remoteBase, finalSubdir);
-          console.log(`[sfpt-relay] Creating remote directory: ${remoteDir}`);
-          await sftp.mkdir(remoteDir, true);
-          
-          console.log(`[sfpt-relay] Uploading project folder ${finalDir} to SFTP...`);
-          await sftp.uploadDir(finalDir, remoteDir);
-          console.log(`[sfpt-relay] Successfully pushed to remote SFTP.`);
-          
-          // After successful push, clean up local final project folder
-          try { await fsPromises.rm(finalDir, { recursive: true, force: true }); } catch (e) { /* ignore */ }
-          
-          // Adjust returned message
-          return res.json({ 
-            success: true, 
-            message: 'Upload assembled and pushed to remote SFTP server.', 
-            projectId: metadata.projectID, 
-            fileCount: actualFileCount 
-          });
+      // Run the SFTP push in the background so the frontend doesn't hang at 100%
+      setImmediate(async () => {
+        let sftp;
+        try {
+          console.log(`[sfpt-relay] Connecting to remote host ${remoteSftpConfig.host}...`);
+          sftp = await getRemoteSftpClient();
+          if (sftp) {
+            const remoteBase = process.env.REMOTE_SFTP_BASE_PATH || '';
+            const remoteDir = path.posix.join(remoteBase, finalSubdir);
+            console.log(`[sfpt-relay] Creating remote directory: ${remoteDir}`);
+            await sftp.mkdir(remoteDir, true);
+            
+            console.log(`[sfpt-relay] Uploading project folder ${finalDir} to SFTP (Background)...`);
+            await sftp.uploadDir(finalDir, remoteDir);
+            console.log(`[sfpt-relay] Successfully pushed to remote SFTP. Cleaning up local copy...`);
+            
+            // After successful push, clean up local final project folder
+            try { await fsPromises.rm(finalDir, { recursive: true, force: true }); } catch (e) { /* ignore */ }
+          }
+        } catch (err) {
+          console.error('[sftp-relay] Failed to background push to remote SFTP:', err.message);
+          // We keep the local copy as fallback if SFTP fails
+        } finally {
+          if (sftp) await sftp.end();
         }
-      } catch (err) {
-        console.error('[sftp-relay] Failed to push to remote SFTP:', err.message);
-        // We keep the local copy as fallback if SFTP fails
-      } finally {
-        if (sftp) await sftp.end();
-      }
+      });
     }
 
     try {
@@ -2281,7 +2281,12 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
     }
 
     console.log(`[upload] Local upload saved: ${actualFileCount} files at ${finalDir}`);
-    return res.json({ success: true, message: 'Upload successfully assembled and saved.', projectId: metadata.projectID, fileCount: actualFileCount });
+    return res.json({ 
+      success: true, 
+      message: remoteSftpConfig.host ? 'Upload assembled and is being pushed to remote server in the background.' : 'Upload successfully assembled and saved.', 
+      projectId: metadata.projectID, 
+      fileCount: actualFileCount 
+    });
   } catch (e) {
     console.error('POST /api/upload/finalize', e);
     return res.status(500).json({ success: false, message: e.message || 'Failed to finalize upload.' });
@@ -2294,6 +2299,7 @@ app.post('/api/upload/test-sftp', requireAuth, express.json(), async (req, res) 
   if (!host || !username) return res.status(400).json({ success: false, message: 'Missing host/user' });
   
   const sftp = new SftpClient();
+  sftp.on('error', () => {}); // Suppress global error spam
   try {
     await sftp.connect({ host, port: parseInt(port) || 22, username, password });
     await sftp.end();
@@ -2307,20 +2313,43 @@ app.post('/api/upload/sftp-project', requireAuth, express.json(), async (req, re
   if (!process.env.PG_DATABASE) return res.status(500).json({ success: false, message: 'DB not configured' });
   
   try {
-    const { projectTitle, projectDescription, category, latitude, longitude, sftpDetails } = req.body;
+    const { projectTitle, projectDescription, category } = req.body;
     const projectID = `sftp_${Date.now()}`;
     const email = req.user.email;
+    
+    // Create the logical directory
+    const remoteBase = process.env.REMOTE_SFTP_BASE_PATH || '';
+    const remoteDir = path.posix.join(remoteBase, projectID);
+    
+    // Provide actual details if configured, otherwise fake
+    const generatedSftpDetails = {
+      host: remoteSftpConfig.host || 'sftp.ourdomain.com',
+      port: remoteSftpConfig.port || 22,
+      username: remoteSftpConfig.username || 'client_upload',
+      password: remoteSftpConfig.password || crypto.randomBytes(8).toString('hex'),
+      remotePath: remoteDir
+    };
+
+    // Spin up an empty folder automatically on the backend SFTP server if actually configured
+    if (remoteSftpConfig.host) {
+      const sftp = await getRemoteSftpClient();
+      if (sftp) {
+        try { await sftp.mkdir(remoteDir, true); } 
+        catch (e) { console.error('[sftp] Could not make remote dir', e); }
+        finally { await sftp.end(); }
+      }
+    }
 
     await pgQuery(
       `INSERT INTO public."ClientUploads" (project_id, project_title, upload_type, created_by_email, project_description, category, latitude, longitude, image_metadata)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         projectID, projectTitle, 'sftp', email, projectDescription, category,
-        parseFloat(latitude), parseFloat(longitude), JSON.stringify({ sftp: sftpDetails })
+        null, null, JSON.stringify({ sftp: generatedSftpDetails })
       ]
     );
 
-    res.json({ success: true, message: 'SFTP Project created.' });
+    res.json({ success: true, message: 'SFTP Project created.', sftpDetails: generatedSftpDetails });
   } catch (e) {
     console.error('SFTP Project Creation Error:', e);
     res.status(500).json({ success: false, message: e.message });
