@@ -95,15 +95,15 @@
     {
       "id": "Keningau-Sabah-2026",
       "name": "Keningau Sabah",
-      "description": "the city of Keningau Sabah",
+      "description": "view Keningau Sabah",
       "coordinates": {
-        "latitude": 5.3555,
-        "longitude": 116.1649
+        "latitude": 5.3374,
+        "longitude": 116.1567
       },
       "dataPaths": {
         "tileset": "https://example.com/tileset.json"
       },
-      "previewImage": "http://localhost:3000/uploads/map-thumbnails/pin_1773715260553.png"
+      "previewImage": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1773823752/3dhub-map-thumbnails/Keningau-Sabah-2026_1773823748759.png"
     }
   ]
 }
