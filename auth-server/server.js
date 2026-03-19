@@ -37,7 +37,6 @@ console.log('[startup] __dirname:', __dirname);
 console.log('[startup] PROJECT_ROOT:', PROJECT_ROOT);
 console.log('[startup] UPLOAD_DIR:', UPLOAD_DIR);
 const MAP_THUMBNAIL_DIR = path.join(PROJECT_ROOT, 'uploads', 'map-thumbnails');
-const PROCESSED_RESULTS_DIR = path.join(UPLOAD_DIR, 'processed-results');
 
 // ---- Stripe + token config (for subscriber uploads and 3D model purchases) ----
 const TOKEN_MYR_RATE = Number(process.env.TOKEN_MYR_RATE || '2'); // 1 token = 2 MYR by default
@@ -1712,19 +1711,6 @@ app.post('/api/admin/upload-map-thumbnail', (req, res, next) => {
   }
 });
 
-// ---- Admin: upload completed 3D model for a processing request (saved under uploads/processed-results) ----
-fs.mkdirSync(PROCESSED_RESULTS_DIR, { recursive: true });
-const processedResultStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, PROCESSED_RESULTS_DIR),
-  filename: (req, file, cb) => {
-    const requestId = (req.params && req.params.id) || '0';
-    const ext = (path.extname(file.originalname) || '').toLowerCase() || '.zip';
-    const safe = /^[a-zA-Z0-9_.-]+$/.test(ext) ? ext : '.zip';
-    cb(null, 'req_' + requestId + '_' + Date.now() + safe);
-  }
-});
-const uploadProcessedResult = multer({ storage: processedResultStorage, limits: { fileSize: 500 * 1024 * 1024 } }); // 500MB
-
 // ---- Admin: create 3D model (add to MapData for overview map / showcases) ----
 app.post('/api/map-data', express.json(), async (req, res) => {
   const body = req.body || {};
@@ -2807,96 +2793,6 @@ function isPathUnderDir(fullPath, allowedDir) {
   return full === dir || full.startsWith(dirWithSep);
 }
 
-// ---- Admin: download all uploaded files for a client upload (ZIP) ----
-app.get('/api/admin/client-uploads/:id/download', async (req, res) => {
-  const id = req.params.id && parseInt(req.params.id, 10);
-  if (!id || isNaN(id) || !process.env.PG_DATABASE) {
-    return res.status(400).json({ success: false, message: 'Valid upload id is required.' });
-  }
-  try {
-    const q = await pgQuery('SELECT id, project_id, project_title, COALESCE(to_json(file_paths), \'[]\'::json) AS file_paths, drone_pos_file_path FROM public."ClientUploads" WHERE id = $1', [id]);
-    const row = q && q.rows && q.rows[0];
-    if (!row) return res.status(404).json({ success: false, message: 'Client upload not found.' });
-
-    const filePaths = parseFilePaths(row.file_paths);
-    const dronePath = (row.drone_pos_file_path || '').trim();
-    if (dronePath) filePaths.push(dronePath);
-
-    if (filePaths.length === 0) {
-      return res.status(404).json({ success: false, message: 'No files found for this upload.' });
-    }
-
-    let archiver;
-    try {
-      archiver = (await import('archiver')).default;
-    } catch (e) {
-      return res.status(503).json({ success: false, message: 'Download requires the archiver package. Run: npm install archiver' });
-    }
-
-    const zipName = 'upload-' + id + '-' + (row.project_id || 'files').replace(/[^a-zA-Z0-9_-]/g, '_') + '.zip';
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="' + zipName + '"');
-
-    const archive = archiver('zip', { zlib: { level: 6 } });
-    archive.on('error', (e) => {
-      console.error('archiver error', e);
-      if (!res.headersSent) res.status(500).end();
-    });
-    archive.pipe(res);
-
-    // Local disk storage
-    const uploadDirResolved = path.resolve(UPLOAD_DIR);
-    const projectRootResolved = path.resolve(PROJECT_ROOT);
-    let sftp = null;
-    for (const rel of filePaths) {
-      const normalized = path.normalize(rel).replace(/^(\.\.(\/|\\))+/, '').replace(/\\/g, '/');
-      const withoutUploadsPrefix = normalized.replace(/^uploads\/?/, '');
-      const candidates = [
-        path.join(projectRootResolved, normalized),
-        path.join(uploadDirResolved, withoutUploadsPrefix),
-      ];
-      let foundLocally = false;
-      for (const full of candidates) {
-        try {
-          const stat = await fs.promises.stat(full);
-          if (stat.isFile()) {
-            archive.file(full, { name: path.basename(full) });
-            foundLocally = true;
-            break;
-          }
-        } catch (e) { /* try next */ }
-      }
-
-      if (!foundLocally && remoteSftpConfig.host) {
-        try {
-          if (!sftp) sftp = await getRemoteSftpClient();
-          if (sftp) {
-            const remoteBase = process.env.REMOTE_SFTP_BASE_PATH || '';
-            const remoteFull = path.posix.join(remoteBase, withoutUploadsPrefix);
-            console.log(`[admin-download-relay] Trying SFTP path: ${remoteFull}`);
-            const exists = await sftp.exists(remoteFull);
-            console.log(`[admin-download-relay] Exists check: ${exists} for ${remoteFull}`);
-            if (exists === '-') {
-              const buf = await sftp.get(remoteFull);
-              archive.append(buf, { name: path.basename(remoteFull) });
-            } else {
-              console.warn(`[admin-download-relay] File not found on SFTP: ${remoteFull}`);
-            }
-          }
-        } catch (err) {
-          console.warn(`[admin-download-relay] SFTP fetch failed for ${rel}:`, err.message);
-        }
-      }
-    }
-    if (sftp) await sftp.end();
-
-    await archive.finalize();
-  } catch (e) {
-    console.error('GET /api/admin/client-uploads/:id/download', e);
-    if (!res.headersSent) res.status(500).json({ success: false, message: e.message || 'Download failed.' });
-  }
-});
-
 // ---- Admin: accept or reject a client upload request ----
 app.post('/api/admin/client-uploads/:id/decision', express.json(), async (req, res) => {
   const id = req.params.id && parseInt(req.params.id, 10);
@@ -2983,42 +2879,6 @@ app.get('/api/admin/processing-requests', async (req, res) => {
   } catch (e) {
     console.error('GET /api/admin/processing-requests', e);
     res.status(500).json({ error: 'Failed to load processing requests.' });
-  }
-});
-
-// ---- Admin: complete processing request (upload 3D model file or set result URL) ----
-app.post('/api/admin/processing-requests/:id/complete', (req, res, next) => {
-  uploadProcessedResult.single('file')(req, res, (err) => {
-    if (err) {
-      if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ success: false, message: 'File too large. Maximum 500MB.' });
-      return next(err);
-    }
-    next();
-  });
-}, async (req, res) => {
-  const id = req.params.id && parseInt(req.params.id, 10);
-  if (!id || isNaN(id) || !process.env.PG_DATABASE) {
-    return res.status(400).json({ success: false, message: 'Valid processing request id is required.' });
-  }
-  const resultUrlFromBody = (req.body && (req.body.result_tileset_url || req.body.resultUrl || '')).trim() || null;
-  let resultTilesetUrl = resultUrlFromBody;
-  if (req.file && req.file.filename) {
-    resultTilesetUrl = 'processed-results/' + req.file.filename;
-  }
-  if (!resultTilesetUrl) {
-    return res.status(400).json({ success: false, message: 'Upload a 3D model file or provide a result URL.' });
-  }
-  try {
-    const r = await pgQuery(
-      `UPDATE public."ProcessingRequests" SET status = 'completed', completed_at = NOW(), result_tileset_url = $1 WHERE id = $2 RETURNING id, status, completed_at, result_tileset_url`,
-      [resultTilesetUrl, id]
-    );
-    const row = r && r.rows && r.rows[0];
-    if (!row) return res.status(404).json({ success: false, message: 'Processing request not found.' });
-    res.json({ success: true, id: row.id, status: row.status, completed_at: row.completed_at, result_tileset_url: row.result_tileset_url });
-  } catch (e) {
-    console.error('POST /api/admin/processing-requests/:id/complete', e);
-    res.status(500).json({ success: false, message: e.message || 'Failed to complete.' });
   }
 });
 
