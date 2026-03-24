@@ -194,8 +194,6 @@
                       <div class="col-12 mb-2"><span class="text-muted">Submitted:</span> <span id="detailCreatedAt">–</span></div>
                       <div class="col-12 mb-2"><span class="text-muted">Submitted by:</span> <span id="detailCreatedBy">–</span></div>
                       <div class="col-12 mb-2"><span class="text-muted">Status:</span> <span id="detailStatus">–</span></div>
-                      <div class="col-md-6 mb-2"><span class="text-muted">ID:</span> <span id="detailProjectId">–</span>
-                      </div>
                     </div>
                   </div>
                   <div class="modal-footer">
@@ -416,9 +414,7 @@
         document.getElementById('detailCategory').textContent = text(row.category);
         document.getElementById('detailLatitude').textContent = num(row.latitude);
         document.getElementById('detailLongitude').textContent = num(row.longitude);
-        document.getElementById('detailAreaCoverage').textContent = text(row.area_coverage);
         document.getElementById('detailImageMetadata').textContent = text(row.image_metadata);
-        document.getElementById('detailOrganization').textContent = text(row.organization_name);
         document.getElementById('detailCameraModels').textContent = text(row.camera_models);
         document.getElementById('detailCaptureDate').textContent = text(row.capture_date);
         var typeDisplay = row.upload_type || '–';
