@@ -12,6 +12,14 @@
   <link rel="stylesheet" href="../../assets/css/admin-responsive.css" />
   <script src="../../assets/vendor/js/helpers.js"></script>
   <script src="../../assets/vendor/js/bootstrap.js"></script>
+  <script>
+    (function() {
+      var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
+      fetch(AUTH_API + '/api/auth/me', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(d) {
+        if (!d.loggedIn || d.role !== 'admin') window.location.href = '/html/front-pages/landing-page.html?error=admin_only';
+      }).catch(function() { window.location.href = '/html/front-pages/landing-page.html'; });
+    })();
+  </script>
 </head>
 
 <body>
