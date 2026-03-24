@@ -2384,6 +2384,8 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
             const remoteDir = path.posix.join(remoteBase, finalSubdir, 'upload');
             console.log(`[sfpt-relay] Creating remote directory: ${remoteDir}`);
             await sftp.mkdir(remoteDir, true);
+            await sftp.mkdir(path.posix.join(remoteBase, finalSubdir, 'download'), true);
+            await sftp.mkdir(path.posix.join(remoteBase, finalSubdir, 'view'), true);
 
             console.log(`[sfpt-relay] Uploading project folder ${finalDir} to SFTP (Background)...`);
             await sftp.uploadDir(finalDir, remoteDir);
@@ -2500,6 +2502,8 @@ app.post('/api/upload/sftp-project', requireAuth, express.json(), async (req, re
           password: actualSftpDetails.password
         });
         await sftp.mkdir(actualSftpDetails.remotePath, true);
+        await sftp.mkdir(`/${projectID}/download`, true);
+        await sftp.mkdir(`/${projectID}/view`, true);
       } catch (e) {
         console.error('[sftp provision] Could not make remote dir', e);
       } finally {
