@@ -25,16 +25,16 @@
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
       var LANDING = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/landing-page.html';
       fetch(AUTH_API + '/api/auth/me', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(d) {
-        if (!d.loggedIn || (d.role !== 'subscriber' && d.role !== 'admin')) {
+        if (!d.loggedIn || (d.role !== 'registered' && d.role !== 'trusted' && d.role !== 'admin')) {
           window.__authRequired = true;
-          window.__landingUrl = LANDING + (d.loggedIn ? '?message=subscriber_required' : '');
+          window.__landingUrl = LANDING + (d.loggedIn ? '?message=login_required' : '');
           function showPurchaseAuthPrompt() {
             var promptEl = document.getElementById('purchase-signin-prompt');
             var linkEl = document.getElementById('purchase-signin-link');
             if (promptEl) promptEl.classList.remove('d-none');
             if (linkEl && window.__landingUrl) linkEl.href = window.__landingUrl;
             var btn = document.getElementById('purchase-with-tokens-btn');
-            if (btn) { btn.disabled = true; btn.title = 'Sign in as a subscriber to purchase 3D models.'; }
+            if (btn) { btn.disabled = true; btn.title = 'Sign in to purchase 3D models.'; }
           }
           if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showPurchaseAuthPrompt);
           else showPurchaseAuthPrompt();
@@ -63,7 +63,7 @@
   <section class="section-py bg-body first-section-pt">
     <div class="container">
       <div id="purchase-signin-prompt" class="alert alert-info mb-4 d-none" role="alert">
-        <a href="#" id="purchase-signin-link">Sign in</a> as a subscriber to purchase 3D models.
+        <a href="#" id="purchase-signin-link">Sign in</a> to purchase 3D models.
       </div>
       <div class="card px-3">
         <div class="card-body p-md-8">

@@ -123,23 +123,23 @@ function usePgUsers() {
 }
 
 /** Get role for an email. Uses DataPortalUsers when PG is set (with users.json fallback), else users.json only.
- *  Returns "admin" | "subscriber" | "client". Prefer admin, then subscriber, then client. */
+ *  Returns "admin" | "trusted" | "registered". Prefer admin, then trusted, then registered. */
 async function getRoleForEmailAsync(email) {
-  if (!email) return 'client';
+  if (!email) return 'registered';
   const emailNorm = String(email).trim().toLowerCase();
 
   if (usePgUsers()) {
     try {
       const r = await pgQuery(
         `SELECT role FROM public."DataPortalUsers" WHERE LOWER(email) = $1
-         ORDER BY (role = 'admin') DESC, (role = 'subscriber') DESC NULLS LAST, id LIMIT 1`,
+         ORDER BY (role = 'admin') DESC, (role = 'trusted') DESC NULLS LAST, id LIMIT 1`,
         [emailNorm]
       );
       const role = r?.rows?.[0]?.role;
       if (role !== undefined && role !== null) {
         if (role === 'admin') return 'admin';
         if (role === 'trusted') return 'trusted';
-        return 'client';
+        return 'registered';
       }
     } catch (e) {
       console.error('getRoleForEmail PG', e);
@@ -153,22 +153,22 @@ async function getRoleForEmailAsync(email) {
       if (u.role === 'admin') return 'admin';
       if (u.role === 'trusted') return 'trusted';
     }
-    return 'client';
+    return 'registered';
   } catch (e) {
     console.error('getRoleForEmailAsync fallback readUsers', e);
-    return 'client';
+    return 'registered';
   }
 }
 
 /** Get role for an email (sync fallback for callers that cannot await). Prefer getRoleForEmailAsync. */
 function getRoleForEmail(email) {
-  if (!email) return 'client';
+  if (!email) return 'registered';
   const users = readUsers();
   const u = users.find(x => (x.email || '').toLowerCase() === String(email).toLowerCase());
-  if (!u) return 'client';
+  if (!u) return 'registered';
   if (u.role === 'admin') return 'admin';
   if (u.role === 'trusted') return 'trusted';
-  return 'client';
+  return 'registered';
 }
 
 /** Get all users for admin list / register check / login. From DataPortalUsers when PG, else users.json. */
@@ -183,7 +183,7 @@ async function getUsersAsync() {
         name: row.name || '',
         username: row.username || '',
         contactNumber: row.contact_number || '',
-        role: row.role === 'admin' ? 'admin' : (row.role === 'subscriber' ? 'subscriber' : 'client'),
+        role: row.role === 'admin' ? 'admin' : (row.role === 'trusted' ? 'trusted' : 'registered'),
         provider: row.provider || 'local',
         passwordHash: row.password_hash,
       }));
@@ -434,7 +434,7 @@ async function insertUserPG(user) {
       (user.name || '').trim() || null,
       (user.username || '').trim() || null,
       (user.contactNumber || '').trim() || null,
-      (user.role === 'admin' ? 'admin' : (user.role === 'subscriber' ? 'subscriber' : 'client')),
+      (user.role === 'admin' ? 'admin' : (user.role === 'trusted' ? 'trusted' : 'registered')),
       user.provider || 'local',
       user.passwordHash || null,
     ]
@@ -476,7 +476,7 @@ async function upsertUserPG(user) {
       (user.name || '').trim() || null,
       (user.username || '').trim() || null,
       (user.contactNumber || '').trim() || null,
-      (user.role === 'admin' ? 'admin' : (user.role === 'subscriber' ? 'subscriber' : 'client')),
+      (user.role === 'admin' ? 'admin' : (user.role === 'trusted' ? 'trusted' : 'registered')),
       user.provider || 'local',
     ]
   );
@@ -691,7 +691,7 @@ app.get("/api/auth/profile", async (req, res) => {
       email: user.email,
       name: user.name || '',
       contactNumber: user.contactNumber || '',
-      role: user.role || 'client',
+      role: user.role || 'registered',
       provider: user.provider || 'local',
       hasPassword: !!user.passwordHash,
     });
@@ -856,9 +856,9 @@ app.post('/api/token/stripe-webhook', express.raw({ type: 'application/json' }),
 app.post('/api/token/purchase-map-data', requireAuth, express.json(), async (req, res) => {
   try {
     ensurePgForWallet();
-    const role = req.user.role || 'client';
-    if (role !== 'trusted' && role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Only subscribers (or admins) can purchase 3D models.' });
+    const role = req.user.role || 'registered';
+    if (role !== 'registered' && role !== 'trusted' && role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only registered users (or admins) can purchase 3D models.' });
     }
     const mapDataID = String(req.body?.mapDataID || '').trim();
     if (!mapDataID) {
@@ -1214,7 +1214,7 @@ app.get("/api/auth/google-callback-done", async (req, res) => {
 });
 
 // ---- Email/password register and login (unchanged API contract; store session in express-session) ----
-// Role: "client" | "admin". Admin only if ADMIN_REGISTRATION_CODE matches.
+// Role: "registered" | "admin". Admin only if ADMIN_REGISTRATION_CODE matches.
 app.post("/api/auth/register", express.json(), async (req, res) => {
   const rawName = (req.body.name || '').trim();
   const rawContact = (req.body.contactNumber || '').trim();
@@ -1222,7 +1222,7 @@ app.post("/api/auth/register", express.json(), async (req, res) => {
   const rawEmail = (req.body.email || '').trim();
   const email = rawEmail.toLowerCase();
   const password = req.body.password;
-  const roleRequested = (req.body.role || 'client').toLowerCase() === 'admin' ? 'admin' : 'client';
+  const roleRequested = (req.body.role || 'registered').toLowerCase() === 'admin' ? 'admin' : 'registered';
   const adminCode = (req.body.adminCode || '').trim();
 
   if (!rawName) {
@@ -1254,7 +1254,7 @@ app.post("/api/auth/register", express.json(), async (req, res) => {
     return res.status(400).json({ success: false, message: 'That username is already taken. Choose another one.' });
   }
 
-  let role = 'client';
+  let role = 'registered';
   if (roleRequested === 'admin') {
     let secret = (process.env.ADMIN_REGISTRATION_CODE || '').trim();
     if (secret.length >= 2 && secret.startsWith('"') && secret.endsWith('"')) {
@@ -1354,19 +1354,19 @@ app.post("/api/auth/login", express.json(), async (req, res) => {
   if (!bcrypt.compareSync(password, user.passwordHash)) {
     return res.status(401).json({ success: false, message: 'Invalid email or password.' });
   }
-  const role = (user.role === 'admin') ? 'admin' : (user.role === 'subscriber' ? 'subscriber' : 'client');
+  const role = (user.role === 'admin') ? 'admin' : (user.role === 'trusted' ? 'trusted' : 'registered');
   req.session.user = { provider: "local", email: user.email, name: user.name, role };
   res.json({ success: true, redirect: FRONT_END_URL });
 });
 
-// ─── Subscriber: check if email is client (for upgrade flow), upgrade client to subscriber ───
+// ─── Check if email is a registered user ───
 app.get("/api/auth/check-client", async (req, res) => {
   const email = (req.query.email || '').trim().toLowerCase();
   if (!email) return res.status(400).json({ success: false, isClient: false, message: 'Email is required.' });
   try {
     const users = await getUsersAsync();
     const u = users.find(x => (x.email || '').toLowerCase() === email);
-    const isClient = !!u && (u.role === 'client' || u.role === 'subscriber' || u.role === 'admin');
+    const isClient = !!u && (u.role === 'registered' || u.role === 'trusted' || u.role === 'admin');
     return res.json({ success: true, isClient, role: u ? u.role : null });
   } catch (e) {
     console.error('check-client', e);
@@ -1449,7 +1449,7 @@ app.get("/auth/microsoft/callback", async (req, res) => {
           name: dbUser.name,
           username: '',
           contactNumber: '',
-          role: 'client',
+          role: 'registered',
           provider: 'microsoft',
         });
       } catch (e) {
@@ -1458,17 +1458,18 @@ app.get("/auth/microsoft/callback", async (req, res) => {
     }
 
     // Resolve role from our user directory (same source as Google) — prefer admin if duplicate rows exist
-    let role = 'client';
+    let role = 'registered';
     if (usePgUsers()) {
       try {
         const r = await pgQuery(
           `SELECT role FROM public."DataPortalUsers" WHERE LOWER(email) = $1
-           ORDER BY (role = 'admin') DESC, (role = 'subscriber') DESC NULLS LAST, id LIMIT 1`,
+           ORDER BY (role = 'admin') DESC, (role = 'trusted') DESC NULLS LAST, id LIMIT 1`,
           [emailNorm]
         );
         const dbRole = r?.rows?.[0]?.role;
         if (dbRole === 'admin') role = 'admin';
-        else if (dbRole === 'subscriber') role = 'subscriber';
+        else if (dbRole === 'trusted') role = 'trusted';
+        else role = 'registered';
       } catch (e) {
         console.error('Microsoft callback get role', e);
       }
@@ -1615,7 +1616,7 @@ app.get('/api/admin/users', async (req, res) => {
       email: u.email || '',
       name: u.name || '',
       username: u.username || '',
-      role: u.role === 'admin' ? 'admin' : (u.role === 'subscriber' ? 'subscriber' : 'client'),
+      role: u.role === 'admin' ? 'admin' : (u.role === 'trusted' ? 'trusted' : 'registered'),
     }));
     res.json(list);
   } catch (e) {
@@ -1647,6 +1648,33 @@ app.post('/api/admin/users/promote', express.json(), async (req, res) => {
     res.json({ success: true, message: email + ' is now an admin.' });
   } catch (e) {
     console.error('POST /api/admin/users/promote', e);
+    res.status(500).json({ success: false, message: 'Failed to update role.' });
+  }
+});
+
+app.post('/api/admin/users/upgrade-trusted', express.json(), async (req, res) => {
+  const email = (req.body && req.body.email || '').trim().toLowerCase();
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email is required.' });
+  }
+  try {
+    if (usePgUsers()) {
+      const updated = await updateUserRolePG(email, 'trusted');
+      if (!updated) {
+        return res.status(404).json({ success: false, message: 'User not found.' });
+      }
+      return res.json({ success: true, message: email + ' is now a trusted user.' });
+    }
+    const users = readUsers();
+    const idx = users.findIndex(u => (u.email || '').toLowerCase() === email);
+    if (idx < 0) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    users[idx].role = 'trusted';
+    writeUsers(users);
+    res.json({ success: true, message: email + ' is now a trusted user.' });
+  } catch (e) {
+    console.error('POST /api/admin/users/upgrade-trusted', e);
     res.status(500).json({ success: false, message: 'Failed to update role.' });
   }
 });

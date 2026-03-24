@@ -132,16 +132,16 @@
         var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
         var LANDING = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/landing-page.html';
         fetch(AUTH_API + '/api/auth/me', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(d) {
-          if (!d.loggedIn || (d.role !== 'subscriber' && d.role !== 'admin')) {
+          if (!d.loggedIn || (d.role !== 'registered' && d.role !== 'trusted' && d.role !== 'admin')) {
             window.__authRequired = true;
-            window.__landingUrl = LANDING + (d.loggedIn ? '?message=subscriber_required' : '');
+            window.__landingUrl = LANDING + (d.loggedIn ? '?message=login_required' : '');
             function showPaymentAuthPrompt() {
               var promptEl = document.getElementById('payment-signin-prompt');
               var linkEl = document.getElementById('payment-signin-link');
               if (promptEl) promptEl.classList.remove('d-none');
               if (linkEl && window.__landingUrl) linkEl.href = window.__landingUrl;
               var proceedBtn = document.getElementById('topup-proceed-btn');
-              if (proceedBtn) { proceedBtn.disabled = true; proceedBtn.title = 'Sign in as a subscriber to reload tokens.'; }
+              if (proceedBtn) { proceedBtn.disabled = true; proceedBtn.title = 'Sign in to reload tokens.'; }
             }
             if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showPaymentAuthPrompt);
             else showPaymentAuthPrompt();
@@ -156,7 +156,7 @@
           if (emailEl && d.email) emailEl.textContent = d.email;
           var navUpload = document.getElementById('navUpload');
           var navUploadMobile = document.querySelectorAll('.navUpload-mobile');
-          if (d.role === 'subscriber' || d.role === 'admin') {
+          if (d.role === 'registered' || d.role === 'trusted' || d.role === 'admin') {
             if (navUpload) navUpload.style.display = '';
             navUploadMobile.forEach(function (el) { el.style.display = ''; });
           } else {
@@ -337,7 +337,7 @@
   <section class="section-py bg-body first-section-pt">
     <div class="container">
       <div id="payment-signin-prompt" class="alert alert-info mb-4 d-none" role="alert">
-        <a href="#" id="payment-signin-link">Sign in</a> as a subscriber to reload tokens.
+        <a href="#" id="payment-signin-link">Sign in</a> to reload tokens.
       </div>
       <div class="card px-3">
         <div class="row">

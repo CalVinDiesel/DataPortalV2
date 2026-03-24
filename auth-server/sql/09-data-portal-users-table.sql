@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public."DataPortalUsers" (
   name            VARCHAR(255),
   username        VARCHAR(128),
   contact_number  VARCHAR(64),
-  role            VARCHAR(32)  NOT NULL DEFAULT 'client',  -- 'client' | 'admin' (column used for roles)
+  role            VARCHAR(32)  NOT NULL DEFAULT 'registered',  -- 'registered' | 'trusted' | 'admin' (column used for roles)
   provider        VARCHAR(32)  NOT NULL DEFAULT 'local',  -- 'local' | 'google' | 'microsoft'
   password_hash   VARCHAR(255),                          -- null for OAuth-only users
   created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS public."DataPortalUsers" (
 );
 
 COMMENT ON TABLE public."DataPortalUsers" IS 'Data Portal user directory: registration and roles for Admin Manage Users; separate from Better Auth and MicrosoftUsers';
-COMMENT ON COLUMN public."DataPortalUsers".role IS 'User role: client or admin';
+COMMENT ON COLUMN public."DataPortalUsers".role IS 'User role: registered, trusted, or admin';
 COMMENT ON COLUMN public."DataPortalUsers".provider IS 'Auth provider: local (email/password), google, or microsoft';
 
 CREATE INDEX IF NOT EXISTS idx_data_portal_users_email ON public."DataPortalUsers"(LOWER(email));

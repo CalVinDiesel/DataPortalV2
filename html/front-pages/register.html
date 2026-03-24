@@ -354,7 +354,7 @@
         email: emailLower,
         password: pass,
         provider: 'local',
-        role: 'client'
+        role: 'registered'
       };
 
       fetch(AUTH_API + '/api/auth/register', {
@@ -489,7 +489,7 @@
         email:         emailVal.toLowerCase(),
         password:      '',
         provider:      providerVal,
-        role:          client,
+        role:          'registered',
       };
 
       fetch(AUTH_API + '/api/auth/register', {

@@ -80,8 +80,8 @@
         <div class="content-wrapper">
           <div class="container-xxl flex-grow-1 container-p-y">
             <h4 class="fw-bold mb-4">Manage Users</h4>
-            <p class="text-muted mb-4">Users who signed up with email/password (or completed the register form with Google/Microsoft) are listed below. The <strong>Role</strong> column shows <span class="badge bg-label-secondary">Client</span> (account created, not yet subscriber), <span class="badge bg-label-primary">Subscriber</span> (upgraded to subscriber), or <span class="badge bg-label-success">Admin</span>. Only users with role Client or Subscriber get a <strong>Promote to admin</strong> button.</p>
-            <div id="usersNoClientsNote" class="alert alert-info d-none mb-4">All users listed are admins. To see Client, Subscriber, and &quot;Promote to admin&quot;, you need at least one user with role Client or Subscriber.</div>
+            <p class="text-muted mb-4">Users who signed up with email/password (or completed the register form with Google/Microsoft) are listed below. The <strong>Role</strong> column shows <span class="badge bg-label-secondary">Registered</span> (standard user), <span class="badge bg-label-primary">Trusted</span> (can upload via SFTP), or <span class="badge bg-label-success">Admin</span>. Registered users can be upgraded to Trusted, and any non-admin can be promoted to Admin.</p>
+            <div id="usersNoClientsNote" class="alert alert-info d-none mb-4">All users listed are admins. To see Registered, Trusted, and upgrade options, you need at least one user with role Registered or Trusted.</div>
             <div id="usersAlert" class="alert d-none mb-4"></div>
             <div class="card">
               <div class="table-responsive">
@@ -127,15 +127,18 @@
               tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">No users in the system yet.</td></tr>';
               return;
             }
-            var hasAnyNonAdmin = users.some(function(u) { return (u.role || 'client') !== 'admin'; });
+            var hasAnyNonAdmin = users.some(function(u) { return (u.role || 'registered') !== 'admin'; });
             document.getElementById('usersNoClientsNote').classList.toggle('d-none', hasAnyNonAdmin);
             tbody.innerHTML = users.map(function(u) {
-              var role = (u.role || 'client');
+              var role = (u.role || 'registered');
               var isAdmin = role === 'admin';
-              var roleBadge = isAdmin ? '<span class="badge bg-label-success">Admin</span>' : (role === 'subscriber' ? '<span class="badge bg-label-primary">Subscriber</span>' : '<span class="badge bg-label-secondary">Client</span>');
+              var isTrusted = role === 'trusted';
+              var roleBadge = isAdmin ? '<span class="badge bg-label-success">Admin</span>' : (isTrusted ? '<span class="badge bg-label-primary">Trusted</span>' : '<span class="badge bg-label-secondary">Registered</span>');
               var action = isAdmin
                 ? '<span class="text-muted small">—</span>'
-                : '<button type="button" class="btn btn-sm btn-outline-primary promote-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Promote to admin</button>';
+                : (isTrusted
+                  ? '<button type="button" class="btn btn-sm btn-outline-primary promote-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Promote to admin</button>'
+                  : '<button type="button" class="btn btn-sm btn-outline-info upgrade-btn me-1" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Upgrade to Trusted</button><button type="button" class="btn btn-sm btn-outline-primary promote-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Promote to admin</button>');
               return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td><td>' + roleBadge + '</td><td>' + action + '</td></tr>';
             }).join('');
             tbody.querySelectorAll('.promote-btn').forEach(function(btn) {
@@ -161,6 +164,33 @@
                   })
                   .catch(function() {
                     showAlert('Network error. Could not promote user.', false);
+                    btn.disabled = false;
+                  });
+              });
+            });
+            tbody.querySelectorAll('.upgrade-btn').forEach(function(btn) {
+              btn.addEventListener('click', function() {
+                var email = this.getAttribute('data-email');
+                if (!email || !confirm('Upgrade "' + email + '" to Trusted user? They will be able to upload via SFTP.')) return;
+                this.disabled = true;
+                fetch(API + '/api/admin/users/upgrade-trusted', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ email: email })
+                })
+                  .then(function(r) { return r.json(); })
+                  .then(function(data) {
+                    if (data.success) {
+                      showAlert(data.message || 'User upgraded to Trusted.', true);
+                      loadUsers();
+                    } else {
+                      showAlert(data.message || 'Failed to upgrade.', false);
+                      btn.disabled = false;
+                    }
+                  })
+                  .catch(function() {
+                    showAlert('Network error. Could not upgrade user.', false);
                     btn.disabled = false;
                   });
               });

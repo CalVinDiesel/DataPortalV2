@@ -84,7 +84,7 @@
       .landing-footer .app-brand-logo img {
         filter: brightness(4.2) contrast(1.35) drop-shadow(0 0 2px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));
       }
-      /* Upload nav: hidden for everyone by default; only JS reveals for subscriber/admin */
+      /* Upload nav: hidden for everyone by default; only JS reveals for registered/trusted/admin */
       .nav-upload-subscriber-only {
         display: none !important;
       }
@@ -1041,9 +1041,9 @@
           .then(function(r) { return r.json(); })
           .then(function(data) {
             window.__authLoggedIn = !!data.loggedIn;
-            window.__authRole = data.role || 'client';
-            // Show Upload only for subscriber or admin; normal visitors and clients never see it
-            setUploadNavVisible(data.role === 'subscriber' || data.role === 'admin');
+            window.__authRole = data.role || 'registered';
+            // Show Upload for all logged-in users (registered, trusted, admin)
+            setUploadNavVisible(data.role === 'registered' || data.role === 'trusted' || data.role === 'admin');
             if (!data.loggedIn) return;
             fetch(AUTH_API + '/api/auth/check-registered', { credentials: 'include' })
               .then(function(r) { return r.json(); })
@@ -1062,7 +1062,7 @@
                   if (footerAdmin) footerAdmin.style.display = '';
                 }
                 var navSubscriberBtn = document.getElementById('navSubscriberBtn');
-                if (navSubscriberBtn) navSubscriberBtn.style.display = data.role === 'client' ? '' : 'none';
+                if (navSubscriberBtn) navSubscriberBtn.style.display = 'none';
                 var navLoginWrap = document.getElementById('navLoginWrap');
                 var navUserWrap = document.getElementById('navUserWrap');
                 if (navLoginWrap) navLoginWrap.style.display = 'none';
@@ -1086,38 +1086,24 @@
           var getStartedBtn = document.getElementById('pricingGetStartedBtn');
           if (getStartedBtn) {
             getStartedBtn.addEventListener('click', function(e) {
-              var role = window.__authRole || 'client';
+              var role = window.__authRole || 'registered';
               var loggedIn = window.__authLoggedIn;
               if (role === 'admin') {
                 e.preventDefault();
                 var modal = new bootstrap.Modal(document.getElementById('getStartedAdminModal'));
                 modal.show();
-              } else if (loggedIn && role === 'subscriber') {
+              } else if (loggedIn && (role === 'registered' || role === 'trusted')) {
                 e.preventDefault();
-                var modal = new bootstrap.Modal(document.getElementById('getStartedSubscriberModal'));
-                modal.show();
-              } else if (loggedIn && role === 'client') {
-                e.preventDefault();
-                var modal = new bootstrap.Modal(document.getElementById('getStartedClientModal'));
+                var modal = new bootstrap.Modal(document.getElementById('getStartedRegisteredModal'));
                 modal.show();
               }
             });
           }
           btn.addEventListener('click', function() {
             var loggedIn = window.__authLoggedIn;
-            var role = window.__authRole || 'client';
+            var role = window.__authRole || 'registered';
             if (!loggedIn) {
               var modal = new bootstrap.Modal(document.getElementById('subscribeVisitorModal'));
-              modal.show();
-              return;
-            }
-            if (role === 'client') {
-              var modal = new bootstrap.Modal(document.getElementById('subscribeClientModal'));
-              modal.show();
-              return;
-            }
-            if (role === 'subscriber') {
-              var modal = new bootstrap.Modal(document.getElementById('subscribeAlreadySubscriberModal'));
               modal.show();
               return;
             }
@@ -1140,7 +1126,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p class="mb-0">To subscribe, you need a Data Portal account. Create an account to become a client first, or log in if you already have an account. Then click Subscribe again.</p>
+            <p class="mb-0">To purchase 3D models, you need a Data Portal account. Create an account or log in if you already have one. Then click the button again.</p>
           </div>
           <div class="modal-footer">
             <a href="register.html" class="btn btn-label-primary">Create account</a>
@@ -1149,20 +1135,20 @@
         </div>
       </div>
     </div>
-    <!-- Subscribe modal: client (logged in, not subscriber) -->
-    <div class="modal fade" id="subscribeClientModal" tabindex="-1" aria-labelledby="subscribeClientLabel" aria-hidden="true">
+    <!-- Subscribe modal: client (logged in, not subscriber) - REMOVED, no longer needed -->
+    <!-- Get Started modal: registered/trusted user -->
+    <div class="modal fade" id="getStartedRegisteredModal" tabindex="-1" aria-labelledby="getStartedRegisteredLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="subscribeClientLabel">Subscribe</h5>
+            <h5 class="modal-title" id="getStartedRegisteredLabel">Get Started</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p class="mb-0">Do you have a subscriber account? If not, register as a subscriber now. If yes, log in with your subscriber account.</p>
+            <p class="mb-0">You are already registered. You can upload data and purchase 3D models from the Data Portal.</p>
           </div>
           <div class="modal-footer">
-            <a href="subscriber-register.html" class="btn btn-label-primary">Register as subscriber</a>
-            <a href="subscriber-login.html" class="btn btn-primary">Log in as subscriber</a>
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
           </div>
         </div>
       </div>
@@ -1184,40 +1170,8 @@
         </div>
       </div>
     </div>
-    <!-- Get Started modal: subscriber (already highest tier for clients) -->
-    <div class="modal fade" id="getStartedSubscriberModal" tabindex="-1" aria-labelledby="getStartedSubscriberLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="getStartedSubscriberLabel">Get Started</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p class="mb-0">You are already at the highest tier as a subscriber. You can use the upload function and purchase the 3D models you need with your tokens.</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Get Started modal: client (already registered, point to Subscribe) -->
-    <div class="modal fade" id="getStartedClientModal" tabindex="-1" aria-labelledby="getStartedClientLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="getStartedClientLabel">Get Started</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p class="mb-0">You have already registered an account with this Data Portal. If you wish to upload images and purchase 3D models, simply click the Subscribe button beside the Sign-up box.</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Get Started modal: registered/trusted (already registered) - REMOVED, merged into getStartedRegisteredModal -->
+    <!-- Get Started modal: registered (already registered, can upload and purchase) - REMOVED, merged into getStartedRegisteredModal -->
     <!-- Subscribe modal: admin (not valid to become subscriber) -->
     <div class="modal fade" id="subscribeAdminModal" tabindex="-1" aria-labelledby="subscribeAdminLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -1227,7 +1181,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p class="mb-0">You are signed in as an administrator of this Data Portal. Subscriber plans are for Data Portal clients only—they allow clients to upload raw data and purchase 3D models. As an admin, you do not need to subscribe; use the Admin Data Portal to manage content and users.</p>
+            <p class="mb-0">You are signed in as an administrator of this Data Portal. As an admin, you do not need to purchase; use the Admin Data Portal to manage content and users.</p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
@@ -1235,23 +1189,7 @@
         </div>
       </div>
     </div>
-    <!-- Subscribe modal: already a subscriber -->
-    <div class="modal fade" id="subscribeAlreadySubscriberModal" tabindex="-1" aria-labelledby="subscribeAlreadySubscriberLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="subscribeAlreadySubscriberLabel">Subscribe</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p class="mb-0">You are already a subscriber. Thank you for your support. You can use Upload and purchase 3D models from the Data Portal.</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Subscribe modal: already a subscriber - REMOVED, all registered users can purchase -->
     <!-- Confirm logout modal -->
     <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -1284,14 +1222,14 @@
             });
         }
         document.getElementById('navLogoutBtn').addEventListener('click', function() {
-          var role = window.__authRole || 'client';
+          var role = window.__authRole || 'registered';
           var msgEl = document.getElementById('logoutConfirmMessage');
           var messages = {
             admin: 'Are you sure you want to log out? You will need to sign in again to use the Admin Data Portal.',
-            subscriber: 'Are you sure you want to log out? You will need to sign in again to use Upload and purchase 3D models.',
-            client: 'Are you sure you want to log out? You will need to sign in again to register as a subscriber or access your account.'
+            trusted: 'Are you sure you want to log out? You will need to sign in again to use Upload (including SFTP) and purchase 3D models.',
+            registered: 'Are you sure you want to log out? You will need to sign in again to upload data and purchase 3D models.'
           };
-          if (msgEl) msgEl.textContent = messages[role] || messages.client;
+          if (msgEl) msgEl.textContent = messages[role] || messages.registered;
           var modal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'));
           modal.show();
           document.getElementById('logoutConfirmBtn').onclick = function() { doLogout(); };
