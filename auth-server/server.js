@@ -160,6 +160,43 @@ async function getRoleForEmailAsync(email) {
   }
 }
 
+async function getRemovalInfoForEmailAsync(email) {
+  if (!email) return { removed: false, removalReason: null };
+  const emailNorm = String(email).trim().toLowerCase();
+
+  if (usePgUsers()) {
+    try {
+      const r = await pgQuery(
+        `SELECT removed_at, removal_reason
+         FROM public."DataPortalUsers"
+         WHERE LOWER(email) = $1
+         LIMIT 1`,
+        [emailNorm]
+      );
+      const row = r?.rows?.[0];
+      const removedAt = row?.removed_at;
+      if (removedAt) {
+        return { removed: true, removalReason: row?.removal_reason || null, removedAt: removedAt };
+      }
+      return { removed: false, removalReason: null, removedAt: null };
+    } catch (e) {
+      console.error('getRemovalInfoForEmailAsync PG', e);
+      return { removed: false, removalReason: null };
+    }
+  }
+
+  // Fallback: allow local removal flags in users.json if present.
+  try {
+    const users = readUsers();
+    const u = users.find(x => (x.email || '').toLowerCase() === emailNorm);
+    const removedAt = u?.removedAt || u?.removed_at || u?.removedAtISO || null;
+    if (removedAt) return { removed: true, removalReason: u?.removalReason || u?.removal_reason || null, removedAt };
+    return { removed: false, removalReason: null, removedAt: null };
+  } catch (_) {
+    return { removed: false, removalReason: null };
+  }
+}
+
 /** Get role for an email (sync fallback for callers that cannot await). Prefer getRoleForEmailAsync. */
 function getRoleForEmail(email) {
   if (!email) return 'registered';
@@ -176,7 +213,7 @@ async function getUsersAsync() {
   if (usePgUsers()) {
     try {
       const r = await pgQuery(
-        'SELECT id, email, name, username, contact_number, role, provider, password_hash FROM public."DataPortalUsers" ORDER BY created_at ASC'
+        'SELECT id, email, name, username, contact_number, role, provider, password_hash, removed_at, removal_reason FROM public."DataPortalUsers" ORDER BY created_at ASC'
       );
       return (r?.rows || []).map(row => ({
         email: row.email || '',
@@ -186,6 +223,8 @@ async function getUsersAsync() {
         role: row.role === 'admin' ? 'admin' : (row.role === 'trusted' ? 'trusted' : 'registered'),
         provider: row.provider || 'local',
         passwordHash: row.password_hash,
+        removedAt: row.removed_at || null,
+        removalReason: row.removal_reason || null,
       }));
     } catch (e) {
       console.error('getUsersAsync PG', e);
@@ -417,6 +456,42 @@ async function autoCreateSftpAccount(fullName, email) {
   }
 }
 
+/**
+ * JSON-mode helper: ensure an admin user has SFTP credentials in auth-server/data/users.json.
+ * Used when PG_DATABASE is NOT set (server runs with JSON fallback).
+ */
+async function ensureAdminSftpCredentialsForJsonAsync(email) {
+  if (usePgUsers()) return { skipped: true };
+  if (!email) return { skipped: true };
+  if (!process.env.SFTP_ADMIN_PASSWORD) return { skipped: true };
+
+  const emailNorm = String(email).trim().toLowerCase();
+  if (!emailNorm) return { skipped: true };
+
+  const users = readUsers();
+  const idx = users.findIndex(u => (u.email || '').toLowerCase() === emailNorm);
+  if (idx < 0) return { skipped: true };
+
+  const user = users[idx];
+  const role = (user.role || 'registered');
+  if (role !== 'admin') return { skipped: true };
+
+  if (user.sftpUsername && user.sftpPassword) {
+    return { success: true, sftpUsername: user.sftpUsername, sftpPassword: user.sftpPassword };
+  }
+
+  const fullName = (user.name || user.username || 'Data Portal Admin').toString();
+  const sftpResult = await autoCreateSftpAccount(fullName, emailNorm);
+  if (sftpResult && sftpResult.success) {
+    users[idx].sftpUsername = sftpResult.sftpUsername;
+    users[idx].sftpPassword = sftpResult.sftpPassword;
+    writeUsers(users);
+    return { success: true, sftpUsername: sftpResult.sftpUsername, sftpPassword: sftpResult.sftpPassword };
+  }
+
+  return { success: false, error: sftpResult && sftpResult.error ? sftpResult.error : 'Failed to create SFTP account.' };
+}
+
 /** Tokens required for a client upload: 1 token per 50 images (or part thereof), minimum 1. Configurable via env UPLOAD_TOKENS_PER_IMAGE (default 50). */
 function computeUploadTokens(fileCount) {
   const n = Math.max(0, parseInt(String(fileCount), 10) || 0);
@@ -505,6 +580,17 @@ async function requireAuth(req, res, next) {
     }
 
     if (userEmail) {
+      const removal = await getRemovalInfoForEmailAsync(userEmail);
+      if (removal.removed) {
+        try { if (req.session?.user) req.session.user = null; } catch (_) { }
+        return res.status(401).json({
+          success: false,
+          message: 'Your account has been removed by an administrator.' + (removal.removalReason ? (' Reason: ' + removal.removalReason) : ''),
+          account_removed: true,
+          removal_reason: removal.removalReason || null,
+        });
+      }
+
       const role = await getRoleForEmailAsync(userEmail);
       req.user = {
         email: userEmail,
@@ -649,7 +735,22 @@ app.get("/api/auth/me", async (req, res) => {
     });
     if (betterAuthSession?.user) {
       const email = betterAuthSession.user.email ?? null;
+      const removal = await getRemovalInfoForEmailAsync(email);
+      if (removal.removed) {
+        return res.json({
+          loggedIn: false,
+          account_removed: true,
+          email,
+          name: betterAuthSession.user.name ?? null,
+          role: 'registered',
+          removal_reason: removal.removalReason || null,
+          message: 'Your account has been removed by an administrator.' + (removal.removalReason ? (' Reason: ' + removal.removalReason) : ''),
+        });
+      }
       const role = await getRoleForEmailAsync(email);
+      if (role === 'admin' && !usePgUsers()) {
+        try { await ensureAdminSftpCredentialsForJsonAsync(email); } catch (_) { }
+      }
       return res.json({
         loggedIn: true,
         email,
@@ -659,7 +760,22 @@ app.get("/api/auth/me", async (req, res) => {
     }
     const localUser = req.session?.user;
     if (localUser && (localUser.email || localUser.id)) {
+      const removal = await getRemovalInfoForEmailAsync(localUser.email);
+      if (removal.removed) {
+        return res.json({
+          loggedIn: false,
+          account_removed: true,
+          email: localUser.email,
+          name: localUser.name,
+          role: 'registered',
+          removal_reason: removal.removalReason || null,
+          message: 'Your account has been removed by an administrator.' + (removal.removalReason ? (' Reason: ' + removal.removalReason) : ''),
+        });
+      }
       const role = localUser.role || await getRoleForEmailAsync(localUser.email);
+      if (role === 'admin' && !usePgUsers()) {
+        try { await ensureAdminSftpCredentialsForJsonAsync(localUser.email); } catch (_) { }
+      }
       return res.json({ loggedIn: true, email: localUser.email, name: localUser.name, role });
     }
   } catch (e) {
@@ -686,6 +802,14 @@ app.get("/api/auth/profile", async (req, res) => {
     const users = await getUsersAsync();
     const user = users.find(u => (u.email || '').toLowerCase() === email.toLowerCase());
     if (!user) return res.status(404).json({ success: false, message: 'Profile not found.' });
+    if (user.removedAt) {
+      return res.status(401).json({
+        success: false,
+        message: 'Your account has been removed by an administrator.' + (user.removalReason ? (' Reason: ' + user.removalReason) : ''),
+        account_removed: true,
+        removal_reason: user.removalReason || null,
+      });
+    }
     return res.json({
       success: true,
       email: user.email,
@@ -1050,7 +1174,17 @@ app.get("/api/auth/profile/sftp", async (req, res) => {
         sftpPassword: row?.sftp_password || null,
       });
     }
-    return res.json({ success: true, sftpUsername: null, sftpPassword: null });
+    // JSON-mode: return stored credentials if present in auth-server/data/users.json
+    const users = readUsers();
+    const u = users.find(x => (x.email || '').toLowerCase() === String(email).toLowerCase());
+    if (u && (u.role === 'admin' || u.role === 'administrator') && (!u.sftpUsername && !u.sftp_password && !u.sftpUsername && !u.sftp_password)) {
+      try { await ensureAdminSftpCredentialsForJsonAsync(email); } catch (_) { }
+    }
+    return res.json({
+      success: true,
+      sftpUsername: u?.sftpUsername || u?.sftp_username || null,
+      sftpPassword: u?.sftpPassword || u?.sftp_password || null,
+    });
   } catch (e) {
     console.error('GET /api/auth/profile/sftp', e);
     return res.status(500).json({ success: false, message: 'Failed to load SFTP credentials.' });
@@ -1069,17 +1203,49 @@ app.put("/api/auth/profile/sftp-password", express.json(), async (req, res) => {
     // Step 1: Get SFTP token
     const accessToken = await getSftpToken();
 
-    // Step 2: Get current SFTP username from DB
-    const r = await pgQuery(
-      `SELECT sftp_username FROM public."DataPortalUsers" WHERE LOWER(email) = LOWER($1) LIMIT 1`,
-      [email]
-    );
-    const sftpUsername = r?.rows?.[0]?.sftp_username;
+    if (usePgUsers()) {
+      // Step 2: Get current SFTP username from DB
+      const r = await pgQuery(
+        `SELECT sftp_username FROM public."DataPortalUsers" WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+        [email]
+      );
+      const sftpUsername = r?.rows?.[0]?.sftp_username;
+      if (!sftpUsername) {
+        return res.status(404).json({ success: false, message: 'No SFTP account found for this user.' });
+      }
+
+      // Step 3: Update password in SFTPGo
+      const updateResponse = await fetch(`${SFTP_API_BASE}/users/${sftpUsername}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ password: newPassword })
+      });
+      if (!updateResponse.ok) {
+        const errText = await updateResponse.text();
+        throw new Error(`SFTPGo update failed: ${updateResponse.status} - ${errText}`);
+      }
+
+      // Step 4: Update password in our DB
+      await pgQuery(
+        `UPDATE public."DataPortalUsers" SET sftp_password = $1, updated_at = NOW() WHERE LOWER(email) = LOWER($2)`,
+        [newPassword, email]
+      );
+
+      return res.json({ success: true, message: 'SFTP password updated successfully.' });
+    }
+
+    // JSON-mode: update password stored in users.json
+    const users = readUsers();
+    const idx = users.findIndex(u => (u.email || '').toLowerCase() === email.toLowerCase());
+    if (idx < 0) return res.status(404).json({ success: false, message: 'User not found.' });
+    const sftpUsername = users[idx]?.sftpUsername || users[idx]?.sftp_username || null;
     if (!sftpUsername) {
       return res.status(404).json({ success: false, message: 'No SFTP account found for this user.' });
     }
 
-    // Step 3: Update password in SFTPGo
     const updateResponse = await fetch(`${SFTP_API_BASE}/users/${sftpUsername}`, {
       method: 'PUT',
       headers: {
@@ -1093,11 +1259,10 @@ app.put("/api/auth/profile/sftp-password", express.json(), async (req, res) => {
       throw new Error(`SFTPGo update failed: ${updateResponse.status} - ${errText}`);
     }
 
-    // Step 4: Update password in our DB
-    await pgQuery(
-      `UPDATE public."DataPortalUsers" SET sftp_password = $1, updated_at = NOW() WHERE LOWER(email) = LOWER($2)`,
-      [newPassword, email]
-    );
+    // Best-effort: store the new password so UI can display it later.
+    users[idx].sftpPassword = newPassword;
+    users[idx].sftp_password = undefined;
+    writeUsers(users);
 
     return res.json({ success: true, message: 'SFTP password updated successfully.' });
   } catch (e) {
@@ -1298,36 +1463,12 @@ app.post("/api/auth/register", express.json(), async (req, res) => {
     writeUsers(users);
   }
 
-  // ---- Auto-create SFTP account for new user ----
-  let sftpUsername = null;
-  let sftpPassword = null;
-  if (process.env.SFTP_ADMIN_PASSWORD) {
-    const sftpResult = await autoCreateSftpAccount(rawName, email);
-    if (sftpResult.success) {
-      sftpUsername = sftpResult.sftpUsername;
-      sftpPassword = sftpResult.sftpPassword;
-      // Save SFTP credentials to database
-      if (usePgUsers()) {
-        try {
-          await pgQuery(
-            `UPDATE public."DataPortalUsers" 
-             SET sftp_username = $1, sftp_password = $2 
-             WHERE LOWER(email) = LOWER($3)`,
-            [sftpUsername, sftpPassword, email]
-          );
-        } catch (e) {
-          console.error('[sftp] Failed to save SFTP credentials to DB:', e.message);
-        }
-      }
-    }
-  }
+  // ---- Do NOT auto-create SFTP account on registration ----
+  // SFTP accounts are only created when admin upgrades user to "trusted"
 
   res.json({
     success: true,
     message: 'Account created. You can now log in.',
-    // Return SFTP credentials so frontend can show them to user
-    sftpUsername: sftpUsername || null,
-    sftpPassword: sftpPassword || null,
   });
 });
 
@@ -1348,6 +1489,18 @@ app.post("/api/auth/login", express.json(), async (req, res) => {
   if (!user) {
     return res.status(401).json({ success: false, message: 'Invalid email or password.' });
   }
+
+  // Prevent removed accounts from logging in (admin removal reason provided to the user).
+  if (user.removedAt) {
+    return res.status(401).json({
+      success: false,
+      message: 'Your account has been removed by an administrator.' +
+        (user.removalReason ? (' Reason: ' + user.removalReason) : ''),
+      account_removed: true,
+      removal_reason: user.removalReason || null,
+    });
+  }
+
   if (!user.passwordHash) {
     return res.status(401).json({ success: false, message: 'This account uses Google or Microsoft sign-in. Use one of those buttons to log in.' });
   }
@@ -1356,6 +1509,13 @@ app.post("/api/auth/login", express.json(), async (req, res) => {
   }
   const role = (user.role === 'admin') ? 'admin' : (user.role === 'trusted' ? 'trusted' : 'registered');
   req.session.user = { provider: "local", email: user.email, name: user.name, role };
+
+  // JSON-mode: ensure default admin has SFTP credentials stored in users.json.
+  // This is a best-effort step (login should still succeed even if SFTP generation fails).
+  if (role === 'admin' && !usePgUsers()) {
+    try { await ensureAdminSftpCredentialsForJsonAsync(user.email); } catch (_) { }
+  }
+
   res.json({ success: true, redirect: FRONT_END_URL });
 });
 
@@ -1366,8 +1526,9 @@ app.get("/api/auth/check-client", async (req, res) => {
   try {
     const users = await getUsersAsync();
     const u = users.find(x => (x.email || '').toLowerCase() === email);
-    const isClient = !!u && (u.role === 'registered' || u.role === 'trusted' || u.role === 'admin');
-    return res.json({ success: true, isClient, role: u ? u.role : null });
+    const removed = !!u && !!u.removedAt;
+    const isClient = !!u && !removed && (u.role === 'registered' || u.role === 'trusted' || u.role === 'admin');
+    return res.json({ success: true, isClient, role: u ? u.role : null, account_removed: removed, removal_reason: removed ? u.removalReason : null });
   } catch (e) {
     console.error('check-client', e);
     return res.status(500).json({ success: false, isClient: false });
@@ -1617,6 +1778,8 @@ app.get('/api/admin/users', async (req, res) => {
       name: u.name || '',
       username: u.username || '',
       role: u.role === 'admin' ? 'admin' : (u.role === 'trusted' ? 'trusted' : 'registered'),
+        removedAt: u.removedAt || null,
+        removalReason: u.removalReason || null,
     }));
     res.json(list);
   } catch (e) {
@@ -1658,10 +1821,35 @@ app.post('/api/admin/users/upgrade-trusted', express.json(), async (req, res) =>
     return res.status(400).json({ success: false, message: 'Email is required.' });
   }
   try {
+    let userName = null;
     if (usePgUsers()) {
+      // Get user name first
+      const userRes = await pgQuery(
+        'SELECT name FROM public."DataPortalUsers" WHERE LOWER(email) = $1 LIMIT 1',
+        [email]
+      );
+      userName = userRes?.rows?.[0]?.name;
+
       const updated = await updateUserRolePG(email, 'trusted');
       if (!updated) {
         return res.status(404).json({ success: false, message: 'User not found.' });
+      }
+
+      // Create SFTP account for trusted user
+      if (process.env.SFTP_ADMIN_PASSWORD && userName) {
+        const sftpResult = await autoCreateSftpAccount(userName, email);
+        if (sftpResult.success) {
+          try {
+            await pgQuery(
+              `UPDATE public."DataPortalUsers"
+               SET sftp_username = $1, sftp_password = $2
+               WHERE LOWER(email) = LOWER($3)`,
+              [sftpResult.sftpUsername, sftpResult.sftpPassword, email]
+            );
+          } catch (e) {
+            console.error('[sftp] Failed to save SFTP credentials to DB:', e.message);
+          }
+        }
       }
       return res.json({ success: true, message: email + ' is now a trusted user.' });
     }
@@ -1670,12 +1858,127 @@ app.post('/api/admin/users/upgrade-trusted', express.json(), async (req, res) =>
     if (idx < 0) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
+    userName = users[idx].name;
     users[idx].role = 'trusted';
     writeUsers(users);
+
+    // Create SFTP account for trusted user
+    if (process.env.SFTP_ADMIN_PASSWORD && userName) {
+      const sftpResult = await autoCreateSftpAccount(userName, email);
+      if (sftpResult.success) {
+        users[idx].sftpUsername = sftpResult.sftpUsername;
+        users[idx].sftpPassword = sftpResult.sftpPassword;
+        writeUsers(users);
+      }
+    }
     res.json({ success: true, message: email + ' is now a trusted user.' });
   } catch (e) {
     console.error('POST /api/admin/users/upgrade-trusted', e);
     res.status(500).json({ success: false, message: 'Failed to update role.' });
+  }
+});
+
+// ---- Admin: downgrade a trusted user back to registered ----
+app.post('/api/admin/users/downgrade-registered', express.json(), async (req, res) => {
+  const email = (req.body && req.body.email || '').trim().toLowerCase();
+  if (!email) return res.status(400).json({ success: false, message: 'Email is required.' });
+
+  try {
+    if (usePgUsers()) {
+      const updated = await pgQuery(
+        `UPDATE public."DataPortalUsers"
+         SET role = 'registered', updated_at = NOW()
+         WHERE LOWER(email) = LOWER($1)
+         RETURNING email`,
+        [email]
+      );
+
+      if (!updated?.rows?.length) {
+        return res.status(404).json({ success: false, message: 'User not found.' });
+      }
+
+      // Best-effort: remove SFTP credentials so they can no longer use upload-sftp.
+      try {
+        await pgQuery(
+          `UPDATE public."DataPortalUsers"
+           SET sftp_username = NULL, sftp_password = NULL, updated_at = NOW()
+           WHERE LOWER(email) = LOWER($1)`,
+          [email]
+        );
+      } catch (e) {
+        // If the DB schema doesn't have sftp_* columns yet, ignore.
+        console.warn('[downgrade-registered] Could not clear sftp credentials (ignored):', e.message || e);
+      }
+
+      return res.json({ success: true, message: email + ' is now a registered user.' });
+    }
+
+    const users = readUsers();
+    const idx = users.findIndex(u => (u.email || '').toLowerCase() === email);
+    if (idx < 0) return res.status(404).json({ success: false, message: 'User not found.' });
+    users[idx].role = 'registered';
+    users[idx].sftpUsername = null;
+    users[idx].sftpPassword = null;
+    writeUsers(users);
+    return res.json({ success: true, message: email + ' is now a registered user.' });
+  } catch (e) {
+    console.error('POST /api/admin/users/downgrade-registered', e);
+    res.status(500).json({ success: false, message: 'Failed to downgrade user.' });
+  }
+});
+
+// ---- Admin: remove a user from the data portal (store reason) ----
+app.post('/api/admin/users/remove', express.json(), async (req, res) => {
+  const email = (req.body && req.body.email || '').trim().toLowerCase();
+  const reason = (req.body && (req.body.reason || req.body.removalReason) || '').trim();
+  if (!email) return res.status(400).json({ success: false, message: 'Email is required.' });
+  if (!reason) return res.status(400).json({ success: false, message: 'Removal reason is required.' });
+
+  try {
+    if (usePgUsers()) {
+      const updated = await pgQuery(
+        `UPDATE public."DataPortalUsers"
+         SET role = 'registered',
+             removed_at = NOW(),
+             removal_reason = $1,
+             updated_at = NOW()
+         WHERE LOWER(email) = LOWER($2)
+         RETURNING email`,
+        [reason, email]
+      );
+
+      if (!updated?.rows?.length) {
+        return res.status(404).json({ success: false, message: 'User not found.' });
+      }
+
+      // Best-effort: clear SFTP credentials
+      try {
+        await pgQuery(
+          `UPDATE public."DataPortalUsers"
+           SET sftp_username = NULL, sftp_password = NULL, updated_at = NOW()
+           WHERE LOWER(email) = LOWER($1)`,
+          [email]
+        );
+      } catch (e) {
+        console.warn('[remove] Could not clear sftp credentials (ignored):', e.message || e);
+      }
+
+      return res.json({ success: true, message: email + ' has been removed from the data portal.' });
+    }
+
+    const users = readUsers();
+    const idx = users.findIndex(u => (u.email || '').toLowerCase() === email);
+    if (idx < 0) return res.status(404).json({ success: false, message: 'User not found.' });
+    users[idx].role = 'registered';
+    users[idx].removedAt = new Date().toISOString();
+    users[idx].removalReason = reason;
+    users[idx].sftpUsername = null;
+    users[idx].sftpPassword = null;
+    writeUsers(users);
+    return res.json({ success: true, message: email + ' has been removed from the data portal.' });
+  } catch (e) {
+    console.error('POST /api/admin/users/remove', e);
+    res.status(500).json({ success: false, message: 'Failed to remove user.' });
   }
 });
 
@@ -2576,6 +2879,70 @@ app.get('/api/admin/client-uploads', async (req, res) => {
   } catch (e) {
     console.error('GET /api/admin/client-uploads', e);
     res.status(500).json({ error: 'Failed to load client uploads.' });
+  }
+});
+
+// ---- Admin: runtime path config for upload location display ----
+app.get('/api/admin/client-uploads/path-config', async (req, res) => {
+  try {
+    const uploadRootAbsolute = path.resolve(UPLOAD_DIR);
+    const remoteBasePath = process.env.REMOTE_SFTP_BASE_PATH || '';
+    res.json({
+      success: true,
+      uploadRootAbsolute,
+      remoteBasePath,
+    });
+  } catch (e) {
+    console.error('GET /api/admin/client-uploads/path-config', e);
+    res.status(500).json({ success: false, message: 'Failed to load path config.' });
+  }
+});
+
+// ---- Admin: delete a client upload (and wipe local disk folder if present) ----
+app.delete('/api/admin/client-uploads/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id) || !process.env.PG_DATABASE) {
+    return res.status(400).json({ success: false, message: 'Valid upload id is required.' });
+  }
+
+  try {
+    const q1 = await pgQuery('SELECT id, file_paths FROM public."ClientUploads" WHERE id = $1', [id]);
+    const row = q1 && q1.rows && q1.rows[0];
+    if (!row) return res.status(404).json({ success: false, message: 'Client upload not found.' });
+
+    // Wipe local heavy folder (best-effort). DB record + ProcessingRequests will be deleted next.
+    const filePaths = parseFilePaths(row.file_paths);
+    const uploadDirResolved = path.resolve(UPLOAD_DIR);
+    let targetDirToDelete = null;
+
+    if (filePaths.length > 0) {
+      const firstRel = filePaths[0];
+      const normalized = path.normalize(firstRel).replace(/^(\.\.(\/|\\))+/, '').replace(/\\/g, '/');
+      const withoutUploadsPrefix = normalized.replace(/^uploads\/?/, '');
+      if (withoutUploadsPrefix.includes('/')) {
+        const projDirName = withoutUploadsPrefix.split('/')[0];
+        const fullProjDir = path.join(uploadDirResolved, projDirName);
+        if (isPathUnderDir(fullProjDir, uploadDirResolved) && fullProjDir !== uploadDirResolved) {
+          targetDirToDelete = fullProjDir;
+        }
+      }
+    }
+
+    if (targetDirToDelete) {
+      try {
+        await fs.promises.rm(targetDirToDelete, { recursive: true, force: true });
+        console.log(`[admin-delete] Wiped project directory: ${targetDirToDelete}`);
+      } catch (err) {
+        console.warn(`[admin-delete] Warning: Could not wipe physical directory: ${targetDirToDelete}`, err);
+      }
+    }
+
+    // ProcessingRequests rows reference ClientUploads with ON DELETE CASCADE
+    await pgQuery('DELETE FROM public."ClientUploads" WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('DELETE /api/admin/client-uploads/:id', e);
+    res.status(500).json({ success: false, message: 'Failed to delete client upload.' });
   }
 });
 

@@ -24,7 +24,25 @@
     (function() {
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
       var LANDING = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/landing-page.html';
-      fetch(AUTH_API + '/api/auth/me', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(d) {
+      var removalHandled = false;
+      function checkRemoval() {
+        return fetch(AUTH_API + '/api/auth/me', { credentials: 'include' })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d && (d.account_removed || d.removal_reason)) {
+              if (!removalHandled) {
+                removalHandled = true;
+                alert(d.message || ('Your account has been removed.' + (d.removal_reason ? (' Reason: ' + d.removal_reason) : '')));
+              }
+              window.location.href = '/html/front-pages/login.html';
+              return false;
+            }
+            return d;
+          });
+      }
+
+      checkRemoval().then(function(d) {
+        if (!d) return;
         if (!d.loggedIn || (d.role !== 'registered' && d.role !== 'trusted' && d.role !== 'admin')) {
           window.__authRequired = true;
           window.__landingUrl = LANDING + (d.loggedIn ? '?message=login_required' : '');
@@ -42,6 +60,11 @@
         }
         window.__authRole = d.role;
       }).catch(function() {});
+
+      setInterval(function () {
+        if (removalHandled) return;
+        checkRemoval().catch(function () { });
+      }, 60000);
     })();
   </script>
 

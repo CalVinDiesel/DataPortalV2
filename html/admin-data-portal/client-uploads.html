@@ -152,6 +152,29 @@
               </div>
             </div>
 
+            <!-- Delete upload modal -->
+            <div class="modal fade" id="deleteUploadModal" tabindex="-1" aria-labelledby="deleteUploadModalLabel"
+              aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="deleteUploadModalLabel">Delete upload request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p class="mb-2">Delete this upload request?</p>
+                    <p class="small text-muted mb-0" id="deleteUploadModalHint">This action cannot be undone.</p>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="deleteUploadConfirmBtn">
+                      <i class="bx bx-trash me-1"></i> Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Upload details modal -->
             <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel"
               aria-hidden="true">
@@ -324,8 +347,12 @@
 
       var rejectModal = null;
       var deliverModal = null;
+      var deleteUploadModal = null;
       var pendingRejectId = null;
       var pendingDeliverId = null;
+      var pendingDeleteUploadId = null;
+      var uploadRootAbsolute = '';
+      var remoteBasePath = '';
 
       // Cache upload rows for detail modal
       var uploadsRowsById = {};
@@ -354,62 +381,104 @@
         return '<span class="badge bg-label-' + e.color + '"><i class="bx ' + e.icon + ' me-1"></i>' + escapeHtml(e.label) + '</span>';
       }
 
+      function normalizePathForDisplay(p) {
+        if (!p) return '';
+        return String(p).replace(/\\/g, '/');
+      }
+
+      function joinDisplayPath(base, sub) {
+        var b = normalizePathForDisplay(base || '').replace(/\/+$/, '');
+        var s = normalizePathForDisplay(sub || '').replace(/^\/+/, '');
+        if (!b) return s;
+        if (!s) return b;
+        return b + '/' + s;
+      }
+
       // Build SFTP path for a given upload row
       function buildSftpPath(r) {
-        var base = (typeof window !== 'undefined' && window.REMOTE_SFTP_BASE_PATH) || '';
+        var base = uploadRootAbsolute || remoteBasePath || ((typeof window !== 'undefined' && window.REMOTE_SFTP_BASE_PATH) || '');
         var paths = r.file_paths;
         var pathsArr = Array.isArray(paths) ? paths : (typeof paths === 'string' && paths ? [paths] : []);
         if (pathsArr.length > 0) {
-          // Extract folder path from first file path: uploads/project_xxx/filename → project_xxx/upload
+          // Extract folder path from first file path: uploads/project_xxx/filename -> project_xxx/upload
           var first = pathsArr[0].replace(/\\/g, '/').replace(/^uploads\/?/, '');
           var parts = first.split('/');
           if (parts.length >= 1) {
             // Get the project folder (first part) and add /upload subfolder
             var projectFolder = parts[0];
             var fullPath = projectFolder + '/upload';
-            return (base ? base + '/' : '/') + fullPath;
+            return joinDisplayPath(base, fullPath);
           }
         }
         // SFTP project upload: use project_id as folder with /upload subfolder
-        if (r.project_id) return (base ? base + '/' : '/') + r.project_id + '/upload';
+        if (r.project_id) return joinDisplayPath(base, r.project_id + '/upload');
         return '– (not available)';
       }
 
       function actionCells(r) {
         var status = (r.request_status || 'pending').toLowerCase();
-        var detailsBtn = '<button type="button" class="btn btn-sm btn-outline-secondary me-1 details-btn" data-upload-id="' + r.id + '"><i class="bx bx-info-circle me-1"></i>Details</button>';
+        var wrapStart = '<div class="d-flex flex-wrap align-items-center gap-2">';
+        var wrapEnd = '</div>';
+        var detailsBtn = '<button type="button" class="btn btn-sm btn-outline-secondary details-btn" data-upload-id="' + r.id + '"><i class="bx bx-info-circle me-1"></i>Details</button>';
         var rejectBtn = '<button type="button" class="btn btn-sm btn-outline-danger reject-btn" data-upload-id="' + r.id + '">Reject</button>';
+        var deleteBtn = '<button type="button" class="btn btn-sm btn-outline-danger delete-upload-btn" data-upload-id="' + r.id + '"><i class="bx bx-trash me-1"></i>Delete</button>';
 
         if (status === 'pending') {
-          return detailsBtn +
-            '<button type="button" class="btn btn-sm btn-success me-1 accept-btn" data-upload-id="' + r.id + '"><i class="bx bx-check me-1"></i>Accept</button>' +
-            rejectBtn;
+          return wrapStart +
+            detailsBtn +
+            '<button type="button" class="btn btn-sm btn-success accept-btn" data-upload-id="' + r.id + '"><i class="bx bx-check me-1"></i>Accept</button>' +
+            rejectBtn +
+            deleteBtn +
+            wrapEnd;
         }
         if (status === 'review') {
-          return detailsBtn +
-            '<button type="button" class="btn btn-sm btn-primary me-1 start-processing-btn" data-upload-id="' + r.id + '"><i class="bx bx-cog me-1"></i>Start Processing</button>' +
-            rejectBtn;
+          return wrapStart +
+            detailsBtn +
+            '<button type="button" class="btn btn-sm btn-primary start-processing-btn" data-upload-id="' + r.id + '"><i class="bx bx-cog me-1"></i>Start Processing</button>' +
+            rejectBtn +
+            deleteBtn +
+            wrapEnd;
         }
         if (status === 'accepted') {
           // Legacy fallback
-          return detailsBtn +
-            '<button type="button" class="btn btn-sm btn-primary me-1 start-processing-btn" data-upload-id="' + r.id + '"><i class="bx bx-cog me-1"></i>Start Processing</button>' +
-            rejectBtn;
+          return wrapStart +
+            detailsBtn +
+            '<button type="button" class="btn btn-sm btn-primary start-processing-btn" data-upload-id="' + r.id + '"><i class="bx bx-cog me-1"></i>Start Processing</button>' +
+            rejectBtn +
+            deleteBtn +
+            wrapEnd;
         }
         if (status === 'processing') {
-          return detailsBtn + '<span class="text-muted small"><i class="bx bx-info-circle me-1"></i>See Processing Requests below</span>';
+          return wrapStart +
+            detailsBtn +
+            '<span class="text-muted small"><i class="bx bx-info-circle me-1"></i>See Processing Requests below</span>' +
+            deleteBtn +
+            wrapEnd;
         }
         if (status === 'rejected') {
-          var reason = r.rejected_reason ? '<br><small class="text-muted">' + escapeHtml(r.rejected_reason) + '</small>' : '';
-          return detailsBtn + '<span class="badge bg-label-danger">Rejected</span>' + reason;
+          var reason = r.rejected_reason ? '<small class="text-muted">' + escapeHtml(r.rejected_reason) + '</small>' : '';
+          return wrapStart +
+            detailsBtn +
+            '<span class="badge bg-label-danger">Rejected</span>' +
+            reason +
+            deleteBtn +
+            wrapEnd;
         }
         if (status === 'sent') {
-          return detailsBtn + '<span class="badge bg-label-info"><i class="bx bx-package me-1"></i>Sent to client</span>';
+          return wrapStart +
+            detailsBtn +
+            '<span class="badge bg-label-info"><i class="bx bx-package me-1"></i>Sent to client</span>' +
+            deleteBtn +
+            wrapEnd;
         }
         if (status === 'completed') {
-          return detailsBtn + '<span class="badge bg-label-success"><i class="bx bx-check-circle me-1"></i>Completed</span>';
+          return wrapStart +
+            detailsBtn +
+            '<span class="badge bg-label-success"><i class="bx bx-check-circle me-1"></i>Completed</span>' +
+            deleteBtn +
+            wrapEnd;
         }
-        return detailsBtn;
+        return wrapStart + detailsBtn + deleteBtn + wrapEnd;
       }
 
       function showDetailsModal(row) {
@@ -533,10 +602,33 @@
                 if (rejectModal) rejectModal.show();
               });
             });
+
+            tbody.querySelectorAll('.delete-upload-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                var id = this.getAttribute('data-upload-id');
+                var row = uploadsRowsById[parseInt(id, 10)];
+                var label = (row && (row.project_title || row.project_id)) ? (row.project_title || row.project_id) : ('#' + id);
+                pendingDeleteUploadId = id;
+                var hint = document.getElementById('deleteUploadModalHint');
+                if (hint) hint.textContent = 'Delete upload "' + label + '" (ID ' + id + ')? This also removes linked processing request records.';
+                if (deleteUploadModal) deleteUploadModal.show();
+              });
+            });
           })
           .catch(function () {
             document.getElementById('uploadsTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Failed to load. Ensure the server is running and PostgreSQL is configured.</td></tr>';
           });
+      }
+
+      function loadPathConfig() {
+        return fetch(API_BASE + '/api/admin/client-uploads/path-config')
+          .then(function (r) { return r.json(); })
+          .then(function (cfg) {
+            if (!cfg || !cfg.success) return;
+            uploadRootAbsolute = normalizePathForDisplay(cfg.uploadRootAbsolute || '');
+            remoteBasePath = normalizePathForDisplay(cfg.remoteBasePath || '');
+          })
+          .catch(function () { /* keep fallback behavior */ });
       }
 
       function submitDecision(id, action, reason) {
@@ -575,6 +667,41 @@
             var reason = (document.getElementById('rejectReasonInput').value || '').trim();
             if (!reason) { alert('Please enter a reason for rejecting this request.'); return; }
             if (pendingRejectId) submitDecision(pendingRejectId, 'reject', reason);
+          });
+        }
+      })();
+
+      (function initDeleteUploadModal() {
+        var modalEl = document.getElementById('deleteUploadModal');
+        if (modalEl && typeof bootstrap !== 'undefined') deleteUploadModal = new bootstrap.Modal(modalEl);
+        var confirmBtn = document.getElementById('deleteUploadConfirmBtn');
+        if (confirmBtn) {
+          confirmBtn.addEventListener('click', function () {
+            if (!pendingDeleteUploadId) return;
+            var id = pendingDeleteUploadId;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting...';
+
+            fetch(API_BASE + '/api/admin/client-uploads/' + id, { method: 'DELETE' })
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                if (data && data.success) {
+                  if (deleteUploadModal) deleteUploadModal.hide();
+                  pendingDeleteUploadId = null;
+                  loadUploads();
+                  loadRequests();
+                  var al = document.getElementById('uploadsAlert');
+                  al.textContent = 'Deleted upload ID ' + id + '.';
+                  al.className = 'alert alert-success';
+                } else {
+                  alert((data && data.message) || 'Failed to delete.');
+                }
+              })
+              .catch(function () { alert('Delete failed.'); })
+              .finally(function () {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="bx bx-trash me-1"></i> Delete';
+              });
           });
         }
       })();
@@ -638,16 +765,18 @@
               // SFTP path hint for result placement
               var sftpPath = meta.id ? buildSftpPath(meta) : '–';
 
-              var statusBadgeHtml = '<span class="badge bg-label-' + (r.status === 'completed' ? 'success' : r.status === 'failed' ? 'danger' : 'primary') + '">' + escapeHtml(r.status) + '</span>';
+              // Determine status: if delivered_at is set, status is completed
+              var displayStatus = r.delivered_at ? 'completed' : r.status;
+              var statusBadgeHtml = '<span class="badge bg-label-' + (displayStatus === 'completed' ? 'success' : displayStatus === 'failed' ? 'danger' : 'primary') + '"><i class="bx ' + (displayStatus === 'completed' ? 'bx-check-circle' : displayStatus === 'failed' ? 'bx-x-circle' : 'bx-loader-alt') + ' me-1"></i>' + escapeHtml(displayStatus) + '</span>';
 
               var actionBtn = '–';
               if (r.delivered_at) {
                 actionBtn = '<span class="badge bg-label-success"><i class="bx bx-check-circle me-1"></i>Delivered</span>';
               } else if (r.status === 'processing' || r.status === 'pending') {
                 actionBtn =
-                  '<div class="d-flex flex-column gap-1">' +
-                  '<small class="text-muted"><i class="bx bx-server me-1"></i>Place result in WinSCP at:<br><code style="font-size:0.75rem">' + escapeHtml(sftpPath) + '</code></small>' +
-                  '<button type="button" class="btn btn-sm btn-success mark-delivered-btn mt-1" data-request-id="' + r.id + '"><i class="bx bx-check me-1"></i>Mark as Delivered</button>' +
+                  '<div class="d-flex flex-column gap-2">' +
+                  '<small class="text-muted"><i class="bx bx-server me-1"></i>Place result in WinSCP at:<code class="d-block mt-1" style="font-size:0.75rem">' + escapeHtml(sftpPath) + '</code></small>' +
+                  '<button type="button" class="btn btn-sm btn-success mark-delivered-btn" data-request-id="' + r.id + '"><i class="bx bx-check me-1"></i>Mark as Delivered</button>' +
                   '</div>';
               } else if (r.status === 'completed') {
                 actionBtn = '<button type="button" class="btn btn-sm btn-outline-success mark-delivered-btn" data-request-id="' + r.id + '"><i class="bx bx-check me-1"></i>Mark as Delivered</button>';
@@ -678,8 +807,10 @@
           });
       }
 
-      loadUploads();
-      loadRequests();
+      loadPathConfig().finally(function () {
+        loadUploads();
+        loadRequests();
+      });
     })();
   </script>
   <script src="../../assets/js/admin-responsive.js"></script>

@@ -218,7 +218,7 @@
               var lon = r.xAxis != null ? Number(r.xAxis).toFixed(5) : '–';
               var tiles = (r['3dTiles'] || r.tilesetUrl || '').trim();
               var tilesDisplay = tiles ? '<a href="' + escapeHtml(tiles) + '" target="_blank" class="text-truncate d-inline-block" style="max-width:180px">' + escapeHtml(truncate(tiles, 35)) + '</a>' : '–';
-              return '<tr><td><code>' + escapeHtml(id) + '</code></td><td>' + escapeHtml(r.title || '') + '</td><td><span class="text-muted">' + escapeHtml(truncate(r.description || '', 50)) + '</span></td><td>' + lat + ' / ' + lon + '</td><td>' + tilesDisplay + '</td><td><button type="button" class="btn btn-sm btn-outline-primary me-1 edit-pin-btn" data-id="' + escapeHtml(id) + '">Edit</button><button type="button" class="btn btn-sm btn-outline-danger delete-pin-btn" data-id="' + escapeHtml(id) + '">Delete</button></td></tr>';
+              return '<tr><td><code>' + escapeHtml(id) + '</code></td><td>' + escapeHtml(r.title || '') + '</td><td><span class="text-muted">' + escapeHtml(truncate(r.description || '', 50)) + '</span></td><td>' + lat + ' / ' + lon + '</td><td>' + tilesDisplay + '</td><td><div class="d-flex flex-wrap gap-2"><button type="button" class="btn btn-sm btn-outline-primary edit-pin-btn" data-id="' + escapeHtml(id) + '">Edit</button><button type="button" class="btn btn-sm btn-outline-danger delete-pin-btn" data-id="' + escapeHtml(id) + '">Delete</button></div></td></tr>';
             }).join('');
 
             tbody.querySelectorAll('.edit-pin-btn').forEach(function (btn) {
