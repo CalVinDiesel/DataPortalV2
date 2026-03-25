@@ -2187,6 +2187,7 @@ app.post('/api/upload/init', express.json(), async (req, res) => {
       latitude: req.body.latitude != null && req.body.latitude !== '' ? parseFloat(req.body.latitude) : null,
       longitude: req.body.longitude != null && req.body.longitude !== '' ? parseFloat(req.body.longitude) : null,
       imageMetadata: (req.body.imageMetadata || '').trim(),
+      outputCategory: Array.isArray(req.body.outputCategory) ? req.body.outputCategory : [],
       totalFiles: req.body.totalFiles || 0,
       totalSizeBytes: req.body.totalSizeBytes || 0,
       createdAt: new Date().toISOString()
@@ -2374,7 +2375,7 @@ app.post('/api/upload/finalize', requireAuth, express.json(), async (req, res) =
           finalFilePaths.length ? finalFilePaths : null, metadata.cameraModels, metadata.captureDate || null,
           metadata.organizationName, metadata.createdByEmail, metadata.projectDescription, metadata.category,
           isNaN(metadata.latitude) ? null : metadata.latitude, isNaN(metadata.longitude) ? null : metadata.longitude,
-          'Unknown', metadata.imageMetadata, dronePosFilePath, metadata.totalSizeBytes || 0,
+          'Unknown', JSON.stringify({ format: metadata.imageMetadata, outputs: metadata.outputCategory }), dronePosFilePath, metadata.totalSizeBytes || 0,
           tokensChargedVal,
         ],
       );
@@ -2524,6 +2525,8 @@ app.post('/api/upload/sftp-project', requireAuth, express.json(), async (req, re
       remotePath: targetPath
     };
 
+    const outputCategory = Array.isArray(req.body.outputCategory) ? req.body.outputCategory : [];
+
     // Create the logical directory
     if (actualSftpDetails.host) {
       const sftp = new SftpClient();
@@ -2550,7 +2553,7 @@ app.post('/api/upload/sftp-project', requireAuth, express.json(), async (req, re
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         projectID, projectTitle, (lensType === 'multiple' ? 'sftp_multiple' : 'sftp_single'), email, projectDescription, category,
-        null, null, JSON.stringify({ sftp: actualSftpDetails })
+        null, null, JSON.stringify({ sftp: actualSftpDetails, outputs: outputCategory })
       ]
     );
 
@@ -2602,6 +2605,11 @@ app.get('/api/user/my-uploads', requireAuth, async (req, res) => {
     const baseUrl = (req.get('x-forwarded-proto') && req.get('x-forwarded-host')) ? (req.get('x-forwarded-proto') + '://' + req.get('x-forwarded-host')) : (req.protocol + '://' + req.get('host') || '');
     const out = rows.map((r) => {
       const row = { ...r };
+
+      const fileServerUrl = process.env.FILE_SERVER_URL || 'https://dl-dataportal.geovidia.my';
+      row.completed_download_url = `${fileServerUrl}/download/${row.project_id}/test.zip`;
+      row.completed_view_url = `/html/cesium-viewer/index.html?tileset_url=${fileServerUrl}/view/${row.project_id}/tileset.json&title=${encodeURIComponent(row.project_title || row.project_id)}`;
+
       if (row.processing_result_tileset_url) {
         row.processing_result_download_url = baseUrl + '/api/user/my-uploads/' + row.id + '/download-result';
         row.processing_has_result = true;

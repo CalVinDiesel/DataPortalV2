@@ -575,6 +575,29 @@
             <input type="text" class="form-control form-control-sm" id="categoryOther" name="categoryOther"
               placeholder="Enter custom category">
           </div>
+          <div class="mb-3">
+            <label class="form-label d-block">Output Category <span class="text-danger">*</span></label>
+            <div class="form-check form-check-inline mt-1">
+              <input class="form-check-input" type="checkbox" name="outputCategory" id="out3DTiles" value="3D Tiles" checked onclick="return false;" style="pointer-events: none; opacity: 0.7;">
+              <label class="form-check-label" for="out3DTiles" style="opacity: 0.7; cursor: not-allowed;">3D Tiles</label>
+            </div>
+            <div class="form-check form-check-inline mt-1">
+              <input class="form-check-input" type="checkbox" name="outputCategory" id="outOSGB" value="OSGB" checked onclick="return false;" style="pointer-events: none; opacity: 0.7;">
+              <label class="form-check-label" for="outOSGB" style="opacity: 0.7; cursor: not-allowed;">OSGB</label>
+            </div>
+            <div class="form-check form-check-inline mt-1">
+              <input class="form-check-input" type="checkbox" name="outputCategory" id="outDSM" value="DSM">
+              <label class="form-check-label" for="outDSM">DSM</label>
+            </div>
+            <div class="form-check form-check-inline mt-1">
+              <input class="form-check-input" type="checkbox" name="outputCategory" id="out3DGS" value="3DGS">
+              <label class="form-check-label" for="out3DGS">3DGS</label>
+            </div>
+            <div class="form-check form-check-inline mt-1">
+              <input class="form-check-input" type="checkbox" name="outputCategory" id="outOrthophoto" value="Orthophoto">
+              <label class="form-check-label" for="outOrthophoto">Orthophoto</label>
+            </div>
+          </div>
 
           <div class="mb-3">
             <label class="form-label" for="imageMetadata">Sensor Metadata <span class="text-danger">*</span></label>
@@ -1690,11 +1713,21 @@
 
       // 1. Prepare Metadata for Initialization
       const catVal = document.getElementById('category').value;
+      const outputCheckboxes = document.querySelectorAll('input[name="outputCategory"]:checked');
+      const outputs = Array.from(outputCheckboxes).map(cb => cb.value);
+      if (outputs.length === 0) {
+        alert("Please select at least one output category.");
+        submitBtn.disabled = false;
+        progressContainer.style.display = 'none';
+        return;
+      }
+
       const initMetadata = {
         projectID: document.getElementById('projectID').value.trim() || 'proj-' + Date.now(),
         projectTitle: document.getElementById('projectTitle').value.trim(),
         projectDescription: document.getElementById('projectDescription').value.trim() || 'No description',
         category: catVal === 'Other' ? document.getElementById('categoryOther').value.trim() : catVal,
+        outputCategory: outputs,
         latitude: latInput.value,
         longitude: lngInput.value,
         areaCoverage: 'Unknown',

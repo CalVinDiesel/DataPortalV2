@@ -591,8 +591,8 @@
                     <i class="bx bx-dots-vertical-rounded"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                    ${statusVal === 'completed' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="landing-page.html#landingMap"><i class="bx bx-map"></i> View Live Map</a></li>' : ''}
-                    ${statusVal === 'completed' ? `<li><a class="dropdown-item btn-dropdown-link text-primary fw-medium" href="${AUTH_API}/api/user/my-uploads/${item.id}/download" download><i class="bx bx-download"></i> Download All Files (ZIP)</a></li>` : ''}
+                    ${statusVal === 'completed' ? `<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="${item.completed_view_url}" target="_blank"><i class="bx bx-map"></i> View Live Map</a></li>` : ''}
+                    ${(statusVal === 'completed' || statusVal === 'sent') ? `<li><a class="dropdown-item btn-dropdown-link text-primary fw-bold" href="${item.completed_download_url}" target="_blank"><i class="bx bx-download"></i> Download Processed Data (ZIP)</a></li>` : ''}
                     ${(item.processing_has_result && item.processing_result_download_url) ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="' + item.processing_result_download_url + '"><i class="bx bx-download"></i> Download 3D model</a></li>' : ''}
                     ${statusVal === 'sent' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="javascript:void(0);" onclick="confirmReceived(' + item.id + ')"><i class="bx bx-check-circle"></i> Confirm received</a></li>' : ''}
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showProjectDetails(${item.id})"><i class="bx bx-info-circle text-info"></i> View Details</a></li>

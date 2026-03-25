@@ -62,6 +62,8 @@ export default function DiscoveryPageWrapper() {
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
     const modelId = queryParams.get('model');
+    const directTilesetUrl = queryParams.get('tileset_url');
+    const directTitle = queryParams.get('title');
 
     const stateSiteTitle = (location.state as { siteTitle?: string })?.siteTitle;
 
@@ -71,8 +73,20 @@ export default function DiscoveryPageWrapper() {
 
     // Fetch map data logic
     useEffect(() => {
+        if (directTilesetUrl) {
+            setLocationData({
+                name: directTitle || 'Project Model',
+                description: 'Uploaded Project 3D Model',
+                tileset: directTilesetUrl,
+                fromApi: false,
+                purchase_price_tokens: 0
+            });
+            setLoadingData(false);
+            return;
+        }
+
         if (!modelId) {
-            setDataError("No ID parameter provided");
+            setDataError("No ID or tileset parameter provided");
             setLoadingData(false);
             return;
         }
@@ -1180,6 +1194,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             position: centroid,
         });
 
+        (entity as any).measurementType = 'area';
         (entity as any).measurementName = name;
 
         setDrawnMeasurements(prev => {
@@ -1223,6 +1238,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const counter = measurementCounters.current.markers++;
         const name = `Point ${counter}`;
+        (entity as any).annotationType = 'marker';
         (entity as any).annotationName = name;
 
         setUserAnnotations(prev => ({
@@ -1246,6 +1262,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const counter = measurementCounters.current.lines++;
         const name = `Line ${counter}`;
+        (entity as any).annotationType = 'line';
         (entity as any).annotationName = name;
 
         setUserAnnotations(prev => ({
@@ -1271,6 +1288,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const counter = measurementCounters.current.polygons++;
         const name = `Polygon ${counter}`;
+        (entity as any).annotationType = 'polygon';
         (entity as any).annotationName = name;
 
         setUserAnnotations(prev => ({
@@ -1329,6 +1347,15 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         (entity as any).measurementType = 'circle';
         (entity as any).measurementName = name;
+        
+        setDrawnMeasurements(prev => {
+            const newArray = [...prev.circle, entity];
+            return {
+                ...prev,
+                circle: newArray,
+            };
+        });
+
         // Increment persistent counter
         measurementCounters.current.circle++;
     };
@@ -1444,9 +1471,16 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
     return (
         <div className="discovery-page">
             <header className="discovery-header">
-                <a href="/html/front-pages/landing-page.html#landingShowCase" className="back-button">
+                <a href={new URLSearchParams(window.location.search).has('tileset_url') ? "#" : "/html/front-pages/landing-page.html#landingShowCase"} 
+                   className="back-button"
+                   onClick={(e) => {
+                       if (new URLSearchParams(window.location.search).has('tileset_url')) {
+                           e.preventDefault();
+                           window.close(); 
+                       }
+                   }}>
                     <ArrowLeft size={20} />
-                    <span>Back to Showcases</span>
+                    <span>{new URLSearchParams(window.location.search).has('tileset_url') ? "Close Viewer" : "Back to Showcases"}</span>
                 </a>
                 <h1 className="discovery-title">{siteTitle} - Data Discovery</h1>
                 {/* TEMPORARILY HIDDEN - Purchase button and price display
