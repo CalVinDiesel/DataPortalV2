@@ -2975,7 +2975,7 @@ app.get('/api/user/my-uploads', requireAuth, async (req, res) => {
 
       const fileServerUrl = process.env.FILE_SERVER_URL || 'https://dl-dataportal.geovidia.my';
       row.completed_download_url = `${fileServerUrl}/download/${row.project_id}/test.zip`;
-      row.completed_view_url = `/html/cesium-viewer/index.html?tileset_url=${fileServerUrl}/view/${row.project_id}/tileset.json&title=${encodeURIComponent(row.project_title || row.project_id)}`;
+      row.completed_view_url = `/html/front-pages/loading-3d.html?tileset_url=${fileServerUrl}/view/${row.project_id}/tileset.json&title=${encodeURIComponent(row.project_title || row.project_id)}`;
 
       if (row.processing_result_tileset_url) {
         row.processing_result_download_url = baseUrl + '/api/user/my-uploads/' + row.id + '/download-result';

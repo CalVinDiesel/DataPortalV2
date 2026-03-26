@@ -63,9 +63,8 @@
   </div>
   <script>
     (function () {
-      var params = new URLSearchParams(window.location.search);
-      var id = params.get('id') || '';
-      var url = '/html/cesium-viewer/index.html' + (id ? '?model=' + encodeURIComponent(id) : '');
+      var searchStr = window.location.search || '';
+      var url = '/html/cesium-viewer/index.html' + searchStr;
       setTimeout(function () { window.location.href = url; }, 3000);
     })();
   </script>
