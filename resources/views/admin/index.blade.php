@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-assets-path="{{ asset('assets/') }}/" data-template="admin-data-portal" data-bs-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Data Portal | 3DHub</title>
+  <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
+  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico" />
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css" />
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css" />
+  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css" />
+  <link rel="stylesheet" href="{{ asset('assets/') }}/css/admin-responsive.css" />
+  <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
+  <script src="{{ asset('assets/') }}/vendor/js/bootstrap.js"></script>
+  <script>
+    (function() {
+      var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
+      fetch(AUTH_API + '/api/auth/me', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(d) {
+        if (!d.loggedIn || d.role !== 'admin') window.location.href = '/html/front-pages/{{ route('landing') }}?error=admin_only';
+      }).catch(function() { window.location.href = '/html/front-pages/{{ route('landing') }}'; });
+    })();
+  </script>
+</head>
+<body>
+  <div class="layout-wrapper layout-content-navbar">
+    <div class="layout-container">
+      <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+        <div class="app-brand demo py-4 mb-2" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1.5rem !important;">
+          <a href="index.html" class="app-brand-link d-flex align-items-center">
+            <span class="app-brand-logo demo me-2"><img src="{{ asset('assets/') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+            <span class="app-brand-text demo menu-text fw-bold" style="font-size: 1.4em;">3DHub Admin</span>
+          </a>
+        </div>
+        <div class="menu-inner-shadow"></div>
+        <ul class="menu-inner py-3">
+          <li class="menu-item active">
+            <a href="index.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-home-circle"></i>
+              <div>Dashboard</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="add-3d-model.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-cube"></i>
+              <div>Add 3D Model</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-map-pins.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-map-pin"></i>
+              <div>Manage Map Pins</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-showcase.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-grid-alt"></i>
+              <div>Manage Showcase</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="client-uploads.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-cloud-upload"></i>
+              <div>Client Uploads</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-users.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-user"></i>
+              <div>Manage Users</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="../front-pages/{{ route('landing') }}" class="menu-link" target="_blank">
+              <i class="menu-icon tf-icons bx bx-map"></i>
+              <div>View Portal</div>
+            </a>
+          </li>
+        </ul>
+      </aside>
+      <div class="layout-page">
+        <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme">
+          <div class="navbar-brand demo d-flex align-items-center py-0 me-3">
+            <button class="admin-menu-toggle btn btn-icon d-xl-none me-2 border-0 bg-transparent p-0" type="button" aria-label="Toggle menu"><i class="bx bx-menu icon-lg"></i></button>
+          </div>
+          <div class="navbar-nav-right d-flex align-items-center ms-auto gap-2">
+            <span class="navbar-text d-none d-md-inline">Admin dashboard for 3D models and client image processing</span>
+            <!-- Style Switcher -->
+            <ul class="navbar-nav flex-row align-items-center">
+              <li class="nav-item dropdown-style-switcher dropdown">
+                <a class="nav-link dropdown-toggle hide-arrow" id="nav-theme" href="javascript:void(0);" data-bs-toggle="dropdown">
+                  <i class="icon-base bx bx-sun icon-lg theme-icon-active"></i>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-theme-text">
+                  <li>
+                    <button type="button" class="dropdown-item align-items-center" data-bs-theme-value="light">
+                      <span><i class="icon-base bx bx-sun icon-md me-3"></i>Light</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" class="dropdown-item align-items-center" data-bs-theme-value="dark">
+                      <span><i class="icon-base bx bx-moon icon-md me-3"></i>Dark</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" class="dropdown-item align-items-center" data-bs-theme-value="system">
+                      <span><i class="icon-base bx bx-desktop icon-md me-3"></i>System</span>
+                    </button>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+            <!-- / Style Switcher -->
+          </div>
+        </nav>
+        <div class="content-wrapper">
+          <div class="container-xxl flex-grow-1 container-p-y">
+            <h4 class="fw-bold mb-4">Admin Dashboard</h4>
+            <div class="row">
+              <div class="col-md-6 col-lg-4 mb-4">
+                <a href="add-3d-model.html" class="card text-decoration-none h-100">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center">
+                      <div class="avatar avatar-lg me-3">
+                        <span class="avatar-initial rounded bg-label-primary"><i class="bx bx-cube bx-lg"></i></span>
+                      </div>
+                      <div>
+                        <h5 class="card-title mb-0">Add 3D Model</h5>
+                        <p class="text-muted small mb-0">Create a new 3D model entry and add it to the overview map and showcases.</p>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div class="col-md-6 col-lg-4 mb-4">
+                <a href="manage-map-pins.html" class="card text-decoration-none h-100">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center">
+                      <div class="avatar avatar-lg me-3">
+                        <span class="avatar-initial rounded bg-label-warning"><i class="bx bx-map-pin bx-lg"></i></span>
+                      </div>
+                      <div>
+                        <h5 class="card-title mb-0">Manage Map Pins</h5>
+                        <p class="text-muted small mb-0">View, edit, or delete pin locations and 3D models on the overview map and showcases.</p>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div class="col-md-6 col-lg-4 mb-4">
+                <a href="manage-showcase.html" class="card text-decoration-none h-100">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center">
+                      <div class="avatar avatar-lg me-3">
+                        <span class="avatar-initial rounded bg-label-secondary"><i class="bx bx-grid-alt bx-lg"></i></span>
+                      </div>
+                      <div>
+                        <h5 class="card-title mb-0">Manage Showcase</h5>
+                        <p class="text-muted small mb-0">Choose which locations appear on the landing page showcase; remove from showcase only, map only, or both.</p>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div class="col-md-6 col-lg-4 mb-4">
+                <a href="client-uploads.html" class="card text-decoration-none h-100">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center">
+                      <div class="avatar avatar-lg me-3">
+                        <span class="avatar-initial rounded bg-label-info"><i class="bx bx-cloud-upload bx-lg"></i></span>
+                      </div>
+                      <div>
+                        <h5 class="card-title mb-0">Client Uploads</h5>
+                        <p class="text-muted small mb-0">View client requests for custom image-to-3D processing; process their images and deliver the 3D model back to them (paid service).</p>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div class="col-md-6 col-lg-4 mb-4">
+                <a href="manage-users.html" class="card text-decoration-none h-100">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center">
+                      <div class="avatar avatar-lg me-3">
+                        <span class="avatar-initial rounded bg-label-success"><i class="bx bx-user bx-lg"></i></span>
+                      </div>
+                      <div>
+                        <h5 class="card-title mb-0">Manage Users</h5>
+                        <p class="text-muted small mb-0">Promote client accounts to admin so they can access the admin portal.</p>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Quick info</h5>
+                <p class="mb-0">This admin portal is linked to the database (PostgreSQL when configured). Use <strong>Add 3D Model</strong> to register new tileset URLs so they appear on the public overview map. Use <strong>Client Uploads</strong> to handle client requests for <strong>custom image-to-3D processing</strong>: clients submit their own drone images via the <a href="../front-pages/{{ route('upload_data') }}" target="_blank">upload page</a>; you process them and deliver the resulting 3D model back to the client (paid service; not added to the map).</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="{{ asset('assets/') }}/js/admin-responsive.js"></script>
+  <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets/') }}/" data-template="front-pages" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Log in | 3DHub Data Portal</title>
+  <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
+  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css">
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css">
+  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css">
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/pages/front-page.css">
+  <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
+  <script src="{{ asset('assets/') }}/js/front-config.js"></script>
+  <style>
+    .btn-google { background-color: #fff; color: #3c4043; border: 1px solid #dadce0; }
+    .btn-google:hover { background-color: #f8f9fa; border-color: #dadce0; color: #3c4043; }
+    .btn-social { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.625rem 1.25rem; font-weight: 500; }
+  </style>
+</head>
+<body class="min-vh-100 d-flex flex-column">
+  <nav class="layout-navbar shadow-none py-0">
+    <div class="container">
+      <div class="navbar navbar-expand-lg landing-navbar px-3">
+        <a href="{{ route('landing') }}" class="app-brand-link d-flex align-items-center">
+          <span class="app-brand-logo demo">
+            <img src="{{ asset('assets/') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;">
+          </span>
+          <span class="app-brand-text demo menu-text fw-bold ms-2 ps-1">3DHub</span>
+        </a>
+        <div class="ms-auto d-flex align-items-center gap-2">
+          <!-- Style Switcher -->
+          <ul class="navbar-nav flex-row align-items-center">
+            <li class="nav-item dropdown-style-switcher dropdown me-2">
+              <a class="nav-link dropdown-toggle hide-arrow" id="nav-theme" href="javascript:void(0);" data-bs-toggle="dropdown">
+                <i class="icon-base bx bx-sun icon-lg theme-icon-active"></i>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-theme-text">
+                <li>
+                  <button type="button" class="dropdown-item align-items-center" data-bs-theme-value="light">
+                    <span><i class="icon-base bx bx-sun icon-md me-3"></i>Light</span>
+                  </button>
+                </li>
+                <li>
+                  <button type="button" class="dropdown-item align-items-center" data-bs-theme-value="dark">
+                    <span><i class="icon-base bx bx-moon icon-md me-3"></i>Dark</span>
+                  </button>
+                </li>
+                <li>
+                  <button type="button" class="dropdown-item align-items-center" data-bs-theme-value="system">
+                    <span><i class="icon-base bx bx-desktop icon-md me-3"></i>System</span>
+                  </button>
+                </li>
+              </ul>
+            </li>
+          </ul>
+          <!-- / Style Switcher -->
+          <a href="{{ route('landing') }}" class="btn btn-outline-primary btn-sm">Back to Home</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="flex-grow-1 d-flex align-items-center">
+    <div class="container py-5 mt-10">
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+          <div class="card-body p-4 p-sm-5">
+            <div class="text-center mb-4">
+              <h4 class="mb-1">Log in</h4>
+              <p class="text-body small">Sign in with your account, or create one if you're new.</p>
+            </div>
+
+            <div id="loginAuthError" class="alert alert-warning small py-2 mb-3 d-none" role="alert"></div>
+            <div class="d-grid gap-2 mb-3">
+              <a href="#" id="btnLoginGoogle" class="btn btn-google btn-social">
+                <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.16 7.09-10.27 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                Log in with Google
+              </a>
+              <a href="#" id="btnLoginMicrosoft" class="btn btn-social" style="background-color:#fff; color:#3c4043; border:1px solid #dadce0;">
+                <img src="https://learn.microsoft.com/en-us/entra/identity-platform/media/howto-add-branding-in-apps/ms-symbollockup_mssymbol_19.png" alt="Microsoft" width="18" height="18">
+                Log in with Microsoft
+              </a>
+            </div>
+            <p class="small text-body text-center mb-3">Sign in with Google or Microsoft? Use the buttons above. Sign in with email? Use the form below.</p>
+            <div class="text-center small text-body mb-3">— or log in with email and password —</div>
+
+            <form id="loginForm" method="POST" action="{{ route('login') }}">
+              @csrf
+              <div class="mb-3">
+                <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required autofocus placeholder="your@email.com" autocomplete="username">
+                <x-input-error :messages="$errors->get('email')" class="mt-2" />
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label" for="password">Password <span class="text-danger">*</span></label>
+                <div class="position-relative">
+                  <input type="password" class="form-control pe-5" id="password" name="password" required placeholder="Password" autocomplete="current-password">
+                  <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-body p-0 pe-2" id="loginPasswordToggle" aria-label="Show password" title="Show password">
+                    <i class="bx bx-show-alt icon-lg"></i>
+                  </button>
+                  <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                </div>
+              </div>
+
+              <div class="mb-3 text-end small">
+                @if (Route::has('password.request'))
+                  <a href="{{ route('password.request') }}" class="text-body">Forgot password?</a>
+                @endif
+              </div>
+
+              <div class="d-grid gap-2 mt-4">
+                <button type="submit" id="loginBtn" class="btn btn-primary">Log in</button>
+              </div>
+            </form>
+
+
+            <hr class="my-4">
+            <div class="text-center small">
+              Don't have an account? <a href="{{ route('register') }}" class="fw-medium">Sign up / Register</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <script src="{{ asset('assets/') }}/vendor/libs/popper/popper.js"></script>
+  <script src="{{ asset('assets/') }}/vendor/js/bootstrap.js"></script>
+  <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
+  <script>
+    var AUTH_GOOGLE_URL = 'http://localhost:3000/api/auth/google';
+    var AUTH_MICROSOFT_URL = 'http://localhost:3000/auth/microsoft/login';
+    var AUTH_API = 'http://localhost:3000';
+
+    // Password show/hide toggle
+    (function() {
+      var input = document.getElementById('password');
+      var btn = document.getElementById('loginPasswordToggle');
+      var icon = btn ? btn.querySelector('i') : null;
+      if (btn && input && icon) {
+        btn.addEventListener('click', function() {
+          var isPass = input.type === 'password';
+          input.type = isPass ? 'text' : 'password';
+          icon.className = isPass ? 'bx bx-hide icon-lg' : 'bx bx-show-alt icon-lg';
+          btn.setAttribute('aria-label', isPass ? 'Hide password' : 'Show password');
+          btn.setAttribute('title', isPass ? 'Hide password' : 'Show password');
+        });
+      }
+    })();
+    
+    // Social Login Redirect
+    document.getElementById('btnLoginGoogle').addEventListener('click', function (e) {
+      e.preventDefault();
+      window.location.href = "{{ route('auth.google') }}";
+    });
+
+    document.getElementById('btnLoginMicrosoft').addEventListener('click', function (e) {
+      e.preventDefault();
+      alert('Microsoft login is not yet configured on this server. Please use email and password.');
+    });
+
+    // Form validation before submission
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+      var emailEl = document.getElementById('email');
+      var passEl = document.getElementById('password');
+      var btn = document.getElementById('loginBtn');
+      
+      var ok = true;
+      if (!emailEl.value.trim()) {
+        emailEl.classList.add('is-invalid');
+        ok = false;
+      }
+      if (!passEl.value.trim()) {
+        passEl.classList.add('is-invalid');
+        ok = false;
+      }
+      
+      if (!ok) {
+        e.preventDefault();
+        return;
+      }
+      
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Logging in...';
+    });
+  </script>
+</body>
+</html>

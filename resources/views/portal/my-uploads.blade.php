@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets/') }}/"
+  data-template="front-pages" data-bs-theme="light">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <title>My Projects | 3DHub Data Portal</title>
+
+  <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
+    rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css">
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/boxicons.css" />
+
+  <!-- Core CSS -->
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css">
+  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css">
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/pages/front-page.css">
+
+  <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
+  <script src="{{ asset('assets/') }}/js/front-config.js"></script>
+
+  <!-- Auth Protection -->
+  <script>
+    (function () {
+      window.userRole = '{{ Auth::user()->role }}';
+    })();
+
+    function logout() {
+      if (!confirm('Are you sure you want to log out?')) return;
+      document.getElementById('logout-form').submit();
+    }
+  </script>
+
+<style>
+  body {
+    background-color: var(--bs-body-bg);
+  }
+  .hero-bg {
+    background: linear-gradient(135deg, rgba(105, 108, 255, 0.05) 0%, rgba(105, 108, 255, 0.01) 100%);
+    padding: 3rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+
+  .storage-card {
+    background: var(--bs-card-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    height: 100%;
+  }
+
+  .stat-card {
+    background: var(--bs-card-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    transition: all 0.25s ease;
+    height: 100%;
+  }
+
+  .stat-card:hover {
+    box-shadow: 0 6px 16px rgba(105, 108, 255, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .back-btn {
+    background: var(--bs-card-bg) !important;
+    color: var(--bs-secondary-color) !important;
+  }
+  .back-btn:hover {
+    color: #696cff !important;
+    background-color: var(--bs-tertiary-bg) !important;
+  }
+  .back-btn:hover i { color: inherit !important; }
+
+  .stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+  }
+
+  /* Table Styles */
+  .table-container {
+    background: var(--bs-card-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    overflow: hidden;
+  }
+
+  .project-thumb {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+  }
+
+  .project-name {
+    font-weight: 600;
+    color: var(--bs-heading-color);
+    font-size: 1.05rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .project-meta {
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color);
+  }
+
+  .badge-status {
+    padding: 0.4rem 0.75rem;
+    font-weight: 500;
+    font-size: 0.75rem;
+    border-radius: 6px;
+  }
+
+  /* Status Colors */
+  .status-completed  { background: rgba(113, 221, 55, 0.1);  color: #71dd37; border: 1px solid rgba(113, 221, 55, 0.2); }
+  .status-processing { background: rgba(105, 108, 255, 0.1); color: #696cff; border: 1px solid rgba(105, 108, 255, 0.2); }
+  .status-incomplete { background: rgba(216, 16, 219, 0.1);  color: #d810db; border: 1px solid rgba(216, 16, 219, 0.2); }
+  .status-failed     { background: rgba(255, 62, 29, 0.1);   color: #ff3e1d; border: 1px solid rgba(255, 62, 29, 0.2); }
+
+  .table th {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: var(--bs-secondary-color);
+    background: var(--bs-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+    padding: 1rem;
+  }
+
+  .table td {
+    padding: 1.25rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--bs-border-color);
+    color: var(--bs-body-color);
+  }
+
+  .table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .action-btn {
+    color: var(--bs-secondary-color);
+    background: transparent;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .action-btn:hover {
+    background: rgba(105, 108, 255, 0.1);
+    color: #696cff;
+  }
+
+  .btn-dropdown-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Modal Styling */
+  .detail-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--bs-secondary-color);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+  .detail-value {
+    color: var(--bs-body-color);
+    font-weight: 500;
+    margin-bottom: 1.25rem;
+  }
+  .modal-header {
+    background: var(--bs-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+
+  /* Pagination strip */
+  .bg-lighter {
+    background: var(--bs-tertiary-bg) !important;
+  }
+</style>
+</head>
+
+<body>
+
+  <!-- Hero Section -->
+  <div class="hero-bg">
+    <div class="container">
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <a href="{{ route('landing') }}" class="btn btn-label-secondary btn-sm fw-medium border shadow-sm back-btn" style="background: white; color: #566a7f;">
+          <i class="bx bx-arrow-back me-1"></i> Back
+        </a>
+        <!-- Style Switcher -->
+        <ul class="navbar-nav flex-row align-items-center mb-0">
+          <li class="nav-item dropdown-style-switcher dropdown">
+            <a class="nav-link dropdown-toggle hide-arrow" id="nav-theme" href="javascript:void(0);" data-bs-toggle="dropdown">
+              <i class="icon-base bx bx-sun icon-lg theme-icon-active"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-theme-text">
+              <li>
+                <button type="button" class="dropdown-item align-items-center" data-bs-theme-value="light">
+                  <span><i class="icon-base bx bx-sun icon-md me-3"></i>Light</span>
+                </button>
+              </li>
+              <li>
+                <button type="button" class="dropdown-item align-items-center" data-bs-theme-value="dark">
+                  <span><i class="icon-base bx bx-moon icon-md me-3"></i>Dark</span>
+                </button>
+              </li>
+              <li>
+                <button type="button" class="dropdown-item align-items-center" data-bs-theme-value="system">
+                  <span><i class="icon-base bx bx-desktop icon-md me-3"></i>System</span>
+                </button>
+              </li>
+            </ul>
+          </li>
+        </ul>
+        <!-- / Style Switcher -->
+      </div>
+      <div class="d-flex justify-content-between align-items-center mb-0">
+        <div>
+          <h2 class="h3 fw-bold text-dark mb-2">My Datasets</h2>
+          <p class="text-muted mb-0">Manage your uploaded flight paths, 3D models, and processing jobs.</p>
+        </div>
+        <a href="create-project.html" class="btn btn-primary shadow-sm">
+          <i class="bx bx-plus me-1"></i> New Project
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container mt-4 mb-5 pb-5">
+    
+    <!-- Dashboard Stats Row -->
+    <div class="row g-4 mb-5">
+      <!-- Storage Quota -->
+      <div class="col-lg-5 col-md-12">
+        <div class="storage-card">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0 fw-bold">Storage Quota</h5>
+            <span class="badge bg-label-primary">Pro Plan</span>
+          </div>
+          <div class="d-flex justify-content-between text-muted small mb-2">
+            <span id="storageUsedText">0 GB Used</span>
+            <span>100 GB Total</span>
+          </div>
+          <div class="progress" style="height: 10px; border-radius: 10px;">
+            <div id="storageProgressBar" class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div id="storageStatusText" class="mt-3 text-muted" style="font-size: 0.8rem;">
+            You have used 0% of your available storage. <a href="#" class="text-primary fw-medium">Upgrade plan</a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Stats -->
+      <div class="col-lg-7 col-md-12">
+        <div class="row g-4 h-100">
+          <div class="col-sm-4">
+            <div class="stat-card">
+              <div class="stat-icon bg-label-success">
+                <i class="bx bx-folder-open"></i>
+              </div>
+              <div>
+                <h4 class="mb-0 fw-bold" id="statTotalProjects">-</h4>
+                <p class="mb-0 text-muted small">Total Projects</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="stat-card">
+              <div class="stat-icon bg-label-info">
+                <i class="bx bx-images"></i>
+              </div>
+              <div>
+                <h4 class="mb-0 fw-bold" id="statPhotosStored">-</h4>
+                <p class="mb-0 text-muted small">Photos Stored</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="stat-card">
+              <div class="stat-icon bg-label-warning">
+                <i class="bx bx-loader-circle bx-spin"></i>
+              </div>
+              <div>
+                <h4 class="mb-0 fw-bold" id="statProcessingJobs">-</h4>
+                <p class="mb-0 text-muted small">Processing Job</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-container">
+      <div class="d-flex justify-content-between align-items-center p-4 border-bottom">
+        <h5 class="mb-0 fw-bold">Recent Uploads</h5>
+        <div class="input-group input-group-sm" style="width: 250px;">
+          <span class="input-group-text bg-white"><i class="bx bx-search"></i></span>
+          <input type="text" id="projectSearch" class="form-control" placeholder="Search projects..." onkeyup="filterProjects()">
+        </div>
+      </div>
+      
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th style="width: 40%">Project Information</th>
+              <th>Status</th>
+              <th>Date / Size</th>
+              <th>Configuration</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="uploadsTableBody">
+            <tr>
+              <td colspan="5" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <div class="mt-2 text-muted small">Loading your datasets...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Pagination -->
+      <div class="d-flex justify-content-between align-items-center p-3 border-top bg-lighter">
+        <div class="text-muted small" id="paginationText">Loading...</div>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item disabled">
+            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+          </li>
+          <li class="page-item active"><a class="page-link" href="#">1</a></li>
+          <li class="page-item"><a class="page-link" href="#">2</a></li>
+          <li class="page-item"><a class="page-link" href="#">3</a></li>
+          <li class="page-item">
+            <a class="page-link" href="#">Next</a>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Project Details Modal -->
+  <div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header py-3">
+          <h5 class="modal-title fw-bold" id="detailModalTitle">Project Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="row">
+            <div class="col-12">
+              <div class="detail-label">Description</div>
+              <p class="detail-value mb-4" id="detailDescription"></p>
+            </div>
+            <div class="col-6">
+              <div class="detail-label">Category</div>
+              <div class="detail-value" id="detailCategory"></div>
+            </div>
+            <div class="col-6">
+              <div class="detail-label">Coordinates</div>
+              <div class="detail-value" id="detailCoordinates"></div>
+            </div>
+            <div class="col-6">
+              <div class="detail-label">Camera Config</div>
+              <div class="detail-value" id="detailConfig"></div>
+            </div>
+            <div class="col-6">
+              <div class="detail-label">Camera Models</div>
+              <div class="detail-value" id="detailModels"></div>
+            </div>
+            <div class="col-12">
+              <div class="detail-label">Survey Date</div>
+              <div class="detail-value" id="detailDate"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-top-0 pt-0">
+          <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Metadata Modal -->
+  <div class="modal fade" id="editMetadataModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header py-3">
+          <h5 class="modal-title fw-bold">Edit Project Metadata</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <input type="hidden" id="editProjectId">
+          <div class="mb-3">
+            <label class="form-label fw-bold small text-uppercase" for="editProjectTitle">Project Title</label>
+            <input type="text" id="editProjectTitle" class="form-control" placeholder="Enter new project title">
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-bold small text-uppercase" for="editProjectDescription">Project Description</label>
+            <textarea id="editProjectDescription" class="form-control" rows="4" placeholder="Enter new project description"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-top-0 pt-0">
+          <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary px-4" id="saveEditBtn" onclick="saveProjectMetadata()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow-lg text-center p-3">
+        <div class="modal-body p-4 text-center">
+          <div class="mb-3 mt-2">
+            <i class="bx bx-trash text-danger" style="font-size: 3.5rem; background: rgba(255, 62, 29, 0.1); padding: 1rem; border-radius: 50%;"></i>
+          </div>
+          <h5 class="fw-bold mb-2 text-dark">Are you absolutely sure?</h5>
+          <p class="text-muted mb-4" style="font-size: 0.9rem;">This will permanently delete your project and erase all associated data. This action <strong>cannot be undone</strong>.</p>
+          <input type="hidden" id="deleteProjectId">
+          <div class="d-flex flex-column gap-2">
+            <button type="button" class="btn btn-danger w-100 fw-medium" id="confirmDeleteBtn" onclick="executeDeleteProject()">Yes, Delete Project</button>
+            <button type="button" class="btn btn-label-secondary w-100 fw-medium" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+      @csrf
+  </form>
+
+  <!-- Core Scripts -->
+  <script src="{{ asset('assets/') }}/vendor/libs/popper/popper.js"></script>
+  <script src="{{ asset('assets/') }}/vendor/js/bootstrap.js"></script>
+  <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
+  
+  <script>
+    function logout() {
+      if (!confirm('Are you sure you want to log out?')) return;
+      var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
+      var LANDING_URL = window.location.origin + '/html/front-pages/{{ route('landing') }}';
+      fetch(AUTH_API + '/api/auth/logout', { method: 'POST', credentials: 'include' })
+        .then(function () { window.location.href = AUTH_API + '/api/auth/sign-out?callbackURL=' + encodeURIComponent(LANDING_URL); })
+        .catch(function () { window.location.href = LANDING_URL; });
+    }
+
+    // Dynamic Data Fetching
+    document.addEventListener("DOMContentLoaded", function() {
+      fetchUploadsList();
+    });
+
+    function formatBytes(bytes) {
+      if (bytes === 0 || !bytes) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'Unknown';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function fetchUploadsList() {
+      fetch('/api/user/my-uploads', { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById('uploadsTableBody');
+          tbody.innerHTML = '';
+          
+          if (!data || data.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="5" class="text-center py-5">
+                  <div class="text-muted mb-2"><i class="bx bx-folder-open" style="font-size: 3rem; opacity: 0.5;"></i></div>
+                  <h6 class="mb-1 fw-bold text-dark">No datasets found</h6>
+                  <p class="text-muted small">You haven't uploaded any drone imagery yet.</p>
+                  <a href="{{ route('upload_data') }}" class="btn btn-primary btn-sm mt-2">Start your first upload</a>
+                </td>
+              </tr>
+            `;
+            document.getElementById('statTotalProjects').textContent = "0";
+            document.getElementById('statPhotosStored').textContent = "0";
+            document.getElementById('statProcessingJobs').textContent = "0";
+            document.getElementById('paginationText').textContent = "Showing 0 entries";
+            updateStorageUI(0);
+            return;
+          }
+
+          // Store data globally for modal lookup
+          window.myUploadsData = data;
+          
+          let totalPhotos = 0;
+          let processingJobs = 0;
+          let totalBytes = 0;
+
+          data.forEach(item => {
+            // Stats calculation
+            const count = parseInt(item.file_count) || 0;
+            totalPhotos += count;
+            
+            // Use exact size from DB if available, otherwise fall back to dummy estimate
+            const itemSizeBytes = parseInt(item.total_size_bytes) || (count * 1024 * 1024 * 3.5);
+            totalBytes += itemSizeBytes;
+
+            // Status Logic (request_status: pending → accepted → processing → sent (Received) → completed)
+            let statusHtml = '';
+            let statusVal = (item.request_status || 'pending').toLowerCase();
+            
+            if (statusVal === 'pending') {
+              statusHtml = `
+                <span class="badge bg-label-warning"><i class="bx bx-time-five me-1"></i> Pending</span>
+                <div class="text-muted mt-1" style="font-size: 0.7rem;">Waiting for Admin</div>
+              `;
+            } else if (statusVal === 'accepted') {
+              statusHtml = `
+                <span class="badge bg-label-info"><i class="bx bx-check me-1"></i> Accepted</span>
+                <div class="text-muted mt-1" style="font-size: 0.7rem;">Admin will process</div>
+  `            ;
+            } else if (statusVal === 'review') {
+              statusHtml = `
+                <span class="badge bg-label-secondary"><i class="bx bx-search-alt me-1"></i> Under Review</span>
+                <div class="text-muted mt-1" style="font-size: 0.7rem;">Admin is reviewing your files</div>
+  `            ;
+            } else if (statusVal === 'processing') {
+              processingJobs++;
+              statusHtml = `
+                <span class="badge-status status-processing"><i class="bx bx-loader-alt bx-spin me-1"></i> Processing</span>
+                <div class="text-muted mt-1" style="font-size: 0.7rem;">3D model in progress</div>
+              `;
+            } else if (statusVal === 'sent') {
+              statusHtml = `
+                <span class="badge bg-label-info"><i class="bx bx-package me-1"></i> Received</span>
+                <div class="text-muted mt-1" style="font-size: 0.7rem;">Download 3D model below, then confirm</div>
+              `;
+            } else if (statusVal === 'completed') {
+              statusHtml = `
+                <span class="badge-status status-completed"><i class="bx bx-check-circle me-1"></i> Completed</span>
+              `;
+            } else if (statusVal === 'rejected') {
+              statusHtml = `
+                <span class="badge-status status-failed"><i class="bx bx-x-circle me-1"></i> Rejected</span>
+                <div class="text-danger mt-1 text-truncate" style="font-size: 0.7rem; max-width: 150px;" title="${(item.rejected_reason || 'Unknown').replace(/"/g, '&quot;')}">${(item.rejected_reason || 'Rejected by admin').replace(/</g, '&lt;')}</div>
+              `;
+            }
+
+            // Configurations UI
+            let configHtml = '';
+            if (item.upload_type === 'sftp' || (item.upload_type && item.upload_type.startsWith('sftp_'))) {
+              configHtml = `<span class="badge bg-label-info mb-1"><i class="bx bx-server me-1"></i> SFTP Source</span><br>`;
+              const isMulti = (item.upload_type === 'sftp_multiple');
+              configHtml += `<span class="badge bg-label-secondary mb-1">${isMulti ? 'Multi-Lens' : 'Single-Lens'}</span>`;
+            } else {
+              const isMultiLens = (item.upload_type === 'multilens' || item.upload_type === 'multiple');
+              const hasPos = item.drone_pos_file_path ? true : false;
+              configHtml = `<span class="badge bg-label-secondary mb-1">${isMultiLens ? 'Multi-Lens' : 'Single-Lens'}</span><br>`;
+              if (hasPos) configHtml += `<span class="badge bg-label-dark"><i class="bx bx-target-lock me-1"></i> POS Attached</span>`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>
+                <div class="d-flex align-items-center">
+                  <div class="project-thumb d-flex align-items-center justify-content-center text-${statusVal === 'completed' ? 'success' : 'primary'} fs-3 me-3">
+                    <i class="bx ${statusVal === 'completed' ? 'bx-map' : 'bx-map-alt'}"></i>
+                  </div>
+                  <div>
+                    <div class="project-name">${item.project_title || item.project_id}</div>
+                    <div class="project-meta text-truncate" style="max-width: 300px;">${item.project_description || 'No description provided.'}</div>
+                  </div>
+                </div>
+              </td>
+              <td>${statusHtml}</td>
+              <td>
+                <div class="fw-medium text-dark" style="font-size: 0.9rem;">${formatDate(item.created_at)}</div>
+                <div class="project-meta">${formatBytes(itemSizeBytes)} • ${count} Photos</div>
+              </td>
+              <td>${configHtml}</td>
+              <td class="text-center">
+                <div class="dropdown">
+                  <button type="button" class="action-btn" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bx bx-dots-vertical-rounded"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                    ${statusVal === 'completed' ? `<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="${item.completed_view_url}" target="_blank"><i class="bx bx-map"></i> View Live Map</a></li>` : ''}
+                    ${statusVal === 'completed' ? `<li><a class="dropdown-item btn-dropdown-link text-primary fw-bold" href="${item.completed_download_url}" target="_blank"><i class="bx bx-download"></i> Download Processed Data (ZIP)</a></li>` : ''}
+                    ${(statusVal === 'completed' && item.processing_result_download_url) ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="' + item.processing_result_download_url + '"><i class="bx bx-download"></i> Download 3D model</a></li>' : ''}
+                    ${statusVal === 'sent' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="javascript:void(0);" onclick="confirmReceived(' + item.id + ')"><i class="bx bx-check-circle"></i> Confirm received</a></li>' : ''}
+                    <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showProjectDetails(${item.id})"><i class="bx bx-info-circle text-info"></i> View Details</a></li>
+                    <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showEditModal(${item.id})"><i class="bx bx-edit text-secondary"></i> Edit Metadata</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item btn-dropdown-link text-danger" href="javascript:void(0);" onclick="deleteProject('${item.id}')"><i class="bx bx-trash"></i> Delete Project completely</a></li>
+                  </ul>
+                </div>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          // Update Stats UI
+          document.getElementById('statTotalProjects').textContent = data.length.toLocaleString();
+          document.getElementById('statPhotosStored').textContent = totalPhotos.toLocaleString();
+          document.getElementById('statProcessingJobs').textContent = processingJobs.toLocaleString();
+          document.getElementById('paginationText').textContent = `Showing 1 to ${data.length} of ${data.length} entries`;
+          
+          // Dummy UI Storage recalculate
+          updateStorageUI(totalBytes);
+
+        })
+        .catch(err => {
+          console.error("Error fetching uploads:", err);
+          document.getElementById('uploadsTableBody').innerHTML = `
+            <tr><td colspan="5" class="text-danger text-center py-4">Failed to connect to database. Please refresh.</td></tr>
+          `;
+        });
+    }
+
+    function confirmReceived(uploadId) {
+      if (!confirm("Confirm that you have received the 3D model? This will mark the request as completed.")) return;
+      fetch('/api/user/my-uploads/' + uploadId + '/confirm-received', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.success) {
+            fetchUploadsList();
+          } else {
+            alert(data.message || "Could not confirm.");
+          }
+        })
+        .catch(function () { alert("Request failed."); });
+    }
+
+    function deleteProject(projectId) {
+      document.getElementById('deleteProjectId').value = projectId;
+      const deleteModal = new bootstrap.Modal(document.getElementById('deleteProjectModal'));
+      deleteModal.show();
+    }
+
+    function executeDeleteProject() {
+      const projectId = document.getElementById('deleteProjectId').value;
+      const deleteBtn = document.getElementById('confirmDeleteBtn');
+      const originalText = deleteBtn.innerHTML;
+      
+      deleteBtn.disabled = true;
+      deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting...';
+
+      fetch('/api/user/my-uploads/' + projectId, {
+        method: 'DELETE',
+        headers: { 
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('deleteProjectModal')).hide();
+          fetchUploadsList(); // Automatically reload the table UI after deletion
+        } else {
+          alert("Could not delete project: " + (data.message || "Unknown error"));
+        }
+      })
+      .catch(err => {
+        console.error("Delete Error:", err);
+        alert("A network error occurred while trying to erase the project.");
+      })
+      .finally(() => {
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = originalText;
+      });
+    }
+
+    // Live Search Logic
+    function filterProjects() {
+      const input = document.getElementById('projectSearch');
+      const filter = input.value.toLowerCase();
+      const tbody = document.getElementById('uploadsTableBody');
+      const rows = tbody.getElementsByTagName('tr');
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        // Skip the "No datasets found" or "Loading" rows
+        if (row.cells.length < 2) continue;
+
+        const projectName = row.querySelector('.project-name')?.textContent || "";
+        const projectMeta = row.querySelector('.project-meta')?.textContent || "";
+        const status = row.cells[1]?.textContent || "";
+
+        if (
+          projectName.toLowerCase().indexOf(filter) > -1 ||
+          projectMeta.toLowerCase().indexOf(filter) > -1 ||
+          status.toLowerCase().indexOf(filter) > -1
+        ) {
+          row.style.display = "";
+        } else {
+          row.style.display = "none";
+        }
+      }
+    }
+
+    function showProjectDetails(projectId) {
+      if (!window.myUploadsData) return;
+      const project = window.myUploadsData.find(p => p.id === projectId);
+      if (!project) return;
+
+      document.getElementById('detailModalTitle').textContent = project.project_title || project.project_id;
+      document.getElementById('detailDescription').textContent = project.project_description || 'No description provided.';
+      document.getElementById('detailCategory').textContent = project.category || 'Environmental';
+      const coords = (project.latitude != null && project.longitude != null) 
+        ? `${parseFloat(project.latitude).toFixed(4)}, ${parseFloat(project.longitude).toFixed(4)}`
+        : 'Pending (SFTP Scan)';
+      document.getElementById('detailCoordinates').textContent = coords;
+      
+      const isMulti = project.upload_type === 'multilens' || project.upload_type === 'multiple' || project.upload_type === 'sftp_multiple';
+      document.getElementById('detailConfig').textContent = isMulti ? 'Multi-Lens' : 'Single-Lens';
+      document.getElementById('detailModels').textContent = project.camera_models || (isMulti ? 'Multiple' : 'Standard');
+      document.getElementById('detailDate').textContent = formatDate(project.created_at);
+
+      const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
+      modal.show();
+    }
+
+    function showEditModal(projectId) {
+      if (!window.myUploadsData) return;
+      const project = window.myUploadsData.find(p => p.id === projectId);
+      if (!project) return;
+
+      document.getElementById('editProjectId').value = project.id;
+      document.getElementById('editProjectTitle').value = project.project_title || project.project_id;
+      document.getElementById('editProjectDescription').value = project.project_description || '';
+
+      const editModal = new bootstrap.Modal(document.getElementById('editMetadataModal'));
+      editModal.show();
+    }
+
+    async function saveProjectMetadata() {
+      const id = document.getElementById('editProjectId').value;
+      const title = document.getElementById('editProjectTitle').value.trim();
+      const description = document.getElementById('editProjectDescription').value.trim();
+
+      if (!title) {
+        alert("Project title is required.");
+        return;
+      }
+
+      const saveBtn = document.getElementById('saveEditBtn');
+      const originalText = saveBtn.textContent;
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+      var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
+
+      try {
+        const response = await fetch(`${AUTH_API}/api/user/my-uploads/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ project_title: title, project_description: description }),
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('editMetadataModal')).hide();
+          fetchUploadsList(); // Reload table
+        } else {
+          alert("Error: " + (data.message || "Failed to update metadata."));
+        }
+      } catch (err) {
+        console.error("Save Metadata Error:", err);
+        alert("A network error occurred.");
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
+      }
+    }
+
+    function updateStorageUI(totalBytes) {
+      const gb = (totalBytes / (1024 * 1024 * 1024)).toFixed(1);
+      const percent = Math.min((gb / 100) * 100, 100).toFixed(1);
+      
+      const usedText = document.getElementById('storageUsedText');
+      const progressBar = document.getElementById('storageProgressBar');
+      const statusText = document.getElementById('storageStatusText');
+      
+      if (usedText) usedText.textContent = gb + ' GB Used';
+      if (progressBar) {
+        progressBar.style.width = percent + '%';
+        progressBar.setAttribute('aria-valuenow', percent);
+      }
+      if (statusText) {
+        statusText.innerHTML = `You have used ${percent}% of your available storage. <a href="#" class="text-primary fw-medium">Upgrade plan</a>`;
+      }
+    }
+  </script>
+</body>
+</html>

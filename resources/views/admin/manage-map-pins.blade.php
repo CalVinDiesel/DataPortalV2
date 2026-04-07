@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-assets-path="{{ asset('assets/') }}/" data-template="admin-data-portal" data-bs-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Map Pins - Admin | 3DHub</title>
+  <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
+  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico" />
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css" />
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css" />
+  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css" />
+  <link rel="stylesheet" href="{{ asset('assets/') }}/css/admin-responsive.css" />
+  <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
+  <!-- jQuery and Bootstrap from CDN when local vendor/libs are missing (avoids 404 / MIME type errors) -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="layout-wrapper layout-content-navbar">
+    <div class="layout-container">
+      <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+        <div class="app-brand demo py-4">
+          <a href="index.html" class="app-brand-link d-flex align-items-center">
+            <span class="app-brand-logo demo me-2"><img src="{{ asset('assets/') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+            <span class="app-brand-text demo menu-text fw-bold" style="font-size: 1.4em;">3DHub Admin</span>
+          </a>
+        </div>
+        <div class="menu-inner-shadow"></div>
+        <ul class="menu-inner py-1">
+          <li class="menu-item">
+            <a href="index.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-home-circle"></i>
+              <div>Dashboard</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="add-3d-model.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-cube"></i>
+              <div>Add 3D Model</div>
+            </a>
+          </li>
+          <li class="menu-item active">
+            <a href="manage-map-pins.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-map-pin"></i>
+              <div>Manage Map Pins</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-showcase.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-grid-alt"></i>
+              <div>Manage Showcase</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="client-uploads.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-cloud-upload"></i>
+              <div>Client Uploads</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-users.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-user"></i>
+              <div>Manage Users</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="../front-pages/{{ route('landing') }}" class="menu-link" target="_blank">
+              <i class="menu-icon tf-icons bx bx-map"></i>
+              <div>View Portal</div>
+            </a>
+          </li>
+        </ul>
+      </aside>
+      <div class="layout-page">
+        <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme">
+          <div class="navbar-brand demo d-flex align-items-center py-0 me-3">
+            <button class="admin-menu-toggle btn btn-icon d-xl-none me-2 border-0 bg-transparent p-0" type="button" aria-label="Toggle menu"><i class="bx bx-menu icon-lg"></i></button>
+          </div>
+          <div class="navbar-nav-right d-flex align-items-center ms-auto">
+          <div class="navbar-nav-right d-flex align-items-center">
+            <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="syncFromJsonBtn">Sync from locations.json</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="exportToJsonBtn" title="Backfill data/locations.json from current database map pins">Export to locations.json</button>
+            <a href="add-3d-model.html" class="btn btn-sm btn-primary me-2">Add new pin</a>
+            <a href="index.html" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
+          </div>
+        </nav>
+        <div class="content-wrapper">
+          <div class="container-xxl flex-grow-1 container-p-y">
+            <h4 class="fw-bold mb-4">Manage Map Pins</h4>
+            <p class="text-muted mb-4">View, edit, or remove pin locations and 3D models that appear on the overview map and showcases. Changes are saved to the database and reflected on the portal immediately. Pins on the map can come from <code>data/locations.json</code> as well as the database; use <strong>Sync from locations.json</strong> to copy all locations from that file into the database so they appear here.</p>
+            <div id="pinsAlert" class="alert alert-info d-none"></div>
+            <div class="card">
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Lat / Lon</th>
+                        <th>3D Tiles</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="pinsTableBody">
+                      <tr><td colspan="6" class="text-center text-muted">Loading…</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Edit modal -->
+  <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editModalLabel">Edit map pin</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editForm">
+            <input type="hidden" id="editMapDataID" />
+            <div class="mb-3">
+              <label class="form-label" for="editTitle">Title <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="editTitle" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="editDescription">Description</label>
+              <textarea class="form-control" id="editDescription" rows="2"></textarea>
+            </div>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label class="form-label" for="editYAxis">Latitude <span class="text-danger">*</span></label>
+                <input type="number" step="any" class="form-control" id="editYAxis" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="editXAxis">Longitude <span class="text-danger">*</span></label>
+                <input type="number" step="any" class="form-control" id="editXAxis" required />
+              </div>
+            </div>
+            <div class="mb-3 mt-3">
+              <label class="form-label" for="editTilesetUrl">3D Tiles URL (tileset.json) <span class="text-danger">*</span></label>
+              <input type="url" class="form-control" id="editTilesetUrl" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="editThumbnailFile">Thumbnail image (overview map &amp; showcase)</label>
+              <div class="mb-2">
+                <div class="d-flex align-items-start gap-3 flex-wrap">
+                  <div class="flex-shrink-0">
+                    <img id="editThumbPreview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Current thumbnail" class="rounded border" style="width:120px;height:80px;object-fit:cover;background:#f0f0f0" />
+                    <div class="form-text small mt-1">Current</div>
+                  </div>
+                  <div class="flex-grow-1">
+                    <input type="file" class="form-control form-control-sm" id="editThumbnailFile" accept="image/jpeg,image/png,image/gif,image/webp" />
+                    <div class="form-text small">Upload a new image (JPEG, PNG, GIF, WebP; max 5MB). Used on overview map and showcase.</div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="form-label small text-muted" for="editThumbNailUrl">Or paste thumbnail URL</label>
+                <input type="url" class="form-control" id="editThumbNailUrl" placeholder="e.g. /uploads/map-thumbnails/pin_123.jpg or full URL" />
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="editSaveBtn">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var API_BASE = (typeof window !== 'undefined' && window.TemaDataPortal_API_BASE) || (window.location ? window.location.origin : '') || 'http://localhost:3000';
+
+      function escapeHtml(s) {
+        if (!s) return '';
+        var div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+      }
+
+      function truncate(str, len) {
+        if (!str) return '';
+        return str.length <= (len || 40) ? str : str.slice(0, len) + '…';
+      }
+
+      function setTableMessage(html) {
+        var tbody = document.getElementById('pinsTableBody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">' + html + '</td></tr>';
+      }
+
+      function loadPins() {
+        fetch(API_BASE + '/api/map-data')
+          .then(function (r) {
+            if (!r.ok) return r.json().then(function (j) { return Promise.reject({ status: r.status, body: j }); });
+            return r.json();
+          })
+          .then(function (rows) {
+            var tbody = document.getElementById('pinsTableBody');
+            if (!Array.isArray(rows)) {
+              setTableMessage('Server did not return a list. Make sure the auth server is running (npm start) and try <strong>Sync from locations.json</strong> above.');
+              return;
+            }
+            if (rows.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No map pins yet. Click <strong>Sync from locations.json</strong> above to copy pins from the map data file, or <a href="add-3d-model.html">add a 3D model</a>.</td></tr>';
+              return;
+            }
+            tbody.innerHTML = rows.map(function (r) {
+              var id = r.mapDataID || r.id || '';
+              var lat = r.yAxis != null ? Number(r.yAxis).toFixed(5) : '–';
+              var lon = r.xAxis != null ? Number(r.xAxis).toFixed(5) : '–';
+              var tiles = (r['3dTiles'] || r.tilesetUrl || '').trim();
+              var tilesDisplay = tiles ? '<a href="' + escapeHtml(tiles) + '" target="_blank" class="text-truncate d-inline-block" style="max-width:180px">' + escapeHtml(truncate(tiles, 35)) + '</a>' : '–';
+              return '<tr><td><code>' + escapeHtml(id) + '</code></td><td>' + escapeHtml(r.title || '') + '</td><td><span class="text-muted">' + escapeHtml(truncate(r.description || '', 50)) + '</span></td><td>' + lat + ' / ' + lon + '</td><td>' + tilesDisplay + '</td><td><div class="d-flex flex-wrap gap-2"><button type="button" class="btn btn-sm btn-outline-primary edit-pin-btn" data-id="' + escapeHtml(id) + '">Edit</button><button type="button" class="btn btn-sm btn-outline-danger delete-pin-btn" data-id="' + escapeHtml(id) + '">Delete</button></div></td></tr>';
+            }).join('');
+
+            tbody.querySelectorAll('.edit-pin-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-id');
+                if (!id) return;
+                fetch(API_BASE + '/api/map-data/' + encodeURIComponent(id))
+                  .then(function (r) { return r.json(); })
+                  .then(function (row) {
+                    document.getElementById('editMapDataID').value = row.mapDataID || row.id || '';
+                    document.getElementById('editTitle').value = row.title || '';
+                    document.getElementById('editDescription').value = row.description || '';
+                    document.getElementById('editYAxis').value = row.yAxis != null ? row.yAxis : '';
+                    document.getElementById('editXAxis').value = row.xAxis != null ? row.xAxis : '';
+                    document.getElementById('editTilesetUrl').value = row['3dTiles'] || row.tilesetUrl || '';
+                    var thumbUrl = (row.thumbNailUrl || row.thumbnailUrl || '').trim();
+                    document.getElementById('editThumbNailUrl').value = thumbUrl;
+                    var previewEl = document.getElementById('editThumbPreview');
+                    if (thumbUrl) {
+                      var fullUrl = thumbUrl.indexOf('http') === 0 ? thumbUrl : (API_BASE + (thumbUrl.indexOf('/') === 0 ? '' : '/') + thumbUrl);
+                      previewEl.src = fullUrl;
+                      previewEl.onerror = function () { previewEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; };
+                    } else {
+                      previewEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                    }
+                    document.getElementById('editThumbnailFile').value = '';
+                    var modal = new bootstrap.Modal(document.getElementById('editModal'));
+                    modal.show();
+                  })
+                  .catch(function () { alert('Could not load pin data.'); });
+              });
+            });
+
+            tbody.querySelectorAll('.delete-pin-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-id');
+                if (!id) return;
+                if (!confirm('Remove this pin from the overview map? It will stay in the showcase until you remove it there.')) return;
+                fetch(API_BASE + '/api/map-data/' + encodeURIComponent(id), { method: 'DELETE' })
+                  .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
+                  .then(function (x) {
+                    if (x.status === 200 && x.body.success) {
+                      loadPins();
+                      var alertEl = document.getElementById('pinsAlert');
+                      if (alertEl) { alertEl.textContent = x.body.message || 'Pin removed from map.'; alertEl.className = 'alert alert-success'; alertEl.classList.remove('d-none'); setTimeout(function () { alertEl.classList.add('d-none'); }, 3000); }
+                    } else { alert(x.body.message || 'Delete failed.'); }
+                  })
+                  .catch(function () { alert('Request failed.'); });
+              });
+            });
+          })
+          .catch(function (err) {
+            var msg = 'Could not load map pins. ';
+            if (err && err.body && err.body.message) msg += err.body.message + ' ';
+            else if (err && err.body && err.body.error) msg += err.body.error + ' ';
+            msg += 'Make sure the auth server is running at <code>' + escapeHtml(API_BASE) + '</code> (e.g. <code>npm start</code> from project root). Then try <strong>Sync from locations.json</strong> above.';
+            setTableMessage(msg);
+          });
+      }
+
+      var syncBtn = document.getElementById('syncFromJsonBtn');
+      if (syncBtn) syncBtn.addEventListener('click', function () {
+        var btn = this;
+        btn.disabled = true;
+        fetch(API_BASE + '/api/admin/seed-mapdata-from-locations', { method: 'POST' })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.success) {
+              loadPins();
+              var alertEl = document.getElementById('pinsAlert');
+              if (alertEl) { alertEl.textContent = data.message || 'Synced.'; alertEl.className = 'alert alert-success'; alertEl.classList.remove('d-none'); setTimeout(function () { alertEl.classList.add('d-none'); }, 5000); }
+            } else {
+              alert(data.message || 'Sync failed.');
+            }
+          })
+          .catch(function () { alert('Request failed.'); })
+          .finally(function () { btn.disabled = false; });
+      });
+
+      var exportBtn = document.getElementById('exportToJsonBtn');
+      if (exportBtn) exportBtn.addEventListener('click', function () {
+        var btn = this;
+        btn.disabled = true;
+        fetch(API_BASE + '/api/admin/export-locations-json', { method: 'POST' })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.success) {
+              var alertEl = document.getElementById('pinsAlert');
+              if (alertEl) { alertEl.textContent = data.message || 'Exported.'; alertEl.className = 'alert alert-success'; alertEl.classList.remove('d-none'); setTimeout(function () { alertEl.classList.add('d-none'); }, 5000); }
+            } else {
+              alert((data && data.message) || 'Export failed.');
+            }
+          })
+          .catch(function () { alert('Request failed.'); })
+          .finally(function () { btn.disabled = false; });
+      });
+
+      var editThumbFile = document.getElementById('editThumbnailFile');
+      if (editThumbFile) editThumbFile.addEventListener('change', function () {
+        var file = this.files && this.files[0];
+        var previewEl = document.getElementById('editThumbPreview');
+        if (file && previewEl) {
+          var url = (window.URL || window.webkitURL).createObjectURL(file);
+          previewEl.onerror = null;
+          previewEl.src = url;
+        }
+      });
+
+      var editSaveBtn = document.getElementById('editSaveBtn');
+      if (editSaveBtn) editSaveBtn.addEventListener('click', function () {
+        var mapDataID = document.getElementById('editMapDataID').value.trim();
+        if (!mapDataID) return;
+        if (isNaN(parseFloat(document.getElementById('editYAxis').value)) || isNaN(parseFloat(document.getElementById('editXAxis').value)) || !document.getElementById('editTilesetUrl').value.trim()) {
+          alert('Please fill in valid latitude, longitude, and 3D Tiles URL.');
+          return;
+        }
+        var btn = this;
+        btn.disabled = true;
+        var thumbFile = document.getElementById('editThumbnailFile').files && document.getElementById('editThumbnailFile').files[0];
+        function buildPayload(thumbNailUrl) {
+          return {
+            mapDataID: mapDataID,
+            title: document.getElementById('editTitle').value.trim() || mapDataID,
+            description: document.getElementById('editDescription').value.trim(),
+            yAxis: parseFloat(document.getElementById('editYAxis').value),
+            xAxis: parseFloat(document.getElementById('editXAxis').value),
+            '3dTiles': document.getElementById('editTilesetUrl').value.trim(),
+            thumbNailUrl: (thumbNailUrl || document.getElementById('editThumbNailUrl').value.trim() || '').trim()
+          };
+        }
+        function saveMapData(payload) {
+          return fetch(API_BASE + '/api/map-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }).then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); });
+        }
+        function onSaved(x) {
+          if (x.status === 200 && x.body.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+            loadPins();
+            var alertEl = document.getElementById('pinsAlert');
+            alertEl.textContent = 'Pin updated. Thumbnail will appear on the overview map and showcase.';
+            alertEl.className = 'alert alert-success';
+            alertEl.classList.remove('d-none');
+            setTimeout(function () { alertEl.classList.add('d-none'); }, 3000);
+          } else {
+            alert(x.body.message || 'Save failed.');
+          }
+        }
+        if (thumbFile) {
+          var fd = new FormData();
+          fd.append('mapDataID', mapDataID);
+          fd.append('thumbnail', thumbFile);
+          fetch(API_BASE + '/api/admin/upload-map-thumbnail', { method: 'POST', body: fd, credentials: 'include' })
+            .then(function (r) {
+              return r.text().then(function (text) {
+                var body;
+                try { body = JSON.parse(text); } catch (e) { body = {}; }
+                return { status: r.status, body: body, text: text };
+              });
+            })
+            .then(function (up) {
+              if (up.status === 200 && up.body.success && up.body.url) {
+                var fullUrl = (up.body.url.indexOf('http') === 0) ? up.body.url : (API_BASE + (up.body.url.indexOf('/') === 0 ? '' : '') + up.body.url);
+                return saveMapData(buildPayload(fullUrl)).then(onSaved);
+              }
+              var msg = up.body && up.body.message ? up.body.message : ('Upload failed (HTTP ' + up.status + '). ' + (up.text && up.text.length < 200 ? up.text : ''));
+              alert(msg || 'Thumbnail upload failed.');
+            })
+            .catch(function (err) {
+              var hint = (err.message || '').toLowerCase();
+              var msg = 'Thumbnail upload failed. ';
+              if (hint.indexOf('fetch') !== -1 || hint.indexOf('network') !== -1 || hint.indexOf('failed') !== -1) {
+                msg += 'Cannot reach server at ' + API_BASE + '. Open the admin from the same origin (e.g. http://localhost:3000/...) or check the server is running.';
+              } else {
+                msg += (err.message || 'Check browser and server console.');
+              }
+              alert(msg);
+            })
+            .finally(function () { btn.disabled = false; });
+        } else {
+          saveMapData(buildPayload()).then(onSaved).catch(function () { alert('Request failed.'); }).finally(function () { btn.disabled = false; });
+        }
+      });
+
+      loadPins();
+    })();
+  </script>
+  <script src="{{ asset('assets/') }}/js/admin-responsive.js"></script>
+  <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
+</body>
+</html>

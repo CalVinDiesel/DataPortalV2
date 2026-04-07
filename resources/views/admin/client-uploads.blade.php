@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-assets-path="{{ asset('assets/') }}/" data-template="admin-data-portal" data-bs-theme="light">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Client Uploads - Admin | 3DHub</title>
+  <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
+  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico" />
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css" />
+  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css" />
+  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css" />
+  <link rel="stylesheet" href="{{ asset('assets/') }}/css/admin-responsive.css" />
+  <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
+  <script src="{{ asset('assets/') }}/vendor/js/bootstrap.js"></script>
+  <script>
+    (function() {
+      var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
+      fetch(AUTH_API + '/api/auth/me', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(d) {
+        if (!d.loggedIn || d.role !== 'admin') window.location.href = '/html/front-pages/{{ route('landing') }}?error=admin_only';
+      }).catch(function() { window.location.href = '/html/front-pages/{{ route('landing') }}'; });
+    })();
+  </script>
+</head>
+
+<body>
+  <div class="layout-wrapper layout-content-navbar">
+    <div class="layout-container">
+      <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+        <div class="app-brand demo py-4">
+          <a href="index.html" class="app-brand-link d-flex align-items-center">
+            <span class="app-brand-logo demo me-2"><img src="{{ asset('assets/') }}/img/front-pages/landing-page/3DHub logo1.png"
+                alt="3DHub"
+                style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+            <span class="app-brand-text demo menu-text fw-bold" style="font-size: 1.4em;">3DHub Admin</span>
+          </a>
+        </div>
+        <div class="menu-inner-shadow"></div>
+        <ul class="menu-inner py-1">
+          <li class="menu-item">
+            <a href="index.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-home-circle"></i>
+              <div>Dashboard</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="add-3d-model.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-cube"></i>
+              <div>Add 3D Model</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-map-pins.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-map-pin"></i>
+              <div>Manage Map Pins</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-showcase.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-grid-alt"></i>
+              <div>Manage Showcase</div>
+            </a>
+          </li>
+          <li class="menu-item active">
+            <a href="client-uploads.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-cloud-upload"></i>
+              <div>Client Uploads</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="manage-users.html" class="menu-link">
+              <i class="menu-icon tf-icons bx bx-user"></i>
+              <div>Manage Users</div>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="../front-pages/{{ route('landing') }}" class="menu-link" target="_blank">
+              <i class="menu-icon tf-icons bx bx-map"></i>
+              <div>View Portal</div>
+            </a>
+          </li>
+        </ul>
+      </aside>
+
+      <div class="layout-page">
+        <nav
+          class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme">
+          <div class="navbar-brand demo d-flex align-items-center py-0 me-3">
+            <button class="admin-menu-toggle btn btn-icon d-xl-none me-2 border-0 bg-transparent p-0" type="button"
+              aria-label="Toggle menu"><i class="bx bx-menu icon-lg"></i></button>
+          </div>
+          <div class="navbar-nav-right d-flex align-items-center ms-auto">
+            <a href="index.html" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
+          </div>
+        </nav>
+
+        <div class="content-wrapper">
+          <div class="container-xxl flex-grow-1 container-p-y">
+            <h4 class="fw-bold mb-2">Client Uploads</h4>
+            <p class="text-muted mb-3">Clients submit drone-captured images via SFTP or the Data Portal for
+              <strong>custom image-to-3D processing</strong>. Manage request status here. All file transfers happen
+              through WinSCP / SFTPGo — use this page only to update status at each step.</p>
+
+            <!-- Status Flow Indicator -->
+            <div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
+              <span class="badge bg-label-warning px-3 py-2"><i class="bx bx-time-five me-1"></i> Pending</span>
+              <i class="bx bx-chevron-right text-muted"></i>
+              <span class="badge bg-label-secondary px-3 py-2"><i class="bx bx-search-alt me-1"></i> Review</span>
+              <i class="bx bx-chevron-right text-muted"></i>
+              <span class="badge bg-label-primary px-3 py-2"><i class="bx bx-loader-alt me-1"></i> Processing</span>
+              <i class="bx bx-chevron-right text-muted"></i>
+              <span class="badge bg-label-success px-3 py-2"><i class="bx bx-check-circle me-1"></i> Completed</span>
+            </div>
+
+            <!-- SFTP Guide Banner -->
+            <div class="alert alert-info d-flex align-items-start gap-3 mb-4" role="alert">
+              <i class="bx bx-info-circle fs-4 mt-1 flex-shrink-0"></i>
+              <div>
+                <strong>Admin SFTP Workflow:</strong>
+                <ol class="mb-0 mt-1 ps-3">
+                  <li>Client uploads raw images → files arrive in your <strong>WinSCP / SFTPGo</strong> folder</li>
+                  <li>Click <strong>Accept</strong> → status becomes Review. Open WinSCP, download the raw files to your
+                    processing machine</li>
+                  <li>Click <strong>Start Processing</strong> → status becomes Processing. Run your 3D processing
+                    software</li>
+                  <li>When done, put the processed result back into the client's SFTP folder via WinSCP</li>
+                  <li>Click <strong>Mark as Delivered</strong> → client is notified and can download their 3D model</li>
+                </ol>
+              </div>
+            </div>
+
+            <div id="uploadsAlert" class="alert d-none"></div>
+
+            <!-- Reject reason modal -->
+            <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel"
+              aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="rejectModalLabel">Reject request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p class="text-muted small">Give a reason for the client (required). They will see this message.</p>
+                    <textarea id="rejectReasonInput" class="form-control" rows="3"
+                      placeholder="e.g. Image quality insufficient for processing"></textarea>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="rejectConfirmBtn">Reject request</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Delete upload modal -->
+            <div class="modal fade" id="deleteUploadModal" tabindex="-1" aria-labelledby="deleteUploadModalLabel"
+              aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="deleteUploadModalLabel">Delete upload request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p class="mb-2">Delete this upload request?</p>
+                    <p class="small text-muted mb-0" id="deleteUploadModalHint">This action cannot be undone.</p>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="deleteUploadConfirmBtn">
+                      <i class="bx bx-trash me-1"></i> Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload details modal -->
+            <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel"
+              aria-hidden="true">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="detailsModalLabel">Upload details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <!-- SFTP Location Box -->
+                    <div class="alert alert-secondary mb-3">
+                      <div class="fw-bold mb-1"><i class="bx bx-server me-1"></i> SFTP File Location</div>
+                      <div class="small text-muted mb-1">Find the raw files at this path on your SFTP Server:</div>
+                      <div class="d-flex align-items-center gap-2">
+                        <code id="detailSftpPath" class="d-block p-2 bg-white border rounded flex-grow-1"
+                          style="font-size:0.85rem; word-break:break-all;">–</code>
+                        <button type="button" id="copySftpPathBtn"
+                          class="btn btn-sm btn-outline-secondary flex-shrink-0" onclick="
+                          var path = document.getElementById('detailSftpPath').textContent;
+                          navigator.clipboard.writeText(path).then(function() {
+                            var btn = document.getElementById('copySftpPathBtn');
+                            btn.innerHTML = '<i class=\'bx bx-check\'></i> Copied';
+                            btn.classList.remove('btn-outline-secondary');
+                            btn.classList.add('btn-success');
+                            setTimeout(function() {
+                              btn.innerHTML = '<i class=\'bx bx-copy\'></i> Copy';
+                              btn.classList.remove('btn-success');
+                              btn.classList.add('btn-outline-secondary');
+                            }, 2000);
+                          });
+                        " title="Copy path"><i class="bx bx-copy"></i> Copy</button>
+                      </div>
+                    </div>
+                    <div class="row small">
+                      <div class="col-12 mb-2"><strong>Project</strong></div>
+                      <div class="col-md-6 mb-2"><span class="text-muted">ID:</span> <span id="detailProjectId">–</span></div>
+                      <div class="col-md-6 mb-2"><span class="text-muted">Title:</span> <span id="detailProjectTitle">–</span></div>
+                      <div class="col-12 mb-2"><span class="text-muted">Description:</span> <span id="detailProjectDescription">–</span></div>
+                      <div class="col-12 mb-2"><span class="text-muted">Category:</span> <span id="detailCategory">–</span></div>
+                      <div class="col-md-6 mb-2"><span class="text-muted">Latitude:</span> <span id="detailLatitude">–</span></div>
+                      <div class="col-md-6 mb-2"><span class="text-muted">Longitude:</span> <span id="detailLongitude">–</span></div>
+                      <div class="col-12 mb-2"><span class="text-muted">Sensor / image metadata:</span> <span id="detailImageMetadata">–</span></div>
+                      <div class="col-md-6 mb-2"><span class="text-muted">Camera models:</span> <span id="detailCameraModels">–</span></div>
+                      <div class="col-md-6 mb-2"><span class="text-muted">Capture date:</span> <span id="detailCaptureDate">–</span></div>
+                      <div class="col-12 mb-2"><span class="text-muted">Upload type:</span> <span id="detailUploadType">–</span></div>
+                      <div class="col-12 mb-2"><span class="text-muted">File count:</span> <span id="detailFileCount">–</span></div>
+                      <div class="col-12 mb-2"><span class="text-muted">Submitted:</span> <span id="detailCreatedAt">–</span></div>
+                      <div class="col-12 mb-2"><span class="text-muted">Submitted by:</span> <span id="detailCreatedBy">–</span></div>
+                      <div class="col-12 mb-2"><span class="text-muted">Status:</span> <span id="detailStatus">–</span></div> 
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mark as Delivered modal -->
+            <div class="modal fade" id="deliverModal" tabindex="-1" aria-labelledby="deliverModalLabel"
+              aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="deliverModalLabel">Mark as Delivered</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="alert alert-info small mb-3">
+                      <i class="bx bx-info-circle me-1"></i>
+                      Make sure you have already placed the processed 3D model result into the client's SFTP folder via
+                      WinSCP before confirming delivery.
+                    </div>
+                    <p class="text-muted small">Optional: add a delivery note for the client (e.g. which folder the
+                      result is in, or any instructions).</p>
+                    <textarea id="deliverNotesInput" class="form-control" rows="3"
+                      placeholder="e.g. Processed result placed in your SFTP folder under /results/"></textarea>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="deliverConfirmBtn"><i
+                        class="bx bx-check me-1"></i> Confirm Delivered</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Client Uploads Table -->
+            <div class="card">
+              <div class="card-header d-flex align-items-center justify-content-between">
+                <div>
+                  <h5 class="mb-0 fw-bold">Client Upload Requests</h5>
+                  <p class="text-muted small mb-0">All file transfers are managed through WinSCP / SFTPGo. Use the
+                    buttons below only to update the status.</p>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadUploads()"><i
+                    class="bx bx-refresh me-1"></i> Refresh</button>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Project</th>
+                        <th>Client</th>
+                        <th>Type</th>
+                        <th>Files</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="uploadsTableBody">
+                      <tr>
+                        <td colspan="8" class="text-center text-muted">Loading…</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Processing Requests Table -->
+            <div class="card mt-4">
+              <div class="card-header d-flex align-items-center justify-content-between">
+                <div>
+                  <h5 class="mb-0 fw-bold">Processing Requests</h5>
+                  <p class="text-muted small mb-0">After processing is done, place the result in the client's SFTP
+                    folder via WinSCP, then click <strong>Mark as Delivered</strong>.</p>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadRequests()"><i
+                    class="bx bx-refresh me-1"></i> Refresh</button>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Upload ID</th>
+                        <th>Project</th>
+                        <th>Client</th>
+                        <th>Status</th>
+                        <th>Started</th>
+                        <th>Delivered</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="requestsTableBody">
+                      <tr>
+                        <td colspan="8" class="text-center text-muted">Loading…</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var API_BASE = (typeof window !== 'undefined' && window.TemaDataPortal_API_BASE) || (window.location ? window.location.origin : '') || 'http://localhost:3000';
+
+      var rejectModal = null;
+      var deliverModal = null;
+      var deleteUploadModal = null;
+      var pendingRejectId = null;
+      var pendingDeliverId = null;
+      var pendingDeleteUploadId = null;
+      var uploadRootAbsolute = '';
+      var remoteBasePath = '';
+
+      // Cache upload rows for detail modal
+      var uploadsRowsById = {};
+      // Cache upload rows for processing table enrichment
+      var uploadMetaById = {};
+
+      function escapeHtml(s) {
+        if (!s) return '';
+        var div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+      }
+
+      function statusBadge(status) {
+        var s = (status || 'pending').toLowerCase();
+        var map = {
+          'completed': { color: 'success', label: 'Completed', icon: 'bx-check-circle' },
+          'sent': { color: 'info', label: 'Sent', icon: 'bx-package' },
+          'processing': { color: 'primary', label: 'Processing', icon: 'bx-loader-alt' },
+          'review': { color: 'secondary', label: 'Review', icon: 'bx-search-alt' },
+          'accepted': { color: 'info', label: 'Accepted', icon: 'bx-check' },
+          'rejected': { color: 'danger', label: 'Rejected', icon: 'bx-x-circle' },
+          'pending': { color: 'warning', label: 'Pending', icon: 'bx-time-five' },
+        };
+        var e = map[s] || { color: 'warning', label: s.charAt(0).toUpperCase() + s.slice(1), icon: 'bx-circle' };
+        return '<span class="badge bg-label-' + e.color + '"><i class="bx ' + e.icon + ' me-1"></i>' + escapeHtml(e.label) + '</span>';
+      }
+
+      function normalizePathForDisplay(p) {
+        if (!p) return '';
+        return String(p).replace(/\\/g, '/');
+      }
+
+      function joinDisplayPath(base, sub) {
+        var b = normalizePathForDisplay(base || '').replace(/\/+$/, '');
+        var s = normalizePathForDisplay(sub || '').replace(/^\/+/, '');
+        if (!b) return s;
+        if (!s) return b;
+        return b + '/' + s;
+      }
+
+      // Build SFTP path for a given upload row
+      function buildSftpPath(r) {
+        var base = uploadRootAbsolute || remoteBasePath || ((typeof window !== 'undefined' && window.REMOTE_SFTP_BASE_PATH) || '');
+        var paths = r.file_paths;
+        var pathsArr = Array.isArray(paths) ? paths : (typeof paths === 'string' && paths ? [paths] : []);
+        if (pathsArr.length > 0) {
+          // Extract folder path from first file path: uploads/project_xxx/filename -> project_xxx/upload
+          var first = pathsArr[0].replace(/\\/g, '/').replace(/^uploads\/?/, '');
+          var parts = first.split('/');
+          if (parts.length >= 1) {
+            // Get the project folder (first part) and add /upload subfolder
+            var projectFolder = parts[0];
+            var fullPath = projectFolder + '/upload';
+            return joinDisplayPath(base, fullPath);
+          }
+        }
+        // SFTP project upload: use project_id as folder with /upload subfolder
+        if (r.project_id) return joinDisplayPath(base, r.project_id + '/upload');
+        return '– (not available)';
+      }
+
+      function actionCells(r) {
+        var status = (r.request_status || 'pending').toLowerCase();
+        var wrapStart = '<div class="d-flex flex-wrap align-items-center gap-2">';
+        var wrapEnd = '</div>';
+        var detailsBtn = '<button type="button" class="btn btn-sm btn-outline-secondary details-btn" data-upload-id="' + r.id + '"><i class="bx bx-info-circle me-1"></i>Details</button>';
+        var rejectBtn = '<button type="button" class="btn btn-sm btn-outline-danger reject-btn" data-upload-id="' + r.id + '">Reject</button>';
+        var deleteBtn = '<button type="button" class="btn btn-sm btn-outline-danger delete-upload-btn" data-upload-id="' + r.id + '"><i class="bx bx-trash me-1"></i>Delete</button>';
+
+        if (status === 'pending') {
+          return wrapStart +
+            detailsBtn +
+            '<button type="button" class="btn btn-sm btn-success accept-btn" data-upload-id="' + r.id + '"><i class="bx bx-check me-1"></i>Accept</button>' +
+            rejectBtn +
+            deleteBtn +
+            wrapEnd;
+        }
+        if (status === 'review') {
+          return wrapStart +
+            detailsBtn +
+            '<button type="button" class="btn btn-sm btn-primary start-processing-btn" data-upload-id="' + r.id + '"><i class="bx bx-cog me-1"></i>Start Processing</button>' +
+            rejectBtn +
+            deleteBtn +
+            wrapEnd;
+        }
+        if (status === 'accepted') {
+          // Legacy fallback
+          return wrapStart +
+            detailsBtn +
+            '<button type="button" class="btn btn-sm btn-primary start-processing-btn" data-upload-id="' + r.id + '"><i class="bx bx-cog me-1"></i>Start Processing</button>' +
+            rejectBtn +
+            deleteBtn +
+            wrapEnd;
+        }
+        if (status === 'processing') {
+          return wrapStart +
+            detailsBtn +
+            '<span class="text-muted small"><i class="bx bx-info-circle me-1"></i>See Processing Requests below</span>' +
+            deleteBtn +
+            wrapEnd;
+        }
+        if (status === 'rejected') {
+          var reason = r.rejected_reason ? '<small class="text-muted">' + escapeHtml(r.rejected_reason) + '</small>' : '';
+          return wrapStart +
+            detailsBtn +
+            '<span class="badge bg-label-danger">Rejected</span>' +
+            reason +
+            deleteBtn +
+            wrapEnd;
+        }
+        if (status === 'sent') {
+          return wrapStart +
+            detailsBtn +
+            '<span class="badge bg-label-info"><i class="bx bx-package me-1"></i>Sent to client</span>' +
+            deleteBtn +
+            wrapEnd;
+        }
+        if (status === 'completed') {
+          return wrapStart +
+            detailsBtn +
+            '<span class="badge bg-label-success"><i class="bx bx-check-circle me-1"></i>Completed</span>' +
+            deleteBtn +
+            wrapEnd;
+        }
+        return wrapStart + detailsBtn + deleteBtn + wrapEnd;
+      }
+
+      function showDetailsModal(row) {
+        function text(v) { return (v != null && v !== '') ? escapeHtml(String(v)) : '–'; }
+        function num(v) { return (v != null && v !== '' && !isNaN(Number(v))) ? String(v) : '–'; }
+
+        // SFTP path
+        document.getElementById('detailSftpPath').textContent = buildSftpPath(row);
+
+        document.getElementById('detailProjectId').textContent = text(row.project_id);
+        document.getElementById('detailProjectTitle').textContent = text(row.project_title);
+        document.getElementById('detailProjectDescription').textContent = text(row.project_description);
+        document.getElementById('detailCategory').textContent = text(row.category);
+        document.getElementById('detailLatitude').textContent = num(row.latitude);
+        document.getElementById('detailLongitude').textContent = num(row.longitude);
+        document.getElementById('detailImageMetadata').textContent = text(row.image_metadata);
+        document.getElementById('detailCameraModels').textContent = text(row.camera_models);
+        document.getElementById('detailCaptureDate').textContent = text(row.capture_date);
+        var typeDisplay = row.upload_type || '–';
+        if (typeDisplay === 'sftp_single') typeDisplay = 'SFTP (Single-Lens)';
+        else if (typeDisplay === 'sftp_multiple') typeDisplay = 'SFTP (Multi-Lens)';
+        else if (typeDisplay === 'sftp') typeDisplay = 'SFTP';
+        else if (typeDisplay === 'multiple' || typeDisplay === 'multilens') typeDisplay = 'Web (Multi-Lens)';
+        else if (typeDisplay === 'single') typeDisplay = 'Web (Single-Lens)';
+
+        document.getElementById('detailUploadType').textContent = typeDisplay;
+        document.getElementById('detailFileCount').textContent = text(row.file_count);
+        document.getElementById('detailCreatedAt').textContent = row.created_at ? new Date(row.created_at).toLocaleString() : '–';
+        document.getElementById('detailCreatedBy').textContent = text(row.created_by_email);
+        document.getElementById('detailStatus').innerHTML = statusBadge(row.request_status);
+        document.getElementById('detailCategory').textContent           = text(row.category);
+        document.getElementById('detailLatitude').textContent           = num(row.latitude);
+        document.getElementById('detailLongitude').textContent          = num(row.longitude);
+        // Clean display of image metadata depending on upload type
+        var metaEl = document.getElementById('detailImageMetadata');
+        if (row.upload_type === 'sftp') {
+          metaEl.textContent = 'Uploaded via SFTP software (FileZilla / WinSCP)';
+        } else {
+          // Try to parse JSON in case it slipped in, otherwise show as-is
+          var rawMeta = row.image_metadata || '–';
+          try {
+            var parsed = JSON.parse(rawMeta);
+            // If it's a JSON object (sftp details leaked in), show clean message
+            if (typeof parsed === 'object' && parsed !== null) {
+              metaEl.textContent = 'Uploaded via SFTP software (FileZilla / WinSCP)';
+            } else {
+              metaEl.textContent = rawMeta;
+            }
+          } catch (e) {
+            metaEl.textContent = rawMeta;
+          }
+        }
+        document.getElementById('detailCameraModels').textContent       = text(row.camera_models);
+        document.getElementById('detailCaptureDate').textContent        = text(row.capture_date);
+        document.getElementById('detailUploadType').textContent         = text(row.upload_type);
+        document.getElementById('detailFileCount').textContent          = text(row.file_count);
+        document.getElementById('detailCreatedAt').textContent          = row.created_at ? new Date(row.created_at).toLocaleString() : '–';
+        document.getElementById('detailCreatedBy').textContent          = text(row.created_by_email);
+        document.getElementById('detailStatus').innerHTML               = statusBadge(row.request_status);
+
+        var modalEl = document.getElementById('detailsModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+          bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+      }
+
+      window.loadUploads = function loadUploads() {
+        fetch(API_BASE + '/api/admin/client-uploads')
+          .then(function (r) { return r.json(); })
+          .then(function (rows) {
+            var tbody = document.getElementById('uploadsTableBody');
+            if (!rows || rows.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No client requests yet.</td></tr>';
+              return;
+            }
+            uploadsRowsById = {};
+            uploadMetaById = {};
+            tbody.innerHTML = rows.map(function (r) {
+              uploadsRowsById[r.id] = r;
+              uploadMetaById[r.id] = r;
+              var created = r.created_at ? new Date(r.created_at).toLocaleString() : '–';
+              var typeDisplay = r.upload_type || '–';
+              if (typeDisplay === 'sftp_single') typeDisplay = '<span class="text-info">SFTP (Single)</span>';
+              else if (typeDisplay === 'sftp_multiple') typeDisplay = '<span class="text-info">SFTP (Multi)</span>';
+              else if (typeDisplay === 'sftp') typeDisplay = '<span class="text-info">SFTP</span>';
+              else if (typeDisplay === 'multiple' || typeDisplay === 'multilens') typeDisplay = 'Web (Multi)';
+              else if (typeDisplay === 'single') typeDisplay = 'Web (Single)';
+
+              return '<tr>' +
+                '<td>' + r.id + '</td>' +
+                '<td><strong>' + escapeHtml(r.project_title || r.project_id || '–') + '</strong></td>' +
+                '<td><small class="text-muted">' + escapeHtml(r.created_by_email || '–') + '</small></td>' +
+                '<td>' + typeDisplay + '</td>' +
+                '<td>' + (r.file_count || 0) + '</td>' +
+                '<td><small>' + created + '</small></td>' +
+                '<td>' + statusBadge(r.request_status) + '</td>' +
+                '<td>' + actionCells(r) + '</td>' +
+                '</tr>';
+            }).join('');
+
+            tbody.querySelectorAll('.details-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                var id = parseInt(this.getAttribute('data-upload-id'), 10);
+                if (uploadsRowsById[id]) showDetailsModal(uploadsRowsById[id]);
+              });
+            });
+            tbody.querySelectorAll('.accept-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                submitDecision(this.getAttribute('data-upload-id'), 'accept', '');
+              });
+            });
+            tbody.querySelectorAll('.start-processing-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                submitDecision(this.getAttribute('data-upload-id'), 'processing', '');
+              });
+            });
+            tbody.querySelectorAll('.reject-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                pendingRejectId = this.getAttribute('data-upload-id');
+                document.getElementById('rejectReasonInput').value = '';
+                if (rejectModal) rejectModal.show();
+              });
+            });
+
+            tbody.querySelectorAll('.delete-upload-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                var id = this.getAttribute('data-upload-id');
+                var row = uploadsRowsById[parseInt(id, 10)];
+                var label = (row && (row.project_title || row.project_id)) ? (row.project_title || row.project_id) : ('#' + id);
+                pendingDeleteUploadId = id;
+                var hint = document.getElementById('deleteUploadModalHint');
+                if (hint) hint.textContent = 'Delete upload "' + label + '" (ID ' + id + ')? This also removes linked processing request records.';
+                if (deleteUploadModal) deleteUploadModal.show();
+              });
+            });
+          })
+          .catch(function () {
+            document.getElementById('uploadsTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Failed to load. Ensure the server is running and PostgreSQL is configured.</td></tr>';
+          });
+      }
+
+      function loadPathConfig() {
+        return fetch(API_BASE + '/api/admin/client-uploads/path-config')
+          .then(function (r) { return r.json(); })
+          .then(function (cfg) {
+            if (!cfg || !cfg.success) return;
+            uploadRootAbsolute = normalizePathForDisplay(cfg.uploadRootAbsolute || '');
+            remoteBasePath = normalizePathForDisplay(cfg.remoteBasePath || '');
+          })
+          .catch(function () { /* keep fallback behavior */ });
+      }
+
+      function submitDecision(id, action, reason) {
+        fetch(API_BASE + '/api/admin/client-uploads/' + id + '/decision', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: action, reason: reason })
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.success) {
+              if (rejectModal) rejectModal.hide();
+              pendingRejectId = null;
+              loadUploads();
+              loadRequests();
+              var al = document.getElementById('uploadsAlert');
+              var msg = '';
+              if (action === 'accept') msg = 'Request #' + id + ' accepted → status is now Review. Open WinSCP to download the raw files to your processing machine.';
+              else if (action === 'processing') msg = 'Request #' + id + ' moved to Processing. A processing request has been created below. Run your 3D processing software, then Mark as Delivered when done.';
+              else msg = 'Request #' + id + ' rejected.';
+              al.textContent = msg;
+              al.className = 'alert ' + (action === 'reject' ? 'alert-warning' : 'alert-success');
+            } else {
+              alert(data.message || 'Failed.');
+            }
+          })
+          .catch(function () { alert('Request failed.'); });
+      }
+
+      (function initRejectModal() {
+        var modalEl = document.getElementById('rejectModal');
+        if (modalEl && typeof bootstrap !== 'undefined') rejectModal = new bootstrap.Modal(modalEl);
+        var confirmBtn = document.getElementById('rejectConfirmBtn');
+        if (confirmBtn) {
+          confirmBtn.addEventListener('click', function () {
+            var reason = (document.getElementById('rejectReasonInput').value || '').trim();
+            if (!reason) { alert('Please enter a reason for rejecting this request.'); return; }
+            if (pendingRejectId) submitDecision(pendingRejectId, 'reject', reason);
+          });
+        }
+      })();
+
+      (function initDeleteUploadModal() {
+        var modalEl = document.getElementById('deleteUploadModal');
+        if (modalEl && typeof bootstrap !== 'undefined') deleteUploadModal = new bootstrap.Modal(modalEl);
+        var confirmBtn = document.getElementById('deleteUploadConfirmBtn');
+        if (confirmBtn) {
+          confirmBtn.addEventListener('click', function () {
+            if (!pendingDeleteUploadId) return;
+            var id = pendingDeleteUploadId;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting...';
+
+            fetch(API_BASE + '/api/admin/client-uploads/' + id, { method: 'DELETE' })
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                if (data && data.success) {
+                  if (deleteUploadModal) deleteUploadModal.hide();
+                  pendingDeleteUploadId = null;
+                  loadUploads();
+                  loadRequests();
+                  var al = document.getElementById('uploadsAlert');
+                  al.textContent = 'Deleted upload ID ' + id + '.';
+                  al.className = 'alert alert-success';
+                } else {
+                  alert((data && data.message) || 'Failed to delete.');
+                }
+              })
+              .catch(function () { alert('Delete failed.'); })
+              .finally(function () {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="bx bx-trash me-1"></i> Delete';
+              });
+          });
+        }
+      })();
+
+      (function initDeliverModal() {
+        var modalEl = document.getElementById('deliverModal');
+        if (modalEl && typeof bootstrap !== 'undefined') deliverModal = new bootstrap.Modal(modalEl);
+        var confirmBtn = document.getElementById('deliverConfirmBtn');
+        if (confirmBtn) {
+          confirmBtn.addEventListener('click', function () {
+            var notes = (document.getElementById('deliverNotesInput').value || '').trim() || null;
+            if (!pendingDeliverId) return;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving…';
+            fetch(API_BASE + '/api/admin/processing-requests/' + pendingDeliverId + '/delivery', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ delivery_notes: notes })
+            })
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                if (data.success) {
+                  deliverModal.hide();
+                  pendingDeliverId = null;
+                  loadRequests();
+                  loadUploads();
+                  var al = document.getElementById('uploadsAlert');
+                  al.textContent = 'Marked as delivered. The client has been notified and can now download their 3D model via SFTP.';
+                  al.className = 'alert alert-success';
+                } else {
+                  alert(data.message || 'Failed to mark as delivered.');
+                }
+              })
+              .catch(function () { alert('Request failed.'); })
+              .finally(function () {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="bx bx-check me-1"></i> Confirm Delivered';
+              });
+          });
+        }
+      })();
+
+      window.loadRequests = function loadRequests() {
+        fetch(API_BASE + '/api/admin/processing-requests')
+          .then(function (r) { return r.json(); })
+          .then(function (rows) {
+            var tbody = document.getElementById('requestsTableBody');
+            if (!rows || rows.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No processing requests yet. Processing requests appear here when you click "Start Processing" on a client upload above.</td></tr>';
+              return;
+            }
+            tbody.innerHTML = rows.map(function (r) {
+              var requested = r.requested_at ? new Date(r.requested_at).toLocaleString() : '–';
+              var delivered = r.delivered_at ? new Date(r.delivered_at).toLocaleString() + (r.delivery_notes ? '<br><small class="text-muted">' + escapeHtml(r.delivery_notes) + '</small>' : '') : '–';
+
+              // Enrich with upload metadata
+              var meta = uploadMetaById[r.upload_id] || {};
+              var projectTitle = escapeHtml(meta.project_title || meta.project_id || '–');
+              var clientEmail = escapeHtml(meta.created_by_email || '–');
+
+              // SFTP path hint for result placement
+              var sftpPath = meta.id ? buildSftpPath(meta) : '–';
+
+              // Determine status: if delivered_at is set, status is completed
+              var displayStatus = r.delivered_at ? 'completed' : r.status;
+              var statusBadgeHtml = '<span class="badge bg-label-' + (displayStatus === 'completed' ? 'success' : displayStatus === 'failed' ? 'danger' : 'primary') + '"><i class="bx ' + (displayStatus === 'completed' ? 'bx-check-circle' : displayStatus === 'failed' ? 'bx-x-circle' : 'bx-loader-alt') + ' me-1"></i>' + escapeHtml(displayStatus) + '</span>';
+
+              var actionBtn = '–';
+              if (r.delivered_at) {
+                actionBtn = '<span class="badge bg-label-success"><i class="bx bx-check-circle me-1"></i>Delivered</span>';
+              } else if (r.status === 'processing' || r.status === 'pending') {
+                actionBtn =
+                  '<div class="d-flex flex-column gap-2">' +
+                  '<small class="text-muted"><i class="bx bx-server me-1"></i>Place result in WinSCP at:<code class="d-block mt-1" style="font-size:0.75rem">' + escapeHtml(sftpPath) + '</code></small>' +
+                  '<button type="button" class="btn btn-sm btn-success mark-delivered-btn" data-request-id="' + r.id + '"><i class="bx bx-check me-1"></i>Mark as Delivered</button>' +
+                  '</div>';
+              } else if (r.status === 'completed') {
+                actionBtn = '<button type="button" class="btn btn-sm btn-outline-success mark-delivered-btn" data-request-id="' + r.id + '"><i class="bx bx-check me-1"></i>Mark as Delivered</button>';
+              }
+
+              return '<tr>' +
+                '<td>' + r.id + '</td>' +
+                '<td>' + r.upload_id + '</td>' +
+                '<td><strong>' + projectTitle + '</strong></td>' +
+                '<td><small class="text-muted">' + clientEmail + '</small></td>' +
+                '<td>' + statusBadgeHtml + '</td>' +
+                '<td><small>' + requested + '</small></td>' +
+                '<td><small>' + delivered + '</small></td>' +
+                '<td>' + actionBtn + '</td>' +
+                '</tr>';
+            }).join('');
+
+            tbody.querySelectorAll('.mark-delivered-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                pendingDeliverId = btn.getAttribute('data-request-id');
+                document.getElementById('deliverNotesInput').value = '';
+                if (deliverModal) deliverModal.show();
+              });
+            });
+          })
+          .catch(function () {
+            document.getElementById('requestsTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-muted">Could not load processing requests.</td></tr>';
+          });
+      }
+
+      loadPathConfig().finally(function () {
+        loadUploads();
+        loadRequests();
+      });
+    })();
+  </script>
+  <script src="{{ asset('assets/') }}/js/admin-responsive.js"></script>
+  <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
+</body>
+
+</html>
