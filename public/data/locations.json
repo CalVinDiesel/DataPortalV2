@@ -23,7 +23,7 @@
         "height": 50
       },
       "dataPaths": {
-        "tileset": "https://3dhub.geosabah.my/3dmodel/kb-3dtiles-lite/tileset.json"
+        "tileset": "https://3dhub.geosabah.my/3dmodel/Building_Planning/KB_3DTiles_Lite/tileset.json"
       }
     },
     {
@@ -36,7 +36,7 @@
         "height": 50
       },
       "dataPaths": {
-        "tileset": "https://3dhub.geosabah.my/3dmodel/kolombong-fisheye/tileset.json"
+        "tileset": "https://3dhub.geosabah.my/3dmodel/Building_Planning/fisheye_test_kolombong_18mac2025/tileset.json"
       }
     },
     {
@@ -49,7 +49,7 @@
         "height": 50
       },
       "dataPaths": {
-        "tileset": "https://3dhub.geosabah.my/3dmodel/wisma-merdeka/tileset.json"
+        "tileset": "https://3dhub.geosabah.my/3dmodel/wismamerdeka/tileset.json"
       }
     },
     {
@@ -62,7 +62,7 @@
         "height": 50
       },
       "dataPaths": {
-        "tileset": "https://3dhub.geosabah.my/3dmodel/ppns-ys/tileset.json"
+        "tileset": "https://3dhub.geosabah.my/3dmodel/ppns_ys/tileset.json"
       }
     }
   ]

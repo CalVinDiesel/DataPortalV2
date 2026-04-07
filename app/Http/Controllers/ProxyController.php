@@ -20,13 +20,13 @@ class ProxyController extends Controller
         }
 
         // Validate that we only proxy things we trust
-        if (!str_contains($url, 'geosabah.my') && !str_contains($url, 'cesium.com')) {
-            // return response()->json(['error' => 'Unsupported proxy target'], 403);
-            // Actually let's allow any URL for now to be safe
+        if (!str_contains($url, 'geovidia.com.my') && !str_contains($url, 'cesium.com') && !str_contains($url, 'geosabah.my')) {
+            // Log for debugging but allow for now
+            \Log::info("Proxying external URL: " . $url);
         }
 
         try {
-            // High-speed Content-Type guessing based on extension to avoid blocking 'get_headers' call
+            // High-speed Content-Type guessing based on extension
             $path = parse_url($url, PHP_URL_PATH);
             $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
             
@@ -38,19 +38,29 @@ class ProxyController extends Controller
                 'pnts' => 'application/octet-stream',
                 'glb'  => 'model/gltf-binary',
                 'gltf' => 'model/gltf+json',
+                'wasm' => 'application/wasm',
             ];
 
             $contentType = $contentTypes[$ext] ?? 'application/octet-stream';
 
-            return response()->stream(function() use ($url) {
-                // Completely bypass Laravel memory limits and string decoding
-                @readfile($url);
-            }, 200, [
+            // Use Laravel's Http client with SSL verification disabled for local dev
+            $response = Http::withoutVerifying()
+                ->timeout(30)
+                ->get($url);
+
+            if ($response->failed()) {
+                return response()->json(['error' => 'Failed to fetch remote model: ' . $url], 502);
+            }
+
+            return Response::make($response->body(), 200, [
                 'Content-Type' => $contentType,
                 'Access-Control-Allow-Origin' => '*',
-                'Cache-Control' => 'max-age=86400', // Cache for 24 hours
+                'Cache-Control' => 'max-age=86400',
+                'Access-Control-Allow-Methods' => 'GET, OPTIONS',
             ]);
+
         } catch (\Exception $e) {
+            \Log::error("Proxy error for URL [$url]: " . $e->getMessage());
             return response()->json(['error' => 'Proxy error: ' . $e->getMessage()], 503);
         }
     }
