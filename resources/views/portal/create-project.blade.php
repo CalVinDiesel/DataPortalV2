@@ -105,8 +105,8 @@
 
       <div class="row g-6 justify-content-center">
         <!-- Data Portal Option -->
-        <div class="col-md-5">
-          <div class="card selection-card text-center p-8" onclick="window.location.href='{{ route('upload_data') }}'">
+        <div class="col-md-4">
+          <div class="card selection-card text-center p-8 h-100" onclick="window.location.href='{{ route('upload_data') }}'">
             <div class="card-body">
               <h3 class="fw-bold mb-4">Create Project using Data Portal</h3>
               <p class="text-muted mb-6">Directly upload your drone imagery and POS files through our secure web interface. Best for individual projects and smaller datasets.</p>
@@ -116,12 +116,23 @@
         </div>
 
         <!-- SFTP Option -->
-        <div class="col-md-5">
-          <div class="card selection-card text-center p-8" id="sftpCard">
+        <div class="col-md-4">
+          <div class="card selection-card text-center p-8 h-100" id="sftpCard">
             <div class="card-body">
               <h3 class="fw-bold mb-4">Create Project using SFTP</h3>
               <p class="text-muted mb-6">Provision a dedicated SFTP drop-folder on our secure server. Use an SFTP client to comfortably upload massive datasets without internet browser limits.</p>
               <button class="btn btn-primary btn-lg px-6">Select SFTP</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Google Drive Option -->
+        <div class="col-md-4">
+          <div class="card selection-card text-center p-8 h-100" id="gdriveCard" onclick="window.location.href='{{ route('upload_gdrive') }}'">
+            <div class="card-body">
+              <h3 class="fw-bold mb-4">Create Project using Google Drive</h3>
+              <p class="text-muted mb-6">Provide a shared link to your raw drone imagery stored in Google Drive. Ensure the link is public ("Anyone with the link") for us to read.</p>
+              <button class="btn btn-primary btn-lg px-6">Select Google Drive</button>
             </div>
           </div>
         </div>

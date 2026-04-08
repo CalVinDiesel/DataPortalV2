@@ -451,6 +451,10 @@
               </div>
             </div>
 
+            <!-- Google Drive Radio (Hidden) -->
+            <input type="radio" name="cameraConfiguration" id="gdriveUpload" value="gdrive" class="d-none" required>
+            
+            
             <div class="mb-4">
               <div class="upload-card" id="cardMulti" onclick="selectUploadType('multiple')">
                 <i class="bx bxs-video upload-card-icon"></i>
@@ -495,6 +499,14 @@
             <input type="file" class="form-control" id="dataFile" name="dataFile" accept=".zip,image/*" webkitdirectory
               directory multiple>
             <div class="form-text mt-1 text-primary"><i class="bx bx-info-circle"></i> Max size: 5GB</div>
+          </div>
+
+          <!-- Google Drive Link Input (Hidden until gdrive selected) -->
+          <div class="mb-3 d-none" id="gdriveLinkWrapper">
+            <label class="form-label" for="googleDriveLink">Google Drive Link <span class="text-danger">*</span></label>
+            <input type="url" class="form-control form-control-sm" id="googleDriveLink" name="googleDriveLink"
+              placeholder="https://drive.google.com/drive/folders/..." required>
+            <div class="form-text text-muted" style="font-size: 0.75rem;">Make sure the link is set to <strong>"Anyone with the link"</strong> can view.</div>
           </div>
 
           <!-- Optional POS File Upload Section -->
@@ -958,6 +970,8 @@
     function activateUploadType(type) {
       document.getElementById('cardSingle').classList.remove('active');
       document.getElementById('cardMulti').classList.remove('active');
+      const gDriveCard = document.getElementById('cardGDrive');
+      if (gDriveCard) gDriveCard.classList.remove('active');
       document.getElementById('cameraError').style.setProperty('display', 'none', 'important');
 
       // Check the respective hidden radio button
@@ -965,18 +979,44 @@
         document.getElementById('cardSingle').classList.add('active');
         document.getElementById('singleCamera').checked = true;
         document.getElementById('cameraDetailsSection').classList.add('d-none');
-      } else {
+        document.getElementById('gdriveLinkWrapper').classList.add('d-none');
+        document.getElementById('googleDriveLink').removeAttribute('required');
+      } else if (type === 'multiple') {
         document.getElementById('cardMulti').classList.add('active');
         document.getElementById('multipleCamera').checked = true;
         document.getElementById('cameraDetailsSection').classList.remove('d-none');
+        document.getElementById('gdriveLinkWrapper').classList.add('d-none');
+        document.getElementById('googleDriveLink').removeAttribute('required');
+      } else if (type === 'gdrive') {
+        if (gDriveCard) gDriveCard.classList.add('active');
+        document.getElementById('gdriveUpload').checked = true;
+        document.getElementById('cameraDetailsSection').classList.add('d-none');
+        document.getElementById('gdriveLinkWrapper').classList.remove('d-none');
+        document.getElementById('googleDriveLink').setAttribute('required', 'required');
+        
+        // If activated via URL, we might want to hide other choices to avoid confusion
+        if (new URLSearchParams(window.location.search).get('type') === 'gdrive') {
+           document.getElementById('cardSingle').parentElement.style.display = 'none';
+           document.getElementById('cardMulti').parentElement.style.display = 'none';
+        }
       }
     }
 
     function selectUploadType(type) {
       activateUploadType(type);
-      // Programmatically trigger the hidden file input
-      document.getElementById('dataFile').click();
+      if (type !== 'gdrive') {
+        // Programmatically trigger the hidden file input
+        document.getElementById('dataFile').click();
+      }
     }
+
+    // Check for type=gdrive in URL to auto-select it
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('type') === 'gdrive') {
+        activateUploadType('gdrive');
+      }
+    });
 
     function toggleOtherInput(selectId, divId, inputId, targetValue = 'Other') {
       const selectElement = document.getElementById(selectId);
@@ -1541,10 +1581,13 @@
         // Reset the UI styling of the cards back to default unselected states
         document.getElementById('cardSingle').classList.remove('active');
         document.getElementById('cardMulti').classList.remove('active');
+        const gDriveCardReset = document.getElementById('cardGDrive');
+        if (gDriveCardReset) gDriveCardReset.classList.remove('active');
 
         // Uncheck the hidden radio buttons
         document.getElementById('singleCamera').checked = false;
         document.getElementById('multipleCamera').checked = false;
+        document.getElementById('gdriveUpload').checked = false;
 
         // Hide the camera selection extra options
         document.getElementById('cameraDetailsSection').classList.add('d-none');
@@ -1660,7 +1703,7 @@
       e.preventDefault();
 
       // Ensure a camera option is selected
-      if (!document.getElementById('singleCamera').checked && !document.getElementById('multipleCamera').checked) {
+      if (!document.getElementById('singleCamera').checked && !document.getElementById('multipleCamera').checked && !document.getElementById('gdriveUpload').checked) {
         document.getElementById('cameraError').style.setProperty('display', 'block', 'important');
         return;
       }
@@ -1671,8 +1714,9 @@
         return;
       }
 
-      // Ensure images are actually selected
-      if (pendingUploadFiles.length === 0) {
+      // Ensure images are actually selected unless it's a google drive upload
+      const isGDrive = document.getElementById('gdriveUpload').checked;
+      if (!isGDrive && pendingUploadFiles.length === 0) {
         alert('Please upload a folder containing images. A POS file alone is not sufficient.');
         return;
       }
@@ -1726,11 +1770,41 @@
         cameraModels: document.getElementById('multipleCamera').checked ? (document.getElementById('cameraModels').value || '') : '',
         captureDate: document.getElementById('captureDate').value || new Date().toISOString().split('T')[0],
         organizationName: document.getElementById('organizationName').value,
-        totalFiles: pendingUploadFiles.length,
-        totalSizeBytes: pendingUploadFiles.reduce((acc, f) => acc + (f.size || 0), 0)
+        totalFiles: isGDrive ? 0 : pendingUploadFiles.length,
+        totalSizeBytes: isGDrive ? 0 : pendingUploadFiles.reduce((acc, f) => acc + (f.size || 0), 0),
+        googleDriveLink: isGDrive ? document.getElementById('googleDriveLink').value.trim() : null
       };
 
       try {
+        if (isGDrive) {
+          statusText.textContent = 'Submitting Google Drive project...';
+          msgDiv.textContent = 'Verifying link and creating project record.';
+          
+          const gdriveRes = await fetch(UPLOAD_API + '/api/upload/google-drive-project', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(initMetadata),
+            credentials: 'include'
+          });
+          
+          const gdriveData = await gdriveRes.json();
+          if (!gdriveRes.ok || !gdriveData.success) {
+            throw new Error(gdriveData.message || 'Failed to submit Google Drive project');
+          }
+          
+          msgDiv.className = 'small mt-2 mb-0 text-center text-success pb-3 fw-bold';
+          msgDiv.textContent = '✓ Project created successfully!';
+          progressBar.style.width = '100%';
+          percentText.textContent = '100%';
+          isUploadActive = false;
+          
+          setTimeout(() => window.location.href = '{{ route('my_uploads') }}', 1500);
+          return;
+        }
+
         // 2. Initialize Upload Session
         const initRes = await fetch(UPLOAD_API + '/api/upload/init', {
           method: 'POST',

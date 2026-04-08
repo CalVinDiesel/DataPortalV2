@@ -11,6 +11,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::middleware('web')->group(function () {
     Route::post('/upload/sftp-project', [ProjectController::class, 'storeSftp']);
+    Route::post('/upload/google-drive-project', [ProjectController::class, 'storeGoogleDrive']);
     Route::post('/upload/init', [\App\Http\Controllers\UploadController::class, 'init']);
     Route::post('/upload/chunk', [\App\Http\Controllers\UploadController::class, 'chunk']);
     Route::post('/upload/finalize', [\App\Http\Controllers\UploadController::class, 'finalize']);

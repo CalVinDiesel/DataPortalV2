@@ -251,7 +251,7 @@
           <h2 class="h3 fw-bold text-dark mb-2">My Datasets</h2>
           <p class="text-muted mb-0">Manage your uploaded flight paths, 3D models, and processing jobs.</p>
         </div>
-        <a href="create-project.html" class="btn btn-primary shadow-sm">
+        <a href="{{ route('create_project') }}" class="btn btn-primary shadow-sm">
           <i class="bx bx-plus me-1"></i> New Project
         </a>
       </div>
@@ -516,7 +516,7 @@
                   <div class="text-muted mb-2"><i class="bx bx-folder-open" style="font-size: 3rem; opacity: 0.5;"></i></div>
                   <h6 class="mb-1 fw-bold text-dark">No datasets found</h6>
                   <p class="text-muted small">You haven't uploaded any drone imagery yet.</p>
-                  <a href="{{ route('upload_data') }}" class="btn btn-primary btn-sm mt-2">Start your first upload</a>
+                  <a href="{{ route('create_project') }}" class="btn btn-primary btn-sm mt-2">Start your first upload</a>
                 </td>
               </tr>
             `;
@@ -587,7 +587,10 @@
 
             // Configurations UI
             let configHtml = '';
-            if (item.upload_type === 'sftp' || (item.upload_type && item.upload_type.startsWith('sftp_'))) {
+            if (item.upload_type === 'google_drive') {
+              configHtml = `<span class="badge bg-label-success mb-1"><i class="bx bxl-google-cloud me-1"></i> Google Drive</span><br>`;
+              configHtml += `<a href="${item.google_drive_link}" target="_blank" class="small text-primary text-truncate d-block" style="max-width: 150px;" title="${item.google_drive_link}">View Shared Link</a>`;
+            } else if (item.upload_type === 'sftp' || (item.upload_type && item.upload_type.startsWith('sftp_'))) {
               configHtml = `<span class="badge bg-label-info mb-1"><i class="bx bx-server me-1"></i> SFTP Source</span><br>`;
               const isMulti = (item.upload_type === 'sftp_multiple');
               configHtml += `<span class="badge bg-label-secondary mb-1">${isMulti ? 'Multi-Lens' : 'Single-Lens'}</span>`;

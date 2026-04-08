@@ -11,6 +11,7 @@ class ClientUpload extends Model
     protected $fillable = [
         'project_id',
         'project_title',
+        'project_description',
         'upload_type',
         'file_count',
         'file_paths',
@@ -23,11 +24,18 @@ class ClientUpload extends Model
         'decided_at',
         'decided_by',
         'drone_pos_file_path',
+        'google_drive_link',
+        'latitude',
+        'longitude',
+        'category',
+        'output_categories',
+        'image_metadata',
         'tokens_charged'
     ];
 
     protected $casts = [
         'file_paths' => 'array',
+        'output_categories' => 'array',
         'decided_at' => 'datetime',
         'capture_date' => 'date',
     ];

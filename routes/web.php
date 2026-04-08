@@ -41,6 +41,10 @@ Route::middleware('auth')->group(function () {
         return view('portal.upload-sftp');
     })->name('upload_sftp');
 
+    Route::get('/upload-gdrive', function () {
+        return view('portal.upload-gdrive');
+    })->name('upload_gdrive');
+
     Route::get('/my-uploads', function () {
         return view('portal.my-uploads');
     })->name('my_uploads');
