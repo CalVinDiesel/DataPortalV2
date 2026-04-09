@@ -11,12 +11,19 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable(['name', 'email', 'password', 'username', 'contact_number', 'role', 'provider', 'stripe_customer_id'])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password'])]
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'DataPortalUsers';
 
     /**
      * Get the attributes that should be cast.

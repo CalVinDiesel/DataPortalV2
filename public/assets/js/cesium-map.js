@@ -12,7 +12,54 @@ function initializeCesium(containerId = 'cesiumContainer') {
         return cesiumViewer;
     }
 
-    cesiumViewer = new Cesium.Viewer(containerId, {
+    // Use OpenStreetMap so no Cesium ion token is required for the overview map
+    Cesium.Ion.defaultAccessToken = '';
+
+    // Build imagery provider flexibly: support both new (UrlTemplateImageryProvider)
+    // and old (OpenStreetMapImageryProvider) Cesium API versions automatically.
+    function buildOsmImageryProvider() {
+        var osmTileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        var osmCredit = '© OpenStreetMap contributors';
+        var subdomains = ['a', 'b', 'c'];
+
+        // Cesium >= 1.104: use UrlTemplateImageryProvider wrapped in ImageryLayer
+        if (typeof Cesium.UrlTemplateImageryProvider === 'function') {
+            try {
+                return {
+                    useBaseLayer: true,
+                    provider: new Cesium.UrlTemplateImageryProvider({
+                        url: osmTileUrl,
+                        subdomains: subdomains,
+                        credit: osmCredit
+                    })
+                };
+            } catch (e) {
+                console.warn('[CesiumMap] UrlTemplateImageryProvider failed, trying legacy:', e);
+            }
+        }
+
+        // Cesium < 1.104 fallback: OpenStreetMapImageryProvider
+        if (typeof Cesium.OpenStreetMapImageryProvider === 'function') {
+            try {
+                return {
+                    useBaseLayer: false,
+                    provider: new Cesium.OpenStreetMapImageryProvider({
+                        url: 'https://tile.openstreetmap.org/'
+                    })
+                };
+            } catch (e) {
+                console.warn('[CesiumMap] OpenStreetMapImageryProvider failed:', e);
+            }
+        }
+
+        console.error('[CesiumMap] No imagery provider available.');
+        return null;
+    }
+
+    var imageryResult = buildOsmImageryProvider();
+
+    // Viewer options — no token-gated features used
+    var viewerOptions = {
         animation: false,
         baseLayerPicker: false,
         fullscreenButton: false,
@@ -25,8 +72,24 @@ function initializeCesium(containerId = 'cesiumContainer') {
         timeline: false,
         navigationHelpButton: false,
         navigationInstructionsInitiallyVisible: false,
-        sceneMode: Cesium.SceneMode.SCENE2D
-    });
+        sceneMode: Cesium.SceneMode.SCENE2D,
+    };
+
+    // Attach imagery provider using the correct API for the detected Cesium version
+    if (imageryResult) {
+        if (imageryResult.useBaseLayer && typeof Cesium.ImageryLayer === 'function') {
+            viewerOptions.baseLayer = new Cesium.ImageryLayer(imageryResult.provider);
+        } else {
+            viewerOptions.imageryProvider = imageryResult.provider;
+        }
+    }
+
+    try {
+        cesiumViewer = new Cesium.Viewer(containerId, viewerOptions);
+    } catch (err) {
+        console.error('[CesiumMap] Viewer creation failed:', err);
+        return null;
+    }
 
     cesiumViewer.camera.setView({
         destination: Cesium.Cartesian3.fromDegrees(116.46905, 5.63444, 710000)
@@ -39,7 +102,7 @@ function initializeCesium(containerId = 'cesiumContainer') {
     return cesiumViewer;
 }
 
-window.onload = function () {
+// Use addEventListener so it never conflicts with other scripts using window.onload
+window.addEventListener('load', function () {
     initializeCesium();
-};
-
+});

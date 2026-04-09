@@ -114,6 +114,15 @@
          The page will load visually first, then Cesium initializes after. -->
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/Cesium.js" defer></script>
+
+    <script>
+      window.AppConfig = {
+        baseUrl:    "{{ rtrim(config('app.url'), '/') }}",
+        uploadsUrl: "{{ url('uploads') }}",
+        assetUrl:   "{{ asset('') }}",
+      };
+      window.TemaDataPortal_API_BASE = window.AppConfig.baseUrl;
+    </script>
   
     <!-- Custom Cesium Map JS
          ✅ KEPT: defer maintained — loads after HTML is parsed, order preserved -->
@@ -269,7 +278,7 @@
           <a href="{{ route('profile') }}" class="navbar-text text-body me-3 d-none d-md-inline text-decoration-none fw-medium">{{ Auth::user()->email }}</a>
           <form method="POST" action="{{ route('logout') }}" class="d-inline">
               @csrf
-              <button type="submit" class="btn btn-outline-secondary"><span class="tf-icons icon-base bx bx-log-out me-1"></span><span class="d-none d-md-inline">Log out</span></button>
+              <button type="button" id="navLogoutBtn" class="btn btn-outline-secondary"><span class="tf-icons icon-base bx bx-log-out me-1"></span><span class="d-none d-md-inline">Log out</span></button>
           </form>
         </li>
         @endauth
@@ -297,7 +306,7 @@
           </div>
           <!-- 3D Map Start Here -->
           <div id="heroMapContainer">
-            <div id="cesiumContainer"></div>
+           <div id="cesiumContainer" style="width:100%; height:500px;"></div>
             <!-- Location choice bar: appears on pin hover, image + description per location -->
             <div id="locationChoiceBar" class="location-choice-bar" aria-hidden="true">
               <div class="location-choice-bar-inner">
@@ -1235,7 +1244,9 @@
           // Laravel handled via form submission in navbar, but for any custom JS logout:
           document.querySelector('form[action*="logout"]').submit();
         }
-        document.getElementById('navLogoutBtn').addEventListener('click', function() {
+        var navLogoutBtn = document.getElementById('navLogoutBtn');
+        if (!navLogoutBtn) return;
+        navLogoutBtn.addEventListener('click', function() {
           var role = window.__authRole || 'registered';
           var msgEl = document.getElementById('logoutConfirmMessage');
           var messages = {
@@ -1262,10 +1273,10 @@
       /* Thumbnail images that match the overview map pins (fallback when API has no thumb) */
       var showcaseImages = {
         'KK_OSPREY': '/assets/img/front-pages/locations/kkOsprey_pin_image.jpg',
-        'kb-3dtiles-lite': '/assets/img/front-pages/locations/kb 3dtiles lite_pin_image.jpg',
+        'kb-3dtiles-lite': '/assets/img/front-pages/locations/kb_3dtiles_lite_pin_image.jpg',
         'kolombong-fisheye': '/assets/img/front-pages/locations/kolombong_pin_image.jpg',
-        'wisma-merdeka': '/assets/img/front-pages/locations/wisma merdeka_pin_image.jpg',
-        'ppns-ys': '/assets/img/front-pages/locations/ppns ys_pin_image.jpg'
+        'wisma-merdeka': '/assets/img/front-pages/locations/wisma_merdeka_pin_image.jpg',
+        'ppns-ys': '/assets/img/front-pages/locations/ppns_ys_pin_image.jpg'
       };
       var desiredOrder = ['KK_OSPREY', 'wisma-merdeka', 'kb-3dtiles-lite', 'kolombong-fisheye', 'ppns-ys', 'Keningau-Sabah-2026'];
       fetch(API_BASE + '/api/showcase').then(function (r) { return r.json(); }).then(function (rows) {

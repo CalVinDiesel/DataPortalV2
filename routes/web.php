@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UploadController;
 
 Route::get('/', function () {
     return view('portal.landing-page');
@@ -62,5 +63,8 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
         return view('admin.dashboard');
     })->name('admin_dashboard');
 });
+
+Route::post('/upload/pin-image', [UploadController::class, 'uploadPinImage'])
+    ->name('upload.pin-image');
 
 require __DIR__.'/auth.php';

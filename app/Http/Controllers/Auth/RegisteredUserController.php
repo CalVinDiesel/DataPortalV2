@@ -24,35 +24,10 @@ class RegisteredUserController extends Controller
     }
 
 
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws ValidationException
-     */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'max:255', 'unique:'.User::class],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'contact_number' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'username' => $request->username,
-            'email' => $request->email,
-            'contact_number' => $request->contact_number,
-            'role' => 'registered', // Default role
-            'password' => Hash::make($request->password),
-        ]);
-
-        event(new Registered($user));
-
-        Auth::login($user);
-
-        return redirect(route('landing', absolute: false));
+        // Self-registration is disabled. Accounts are created by administrators only.
+        return redirect()->route('register');
     }
 
 }

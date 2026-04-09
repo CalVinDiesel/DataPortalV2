@@ -17,6 +17,7 @@
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">
             @include('layouts.navigation')
+            @include('partials._thumbnail_helpers')
 
             <!-- Page Heading -->
             @isset($header)
