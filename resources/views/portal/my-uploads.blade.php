@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets/') }}/"
+<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets') }}/"
   data-template="front-pages" data-bs-theme="light">
 
 <head>
@@ -7,10 +7,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <title>My Projects | 3DHub Data Portal</title>
 
-  <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
+  <script src="{{ asset('assets') }}/js/theme-init.js"></script>
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,16 +20,16 @@
     rel="stylesheet">
 
   <!-- Icons -->
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/boxicons.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/boxicons.css" />
 
   <!-- Core CSS -->
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/pages/front-page.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
 
-  <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
-  <script src="{{ asset('assets/') }}/js/front-config.js"></script>
+  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
+  <script src="{{ asset('assets') }}/js/front-config.js"></script>
 
   <!-- Auth Protection -->
   <script>
@@ -469,9 +469,9 @@
   </form>
 
   <!-- Core Scripts -->
-  <script src="{{ asset('assets/') }}/vendor/libs/popper/popper.js"></script>
-  <script src="{{ asset('assets/') }}/vendor/js/bootstrap.js"></script>
-  <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
+  <script src="{{ asset('assets') }}/vendor/libs/popper/popper.js"></script>
+  <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
+  <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
   
   <script>
     function logout() {

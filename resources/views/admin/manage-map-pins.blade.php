@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-assets-path="{{ asset('assets/') }}/" data-template="admin-data-portal" data-bs-theme="light">
+<html lang="en" dir="ltr" data-assets-path="{{ asset('assets') }}/" data-template="admin-data-portal" data-bs-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Manage Map Pins - Admin | 3DHub</title>
-  <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
-  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/admin-responsive.css" />
-  <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
+  <script src="{{ asset('assets') }}/js/theme-init.js"></script>
+  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/admin-responsive.css" />
+  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
   <!-- jQuery and Bootstrap from CDN when local vendor/libs are missing (avoids 404 / MIME type errors) -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
@@ -20,51 +20,51 @@
     <div class="layout-container">
       <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
         <div class="app-brand demo py-4">
-          <a href="index.html" class="app-brand-link d-flex align-items-center">
-            <span class="app-brand-logo demo me-2"><img src="{{ asset('assets/') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+          <a href="{{ route('admin_dashboard') }}" class="app-brand-link d-flex align-items-center">
+            <span class="app-brand-logo demo me-2"><img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
             <span class="app-brand-text demo menu-text fw-bold" style="font-size: 1.4em;">3DHub Admin</span>
           </a>
         </div>
         <div class="menu-inner-shadow"></div>
         <ul class="menu-inner py-1">
           <li class="menu-item">
-            <a href="index.html" class="menu-link">
+            <a href="{{ route('admin_dashboard') }}" class="menu-link">
               <i class="menu-icon tf-icons bx bx-home-circle"></i>
               <div>Dashboard</div>
             </a>
           </li>
           <li class="menu-item">
-            <a href="add-3d-model.html" class="menu-link">
+            <a href="{{ route('admin.add_3d_model') }}" class="menu-link">
               <i class="menu-icon tf-icons bx bx-cube"></i>
               <div>Add 3D Model</div>
             </a>
           </li>
           <li class="menu-item active">
-            <a href="manage-map-pins.html" class="menu-link">
+            <a href="{{ route('admin.manage_map_pins') }}" class="menu-link">
               <i class="menu-icon tf-icons bx bx-map-pin"></i>
               <div>Manage Map Pins</div>
             </a>
           </li>
           <li class="menu-item">
-            <a href="manage-showcase.html" class="menu-link">
+            <a href="{{ route('admin.manage_showcase') }}" class="menu-link">
               <i class="menu-icon tf-icons bx bx-grid-alt"></i>
               <div>Manage Showcase</div>
             </a>
           </li>
           <li class="menu-item">
-            <a href="client-uploads.html" class="menu-link">
+            <a href="{{ route('admin.client_uploads') }}" class="menu-link">
               <i class="menu-icon tf-icons bx bx-cloud-upload"></i>
               <div>Client Uploads</div>
             </a>
           </li>
           <li class="menu-item">
-            <a href="manage-users.html" class="menu-link">
+            <a href="{{ route('admin.manage_users') }}" class="menu-link">
               <i class="menu-icon tf-icons bx bx-user"></i>
               <div>Manage Users</div>
             </a>
           </li>
           <li class="menu-item">
-            <a href="../front-pages/{{ route('landing') }}" class="menu-link" target="_blank">
+            <a href="{{ route('landing') }}" class="menu-link" target="_blank">
               <i class="menu-icon tf-icons bx bx-map"></i>
               <div>View Portal</div>
             </a>
@@ -80,8 +80,8 @@
           <div class="navbar-nav-right d-flex align-items-center">
             <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="syncFromJsonBtn">Sync from locations.json</button>
             <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="exportToJsonBtn" title="Backfill data/locations.json from current database map pins">Export to locations.json</button>
-            <a href="add-3d-model.html" class="btn btn-sm btn-primary me-2">Add new pin</a>
-            <a href="index.html" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
+            <a href="{{ route('admin.add_3d_model') }}" class="btn btn-sm btn-primary me-2">Add new pin</a>
+            <a href="{{ route('admin_dashboard') }}" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
           </div>
         </nav>
         <div class="content-wrapper">
@@ -210,7 +210,7 @@
               return;
             }
             if (rows.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No map pins yet. Click <strong>Sync from locations.json</strong> above to copy pins from the map data file, or <a href="add-3d-model.html">add a 3D model</a>.</td></tr>';
+              tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No map pins yet. Click <strong>Sync from locations.json</strong> above to copy pins from the map data file, or <a href="{{ route('admin.add_3d_model') }}">add a 3D model</a>.</td></tr>';
               return;
             }
             tbody.innerHTML = rows.map(function (r) {
@@ -339,6 +339,7 @@
         var btn = this;
         btn.disabled = true;
         var thumbFile = document.getElementById('editThumbnailFile').files && document.getElementById('editThumbnailFile').files[0];
+        
         function buildPayload(thumbNailUrl) {
           return {
             mapDataID: mapDataID,
@@ -370,11 +371,26 @@
             alert(x.body.message || 'Save failed.');
           }
         }
-        if (thumbFile) {
+        
+        function doUpload(fileToUpload) {
+          if (!fileToUpload) {
+              saveMapData(buildPayload()).then(onSaved).catch(function () { alert('Request failed.'); }).finally(function () { btn.disabled = false; });
+              return;
+          }
+          
           var fd = new FormData();
           fd.append('mapDataID', mapDataID);
-          fd.append('thumbnail', thumbFile);
-          fetch(API_BASE + '/api/admin/upload-map-thumbnail', { method: 'POST', body: fd, credentials: 'include' })
+          fd.append('pin_image', fileToUpload); // Form field must match Laravel UploadController validation
+          
+          fetch('{{ route('upload.pin-image') }}', { 
+            method: 'POST', 
+            body: fd, 
+            headers: { 
+              'X-CSRF-TOKEN': '{{ csrf_token() }}',
+              'Accept': 'application/json'
+            },
+            credentials: 'same-origin' 
+          })
             .then(function (r) {
               return r.text().then(function (text) {
                 var body;
@@ -384,10 +400,15 @@
             })
             .then(function (up) {
               if (up.status === 200 && up.body.success && up.body.url) {
-                var fullUrl = (up.body.url.indexOf('http') === 0) ? up.body.url : (API_BASE + (up.body.url.indexOf('/') === 0 ? '' : '') + up.body.url);
-                return saveMapData(buildPayload(fullUrl)).then(onSaved);
+                // Let the Cloudinary URL be saved directly into MapData via backend
+                return saveMapData(buildPayload(up.body.url)).then(onSaved);
               }
               var msg = up.body && up.body.message ? up.body.message : ('Upload failed (HTTP ' + up.status + '). ' + (up.text && up.text.length < 200 ? up.text : ''));
+              if (up.body && up.body.errors) {
+                  for (var key in up.body.errors) {
+                      msg += '\n- ' + up.body.errors[key].join(', ');
+                  }
+              }
               alert(msg || 'Thumbnail upload failed.');
             })
             .catch(function (err) {
@@ -401,15 +422,50 @@
               alert(msg);
             })
             .finally(function () { btn.disabled = false; });
+        }
+        
+        if (thumbFile && thumbFile.size > 2 * 1024 * 1024) {
+          var alertEl = document.getElementById('pinsAlert');
+          if(alertEl) { alertEl.textContent = 'Compressing image...'; alertEl.className = 'alert alert-info'; alertEl.classList.remove('d-none'); }
+          
+          var img = new Image();
+          var url = URL.createObjectURL(thumbFile);
+          img.onload = function() {
+              URL.revokeObjectURL(url);
+              var canvas = document.createElement('canvas');
+              var MAX_DIM = 1200;
+              var w = img.width; 
+              var h = img.height;
+              
+              if (w > h && w > MAX_DIM) { 
+                  h *= MAX_DIM/w; w = MAX_DIM; 
+              } else if (h > MAX_DIM) { 
+                  w *= MAX_DIM/h; h = MAX_DIM; 
+              }
+              
+              canvas.width = w; 
+              canvas.height = h;
+              var ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, w, h);
+              
+              canvas.toBlob(function(blob) {
+                  var newFile = new File([blob], thumbFile.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: 'image/jpeg' });
+                  doUpload(newFile);
+              }, 'image/jpeg', 0.85); // 85% quality JPEG
+          };
+          img.onerror = function() {
+              doUpload(thumbFile); // fallback to original if image load fails
+          };
+          img.src = url;
         } else {
-          saveMapData(buildPayload()).then(onSaved).catch(function () { alert('Request failed.'); }).finally(function () { btn.disabled = false; });
+          doUpload(thumbFile);
         }
       });
 
       loadPins();
     })();
   </script>
-  <script src="{{ asset('assets/') }}/js/admin-responsive.js"></script>
-  <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
+  <script src="{{ asset('assets') }}/js/admin-responsive.js"></script>
+  <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
 </body>
 </html>

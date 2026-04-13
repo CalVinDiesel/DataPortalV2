@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets/') }}/" data-template="front-pages" data-bs-theme="light">
+<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets') }}/" data-template="front-pages" data-bs-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Log in | 3DHub Data Portal</title>
-  <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
-  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico">
+  <script src="{{ asset('assets') }}/js/theme-init.js"></script>
+  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/pages/front-page.css">
-  <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
-  <script src="{{ asset('assets/') }}/js/front-config.js"></script>
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
+  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
+  <script src="{{ asset('assets') }}/js/front-config.js"></script>
   <style>
     .btn-google { background-color: #fff; color: #3c4043; border: 1px solid #dadce0; }
     .btn-google:hover { background-color: #f8f9fa; border-color: #dadce0; color: #3c4043; }
@@ -27,7 +27,7 @@
       <div class="navbar navbar-expand-lg landing-navbar px-3">
         <a href="{{ route('landing') }}" class="app-brand-link d-flex align-items-center">
           <span class="app-brand-logo demo">
-            <img src="{{ asset('assets/') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;">
+            <img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;">
           </span>
           <span class="app-brand-text demo menu-text fw-bold ms-2 ps-1">3DHub</span>
         </a>
@@ -94,7 +94,6 @@
               <div class="mb-3">
                 <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
                 <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required autofocus placeholder="your@email.com" autocomplete="username">
-                <x-input-error :messages="$errors->get('email')" class="mt-2" />
               </div>
 
               <div class="mb-3">
@@ -104,8 +103,9 @@
                   <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-body p-0 pe-2" id="loginPasswordToggle" aria-label="Show password" title="Show password">
                     <i class="bx bx-show-alt icon-lg"></i>
                   </button>
-                  <x-input-error :messages="$errors->get('password')" class="mt-2" />
                 </div>
+                <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                <x-input-error :messages="$errors->get('email')" class="mt-1" />
               </div>
 
               <div class="mb-3 text-end small">
@@ -122,7 +122,7 @@
 
             <hr class="my-4">
             <div class="text-center small">
-              Don't have an account? <a href="{{ route('register') }}" class="fw-medium">Sign up / Register</a>
+              Don't have an account? <a href="{{ route('request_access') }}" class="fw-medium">Request access</a>
             </div>
           </div>
         </div>
@@ -131,9 +131,9 @@
   </div>
   </div>
 
-  <script src="{{ asset('assets/') }}/vendor/libs/popper/popper.js"></script>
-  <script src="{{ asset('assets/') }}/vendor/js/bootstrap.js"></script>
-  <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
+  <script src="{{ asset('assets') }}/vendor/libs/popper/popper.js"></script>
+  <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
+  <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
   <script>
     var AUTH_GOOGLE_URL = 'http://localhost:3000/api/auth/google';
     var AUTH_MICROSOFT_URL = 'http://localhost:3000/auth/microsoft/login';
@@ -163,7 +163,7 @@
 
     document.getElementById('btnLoginMicrosoft').addEventListener('click', function (e) {
       e.preventDefault();
-      alert('Microsoft login is not yet configured on this server. Please use email and password.');
+      window.location.href = "{{ route('auth.microsoft') }}";
     });
 
     // Form validation before submission

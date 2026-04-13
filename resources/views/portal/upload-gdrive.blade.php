@@ -1,28 +1,28 @@
 <!DOCTYPE html>
-<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets/') }}/"
+<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets') }}/"
   data-template="front-pages" data-bs-theme="light">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Create Project via Google Drive | 3DHub Data Portal</title>
-  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&amp;display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/client-responsive.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/pages/front-page.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/client-responsive.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
-  <script src="{{ asset('assets/') }}/js/front-config.js"></script>
+  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
+  <script src="{{ asset('assets') }}/js/front-config.js"></script>
   <script>
     (function () {
       window.userRole = '{{ Auth::user()->role }}';
@@ -267,9 +267,9 @@
     </div>
   </div>
 
-  <script src="{{ asset('assets/') }}/vendor/libs/jquery/jquery.js"></script>
-  <script src="{{ asset('assets/') }}/vendor/libs/popper/popper.js"></script>
-  <script src="{{ asset('assets/') }}/vendor/js/bootstrap.js"></script>
+  <script src="{{ asset('assets') }}/vendor/libs/jquery/jquery.js"></script>
+  <script src="{{ asset('assets') }}/vendor/libs/popper/popper.js"></script>
+  <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
   <script>
     // Theme-compatible background map
     const bgMap = L.map('bgMap', { zoomControl: false, attributionControl: false }).setView([5.9804, 116.0735], 11);

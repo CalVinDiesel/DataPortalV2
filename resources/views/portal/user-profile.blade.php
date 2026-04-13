@@ -1,16 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets/') }}/"
+<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets') }}"
   data-template="front-pages" data-bs-theme="light">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <title>Account Profile | 3DHub Data Portal</title>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
 
-  <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
+  <script src="{{ asset('assets') }}/js/theme-init.js"></script>
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,18 +21,17 @@
     rel="stylesheet">
 
   <!-- Icons -->
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/boxicons.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css">
 
   <!-- Core CSS -->
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/pages/front-page.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
 
-  <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
-  <script src="{{ asset('assets/') }}/js/front-config.js"></script>
+  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
+  <script src="{{ asset('assets') }}/js/front-config.js"></script>
 
-  <!-- Auth: require any logged-in user (client, subscriber, admin) -->
+  <!-- Auth: require any logged-in user (registered, trusted, admin) -->
   <script>
     (function () {
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
@@ -229,15 +229,16 @@
           <button type="button" class="btn btn-sm btn-outline-primary" id="btnChangePassword">Change password</button>
         </span>
       </div>
-      <div id="inlineFormPassword" class="profile-inline-form d-none">
+      <form id="formChangePassword" class="profile-inline-form d-none">
+        @csrf
         <label class="form-label small">Current password</label>
-        <input type="password" class="form-control form-control-sm" id="currentPassword" autocomplete="current-password" placeholder="Current password">
+        <input type="password" class="form-control form-control-sm" id="currentPassword" name="currentPassword" autocomplete="current-password" placeholder="Current password">
         <label class="form-label small mt-2">New password</label>
-        <input type="password" class="form-control form-control-sm" id="newPassword" minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
-        <button type="button" class="btn btn-sm btn-primary" id="btnPasswordSubmit">Update password</button>
+        <input type="password" class="form-control form-control-sm" id="newPassword" name="newPassword" minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
+        <button type="submit" class="btn btn-sm btn-primary" id="btnPasswordSubmit">Update password</button>
         <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPasswordCancel">Cancel</button>
         <span id="passwordMessage" class="small ms-2"></span>
-      </div>
+      </form>
 
       <!-- Role (read-only) -->
       <div class="profile-row">
@@ -275,15 +276,16 @@
           <button type="button" class="btn btn-sm btn-outline-primary" id="btnChangeSftpPassword">Change password</button>
         </span>
       </div>
-      <div id="inlineFormSftpPassword" class="profile-inline-form d-none">
+      <form id="formChangeSftpPassword" class="profile-inline-form d-none">
+        @csrf
         <label class="form-label small">New SFTP password</label>
-        <input type="password" class="form-control form-control-sm" id="newSftpPassword" placeholder="At least 8 characters" minlength="8">
+        <input type="password" class="form-control form-control-sm" id="newSftpPassword" name="newSftpPassword" placeholder="At least 8 characters" minlength="8" autocomplete="new-password">
         <label class="form-label small mt-2">Confirm new SFTP password</label>
-        <input type="password" class="form-control form-control-sm" id="confirmSftpPassword" placeholder="Repeat new password">
-        <button type="button" class="btn btn-sm btn-primary mt-2" id="btnSftpPasswordSubmit">Update SFTP password</button>
+        <input type="password" class="form-control form-control-sm" id="confirmSftpPassword" name="confirmSftpPassword" placeholder="Repeat new password" autocomplete="new-password">
+        <button type="submit" class="btn btn-sm btn-primary mt-2" id="btnSftpPasswordSubmit">Update SFTP password</button>
         <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="btnSftpPasswordCancel">Cancel</button>
         <span id="sftpPasswordMessage" class="small ms-2"></span>
-      </div>
+      </form>
 
       <!-- SFTP not set warning -->
       <div id="sftpNotSetAlert" class="alert alert-warning mt-3 d-none" role="alert">
@@ -293,9 +295,9 @@
     </div>
   </div>
 
-  <script src="{{ asset('assets/') }}/vendor/libs/popper/popper.js"></script>
-  <script src="{{ asset('assets/') }}/vendor/js/bootstrap.js"></script>
-  <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
+  <script src="{{ asset('assets') }}/vendor/libs/popper/popper.js"></script>
+  <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
+  <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
   <script>
     (function () {
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
@@ -329,12 +331,20 @@
             document.getElementById('profile-email').textContent = data.email || '—';
             document.getElementById('profile-contact').textContent = data.contactNumber || '—';
             document.getElementById('profile-password').textContent = data.hasPassword ? '••••••••' : 'Not set (sign in with Google/Microsoft)';
-            document.getElementById('profile-role').textContent = (data.role || 'client').charAt(0).toUpperCase() + (data.role || '').slice(1);
+            document.getElementById('profile-role').textContent = (data.role || 'registered').charAt(0).toUpperCase() + (data.role || '').slice(1);
             var providerLabel = (data.provider || 'local').toLowerCase();
             if (providerLabel === 'local') providerLabel = 'Email';
             else if (providerLabel === 'google') providerLabel = 'Google';
             else if (providerLabel === 'microsoft') providerLabel = 'Microsoft';
             document.getElementById('profile-provider').textContent = providerLabel;
+
+            // Update SFTP display if loaded together or separately
+            if (data.sftpUsername) {
+              document.getElementById('profile-sftp-username').textContent = data.sftpUsername;
+              actualSftpPassword = data.sftpPassword || '';
+              document.getElementById('profile-sftp-password').textContent = '••••••••';
+              document.getElementById('sftpNotSetAlert').classList.add('d-none');
+            }
           })
           .catch(function () {
             document.getElementById('profileLoadError').classList.remove('d-none');
@@ -396,9 +406,9 @@
           document.getElementById('inlineFormPassword').classList.add('d-none');
           showMessage('passwordMessage', '');
         });
-        document.getElementById('btnPasswordSubmit').addEventListener('click', function () {
+        document.getElementById('formChangePassword').addEventListener('submit', function (e) {
+          e.preventDefault();
           var btn = document.getElementById('btnPasswordSubmit');
-          var msg = document.getElementById('passwordMessage');
           var current = document.getElementById('currentPassword').value;
           var newPw = document.getElementById('newPassword').value;
           if (!current || !newPw) {
@@ -409,7 +419,10 @@
           showMessage('passwordMessage', '');
           fetch(AUTH_API + '/api/auth/profile/password', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
             credentials: 'include',
             body: JSON.stringify({ currentPassword: current, newPassword: newPw })
           })
@@ -417,7 +430,7 @@
             .then(function (data) {
               if (data.success) {
                 showMessage('passwordMessage', data.message || 'Password updated.', false);
-                document.getElementById('inlineFormPassword').classList.add('d-none');
+                document.getElementById('formChangePassword').classList.add('d-none');
                 document.getElementById('currentPassword').value = '';
                 document.getElementById('newPassword').value = '';
                 document.getElementById('profile-password').textContent = '••••••••';
@@ -555,13 +568,14 @@ var sftpPasswordVisible = false;
         });
 
         document.getElementById('btnSftpPasswordCancel').addEventListener('click', function() {
-          document.getElementById('inlineFormSftpPassword').classList.add('d-none');
+          document.getElementById('formChangeSftpPassword').classList.add('d-none');
           showMessage('sftpPasswordMessage', '');
         });
 
         // Submit new SFTP password
-        document.getElementById('btnSftpPasswordSubmit').addEventListener('click', function() {
-          var btn = this;
+        document.getElementById('formChangeSftpPassword').addEventListener('submit', function(e) {
+          e.preventDefault();
+          var btn = document.getElementById('btnSftpPasswordSubmit');
           var newPw = document.getElementById('newSftpPassword').value;
           var confirmPw = document.getElementById('confirmSftpPassword').value;
 
@@ -579,7 +593,10 @@ var sftpPasswordVisible = false;
 
           fetch(AUTH_API + '/api/auth/profile/sftp-password', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
             credentials: 'include',
             body: JSON.stringify({ newPassword: newPw })
           })
@@ -589,7 +606,7 @@ var sftpPasswordVisible = false;
                 showMessage('sftpPasswordMessage', data.message || 'SFTP password updated.', false);
                 actualSftpPassword = newPw;
                 document.getElementById('profile-sftp-password').textContent = sftpPasswordVisible ? newPw : '••••••••';
-                document.getElementById('inlineFormSftpPassword').classList.add('d-none');
+                document.getElementById('formChangeSftpPassword').classList.add('d-none');
               } else {
                 showMessage('sftpPasswordMessage', data.message || 'Update failed.', true);
               }

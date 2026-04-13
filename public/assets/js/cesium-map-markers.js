@@ -140,15 +140,10 @@
     return parts.join('/') + query;
   }
 
-  /**
-   * Derive a static fallback thumbnail path from a location ID.
-   * Converts the ID to lowercase with underscores so new locations added to DB
-   * automatically resolve without hardcoding: e.g. "KB_3DTiles_Lite" → "kb_3dtiles_lite_pin_image.jpg"
-   */
   function deriveStaticThumbnailPath(locId) {
-    if (!locId) return null;
-    var filename = locId.toLowerCase().replace(/[\s\-]+/g, '_') + '_pin_image.jpg';
-    return STATIC_THUMB_DIR + filename;
+    // Disabled to prevent blind 404 requests in the console. 
+    // The backend MapDataController now verifies and provides the derived path if it actually exists.
+    return null;
   }
 
   /**
@@ -157,12 +152,16 @@
    */
   function resolveLocationImageUrl(relativePath) {
     if (!relativePath || typeof relativePath !== 'string') return null;
-    var path = normalizePathFilename(relativePath.trim());
-    if (path.indexOf('data:') === 0) return path;
-    // Already absolute — rewrite host if it's pointing to a different origin
-    if (path.indexOf('http://') === 0 || path.indexOf('https://') === 0) {
-      return rewriteApiUrl(path);
+    var rawPath = relativePath.trim();
+    if (rawPath.indexOf('data:') === 0) return rawPath;
+    
+    // Check if it's already an absolute URL (like Cloudinary)
+    if (rawPath.indexOf('http://') === 0 || rawPath.indexOf('https://') === 0) {
+      return rewriteApiUrl(rawPath); // pass raw path so it can preserve case/host if it's external
     }
+    
+    // Otherwise it's a relative path, normalize it
+    var path = normalizePathFilename(rawPath);
     try {
       var base = IMAGE_BASE_URL || (typeof window !== 'undefined' && window.location && window.location.href) || '';
       return base ? new URL(path, base).href : null;
@@ -180,6 +179,13 @@
     try {
       var parsed = new URL(absoluteUrl);
       var pageOrigin = window.location.origin;
+
+      // If it's a known external host (like Cloudinary), or NOT localhost/127.0.0.1 and completely different origin,
+      // we should not overwrite it or normalize it.
+      if (parsed.hostname.indexOf('cloudinary.com') !== -1 || 
+          (parsed.origin !== pageOrigin && parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1' && (!API_BASE || parsed.origin !== new URL(API_BASE).origin))) {
+        return absoluteUrl;
+      }
 
       // Same origin as the current page — no rewrite needed
       if (parsed.origin === pageOrigin) {

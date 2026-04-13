@@ -43,6 +43,12 @@ class ProjectController extends Controller
 
     public function storeSftp(Request $request)
     {
+        // Enforce role permission: Only trusted users and admins can use SFTP.
+        $role = Auth::user()->role;
+        if (!in_array($role, ['trusted', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'SFTP upload is only available for trusted users.'], 403);
+        }
+
         $request->validate([
             'projectTitle' => 'required|string',
             'projectDescription' => 'nullable|string',

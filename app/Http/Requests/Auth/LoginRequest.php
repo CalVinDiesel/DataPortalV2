@@ -42,6 +42,23 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
+        $user = \App\Models\User::where('email', $this->email)->first();
+
+        if ($user) {
+            if (!$user->is_active) {
+                RateLimiter::hit($this->throttleKey());
+                throw ValidationException::withMessages([
+                    'email' => 'Your account is pending setup. Please check your email inbox for the original setup link.',
+                ]);
+            }
+            if ($user->provider !== 'local') {
+                RateLimiter::hit($this->throttleKey());
+                throw ValidationException::withMessages([
+                    'email' => 'You registered this account with ' . ucfirst($user->provider) . '. Please click "Sign in with ' . ucfirst($user->provider) . '" to access your account.',
+                ]);
+            }
+        }
+
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 

@@ -23,6 +23,8 @@ class AuthController extends Controller
             'provider' => $user->provider ?? 'local',
             'account_removed' => !empty($user->removed_at),
             'removal_reason' => $user->removal_reason,
+            'sftpUsername' => $user->sftp_username ?? 'Not set',
+            'sftpPassword' => $user->sftp_password ?? ''
         ]);
     }
 
@@ -35,6 +37,7 @@ class AuthController extends Controller
 
         return response()->json([
             'loggedIn' => true,
+            'role' => $user->role ?? 'registered',
             'account_removed' => !empty($user->removed_at),
             'removal_reason' => $user->removal_reason,
             'message' => !empty($user->removed_at) ? 'Your account has been removed.' : null
@@ -80,15 +83,19 @@ class AuthController extends Controller
         $user = $request->user();
         return response()->json([
             'success' => true,
-            'sftpUsername' => $user->username ?? 'sftp_' . strtolower(explode('@', $user->email)[0]),
-            'sftpPassword' => '*********'
+            'sftpUsername' => $user->sftp_username ?? 'Not set',
+            'sftpPassword' => $user->sftp_password ?? ''
         ]);
     }
 
     public function updateSftpPassword(Request $request)
     {
         $request->validate(['newPassword' => 'required|string|min:8']);
-        // Store SFTP password logic here - for now just returning success
+        
+        $user = $request->user();
+        $user->sftp_password = $request->newPassword;
+        $user->save();
+
         return response()->json(['success' => true, 'message' => 'SFTP password updated.']);
     }
 }

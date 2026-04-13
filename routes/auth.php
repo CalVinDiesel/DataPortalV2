@@ -16,10 +16,13 @@ Route::middleware('guest')->group(function () {
     Route::get('auth/google', [SocialiteController::class, 'redirectToGoogle'])->name('auth.google');
     Route::get('auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
 
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
+    Route::get('auth/microsoft', [SocialiteController::class, 'redirectToMicrosoft'])->name('auth.microsoft');
+    Route::get('auth/microsoft/callback', [SocialiteController::class, 'handleMicrosoftCallback']);
 
-    Route::post('register', [RegisteredUserController::class, 'store']);
+    // Open registration disabled - redirect to Waitlist Request Access
+    Route::get('register', function() {
+        return redirect()->route('request_access');
+    })->name('register');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');

@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets/') }}/" data-template="front-pages" data-bs-theme="light">
+<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets') }}/" data-template="front-pages" data-bs-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>New Project | 3DHub Data Portal</title>
-  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css">
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/pages/front-page.css">
-  <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
+  <script src="{{ asset('assets') }}/js/theme-init.js"></script>
   <script>
     (function () {
       window.userRole = '{{ Auth::user()->role }}';
@@ -59,7 +59,7 @@
       <div class="navbar navbar-expand-lg landing-navbar px-3">
         <a href="{{ route('landing') }}" class="app-brand-link d-flex align-items-center">
           <span class="app-brand-logo demo">
-            <img src="{{ asset('assets/') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;">
+            <img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;">
           </span>
           <span class="app-brand-text demo menu-text fw-bold ms-2 ps-1">3DHub</span>
         </a>
@@ -101,6 +101,10 @@
       <div class="text-center mb-10">
         <h2 class="display-5 fw-bold mb-3">Create New Project</h2>
         <p class="lead text-muted">Choose your preferred method to submit your geospatial data for processing.</p>
+        
+        @if(session('error'))
+          <div class="alert alert-danger mt-3">{{ session('error') }}</div>
+        @endif
       </div>
 
       <div class="row g-6 justify-content-center">
@@ -140,12 +144,12 @@
     </div>
   </section>
 
-  <script src="{{ asset('assets/') }}/vendor/libs/popper/popper.js"></script>
-  <script src="{{ asset('assets/') }}/vendor/js/bootstrap.js"></script>
-  <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
+  <script src="{{ asset('assets') }}/vendor/libs/popper/popper.js"></script>
+  <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
+  <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
   <script>
     document.getElementById('sftpCard').addEventListener('click', function() {
-      if (window.userRole === 'registered') {
+      if (window.userRole !== 'trusted' && window.userRole !== 'admin') {
         alert('Create project using SFTP is only available for trusted users. Please proceed with using Data Portal to create your project.');
       } else {
         window.location.href = '{{ route('upload_sftp') }}';

@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-assets-path="{{ asset('assets/') }}/" data-template="admin-data-portal" data-bs-theme="light">
+<html lang="en" dir="ltr" data-assets-path="{{ asset('assets') }}/" data-template="admin-data-portal" data-bs-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Manage Showcase - Admin | 3DHub</title>
-  <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
-  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/admin-responsive.css" />
-  <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
+  <script src="{{ asset('assets') }}/js/theme-init.js"></script>
+  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/admin-responsive.css" />
+  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 </head>
@@ -19,20 +19,20 @@
     <div class="layout-container">
       <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
         <div class="app-brand demo py-4">
-          <a href="index.html" class="app-brand-link d-flex align-items-center">
-            <span class="app-brand-logo demo me-2"><img src="{{ asset('assets/') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+          <a href="{{ route('admin_dashboard') }}" class="app-brand-link d-flex align-items-center">
+            <span class="app-brand-logo demo me-2"><img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
             <span class="app-brand-text demo menu-text fw-bold" style="font-size: 1.4em;">3DHub Admin</span>
           </a>
         </div>
         <div class="menu-inner-shadow"></div>
         <ul class="menu-inner py-1">
-          <li class="menu-item"><a href="index.html" class="menu-link"><i class="menu-icon tf-icons bx bx-home-circle"></i><div>Dashboard</div></a></li>
-          <li class="menu-item"><a href="add-3d-model.html" class="menu-link"><i class="menu-icon tf-icons bx bx-cube"></i><div>Add 3D Model</div></a></li>
-          <li class="menu-item"><a href="manage-map-pins.html" class="menu-link"><i class="menu-icon tf-icons bx bx-map-pin"></i><div>Manage Map Pins</div></a></li>
-          <li class="menu-item active"><a href="manage-showcase.html" class="menu-link"><i class="menu-icon tf-icons bx bx-grid-alt"></i><div>Manage Showcase</div></a></li>
-          <li class="menu-item"><a href="client-uploads.html" class="menu-link"><i class="menu-icon tf-icons bx bx-cloud-upload"></i><div>Client Uploads</div></a></li>
-          <li class="menu-item"><a href="manage-users.html" class="menu-link"><i class="menu-icon tf-icons bx bx-user"></i><div>Manage Users</div></a></li>
-          <li class="menu-item"><a href="../front-pages/{{ route('landing') }}" class="menu-link" target="_blank"><i class="menu-icon tf-icons bx bx-map"></i><div>View Portal</div></a></li>
+          <li class="menu-item"><a href="{{ route('admin_dashboard') }}" class="menu-link"><i class="menu-icon tf-icons bx bx-home-circle"></i><div>Dashboard</div></a></li>
+          <li class="menu-item"><a href="{{ route('admin.add_3d_model') }}" class="menu-link"><i class="menu-icon tf-icons bx bx-cube"></i><div>Add 3D Model</div></a></li>
+          <li class="menu-item"><a href="{{ route('admin.manage_map_pins') }}" class="menu-link"><i class="menu-icon tf-icons bx bx-map-pin"></i><div>Manage Map Pins</div></a></li>
+          <li class="menu-item active"><a href="{{ route('admin.manage_showcase') }}" class="menu-link"><i class="menu-icon tf-icons bx bx-grid-alt"></i><div>Manage Showcase</div></a></li>
+          <li class="menu-item"><a href="{{ route('admin.client_uploads') }}" class="menu-link"><i class="menu-icon tf-icons bx bx-cloud-upload"></i><div>Client Uploads</div></a></li>
+          <li class="menu-item"><a href="{{ route('admin.manage_users') }}" class="menu-link"><i class="menu-icon tf-icons bx bx-user"></i><div>Manage Users</div></a></li>
+          <li class="menu-item"><a href="{{ route('landing') }}" class="menu-link" target="_blank"><i class="menu-icon tf-icons bx bx-map"></i><div>View Portal</div></a></li>
         </ul>
       </aside>
       <div class="layout-page">
@@ -46,7 +46,7 @@
             <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="exportLocationsJsonBtn" title="Backfill data/locations.json from current database map pins">Export to locations.json</button>
             <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="renumberOrdersBtn" title="Fix order numbers to 0, 1, 2, …">Renumber orders</button>
             <button type="button" class="btn btn-sm btn-primary me-2" id="addToShowcaseBtn">Add to showcase</button>
-            <a href="index.html" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
+            <a href="{{ route('admin_dashboard') }}" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
           </div>
         </nav>
         <div class="content-wrapper">
@@ -79,7 +79,7 @@
       <div class="modal-content">
         <div class="modal-header"><h5 class="modal-title">Add to showcase</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
-          <p class="text-muted small">Choose a map pin to show in the landing page showcase. It must exist in <a href="manage-map-pins.html">Manage Map Pins</a> first.</p>
+          <p class="text-muted small">Choose a map pin to show in the landing page showcase. It must exist in <a href="{{ route('admin.manage_map_pins') }}">Manage Map Pins</a> first.</p>
           <label class="form-label" for="addMapDataId">Map location</label>
           <select class="form-select" id="addMapDataId">
             <option value="">-- Select a location --</option>
@@ -129,7 +129,7 @@
           var tbody = document.getElementById('showcaseTableBody');
           existingShowcaseMapIds = new Set((Array.isArray(rows) ? rows : []).map(function (r) { return (r && r.map_data_id) ? String(r.map_data_id) : ''; }).filter(Boolean));
           if (!Array.isArray(rows) || rows.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No showcase items yet. Add map pins from <a href="manage-map-pins.html">Manage Map Pins</a>, then add them here.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No showcase items yet. Add map pins from <a href="{{ route('admin.manage_map_pins') }}">Manage Map Pins</a>, then add them here.</td></tr>';
             return;
           }
           tbody.innerHTML = rows.map(function (r) {
@@ -240,7 +240,7 @@
       loadShowcase();
     })();
   </script>
-  <script src="{{ asset('assets/') }}/js/admin-responsive.js"></script>
-  <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
+  <script src="{{ asset('assets') }}/js/admin-responsive.js"></script>
+  <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
 </body>
 </html>

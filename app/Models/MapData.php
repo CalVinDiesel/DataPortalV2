@@ -10,6 +10,7 @@ class MapData extends Model
     protected $primaryKey = 'mapDataID';
     public $incrementing = false;
     protected $keyType = 'string';
+    public $timestamps = false;
 
     protected $fillable = [
         'mapDataID',

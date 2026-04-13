@@ -21,7 +21,7 @@
   class=" layout-navbar-fixed layout-wide "
   dir="ltr"
   data-skin="default"
-  data-assets-path="{{ asset('assets/') }}/"
+  data-assets-path="{{ asset('assets') }}/"
   data-template="front-pages"
   data-bs-theme="light">
   <head>
@@ -37,7 +37,7 @@
     <meta property="og:title" content="Sneat Bootstrap 5 Dashboard PRO by ThemeSelection" />
     <meta property="og:type" content="product" />
     <meta property="og:url" content="https://themeselection.com/item/sneat-dashboard-pro-bootstrap/" />
-    <meta property="og:image" content="{{ asset('assets/') }}/img/front-pages/landing-page/3DHub%20logo1.png" />
+    <meta property="og:image" content="{{ asset('assets') }}/img/front-pages/landing-page/3DHub%20logo1.png" />
     <meta property="og:description" content="Sneat is the best bootstrap 5 dashboard for responsive web apps. Streamline your app development process with ease." />
     <meta property="og:site_name" content="ThemeSelection" />
     <link rel="canonical" href="https://themeselection.com/item/sneat-dashboard-pro-bootstrap/" />
@@ -47,10 +47,10 @@
          It was injecting OptinMonster (omappapi.com) which consumed 4,542ms
          of CPU and is the #1 cause of your map lag. -->
 
-    <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
+    <script src="{{ asset('assets') }}/js/theme-init.js"></script>
   
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico" />
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
   
     <!-- Fonts — preconnect first for faster DNS -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -58,24 +58,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
   
     <!-- Icons -->
-    <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css" />
+    <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css" />
   
     <!-- Core CSS -->
-    <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/libs/pickr/pickr-themes.css" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/client-responsive.css" />
-    <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/pages/front-page.css" />
+    <link rel="stylesheet" href="{{ asset('assets') }}/vendor/libs/pickr/pickr-themes.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/client-responsive.css" />
+    <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css" />
   
     <!-- Vendor CSS -->
-    <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/libs/nouislider/nouislider.css" />
-    <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/libs/swiper/swiper.css" />
+    <link rel="stylesheet" href="{{ asset('assets') }}/vendor/libs/nouislider/nouislider.css" />
+    <link rel="stylesheet" href="{{ asset('assets') }}/vendor/libs/swiper/swiper.css" />
   
     <!-- Page CSS -->
-    <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/pages/front-page-landing.css" />
+    <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page-landing.css" />
   
     <!-- Custom Cesium Map CSS -->
-    <link rel="stylesheet" href="{{ asset('assets/') }}/css/cesium-map.css" />
+    <link rel="stylesheet" href="{{ asset('assets') }}/css/cesium-map.css" />
     <!-- Ensure 3DHub logo is fully visible and not clipped by navbar/footer brand box -->
     <style>
       .navbar-brand.app-brand .app-brand-link { overflow: visible; display: flex; align-items: center; }
@@ -126,19 +126,19 @@
   
     <!-- Custom Cesium Map JS
          ✅ KEPT: defer maintained — loads after HTML is parsed, order preserved -->
-    <script src="{{ asset('assets/') }}/js/cesium-map.js" defer></script>
-    <script src="{{ asset('assets/') }}/js/cesium-map-controls.js" defer></script>
-    <script src="{{ asset('assets/') }}/js/cesium-map-markers.js" defer></script>
+    <script src="{{ asset('assets') }}/js/cesium-map.js" defer></script>
+    <script src="{{ asset('assets') }}/js/cesium-map-controls.js" defer></script>
+    <script src="{{ asset('assets') }}/js/cesium-map-markers.js" defer></script>
   
     <!-- Helpers -->
-    <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
+    <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
   
     <!-- ✅ REMOVED: template-customizer.js
          REASON: This is a theme development tool only — runs unnecessary
          background scripts on your live production portal. Safe to remove. -->
   
     <!-- Theme Config -->
-    <script src="{{ asset('assets/') }}/js/front-config.js"></script>
+    <script src="{{ asset('assets') }}/js/front-config.js"></script>
   
   </head>
 
@@ -151,8 +151,8 @@
     
 
 
-<script src="{{ asset('assets/') }}/vendor/js/dropdown-hover.js"></script>
-  <script src="{{ asset('assets/') }}/vendor/js/mega-dropdown.js"></script><!-- Navbar: Start -->
+<script src="{{ asset('assets') }}/vendor/js/dropdown-hover.js"></script>
+  <script src="{{ asset('assets') }}/vendor/js/mega-dropdown.js"></script><!-- Navbar: Start -->
 <nav class="layout-navbar shadow-none py-0">
   <div class="container">
     <div class="navbar navbar-expand-lg landing-navbar px-3 px-md-8">
@@ -165,7 +165,7 @@
         <!-- Mobile menu toggle: End-->
         <a href="{{ route('landing') }}" class="app-brand-link">
           <span class="app-brand-logo demo">
-            <img src="{{ asset('assets/') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub Logo" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;" />
+            <img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub Logo" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;" />
           </span>
           <span class="app-brand-text demo menu-text fw-bold ms-2 ps-1">3DHub</span>
         </a>
@@ -298,7 +298,7 @@
     <!-- Hero: Start -->
     <section id="hero-animation">
       <div id="landingHero" class="section-py landing-hero position-relative">
-        <img src="{{ asset('assets/') }}/img/front-pages/backgrounds/hero-bg.png" alt="hero background" class="position-absolute top-0 start-50 translate-middle-x object-fit-cover w-100 h-100" data-speed="1"/>
+        <img src="{{ asset('assets') }}/img/front-pages/backgrounds/hero-bg.png" alt="hero background" class="position-absolute top-0 start-50 translate-middle-x object-fit-cover w-100 h-100" data-speed="1"/>
         <div class="container">
           <div class="hero-text-box text-center position-relative">
             <h1 class="text-primary hero-title display-6 fw-extrabold">One Dashboard to Get All Your 3D Model Data</h1>
@@ -367,7 +367,7 @@
         <h4 class="text-center mb-1">
           <span class="position-relative fw-extrabold z-1"
             >Explore 3D Models
-            <img src="{{ asset('assets/') }}/img/front-pages/icons/section-title-icon.png" alt="" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
+            <img src="{{ asset('assets') }}/img/front-pages/icons/section-title-icon.png" alt="" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
           </span>
           for each location on the map
         </h4>
@@ -446,7 +446,7 @@
             <h4 class="mb-1">
               <span class="position-relative fw-extrabold z-1"
                 >All About Our Partners
-                <img src="{{ asset('assets/') }}/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
+                <img src="{{ asset('assets') }}/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
               </span>
             </h4>
             <p class="mb-5 mb-md-12">
@@ -462,7 +462,7 @@
                     <div class="card h-100">
                       <div class="card-body text-body d-flex flex-column justify-content-between h-100">
                         <div class="mb-4">
-                          <img src="{{ asset('assets/') }}/img/front-pages/branding/Get-3D-edited.png" style="width: 50px; height: 50px; display: inline-block;" alt="client logo" class="client-logo img-fluid" px="500"/>
+                          <img src="{{ asset('assets') }}/img/front-pages/branding/Get-3D-edited.png" style="width: 50px; height: 50px; display: inline-block;" alt="client logo" class="client-logo img-fluid" px="500"/>
                         </div>
                         <p>“Get3D providing advanced 3D solutions for various industries. Their expertise in photogrammetry, mapping, and AI offer accurate and innovative tools for digitizing spaces.”</p>
                         <div class="text-warning mb-4">
@@ -474,7 +474,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                           <div class="avatar me-3 avatar-sm">
-                            <img src="{{ asset('assets/') }}/img/avatars/1.png" alt="Avatar" class="rounded-circle" />
+                            <img src="{{ asset('assets') }}/img/avatars/1.png" alt="Avatar" class="rounded-circle" />
                           </div>
                           <div>
                             <h6 class="mb-0">Cecilia Payne</h6>
@@ -488,7 +488,7 @@
                     <div class="card h-100">
                       <div class="card-body text-body d-flex flex-column justify-content-between h-100">
                         <div class="mb-4">
-                          <img src="{{ asset('assets/') }}/img/front-pages/branding/FMESafeSoftware.png" style="width: 60px; height: 60px; display: inline-block;" alt="client logo" class="client-logo img-fluid"/>
+                          <img src="{{ asset('assets') }}/img/front-pages/branding/FMESafeSoftware.png" style="width: 60px; height: 60px; display: inline-block;" alt="client logo" class="client-logo img-fluid"/>
                         </div>
                         <p>“The FME Platform serves as a no-code solution, seamlessly integrating all your data and ensuring it flows effortlessly to your desired destination, on demand.”</p>
                         <div class="text-warning mb-4">
@@ -500,7 +500,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                           <div class="avatar me-3 avatar-sm">
-                            <img src="{{ asset('assets/') }}/img/avatars/2.png" alt="Avatar" class="rounded-circle" />
+                            <img src="{{ asset('assets') }}/img/avatars/2.png" alt="Avatar" class="rounded-circle" />
                           </div>
                           <div>
                             <h6 class="mb-0">Eugenia Moore</h6>
@@ -514,7 +514,7 @@
                     <div class="card h-100">
                       <div class="card-body text-body d-flex flex-column justify-content-between h-100">
                         <div class="mb-4">
-                          <img src="{{ asset('assets/') }}/img/front-pages/branding/HexagonGeospatial.png" style="width: 75px; height: 75px; display: inline-block;" alt="client logo" class="client-logo img-fluid" />
+                          <img src="{{ asset('assets') }}/img/front-pages/branding/HexagonGeospatial.png" style="width: 75px; height: 75px; display: inline-block;" alt="client logo" class="client-logo img-fluid" />
                         </div>
                         <p>Hexagon Geospatial Solution leads the global market in digital reality solutions, seamlessly integrating sensor, software, and autonomous technologies.</p>
                         <div class="text-warning mb-4">
@@ -526,7 +526,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                           <div class="avatar me-3 avatar-sm">
-                            <img src="{{ asset('assets/') }}/img/avatars/3.png" alt="Avatar" class="rounded-circle" />
+                            <img src="{{ asset('assets') }}/img/avatars/3.png" alt="Avatar" class="rounded-circle" />
                           </div>
                           <div>
                             <h6 class="mb-0">Curtis Fletcher</h6>
@@ -540,7 +540,7 @@
                     <div class="card h-100">
                       <div class="card-body text-body d-flex flex-column justify-content-between h-100">
                         <div class="mb-4">
-                          <img src="{{ asset('assets/') }}/img/front-pages/branding/qgis-logo.png" style="width: 55px; height: 55px; display: inline-block;" alt="client logo" class="client-logo img-fluid" />
+                          <img src="{{ asset('assets') }}/img/front-pages/branding/qgis-logo.png" style="width: 55px; height: 55px; display: inline-block;" alt="client logo" class="client-logo img-fluid" />
                         </div>
                         <p>Free and Open Source Software for Geospatial (FOSS4G) acts as both a web-based application and a platform, streamlining the development of geospatial information systems (GIS) solutions.</p>
                         <div class="text-warning mb-4">
@@ -552,7 +552,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                           <div class="avatar me-3 avatar-sm">
-                            <img src="{{ asset('assets/') }}/img/avatars/4.png" alt="Avatar" class="rounded-circle" />
+                            <img src="{{ asset('assets') }}/img/avatars/4.png" alt="Avatar" class="rounded-circle" />
                           </div>
                           <div>
                             <h6 class="mb-0">Sara Smith</h6>
@@ -567,7 +567,7 @@
                   <div class="card h-100">
                       <div class="card-body text-body d-flex flex-column justify-content-between h-100">
                         <div class="mb-4">
-                          <img src="{{ asset('assets/') }}/img/front-pages/branding/logo-5.png" alt="client logo" class="client-logo img-fluid" />
+                          <img src="{{ asset('assets') }}/img/front-pages/branding/logo-5.png" alt="client logo" class="client-logo img-fluid" />
                         </div>
                         <p>“I've never used a theme as versatile and flexible as Vuexy. It's my go to for building dashboard sites on almost any project.”</p>
                         <div class="text-warning mb-4">
@@ -579,7 +579,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                           <div class="avatar me-3 avatar-sm">
-                            <img src="{{ asset('assets/') }}/img/avatars/5.png" alt="Avatar" class="rounded-circle" />
+                            <img src="{{ asset('assets') }}/img/avatars/5.png" alt="Avatar" class="rounded-circle" />
                           </div>
                           <div>
                             <h6 class="mb-0">Eugenia Moore</h6>
@@ -594,7 +594,7 @@
                     <div class="card h-100">
                       <div class="card-body text-body d-flex flex-column justify-content-between h-100">
                         <div class="mb-4">
-                          <img src="{{ asset('assets/') }}/img/front-pages/branding/logo-6.png" alt="client logo" class="client-logo img-fluid" />
+                          <img src="{{ asset('assets') }}/img/front-pages/branding/logo-6.png" alt="client logo" class="client-logo img-fluid" />
                         </div>
                         <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Veniam nemo mollitia, ad eum officia numquam nostrum repellendus consequuntur!</p>
                         <div class="text-warning mb-4">
@@ -606,7 +606,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                           <div class="avatar me-3 avatar-sm">
-                            <img src="{{ asset('assets/') }}/img/avatars/1.png" alt="Avatar" class="rounded-circle" />
+                            <img src="{{ asset('assets') }}/img/avatars/1.png" alt="Avatar" class="rounded-circle" />
                           </div>
                           <div>
                             <h6 class="mb-0">Sara Smith</h6>
@@ -630,19 +630,19 @@
           <div class="swiper" id="swiper-clients-logos">
             <div class="swiper-wrapper">
               <div class="swiper-slide">
-                <img src="{{ asset('assets/') }}/img/front-pages/branding/logo_1-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_1-light.png" data-app-dark-img="front-pages/branding/logo_1-dark.png" />
+                <img src="{{ asset('assets') }}/img/front-pages/branding/logo_1-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_1-light.png" data-app-dark-img="front-pages/branding/logo_1-dark.png" />
               </div>
               <div class="swiper-slide">
-                <img src="{{ asset('assets/') }}/img/front-pages/branding/logo_2-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_2-light.png" data-app-dark-img="front-pages/branding/logo_2-dark.png" />
+                <img src="{{ asset('assets') }}/img/front-pages/branding/logo_2-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_2-light.png" data-app-dark-img="front-pages/branding/logo_2-dark.png" />
               </div>
               <div class="swiper-slide">
-                <img src="{{ asset('assets/') }}/img/front-pages/branding/logo_3-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_3-light.png" data-app-dark-img="front-pages/branding/logo_3-dark.png" />
+                <img src="{{ asset('assets') }}/img/front-pages/branding/logo_3-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_3-light.png" data-app-dark-img="front-pages/branding/logo_3-dark.png" />
               </div>
               <div class="swiper-slide">
-                <img src="{{ asset('assets/') }}/img/front-pages/branding/logo_4-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_4-light.png" data-app-dark-img="front-pages/branding/logo_4-dark.png" />
+                <img src="{{ asset('assets') }}/img/front-pages/branding/logo_4-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_4-light.png" data-app-dark-img="front-pages/branding/logo_4-dark.png" />
               </div>
               <div class="swiper-slide">
-                <img src="{{ asset('assets/') }}/img/front-pages/branding/logo_5-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_5-light.png" data-app-dark-img="front-pages/branding/logo_5-dark.png" />
+                <img src="{{ asset('assets') }}/img/front-pages/branding/logo_5-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_5-light.png" data-app-dark-img="front-pages/branding/logo_5-dark.png" />
               </div>
             </div>
           </div>
@@ -689,7 +689,7 @@
         <h4 class="text-center mb-1">
           <span class="position-relative fw-extrabold z-1"
             >Tailored pricing plans
-            <img src="{{ asset('assets/') }}/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
+            <img src="{{ asset('assets') }}/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
           </span>
           that you need
         </h4>
@@ -699,8 +699,8 @@
             <div class="card pricing-plan-card">
               <div class="card-header">
                 <div class="text-center">
-                  <img src="{{ asset('assets/') }}/img/front-pages/icons/paper-airplane.png" alt="paper airplane icon" class="mb-8 pb-2" />
-                  <h4 class="mb-0">Sign-up(Free)</h4>
+                  <img src="{{ asset('assets') }}/img/front-pages/icons/paper-airplane.png" alt="paper airplane icon" class="mb-8 pb-2" />
+                  <h4 class="mb-0">Request Access(Free)</h4>
                   <div class="d-flex align-items-center justify-content-center">
                     <span class="price-monthly h2 text-primary fw-extrabold mb-0">0 Token Required</span>
                     <sub class="h6 text-body-secondary mb-n1 ms-1"></sub>
@@ -733,7 +733,7 @@
             <div class="card pricing-plan-card">
               <div class="card-header">
                 <div class="text-center">
-                  <img src="{{ asset('assets/') }}/img/front-pages/icons/plane.png" alt="plane icon" class="mb-8 pb-2" />
+                  <img src="{{ asset('assets') }}/img/front-pages/icons/plane.png" alt="plane icon" class="mb-8 pb-2" />
                   <h4 class="mb-0">Upload Raw Data</h4>
                   <div class="d-flex align-items-center justify-content-center">
                     <span class="price-monthly h2 text-primary fw-extrabold mb-0">0 Token Required</span>
@@ -767,7 +767,7 @@
             <div class="card pricing-plan-card">
               <div class="card-header">
                 <div class="text-center">
-                  <img src="{{ asset('assets/') }}/img/front-pages/icons/shuttle-rocket.png" alt="shuttle rocket icon" class="mb-8 pb-2" />
+                  <img src="{{ asset('assets') }}/img/front-pages/icons/shuttle-rocket.png" alt="shuttle rocket icon" class="mb-8 pb-2" />
                   <h4 class="mb-0">Reload Token</h4>
                   <div class="d-flex align-items-center justify-content-center">
                     <span class="price-monthly h2 text-primary fw-extrabold mb-0">RM2</span>
@@ -812,14 +812,14 @@
           Frequently asked
           <span class="position-relative fw-extrabold z-1"
             >questions
-            <img src="{{ asset('assets/') }}/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
+            <img src="{{ asset('assets') }}/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
           </span>
         </h4>
         <p class="text-center mb-12 pb-md-4">Browse through these FAQs to find answers to commonly asked questions.</p>
         <div class="row gy-12 align-items-center">
           <div class="col-lg-5">
             <div class="text-center">
-              <img src="{{ asset('assets/') }}/img/front-pages/landing-page/faq-boy-with-logos.png" alt="faq boy with logos" class="faq-image" />
+              <img src="{{ asset('assets') }}/img/front-pages/landing-page/faq-boy-with-logos.png" alt="faq boy with logos" class="faq-image" />
             </div>
           </div>
           <div class="col-lg-7">
@@ -884,7 +884,7 @@
         <h4 class="text-center mb-1">
           <span class="position-relative fw-extrabold z-1"
             >Let's work
-            <img src="{{ asset('assets/') }}/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
+            <img src="{{ asset('assets') }}/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
           </span>
           together
         </h4>
@@ -892,8 +892,8 @@
         <div class="row g-6">
           <div class="col-lg-5">
             <div class="contact-img-box position-relative border p-2 h-100">
-              <img src="{{ asset('assets/') }}/img/front-pages/icons/contact-border.png" alt="contact border" class="contact-border-img position-absolute d-none d-lg-block scaleX-n1-rtl" />
-              <img src="{{ asset('assets/') }}/img/front-pages/landing-page/contact-customer-service.png" alt="contact customer service" class="contact-img w-100 scaleX-n1-rtl" />
+              <img src="{{ asset('assets') }}/img/front-pages/icons/contact-border.png" alt="contact border" class="contact-border-img position-absolute d-none d-lg-block scaleX-n1-rtl" />
+              <img src="{{ asset('assets') }}/img/front-pages/landing-page/contact-customer-service.png" alt="contact customer service" class="contact-img w-100 scaleX-n1-rtl" />
               <div class="p-4 pb-2">
                 <div class="row g-4">
                   <div class="col-md-6 col-lg-12 col-xl-6">
@@ -965,7 +965,7 @@
       <div class="mb-2 mb-md-0 d-flex align-items-center flex-wrap justify-content-center justify-content-md-start gap-2">
         <a href="{{ route('landing') }}" class="app-brand-link d-flex align-items-center">
           <span class="app-brand-logo demo">
-            <img src="{{ asset('assets/') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; filter: brightness(3.5) contrast(1.2) drop-shadow(0 0 2px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));" />
+            <img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; filter: brightness(3.5) contrast(1.2) drop-shadow(0 0 2px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));" />
           </span>
         </a>
         <span class="footer-bottom-text mb-0">© 3D Hub Developed by Temadigital</span>
@@ -1010,30 +1010,30 @@
     <!-- build:js assets/vendor/js/theme.js  -->
     
     
-    <script src="{{ asset('assets/') }}/vendor/libs/popper/popper.js"></script>
-    <script src="{{ asset('assets/') }}/vendor/js/bootstrap.js"></script>
-    <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
-    <script src="{{ asset('assets/') }}/vendor/libs/@algolia/autocomplete-js.js"></script>
+    <script src="{{ asset('assets') }}/vendor/libs/popper/popper.js"></script>
+    <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
+    <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
+    <script src="{{ asset('assets') }}/vendor/libs/@algolia/autocomplete-js.js"></script>
 
     
       
-      <script src="{{ asset('assets/') }}/vendor/libs/pickr/pickr.js"></script>
+      <script src="{{ asset('assets') }}/vendor/libs/pickr/pickr.js"></script>
     
 
     
     <!-- endbuild -->
 
     <!-- Vendors JS -->
-    <script src="{{ asset('assets/') }}/vendor/libs/nouislider/nouislider.js"></script>
-  <script src="{{ asset('assets/') }}/vendor/libs/swiper/swiper.js"></script>
+    <script src="{{ asset('assets') }}/vendor/libs/nouislider/nouislider.js"></script>
+  <script src="{{ asset('assets') }}/vendor/libs/swiper/swiper.js"></script>
 
     <!-- Main JS -->
     
-      <script src="{{ asset('assets/') }}/js/front-main.js"></script>
+      <script src="{{ asset('assets') }}/js/front-main.js"></script>
     
 
     <!-- Page JS -->
-    <script src="{{ asset('assets/') }}/js/front-page-landing.js"></script>
+    <script src="{{ asset('assets') }}/js/front-page-landing.js"></script>
 
     <!-- Auth state: Set from Laravel Blade -->
     <script>

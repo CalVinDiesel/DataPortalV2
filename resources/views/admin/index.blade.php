@@ -1,23 +1,23 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-assets-path="{{ asset('assets/') }}/" data-template="admin-data-portal" data-bs-theme="light">
+<html lang="en" dir="ltr" data-assets-path="{{ asset('assets') }}/" data-template="admin-data-portal" data-bs-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin - Data Portal | 3DHub</title>
-  <script src="{{ asset('assets/') }}/js/theme-init.js"></script>
-  <link rel="icon" type="image/x-icon" href="{{ asset('assets/') }}/img/favicon/favicon.ico" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/fonts/iconify-icons.css" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/vendor/css/core.css" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/demo.css" />
-  <link rel="stylesheet" href="{{ asset('assets/') }}/css/admin-responsive.css" />
-  <script src="{{ asset('assets/') }}/vendor/js/helpers.js"></script>
-  <script src="{{ asset('assets/') }}/vendor/js/bootstrap.js"></script>
+  <script src="{{ asset('assets') }}/js/theme-init.js"></script>
+  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css" />
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/admin-responsive.css" />
+  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
+  <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
   <script>
     (function() {
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
       fetch(AUTH_API + '/api/auth/me', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(d) {
-        if (!d.loggedIn || d.role !== 'admin') window.location.href = '/html/front-pages/{{ route('landing') }}?error=admin_only';
-      }).catch(function() { window.location.href = '/html/front-pages/{{ route('landing') }}'; });
+        if (!d.loggedIn || d.role !== 'admin') window.location.href = '{{ route('landing') }}?error=admin_only';
+      }).catch(function() { window.location.href = '{{ route('landing') }}'; });
     })();
   </script>
 </head>
@@ -26,51 +26,51 @@
     <div class="layout-container">
       <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
         <div class="app-brand demo py-4 mb-2" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1.5rem !important;">
-          <a href="index.html" class="app-brand-link d-flex align-items-center">
-            <span class="app-brand-logo demo me-2"><img src="{{ asset('assets/') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+          <a href="{{ route('admin_dashboard') }}" class="app-brand-link d-flex align-items-center">
+            <span class="app-brand-logo demo me-2"><img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
             <span class="app-brand-text demo menu-text fw-bold" style="font-size: 1.4em;">3DHub Admin</span>
           </a>
         </div>
         <div class="menu-inner-shadow"></div>
         <ul class="menu-inner py-3">
           <li class="menu-item active">
-            <a href="index.html" class="menu-link">
+            <a href="{{ route('admin_dashboard') }}" class="menu-link">
               <i class="menu-icon tf-icons bx bx-home-circle"></i>
               <div>Dashboard</div>
             </a>
           </li>
           <li class="menu-item">
-            <a href="add-3d-model.html" class="menu-link">
+            <a href="{{ route('admin.add_3d_model') }}" class="menu-link">
               <i class="menu-icon tf-icons bx bx-cube"></i>
               <div>Add 3D Model</div>
             </a>
           </li>
           <li class="menu-item">
-            <a href="manage-map-pins.html" class="menu-link">
+            <a href="{{ route('admin.manage_map_pins') }}" class="menu-link">
               <i class="menu-icon tf-icons bx bx-map-pin"></i>
               <div>Manage Map Pins</div>
             </a>
           </li>
           <li class="menu-item">
-            <a href="manage-showcase.html" class="menu-link">
+            <a href="{{ route('admin.manage_showcase') }}" class="menu-link">
               <i class="menu-icon tf-icons bx bx-grid-alt"></i>
               <div>Manage Showcase</div>
             </a>
           </li>
           <li class="menu-item">
-            <a href="client-uploads.html" class="menu-link">
+            <a href="{{ route('admin.client_uploads') }}" class="menu-link">
               <i class="menu-icon tf-icons bx bx-cloud-upload"></i>
               <div>Client Uploads</div>
             </a>
           </li>
           <li class="menu-item">
-            <a href="manage-users.html" class="menu-link">
+            <a href="{{ route('admin.manage_users') }}" class="menu-link">
               <i class="menu-icon tf-icons bx bx-user"></i>
               <div>Manage Users</div>
             </a>
           </li>
           <li class="menu-item">
-            <a href="../front-pages/{{ route('landing') }}" class="menu-link" target="_blank">
+            <a href="{{ route('landing') }}" class="menu-link" target="_blank">
               <i class="menu-icon tf-icons bx bx-map"></i>
               <div>View Portal</div>
             </a>
@@ -117,7 +117,7 @@
             <h4 class="fw-bold mb-4">Admin Dashboard</h4>
             <div class="row">
               <div class="col-md-6 col-lg-4 mb-4">
-                <a href="add-3d-model.html" class="card text-decoration-none h-100">
+                <a href="{{ route('admin.add_3d_model') }}" class="card text-decoration-none h-100">
                   <div class="card-body">
                     <div class="d-flex align-items-center">
                       <div class="avatar avatar-lg me-3">
@@ -132,7 +132,7 @@
                 </a>
               </div>
               <div class="col-md-6 col-lg-4 mb-4">
-                <a href="manage-map-pins.html" class="card text-decoration-none h-100">
+                <a href="{{ route('admin.manage_map_pins') }}" class="card text-decoration-none h-100">
                   <div class="card-body">
                     <div class="d-flex align-items-center">
                       <div class="avatar avatar-lg me-3">
@@ -147,7 +147,7 @@
                 </a>
               </div>
               <div class="col-md-6 col-lg-4 mb-4">
-                <a href="manage-showcase.html" class="card text-decoration-none h-100">
+                <a href="{{ route('admin.manage_showcase') }}" class="card text-decoration-none h-100">
                   <div class="card-body">
                     <div class="d-flex align-items-center">
                       <div class="avatar avatar-lg me-3">
@@ -162,7 +162,7 @@
                 </a>
               </div>
               <div class="col-md-6 col-lg-4 mb-4">
-                <a href="client-uploads.html" class="card text-decoration-none h-100">
+                <a href="{{ route('admin.client_uploads') }}" class="card text-decoration-none h-100">
                   <div class="card-body">
                     <div class="d-flex align-items-center">
                       <div class="avatar avatar-lg me-3">
@@ -177,7 +177,7 @@
                 </a>
               </div>
               <div class="col-md-6 col-lg-4 mb-4">
-                <a href="manage-users.html" class="card text-decoration-none h-100">
+                <a href="{{ route('admin.manage_users') }}" class="card text-decoration-none h-100">
                   <div class="card-body">
                     <div class="d-flex align-items-center">
                       <div class="avatar avatar-lg me-3">
@@ -203,7 +203,7 @@
       </div>
     </div>
   </div>
-  <script src="{{ asset('assets/') }}/js/admin-responsive.js"></script>
-  <script src="{{ asset('assets/') }}/js/theme-switcher.js"></script>
+  <script src="{{ asset('assets') }}/js/admin-responsive.js"></script>
+  <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
 </body>
 </html>

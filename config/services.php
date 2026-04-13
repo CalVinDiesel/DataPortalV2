@@ -41,6 +41,13 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URL'),
     ],
 
+    'microsoft' => [
+        'client_id' => env('MICROSOFT_CLIENT_ID'),
+        'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
+        'redirect' => env('MICROSOFT_REDIRECT_URL'),
+        'tenant' => env('MICROSOFT_TENANT_ID', 'common'),
+    ],
+
     'cloudinary' => [
         'cloud_name' => env('CLOUDINARY_CLOUD_NAME', ''),
         'api_key'    => env('CLOUDINARY_API_KEY', ''),
