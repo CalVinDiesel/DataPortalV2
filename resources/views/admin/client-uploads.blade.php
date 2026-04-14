@@ -17,7 +17,7 @@
     (function() {
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
       fetch(AUTH_API + '/api/auth/me', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(d) {
-        if (!d.loggedIn || d.role !== 'admin') window.location.href = '{{ route('landing') }}?error=admin_only';
+        if (!d.loggedIn || (d.role !== 'admin' && d.role !== 'superadmin')) window.location.href = '{{ route('landing') }}?error=admin_only';
       }).catch(function() { window.location.href = '{{ route('landing') }}'; });
     })();
   </script>

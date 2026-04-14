@@ -37,25 +37,36 @@ class SetupAdminCommand extends Command
         $user = User::where('email', $email)->first();
 
         if ($user) {
-            $user->role = 'admin';
+            $user->role = 'superadmin';
             $user->is_active = true; 
+            
+            // Ensure SFTP credentials exist
+            if (empty($user->sftp_username)) {
+                $user->sftp_username = Str::replace(' ', '', $user->name) . '_' . Str::lower(Str::random(8));
+            }
+            if (empty($user->sftp_password)) {
+                $user->sftp_password = Str::random(12);
+            }
+
             // In case the developer wants to auto-reset the password when updating env
             if (env('SUPER_ADMIN_FORCE_PASSWORD', false)) {
                 $user->password = Hash::make($password);
             }
             $user->save();
-            $this->info("Successfully updated existing user ({$email}) to super admin role.");
+            $this->info("Successfully updated existing user ({$email}) to superadmin role.");
         } else {
             $user = User::create([
                 'name' => $name,
                 'email' => $email,
                 'username' => $username,
                 'password' => Hash::make($password),
-                'role' => 'admin',
+                'role' => 'superadmin',
                 'is_active' => true,
-                'provider' => 'local'
+                'provider' => 'local',
+                'sftp_username' => Str::replace(' ', '', $name) . '_' . Str::lower(Str::random(8)),
+                'sftp_password' => Str::random(12),
             ]);
-            $this->info("Successfully created super admin account ({$email}).");
+            $this->info("Successfully created superadmin account ({$email}).");
         }
     }
 }

@@ -363,7 +363,7 @@
             </div>
           </li>
           <li class="nav-item">
-            <a class="nav-link fw-medium" href="/html/admin-data-portal/index.html" target="_blank">Admin</a>
+            <a class="nav-link fw-medium" href="{{ route('admin_dashboard') }}" target="_blank">Admin</a>
           </li>
         </ul>
       </div>

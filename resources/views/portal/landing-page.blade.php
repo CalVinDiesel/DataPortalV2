@@ -1076,7 +1076,7 @@
             getStartedBtn.addEventListener('click', function(e) {
               var role = window.__authRole || 'registered';
               var loggedIn = window.__authLoggedIn;
-              if (role === 'admin') {
+              if (role === 'admin' || role === 'superadmin') {
                 e.preventDefault();
                 var modal = new bootstrap.Modal(document.getElementById('getStartedAdminModal'));
                 modal.show();
@@ -1095,7 +1095,7 @@
               modal.show();
               return;
             }
-            if (role === 'admin') {
+            if (role === 'admin' || role === 'superadmin') {
               var modal = new bootstrap.Modal(document.getElementById('subscribeAdminModal'));
               modal.show();
               return;

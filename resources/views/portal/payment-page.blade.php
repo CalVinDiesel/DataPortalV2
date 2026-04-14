@@ -137,7 +137,7 @@
             window.location.href = '/html/front-pages/{{ route('login') }}';
             return;
           }
-          if (!d.loggedIn || (d.role !== 'registered' && d.role !== 'trusted' && d.role !== 'admin')) {
+          if (!d.loggedIn || (d.role !== 'registered' && d.role !== 'trusted' && d.role !== 'admin' && d.role !== 'superadmin')) {
             window.__authRequired = true;
             window.__landingUrl = LANDING + (d.loggedIn ? '?message=login_required' : '');
             function showPaymentAuthPrompt() {
@@ -161,7 +161,7 @@
           if (emailEl && d.email) emailEl.textContent = d.email;
           var navUpload = document.getElementById('navUpload');
           var navUploadMobile = document.querySelectorAll('.navUpload-mobile');
-          if (d.role === 'registered' || d.role === 'trusted' || d.role === 'admin') {
+          if (d.role === 'registered' || d.role === 'trusted' || d.role === 'admin' || d.role === 'superadmin') {
             if (navUpload) navUpload.style.display = '';
             navUploadMobile.forEach(function (el) { el.style.display = ''; });
           } else {
@@ -169,7 +169,7 @@
             navUploadMobile.forEach(function (el) { el.style.display = 'none'; });
           }
           var navAdmin = document.getElementById('navAdmin');
-          if (navAdmin) navAdmin.style.display = d.role === 'admin' ? '' : 'none';
+          if (navAdmin) navAdmin.style.display = (d.role === 'admin' || d.role === 'superadmin') ? '' : 'none';
           var navSubscriberBtn = document.getElementById('navSubscriberBtn');
           if (navSubscriberBtn) navSubscriberBtn.style.display = 'none';
         }).catch(function() {});
@@ -286,7 +286,7 @@
             </div>
           </li>
           <li class="nav-item" id="navAdmin" style="display:none;">
-            <a class="nav-link fw-medium" href="/html/admin-data-portal/index.html" target="_blank">Admin</a>
+            <a class="nav-link fw-medium" href="{{ route('admin_dashboard') }}" target="_blank">Admin</a>
           </li>
         </ul>
       </div>

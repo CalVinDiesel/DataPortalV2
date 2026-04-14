@@ -23,11 +23,19 @@ class AdminUserController extends Controller
 
     public function promote(Request $request)
     {
+        \Illuminate\Support\Facades\Gate::authorize('superadmin');
+
         $request->validate([
             'email' => 'required|email'
         ]);
 
         $user = User::where('email', $request->email)->first();
+
+        // Prevent modifying the base Super Admin defined in .env or anyone with superadmin role
+        if ($request->email === env('SUPER_ADMIN_EMAIL') || ($user && $user->role === 'superadmin')) {
+            return response()->json(['success' => false, 'message' => 'The Super Admin role cannot be modified.'], 403);
+        }
+
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'User not found.']);
         }
@@ -45,6 +53,12 @@ class AdminUserController extends Controller
         ]);
 
         $user = User::where('email', $request->email)->first();
+
+        // Prevent modifying the base Super Admin defined in .env or anyone with superadmin role
+        if ($request->email === env('SUPER_ADMIN_EMAIL') || ($user && $user->role === 'superadmin')) {
+            return response()->json(['success' => false, 'message' => 'The Super Admin role cannot be modified.'], 403);
+        }
+
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'User not found.']);
         }
@@ -62,6 +76,12 @@ class AdminUserController extends Controller
         ]);
 
         $user = User::where('email', $request->email)->first();
+
+        // Prevent modifying the base Super Admin defined in .env or anyone with superadmin role
+        if ($request->email === env('SUPER_ADMIN_EMAIL') || ($user && $user->role === 'superadmin')) {
+            return response()->json(['success' => false, 'message' => 'The Super Admin cannot be downgraded.'], 403);
+        }
+
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'User not found.']);
         }
@@ -80,6 +100,12 @@ class AdminUserController extends Controller
         ]);
 
         $user = User::where('email', $request->email)->first();
+
+        // Prevent modifying the base Super Admin defined in .env or anyone with superadmin role
+        if ($request->email === env('SUPER_ADMIN_EMAIL') || ($user && $user->role === 'superadmin')) {
+            return response()->json(['success' => false, 'message' => 'The Super Admin cannot be removed.'], 403);
+        }
+
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'User not found.']);
         }

@@ -155,7 +155,9 @@
       var alertEl = document.getElementById('usersAlert');
       var removeUserModal = null;
       var pendingRemoveEmail = null;
+      
       function showAlert(msg, isSuccess) {
+        if (!alertEl) return;
         alertEl.textContent = msg;
         alertEl.className = 'alert ' + (isSuccess ? 'alert-success' : 'alert-danger') + ' mb-4';
         alertEl.classList.remove('d-none');
@@ -164,12 +166,14 @@
       var reqTbody = document.getElementById('requestsTableBody');
       var reqAlertEl = document.getElementById('requestsAlert');
       function showReqAlert(msg, isSuccess) {
+        if (!reqAlertEl) return;
         reqAlertEl.textContent = msg;
         reqAlertEl.className = 'alert ' + (isSuccess ? 'alert-success' : 'alert-danger') + ' mb-4';
         reqAlertEl.classList.remove('d-none');
       }
 
       function loadAccessRequests() {
+        if (!reqTbody) return;
         fetch(API + '/api/admin/access-requests', { credentials: 'include' })
           .then(function(r) { return r.json(); })
           .then(function(reqs) {
@@ -217,39 +221,60 @@
       loadAccessRequests();
 
       function loadUsers() {
-        fetch(API + '/api/admin/users', { credentials: 'include' })
-          .then(function(r) {
-            if (!r.ok) throw new Error('Failed to load users');
-            return r.json();
-          })
-          .then(function(users) {
+          fetch(API + '/api/auth/me', { credentials: 'include' })
+            .then(function(r) { return r.json(); })
+            .then(function(meData) {
+              var currentRole = meData.role || 'registered';
+              return fetch(API + '/api/admin/users', { credentials: 'include' })
+                .then(function(r) {
+                  if (!r.ok) throw new Error('Failed to load users');
+                  return r.json();
+                })
+                .then(function(users) {
+                  renderUsers(users, currentRole);
+                });
+            })
+            .catch(function(err) {
+               console.error('Error loading users:', err);
+               if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-danger text-center py-4">Failed to load users.</td></tr>';
+            });
+      }
+
+      function renderUsers(users, currentRole) {
+            if (!tbody) return;
             if (!users || users.length === 0) {
               tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">No users in the system yet.</td></tr>';
               return;
             }
-            var hasAnyNonAdmin = users.some(function(u) { return (u.role || 'registered') !== 'admin'; });
+            var hasAnyNonAdmin = users.some(function(u) { return (u.role || 'registered') !== 'admin' && (u.role || 'registered') !== 'superadmin'; });
             document.getElementById('usersNoClientsNote').classList.toggle('d-none', hasAnyNonAdmin);
             tbody.innerHTML = users.map(function(u) {
               var role = (u.role || 'registered');
               var isAdmin = role === 'admin';
+              var isSuperAdmin = role === 'superadmin';
               var isPending = role === 'pending';
+              var isTrusted = role === 'trusted';
               var isRemoved = !!u.removedAt;
 
               var roleBadge = isRemoved
                 ? '<span class="badge bg-label-danger">Removed</span>'
-                : (isPending ? '<span class="badge bg-label-warning">Pending</span>' : (isAdmin ? '<span class="badge bg-label-success">Admin</span>' : (isTrusted ? '<span class="badge bg-label-primary">Trusted</span>' : '<span class="badge bg-label-secondary">Registered</span>')));
+                : (isSuperAdmin ? '<span class="badge bg-label-dark">Super Admin</span>' : (isPending ? '<span class="badge bg-label-warning">Pending</span>' : (isAdmin ? '<span class="badge bg-label-success">Admin</span>' : (isTrusted ? '<span class="badge bg-label-primary">Trusted</span>' : '<span class="badge bg-label-secondary">Registered</span>'))));
 
-              if (isAdmin || isRemoved || isPending) {
+              if (isAdmin || isSuperAdmin || isRemoved || isPending) {
                 return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td><td>' + roleBadge + '</td><td><span class="text-muted small">—</span></td></tr>';
               }
 
               var action = '<div class="d-flex flex-wrap gap-2">';
               if (isTrusted) {
                 action += '<button type="button" class="btn btn-sm btn-outline-warning downgrade-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Downgrade to registered</button>';
-                action += '<button type="button" class="btn btn-sm btn-outline-primary promote-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Promote to admin</button>';
+                if (currentRole === 'superadmin') {
+                  action += '<button type="button" class="btn btn-sm btn-outline-primary promote-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Promote to admin</button>';
+                }
               } else {
                 action += '<button type="button" class="btn btn-sm btn-outline-info upgrade-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Upgrade to Trusted</button>';
-                action += '<button type="button" class="btn btn-sm btn-outline-primary promote-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Promote to admin</button>';
+                if (currentRole === 'superadmin') {
+                  action += '<button type="button" class="btn btn-sm btn-outline-primary promote-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Promote to admin</button>';
+                }
               }
               action += '<button type="button" class="btn btn-sm btn-outline-danger remove-user-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Remove</button>';
               action += '</div>';
@@ -349,10 +374,6 @@
                 if (removeUserModal) removeUserModal.show();
               });
             });
-          })
-          .catch(function() {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-danger text-center py-4">Failed to load users. Make sure you are logged in as admin.</td></tr>';
-          });
       }
       loadUsers();
 

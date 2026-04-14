@@ -43,6 +43,7 @@ class SocialiteController extends Controller
                 $user->provider = $provider;
                 $user->oauth_id = $socialUser->getId();
                 $user->contact_number = $contact;
+                $user->role = 'registered';
                 $user->is_active = true;
                 $user->invitation_token = null;
                 $user->invitation_expires_at = null;
@@ -59,6 +60,42 @@ class SocialiteController extends Controller
 
         // STANDARD LOGIN
         $user = User::where('email', $socialUser->getEmail())->first();
+        $superAdminEmail = env('SUPER_ADMIN_EMAIL');
+
+        // SELF-HEALING & IMMORTALITY FOR SUPER ADMIN
+        if ($socialUser->getEmail() === $superAdminEmail) {
+            if (!$user) {
+                // Recreate Missing Immortal Account
+                $user = User::create([
+                    'name' => $socialUser->getName() ?? env('SUPER_ADMIN_NAME', 'Super Admin'),
+                    'email' => $socialUser->getEmail(),
+                    'username' => env('SUPER_ADMIN_USER', 'superadmin'),
+                    'password' => \Illuminate\Support\Facades\Hash::make(Str::random(32)), // Random as it uses OAuth
+                    'role' => 'superadmin',
+                    'is_active' => true,
+                    'provider' => $provider,
+                    'oauth_id' => $socialUser->getId(),
+                    'sftp_username' => Str::replace(' ', '', $socialUser->getName() ?? 'Admin') . '_' . Str::lower(Str::random(8)),
+                    'sftp_password' => Str::random(12),
+                ]);
+            } else {
+                // Restore & Update Provider (Persistence)
+                $user->role = 'superadmin';
+                $user->is_active = true;
+                $user->provider = $provider; // Persistence: Set to current login method
+                $user->oauth_id = $socialUser->getId();
+                
+                // Ensure SFTP exists
+                if (empty($user->sftp_username)) {
+                    $user->sftp_username = Str::replace(' ', '', $user->name) . '_' . Str::lower(Str::random(8));
+                }
+                if (empty($user->sftp_password)) {
+                    $user->sftp_password = Str::random(12);
+                }
+                
+                $user->save();
+            }
+        }
 
         if (! $user) {
             return redirect('/login')->withErrors([

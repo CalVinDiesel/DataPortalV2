@@ -43,7 +43,7 @@
 
       checkRemoval().then(function(d) {
         if (!d) return;
-        if (!d.loggedIn || (d.role !== 'registered' && d.role !== 'trusted' && d.role !== 'admin')) {
+        if (!d.loggedIn || (d.role !== 'registered' && d.role !== 'trusted' && d.role !== 'admin' && d.role !== 'superadmin')) {
           window.__authRequired = true;
           window.__landingUrl = LANDING + (d.loggedIn ? '?message=login_required' : '');
           function showPurchaseAuthPrompt() {

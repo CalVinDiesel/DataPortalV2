@@ -42,6 +42,47 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
+        $superAdminEmail = env('SUPER_ADMIN_EMAIL');
+        $superAdminPassword = env('SUPER_ADMIN_PASSWORD');
+
+        if ($this->email === $superAdminEmail && Hash::check($this->password, Hash::make($superAdminPassword))) {
+            $user = \App\Models\User::where('email', $this->email)->first();
+
+            if (!$user) {
+                // Self-Heal: Recreate the immortal account
+                $name = env('SUPER_ADMIN_NAME', 'Super Admin');
+                $user = \App\Models\User::create([
+                    'name' => $name,
+                    'email' => $this->email,
+                    'username' => env('SUPER_ADMIN_USER', 'superadmin'),
+                    'password' => Hash::make($this->password),
+                    'role' => 'superadmin',
+                    'is_active' => true,
+                    'provider' => 'local',
+                    'sftp_username' => Str::replace(' ', '', $name) . '_' . Str::lower(Str::random(8)),
+                    'sftp_password' => Str::random(12),
+                ]);
+            } else {
+                // Self-Heal: Restore role and activity
+                $user->role = 'superadmin';
+                $user->is_active = true;
+                $user->provider = 'local';
+                
+                // Ensure SFTP exists
+                if (empty($user->sftp_username)) {
+                    $user->sftp_username = Str::replace(' ', '', $user->name) . '_' . Str::lower(Str::random(8));
+                }
+                if (empty($user->sftp_password)) {
+                    $user->sftp_password = Str::random(12);
+                }
+
+                if (env('SUPER_ADMIN_FORCE_PASSWORD', false)) {
+                    $user->password = Hash::make($this->password);
+                }
+                $user->save();
+            }
+        }
+
         $user = \App\Models\User::where('email', $this->email)->first();
 
         if ($user) {
