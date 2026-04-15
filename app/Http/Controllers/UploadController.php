@@ -56,6 +56,9 @@ class UploadController extends Controller
     // ─── existing: finalize() ────────────────────────────────────────────────
     public function finalize(Request $request)
     {
+        // Increase limits for large file processing
+        set_time_limit(0); 
+        ini_set('memory_limit', '1G');
         $request->validate([
             'uploadId'     => 'required|string',
             'files_mapping' => 'required|array',
@@ -97,19 +100,42 @@ class UploadController extends Controller
             $finalPaths[] = $finalPath;
         }
 
+        // Push assembled files to SFTP server so admin can access raw uploads
+        // via WinSCP in one consistent location: /var/sftp/uploads/{project_id}/
+        $sftpPaths = [];
+        foreach ($finalPaths as $localPath) {
+            try {
+                $sftpDest = "uploads/{$projectId}/" . basename($localPath);
+                $stream   = fopen(Storage::disk('local')->path($localPath), 'rb');
+                Storage::disk('sftp_delivery')->put($sftpDest, $stream);
+                if (is_resource($stream)) fclose($stream);
+                $sftpPaths[] = $sftpDest;
+            } catch (\Throwable $e) {
+                \Log::warning("SFTP push failed for {$localPath}: " . $e->getMessage());
+                // Non-fatal: upload still recorded in DB even if SFTP push fails
+            }
+        }
+
         Storage::disk('local')->deleteDirectory("temp_uploads/{$uploadId}");
 
         $upload = ClientUpload::create([
-            'project_id'        => $projectId,
-            'project_title'     => $projectTitle,
-            'upload_type'       => 'browser',
-            'file_count'        => count($finalPaths),
-            'file_paths'        => $finalPaths,
-            'camera_models'     => $metadata['cameraModels'] ?? null,
-            'capture_date'      => $metadata['captureDate'] ?? null,
-            'organization_name' => $metadata['organizationName'] ?? 'Self',
-            'created_by_email'  => Auth::user()->email,
-            'request_status'    => 'pending',
+            'project_id'          => $projectId,
+            'project_title'       => $projectTitle,
+            'project_description' => $metadata['projectDescription'] ?? null,
+            'upload_type'         => 'browser',
+            'file_count'          => count($finalPaths),
+            'file_paths'          => $finalPaths,
+            'camera_models'       => $metadata['cameraModels'] ?? null,
+            'capture_date'        => $metadata['captureDate'] ?? null,
+            'organization_name'   => $metadata['organizationName'] ?? 'Self',
+            'created_by_email'    => Auth::user()->email,
+            'request_status'      => 'pending',
+            'latitude'            => $metadata['latitude'] ?? null,
+            'longitude'           => $metadata['longitude'] ?? null,
+            'category'            => $metadata['category'] ?? null,
+            'output_categories'   => $metadata['outputCategory'] ?? null,
+            'image_metadata'      => $metadata['imageMetadata'] ?? null,
+            'total_size_bytes'    => $metadata['totalSizeBytes'] ?? 0,
         ]);
 
         session()->forget("upload_{$uploadId}_metadata");

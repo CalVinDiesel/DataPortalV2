@@ -240,26 +240,40 @@
               aria-hidden="true">
               <div class="modal-dialog">
                 <div class="modal-content">
-                  <div class="modal-header">
-                    <h5 class="modal-title" id="deliverModalLabel">Mark as Delivered</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                  </div>
-                  <div class="modal-body">
-                    <div class="alert alert-info small mb-3">
-                      <i class="bx bx-info-circle me-1"></i>
-                      Make sure you have already placed the processed 3D model result into the client's SFTP folder via
-                      WinSCP before confirming delivery.
+                  <form id="deliverForm">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="deliverModalLabel">Deliver Processed Results</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <p class="text-muted small">Optional: add a delivery note for the client (e.g. which folder the
-                      result is in, or any instructions).</p>
-                    <textarea id="deliverNotesInput" class="form-control" rows="3"
-                      placeholder="e.g. Processed result placed in your SFTP folder under /results/"></textarea>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" id="deliverConfirmBtn"><i
-                        class="bx bx-check me-1"></i> Confirm Delivered</button>
-                  </div>
+                    <div class="modal-body">
+                      <div class="mb-3">
+                        <label class="form-label">Delivery Method</label>
+                        <select id="deliverMethodSelect" name="delivery_method" class="form-select">
+                          <option value="portal">Web Portal (SFTP Streamed)</option>
+                          <option value="sftp">Direct SFTP</option>
+                          <option value="google_drive">Google Drive</option>
+                        </select>
+                        <div class="form-text">Choose how the client receives their processed 3D model.</div>
+                      </div>
+
+                      <div class="mb-3">
+                        <label class="form-label">Upload Processed File (.zip)</label>
+                        <input type="file" id="deliverFileInput" name="delivered_file" class="form-control" accept=".zip,.rar,.7z">
+                        <div class="form-text">If you upload here, the system will push it to the selected destination.</div>
+                      </div>
+
+                      <div class="mb-3">
+                        <label class="form-label">Delivery Notes</label>
+                        <textarea id="deliverNotesInput" name="delivery_notes" class="form-control" rows="3"
+                          placeholder="e.g. Processed result placed in your SFTP folder under /results/"></textarea>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-success" id="deliverConfirmBtn"><i
+                          class="bx bx-check me-1"></i> Confirm Delivered</button>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>
@@ -710,33 +724,43 @@
       (function initDeliverModal() {
         var modalEl = document.getElementById('deliverModal');
         if (modalEl && typeof bootstrap !== 'undefined') deliverModal = new bootstrap.Modal(modalEl);
+        var form = document.getElementById('deliverForm');
         var confirmBtn = document.getElementById('deliverConfirmBtn');
-        if (confirmBtn) {
-          confirmBtn.addEventListener('click', function () {
-            var notes = (document.getElementById('deliverNotesInput').value || '').trim() || null;
+        
+        if (form) {
+          form.addEventListener('submit', function (e) {
+            e.preventDefault();
             if (!pendingDeliverId) return;
+
             confirmBtn.disabled = true;
-            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving…';
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Uploading & Delivering…';
+
+            var formData = new FormData(form);
+
             fetch(API_BASE + '/api/admin/processing-requests/' + pendingDeliverId + '/delivery', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ delivery_notes: notes })
+              body: formData
             })
               .then(function (r) { return r.json(); })
               .then(function (data) {
                 if (data.success) {
                   deliverModal.hide();
                   pendingDeliverId = null;
+                  form.reset();
                   loadRequests();
                   loadUploads();
                   var al = document.getElementById('uploadsAlert');
-                  al.textContent = 'Marked as delivered. The client has been notified and can now download their 3D model via SFTP.';
+                  var methodLabel = data.upload.delivery_method || 'selected method';
+                  al.textContent = 'Project delivered via ' + methodLabel + '. The client has been notified via email.';
                   al.className = 'alert alert-success';
                 } else {
                   alert(data.message || 'Failed to mark as delivered.');
                 }
               })
-              .catch(function () { alert('Request failed.'); })
+              .catch(function (error) { 
+                console.error(error);
+                alert('Request failed. Check console for details.'); 
+              })
               .finally(function () {
                 confirmBtn.disabled = false;
                 confirmBtn.innerHTML = '<i class="bx bx-check me-1"></i> Confirm Delivered';

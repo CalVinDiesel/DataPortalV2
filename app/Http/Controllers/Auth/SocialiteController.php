@@ -82,7 +82,9 @@ class SocialiteController extends Controller
                 // Restore & Update Provider (Persistence)
                 $user->role = 'superadmin';
                 $user->is_active = true;
-                $user->provider = $provider; // Persistence: Set to current login method
+                if (empty($user->provider)) {
+                    $user->provider = $provider; // Persistence: Set to current login method
+                }
                 $user->oauth_id = $socialUser->getId();
                 
                 // Ensure SFTP exists

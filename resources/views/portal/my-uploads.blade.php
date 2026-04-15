@@ -626,14 +626,14 @@
                     <i class="bx bx-dots-vertical-rounded"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                    ${statusVal === 'completed' ? `<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="${item.completed_view_url}" target="_blank"><i class="bx bx-map"></i> View Live Map</a></li>` : ''}
-                    ${statusVal === 'completed' ? `<li><a class="dropdown-item btn-dropdown-link text-primary fw-bold" href="${item.completed_download_url}" target="_blank"><i class="bx bx-download"></i> Download Processed Data (ZIP)</a></li>` : ''}
-                    ${(statusVal === 'completed' && item.processing_result_download_url) ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="' + item.processing_result_download_url + '"><i class="bx bx-download"></i> Download 3D model</a></li>' : ''}
-                    ${statusVal === 'sent' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="javascript:void(0);" onclick="confirmReceived(' + item.id + ')"><i class="bx bx-check-circle"></i> Confirm received</a></li>' : ''}
+                    ${(statusVal === 'completed' && item.delivered_file_path) ? `
+                      <li><a class="dropdown-item btn-dropdown-link text-success fw-bold" href="javascript:void(0);" onclick="downloadDeliveredFile(${item.id})"><i class="bx bx-download"></i> Download Processed File</a></li>
+                      <li><hr class="dropdown-divider"></li>` : ''}
+                    ${statusVal === 'sent' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="javascript:void(0);" onclick="confirmReceived(' + item.id + ')"><i class="bx bx-check-circle"></i> Confirm Received</a></li>' : ''}
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showProjectDetails(${item.id})"><i class="bx bx-info-circle text-info"></i> View Details</a></li>
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showEditModal(${item.id})"><i class="bx bx-edit text-secondary"></i> Edit Metadata</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item btn-dropdown-link text-danger" href="javascript:void(0);" onclick="deleteProject('${item.id}')"><i class="bx bx-trash"></i> Delete Project completely</a></li>
+                    <li><a class="dropdown-item btn-dropdown-link text-danger" href="javascript:void(0);" onclick="deleteProject('${item.id}')"><i class="bx bx-trash"></i> Delete Project</a></li>
                   </ul>
                 </div>
               </td>
@@ -677,6 +677,12 @@
           }
         })
         .catch(function () { alert("Request failed."); });
+    }
+
+    function downloadDeliveredFile(uploadId) {
+      // Navigate to the API route which streams the file from the SFTP disk
+      // ProjectController@downloadDelivered handles auth + file existence checks
+      window.location.href = '/api/user/my-uploads/' + uploadId + '/download-delivered';
     }
 
     function deleteProject(projectId) {

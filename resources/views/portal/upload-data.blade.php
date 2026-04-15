@@ -18,13 +18,11 @@
   <link rel="stylesheet" href="{{ asset('assets') }}/css/client-responsive.css">
   <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
 
-  <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <!-- EXIF JS for reading GPS coordinates from images -->
-  <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+  <!-- Leaflet CSS & JS (self-hosted to bypass browser Tracking Prevention) -->
+  <link rel="stylesheet" href="{{ asset('assets/vendor/leaflet/leaflet.css') }}" />
+  <script src="{{ asset('assets/vendor/leaflet/leaflet.js') }}"></script>
+  <!-- EXIF JS for reading GPS coordinates from images (self-hosted) -->
+  <script src="{{ asset('assets/vendor/js/exif.js') }}"></script>
 
   <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
   <script src="{{ asset('assets') }}/js/front-config.js"></script>
@@ -528,12 +526,14 @@
           <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
             <div>
               <div class="form-section-title mt-0 mb-1">Range of Interest</div>
-              <p class="help-text mb-0" style="font-size:0.75rem">Define a processing area by clicking the map for a
-                cleaner model.</p>
+              <p class="help-text mb-0" style="font-size:0.75rem">Click <strong>Auto pick</strong> to set location from your photos' GPS. <span class="text-danger fw-medium">Required before uploading.</span></p>
             </div>
-            <button type="button" class="btn btn-sm auto-mode-btn text-nowrap" id="autoModeBtn">
-              <i class="bx bx-map-pin me-1"></i> Auto pick
-            </button>
+            <div class="d-flex flex-column align-items-end gap-1">
+              <button type="button" class="btn btn-sm auto-mode-btn text-nowrap" id="autoModeBtn">
+                <i class="bx bx-map-pin me-1"></i> Auto pick
+              </button>
+              <span id="locationRequiredBadge" class="badge bg-danger" style="display:none; font-size:0.65rem;">Location required</span>
+            </div>
           </div>
 
           <hr class="my-4">
@@ -1511,7 +1511,19 @@
       latInput.value = centerLat.toFixed(6);
       lngInput.value = centerLng.toFixed(6);
 
+      // Hide the required badge — location is now set
+      const reqBadge = document.getElementById('locationRequiredBadge');
+      if (reqBadge) reqBadge.style.display = 'none';
+
       placeMarker([centerLat, centerLng]);
+
+      // Show location required badge if no location set yet
+      const badge = document.getElementById('locationRequiredBadge');
+      if (badge && !latInput.value && Object.keys(rootFolderStats).length > 0) {
+        badge.style.display = 'inline-block';
+      } else if (badge) {
+        badge.style.display = 'none';
+      }
 
       if (flightPath.length > 1) {
         // Clear previous overlays safely using a centralized LayerGroup
@@ -1710,7 +1722,11 @@
 
       // Ensure location is picked
       if (!latInput.value) {
-        alert('Please select a location on the map.');
+        // Show the badge to make the requirement obvious
+        const badge = document.getElementById('locationRequiredBadge');
+        if (badge) badge.style.display = 'inline-block';
+        document.getElementById('autoModeBtn').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        alert('Please click "Auto pick" to set your project location from the photo GPS data.');
         return;
       }
 
@@ -1822,7 +1838,7 @@
         }
 
         const uploadId = initData.uploadId;
-        const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks (As requested)
+        const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks — reliable under all PHP limits
 
         // Combine pending data files and pos file if any
         let allFilesToUpload = [...pendingUploadFiles];

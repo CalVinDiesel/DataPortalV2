@@ -60,6 +60,26 @@ return [
             'report' => false,
         ],
 
+        'sftp_delivery' => [
+            'driver'     => 'sftp',
+            'host'       => env('SFTP_DELIVERY_HOST'),
+            'username'   => env('SFTP_DELIVERY_USERNAME'),
+            'password'   => env('SFTP_DELIVERY_PASSWORD'),
+            'port'       => (int) env('SFTP_DELIVERY_PORT', 22),  // Must be int — Flysystem strict type check
+            'root'       => env('SFTP_DELIVERY_ROOT', '/'),
+            'visibility' => 'private',
+            'timeout'    => 10,  // Reduced from 30s — fail fast on bad connection
+        ],
+
+        'google_drive' => [
+            'driver' => 'google',
+            'clientId' => env('GOOGLE_SERVICE_ACCOUNT_CLIENT_ID'), // Not strictly needed for Service Account but useful for metadata
+            'clientSecret' => null,
+            'refreshToken' => null,
+            'folderId' => env('GOOGLE_DRIVE_DELIVERY_FOLDER_ID'),
+            'serviceAccountJson' => storage_path('app/google-service-account.json'),
+        ],
+
     ],
 
     /*

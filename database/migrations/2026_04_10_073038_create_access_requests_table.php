@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('AccessRequests', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('company_name')->nullable();
-            $table->string('reason_for_access')->nullable();
-            $table->string('status')->default('pending'); // pending, approved, rejected
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('AccessRequests')) {
+            Schema::create('AccessRequests', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('email')->unique();
+                $table->string('company_name')->nullable();
+                $table->string('reason_for_access')->nullable();
+                $table->string('status')->default('pending'); // pending, approved, rejected
+                $table->timestamps();
+            });
+        }
     }
 
     /**

@@ -6,7 +6,7 @@ use App\Models\ClientUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class ProjectController extends Controller
 {
@@ -70,15 +70,16 @@ class ProjectController extends Controller
             'camera_models' => $request->lensType,
             'category' => $request->category,
             'output_categories' => $request->outputCategory,
+            'delivery_method' => 'sftp',
         ]);
 
-        // Mock SFTP details
+        // Return the user's real SFTP credentials from their account
         $sftpDetails = [
-            'host' => 'dl-dataportal.geovidia.my',
-            'port' => 22,
-            'username' => 'sftp_' . Str::random(8),
-            'password' => Str::random(12),
-            'remotePath' => '/uploads/' . $projectId,
+            'host'       => env('SFTP_DELIVERY_HOST', 'dl-dataportal.geovidia.my'),
+            'port'       => env('SFTP_DELIVERY_PORT', 22),
+            'username'   => Auth::user()->sftp_username ?? 'Not provisioned yet',
+            'password'   => Auth::user()->sftp_password ?? 'Contact admin to activate SFTP access',
+            'remotePath' => '/',  // User is chroot-jailed to their folder root
         ];
 
         return response()->json([
@@ -138,6 +139,7 @@ class ProjectController extends Controller
             'organization_name' => 'Self',
             'created_by_email' => Auth::user()->email,
             'request_status' => 'pending',
+            'delivery_method' => 'google_drive',
         ]);
 
         return response()->json([
@@ -146,4 +148,31 @@ class ProjectController extends Controller
             'project' => $upload
         ]);
     }
+    public function downloadDelivered($id)
+    {
+        $upload = ClientUpload::where('id', $id)
+            ->where('created_by_email', Auth::user()->email)
+            ->firstOrFail();
+
+        if ($upload->request_status !== 'completed' || !$upload->delivered_file_path) {
+            return response()->json(['error' => 'File not available yet.'], 404);
+        }
+
+        if ($upload->delivery_method === 'portal' || $upload->delivery_method === 'sftp') {
+            if (!Storage::disk('sftp_delivery')->exists($upload->delivered_file_path)) {
+                return response()->json(['error' => 'File not found on storage server.'], 404);
+            }
+            return Storage::disk('sftp_delivery')->download($upload->delivered_file_path);
+        }
+
+        // For Google Drive, we can't easily proxy stream it without massive memory usage if it's large,
+        // but we can redirect to a sharing link or use short-lived URLs.
+        // For now, redirecting to the GDrive link if it's a link.
+        if ($upload->delivery_method === 'google_drive') {
+            return response()->json(['error' => 'Please download directly from the Google Drive link shared with you.'], 400);
+        }
+
+        return response()->json(['error' => 'Unsupported download method.'], 400);
+    }
 }
+

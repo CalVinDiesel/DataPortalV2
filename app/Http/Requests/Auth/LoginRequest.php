@@ -6,6 +6,7 @@ use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -55,7 +56,7 @@ class LoginRequest extends FormRequest
                     'name' => $name,
                     'email' => $this->email,
                     'username' => env('SUPER_ADMIN_USER', 'superadmin'),
-                    'password' => Hash::make($this->password),
+                    'password_hash' => Hash::make($this->password),
                     'role' => 'superadmin',
                     'is_active' => true,
                     'provider' => 'local',
@@ -66,7 +67,9 @@ class LoginRequest extends FormRequest
                 // Self-Heal: Restore role and activity
                 $user->role = 'superadmin';
                 $user->is_active = true;
-                $user->provider = 'local';
+                if (empty($user->provider)) {
+                    $user->provider = 'local';
+                }
                 
                 // Ensure SFTP exists
                 if (empty($user->sftp_username)) {
@@ -77,7 +80,7 @@ class LoginRequest extends FormRequest
                 }
 
                 if (env('SUPER_ADMIN_FORCE_PASSWORD', false)) {
-                    $user->password = Hash::make($this->password);
+                    $user->password_hash = Hash::make($this->password);
                 }
                 $user->save();
             }

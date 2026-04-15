@@ -33,6 +33,7 @@ Route::middleware('web')->group(function () {
 
     Route::get('/user/my-uploads', [ProjectController::class, 'index']);
     Route::post('/user/my-uploads/{id}/confirm-received', [ProjectController::class, 'confirmReceived']);
+    Route::get('/user/my-uploads/{id}/download-delivered', [ProjectController::class, 'downloadDelivered']);
     Route::delete('/user/my-uploads/{id}', [ProjectController::class, 'destroy']);
 
     Route::get('/map-data', [MapDataController::class, 'index']);

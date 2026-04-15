@@ -18,8 +18,9 @@
   <link rel="stylesheet" href="{{ asset('assets') }}/css/client-responsive.css">
   <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet CSS & JS (self-hosted to bypass browser Tracking Prevention) -->
+  <link rel="stylesheet" href="{{ asset('assets/vendor/leaflet/leaflet.css') }}" />
+  <script src="{{ asset('assets/vendor/leaflet/leaflet.js') }}"></script>
 
   <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
   <script src="{{ asset('assets') }}/js/front-config.js"></script>

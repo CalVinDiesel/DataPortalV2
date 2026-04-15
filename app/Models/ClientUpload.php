@@ -30,7 +30,13 @@ class ClientUpload extends Model
         'category',
         'output_categories',
         'image_metadata',
-        'tokens_charged'
+        'tokens_charged',
+        'total_size_bytes',
+        'delivery_method',
+        'sftp_delivery_path',
+        'gdrive_delivery_folder_id',
+        'delivered_file_path',
+        'delivered_at'
     ];
 
     protected $casts = [
@@ -38,5 +44,6 @@ class ClientUpload extends Model
         'output_categories' => 'array',
         'decided_at' => 'datetime',
         'capture_date' => 'date',
+        'delivered_at' => 'datetime',
     ];
 }
