@@ -17,6 +17,19 @@
   <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css">
   <link rel="stylesheet" href="{{ asset('assets') }}/css/client-responsive.css">
   <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    #map {
+      height: 250px;
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #d9dee3;
+      margin-top: 0.5rem;
+      z-index: 1 !important;
+    }
+  </style>
 
   <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
   <script src="{{ asset('assets') }}/js/front-config.js"></script>
@@ -299,6 +312,19 @@
               <label class="form-check-label" for="outOrthophoto">Orthophoto</label>
             </div>
           </div>
+          <div class="form-section-title">Project Location (Optional)</div>
+          <p class="text-muted small mb-2">Click on the map to set where this survey was captured. If skipped, the project won't show a map pin.</p>
+          <div id="map"></div>
+          <div class="row g-2 mt-2">
+            <div class="col-6">
+              <label class="form-label small">Latitude</label>
+              <input type="text" id="latitude" class="form-control" readonly placeholder="0.0000">
+            </div>
+            <div class="col-6">
+              <label class="form-label small">Longitude</label>
+              <input type="text" id="longitude" class="form-control" readonly placeholder="0.0000">
+            </div>
+          </div>
         </form>
       </div>
       <div class="left-footer" id="formFooter">
@@ -313,14 +339,61 @@
     </div>
   </div>
 
-  <script src="{{ asset('assets') }}/vendor/libs/jquery/jquery.js"></script>
-  <script src="{{ asset('assets') }}/vendor/libs/popper/popper.js"></script>
-  <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
+  <script src="{{ asset('assets/vendor/js/bootstrap.js') }}"></script>
   <script>
+    const userRole = '{{ Auth::user()->role }}';
+    const isAdmin = (userRole === 'admin' || userRole === 'superadmin');
+
+    // INITIALIZE MAP
+    // Default view over Malaysia
+    const map = L.map('map').setView([4.2105, 101.9758], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    let marker;
+    map.on('click', function(e) {
+      if (marker) map.removeLayer(marker);
+      marker = L.marker(e.latlng).addTo(map);
+      document.getElementById('latitude').value = e.latlng.lat.toFixed(6);
+      document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+    });
+
+    // Project ID Generator with User Prefix to prevent collisions
+    const projectTitleInput = document.getElementById('projectTitle');
+    const generatedIdInput = document.createElement('input');
+    generatedIdInput.type = 'hidden';
+    generatedIdInput.id = 'projectID';
+    document.getElementById('sftpForm').appendChild(generatedIdInput);
+
+    projectTitleInput.addEventListener('input', function() {
+      const title = this.value;
+      if (!title) {
+        generatedIdInput.value = '';
+        return;
+      }
+      
+      // Prefix with slugified user name
+      const userPrefix = '{{ Str::slug(Auth::user()->name) }}';
+      let slug = title.toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      
+      if (slug.length > 0) {
+        const randomChars = Math.random().toString(36).substring(2, 6);
+        // Guarantee unique path per user
+        slug = userPrefix + '-' + slug + '-' + randomChars;
+      }
+      generatedIdInput.value = slug;
+    });
+
     document.getElementById('sftpForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
-      if (!document.getElementById('projectTitle').value) {
+      if (!projectTitleInput.value) {
         alert("Please enter a project title.");
         return;
       }
@@ -335,29 +408,20 @@
         categoryVal = document.getElementById('categoryOther').value;
       }
 
-      if (!categoryVal || categoryVal.trim() === '') {
-        alert("Please select or specify a category.");
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-        return;
-      }
-
       const outputCheckboxes = document.querySelectorAll('input[name="outputCategory"]:checked');
       const outputs = Array.from(outputCheckboxes).map(cb => cb.value);
-      if (outputs.length === 0) {
-        alert("Please select at least one output category.");
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-        return;
-      }
-
+      
       const payload = {
-        type: 'sftp',
-        projectTitle: document.getElementById('projectTitle').value,
+        projectTitle: projectTitleInput.value,
+        projectID: generatedIdInput.value,
         projectDescription: document.getElementById('projectDescription').value,
-        lensType: document.getElementById('lensType').value,
+        cameraConfiguration: document.getElementById('lensType').value,
         category: categoryVal,
-        outputCategory: outputs
+        outputCategory: outputs,
+        latitude: document.getElementById('latitude').value || null,
+        longitude: document.getElementById('longitude').value || null,
+        imageMetadata: "[]",
+        captureDate: new Date().toISOString().split('T')[0]
       };
 
       try {
@@ -365,6 +429,7 @@
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
           },
           body: JSON.stringify(payload)
@@ -372,26 +437,34 @@
         const data = await res.json();
         
         if (data.success && data.sftpDetails) {
-          // Hide form, show results
           document.getElementById('sftpForm').style.display = 'none';
           document.getElementById('formFooter').style.display = 'none';
           
           document.getElementById('successView').style.display = 'block';
           document.getElementById('successFooter').style.display = 'flex';
           
-          // Populate details directly from DB / backend
-          document.getElementById('resHost').innerText = data.sftpDetails.host;
-          document.getElementById('resPort').innerText = data.sftpDetails.port;
-          document.getElementById('resUser').innerText = data.sftpDetails.username;
-          document.getElementById('resPass').innerText = data.sftpDetails.password;
+          // Show basic connection info (Filtered by backend for security)
+          document.getElementById('resHost').innerText = data.sftpDetails.host || '127.0.0.1';
+          document.getElementById('resPort').innerText = data.sftpDetails.port || '22';
           document.getElementById('resPath').innerText = data.sftpDetails.remotePath;
+
+          // Populate individual credentials (Username/Password matching the user)
+          document.getElementById('resUser').innerText = data.sftpDetails.username || 'Not Assigned';
+          document.getElementById('resPass').innerText = data.sftpDetails.password || 'Contact Admin';
+
+          // Ensure connection instruction is clear
+          const instruction = document.createElement('div');
+          instruction.className = 'alert alert-info mt-3 text-start';
+          instruction.innerHTML = '<i class="bx bx-info-circle me-2"></i> Use the credentials above in WinSCP. Drag your raw data files into the <strong>Target Directory</strong> shown above.';
+          document.getElementById('successView').appendChild(instruction);
           
         } else {
-          alert('Error: ' + data.message);
+          alert('Error: ' + (data.message || 'Validation failed'));
           btn.disabled = false;
           btn.innerHTML = originalHtml;
         }
       } catch (err) {
+        console.error(err);
         alert('Server error.');
         btn.disabled = false;
         btn.innerHTML = originalHtml;

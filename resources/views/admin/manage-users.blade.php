@@ -258,7 +258,7 @@
 
               var roleBadge = isRemoved
                 ? '<span class="badge bg-label-danger">Removed</span>'
-                : (isSuperAdmin ? '<span class="badge bg-label-dark">Super Admin</span>' : (isPending ? '<span class="badge bg-label-warning">Pending</span>' : (isAdmin ? '<span class="badge bg-label-success">Admin</span>' : (isTrusted ? '<span class="badge bg-label-primary">Trusted</span>' : '<span class="badge bg-label-secondary">Registered</span>'))));
+                : (isSuperAdmin ? '<span class="badge bg-label-dark">Super Admin</span>' : (isPending ? '<span class="badge bg-label-warning">Pending</span>' : (isAdmin ? '<span class="badge bg-label-success">Admin</span>' : (isTrusted ? '<span class="badge bg-label-primary">Trusted User</span>' : '<span class="badge bg-label-secondary">Registered</span>'))));
 
               if (isAdmin || isSuperAdmin || isRemoved || isPending) {
                 return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td><td>' + roleBadge + '</td><td><span class="text-muted small">—</span></td></tr>';
@@ -266,14 +266,14 @@
 
               var action = '<div class="d-flex flex-wrap gap-2">';
               if (isTrusted) {
-                action += '<button type="button" class="btn btn-sm btn-outline-warning downgrade-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Downgrade to registered</button>';
+                action += '<button type="button" class="btn btn-sm btn-outline-warning downgrade-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Downgrade to Registered</button>';
                 if (currentRole === 'superadmin') {
-                  action += '<button type="button" class="btn btn-sm btn-outline-primary promote-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Promote to admin</button>';
+                  action += '<button type="button" class="btn btn-sm btn-outline-primary promote-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Promote to Admin</button>';
                 }
               } else {
                 action += '<button type="button" class="btn btn-sm btn-outline-info upgrade-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Upgrade to Trusted</button>';
                 if (currentRole === 'superadmin') {
-                  action += '<button type="button" class="btn btn-sm btn-outline-primary promote-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Promote to admin</button>';
+                  action += '<button type="button" class="btn btn-sm btn-outline-primary promote-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Promote to Admin</button>';
                 }
               }
               action += '<button type="button" class="btn btn-sm btn-outline-danger remove-user-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Remove</button>';

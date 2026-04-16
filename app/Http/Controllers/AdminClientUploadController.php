@@ -8,12 +8,22 @@ use App\Models\ProcessingRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use App\Mail\ProcessedDataDelivered;
 
 class AdminClientUploadController extends Controller
 {
     public function getUploads()
     {
+        // Invisible Automation Trigger:
+        // Automatically cleanup expired deliveries whenever an admin views the uploads.
+        // We use a cache lock of 24 hours to ensure it doesn't run on every single refresh.
+        Cache::remember('delivery_cleanup_lock', 86400, function () {
+            Artisan::call('app:cleanup-expired-deliveries');
+            return true;
+        });
+
         $uploads = ClientUpload::orderBy('id', 'desc')->get();
         return response()->json($uploads);
     }
@@ -26,11 +36,11 @@ class AdminClientUploadController extends Controller
 
     public function getPathConfig()
     {
-        // Dummy config for SFTP paths
+        // Use the actual root configured for the SFTP disk
         return response()->json([
             'success' => true,
-            'uploadRootAbsolute' => env('SFTP_UPLOAD_ROOT', '/sftp/uploads'),
-            'remoteBasePath' => env('SFTP_REMOTE_BASE', '/home/sftpuser'),
+            'uploadRootAbsolute' => config('filesystems.disks.sftp_delivery.root', '/home/tiquan/'),
+            'remoteBasePath' => config('filesystems.disks.sftp_delivery.root', '/home/tiquan/'),
         ]);
     }
 
@@ -50,6 +60,13 @@ class AdminClientUploadController extends Controller
             // TODO: send email to client
         } elseif ($action === 'processing') {
             $upload->request_status = 'processing';
+
+            // Ensure the deliveries directory exists for manual SFTP placement
+            try {
+                Storage::disk('sftp_delivery')->makeDirectory("deliveries/{$upload->project_id}");
+            } catch (\Exception $e) {
+                \Log::warning("Could not pre-create delivery directory: " . $e->getMessage());
+            }
 
             // Create a processing request record
             ProcessingRequest::create([
@@ -93,37 +110,52 @@ class AdminClientUploadController extends Controller
         $method = $request->input('delivery_method', $upload->delivery_method ?: 'portal');
         $upload->delivery_method = $method;
 
-        // Note: For SFTP delivery, we might just be marking as delivered if files were uploaded manually
-        // But if a file is provided in the request, we push it to the destination.
-        if ($request->hasFile('delivered_file')) {
-            $file = $request->file('delivered_file');
-            $fileName = $upload->project_id . '-processed.zip';
+        $manualFileName = $request->input('manual_file_name');
+        $gdriveLink = $request->input('google_drive_link');
+        $hasUpload = $request->hasFile('delivered_file');
 
-            if ($method === 'portal' || $method === 'sftp') {
-                // Both use the sftp_delivery disk, but portals is hidden in /projects/
-                // while 'sftp' might use a specific user path if we had one.
-                // For now, we follow the plan: /projects/{id}/processed/ for both.
-                $path = "projects/{$upload->project_id}/processed/{$fileName}";
+        if ($hasUpload || $manualFileName || $gdriveLink) {
+            if ($gdriveLink) {
+                // Method C: Google Drive Link
+                $upload->delivery_method = 'google_drive';
+                $upload->google_drive_link = $gdriveLink;
+            } elseif ($method === 'portal' || $method === 'sftp') {
+                // Standardized delivery path
+                $fileName = $hasUpload ? ($upload->project_id . '-processed.zip') : $manualFileName;
+                $path = "deliveries/{$upload->project_id}/{$fileName}";
                 
-                // Use put() which handles streams efficiently
-                Storage::disk('sftp_delivery')->put($path, fopen($file, 'r+'));
+                if ($hasUpload) {
+                    // Method A: Admin uploaded via Web Form
+                    $file = $request->file('delivered_file');
+                    Storage::disk('sftp_delivery')->put($path, fopen($file, 'r+'));
+                } else {
+                    // Method B: Admin already placed file via WinSCP
+                    if (!Storage::disk('sftp_delivery')->exists($path)) {
+                        return response()->json([
+                            'success' => false, 
+                            'message' => "File not found on SFTP at: {$path}. Did you remember to move it therapy via WinSCP?"
+                        ], 404);
+                    }
+                }
+
                 $upload->delivered_file_path = $path;
-                
                 if ($method === 'sftp') {
                     $upload->sftp_delivery_path = $path;
                 }
-            } elseif ($method === 'google_drive') {
-                // the folderId is from config/env, or maybe we want a dynamic one?
-                // Plan says: use Admin Service Account and shared folder.
+            } elseif ($method === 'google_drive' && $hasUpload) {
+                // Google Drive currently only supports direct web upload in this simple implementation
+                $file = $request->file('delivered_file');
                 $path = Storage::disk('google_drive')->put($fileName, fopen($file, 'r+'));
                 $upload->delivered_file_path = $path;
-                // Get the real GDrive ID if possible? (adapter dependent)
                 $upload->gdrive_delivery_folder_id = config('filesystems.disks.google_drive.folderId');
             }
+        } else {
+            return response()->json(['success' => false, 'message' => 'Please either upload a file or provide an existing SFTP filename.'], 400);
         }
 
         $upload->request_status = 'completed';
         $upload->delivered_at = now();
+        $upload->delivered_expires_at = now()->addDays(7);
         $upload->save();
 
         $procReq->status = 'completed';

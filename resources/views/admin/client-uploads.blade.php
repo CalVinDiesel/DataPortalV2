@@ -246,6 +246,13 @@
                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
+                      <!-- SFTP Path Hint (For Manual Delivery) -->
+                      <div class="alert alert-info mb-3">
+                        <div class="fw-bold mb-1"><i class="bx bx-info-circle me-1"></i> Manual Delivery Path</div>
+                        <div class="small">If using WinSCP, place your file in:</div>
+                        <code id="deliverPathHint" class="d-block p-2 mt-1 bg-white border rounded" style="font-size:0.8rem; word-break:break-all;">–</code>
+                      </div>
+
                       <div class="mb-3">
                         <label class="form-label">Delivery Method</label>
                         <select id="deliverMethodSelect" name="delivery_method" class="form-select">
@@ -256,16 +263,34 @@
                         <div class="form-text">Choose how the client receives their processed 3D model.</div>
                       </div>
 
-                      <div class="mb-3">
-                        <label class="form-label">Upload Processed File (.zip)</label>
-                        <input type="file" id="deliverFileInput" name="delivered_file" class="form-control" accept=".zip,.rar,.7z">
-                        <div class="form-text">If you upload here, the system will push it to the selected destination.</div>
+                      <div class="row">
+                        <div class="col-12 mb-3">
+                          <label class="form-label">Option A: Upload Processed File (.zip)</label>
+                          <input type="file" id="deliverFileInput" name="delivered_file" class="form-control" accept=".zip,.rar,.7z">
+                          <div class="form-text">System will upload this to the SFTP deliveries folder.</div>
+                        </div>
+                        <div class="col-12 mb-3">
+                          <div class="text-center text-muted my-2">-- OR --</div>
+                        </div>
+                        <div class="col-12 mb-3">
+                          <label class="form-label">Option B: Existing SFTP Filename</label>
+                          <input type="text" id="deliverManualPathInput" name="manual_file_name" class="form-control" placeholder="e.g. results_final.zip">
+                          <div class="form-text">Use this if you already moved the file to the <strong>Manual Delivery Path</strong> via WinSCP.</div>
+                        </div>
+                        <div class="col-12 mb-3">
+                          <div class="text-center text-muted my-2">-- OR --</div>
+                        </div>
+                        <div class="col-12 mb-3">
+                          <label class="form-label text-primary fw-bold">Option C: Google Drive Share Link (Best for Large Files)</label>
+                          <input type="url" id="deliverGDriveLinkInput" name="google_drive_link" class="form-control" placeholder="https://drive.google.com/file/d/...">
+                          <div class="form-text text-primary">Paste the 'Anyone with the link can view' share link here. No server memory limits!</div>
+                        </div>
                       </div>
 
                       <div class="mb-3">
                         <label class="form-label">Delivery Notes</label>
                         <textarea id="deliverNotesInput" name="delivery_notes" class="form-control" rows="3"
-                          placeholder="e.g. Processed result placed in your SFTP folder under /results/"></textarea>
+                          placeholder="e.g. Processed result ready for download."></textarea>
                       </div>
                     </div>
                     <div class="modal-footer">
@@ -411,22 +436,21 @@
 
       // Build SFTP path for a given upload row
       function buildSftpPath(r) {
-        var base = uploadRootAbsolute || remoteBasePath || ((typeof window !== 'undefined' && window.REMOTE_SFTP_BASE_PATH) || '');
+        var base = uploadRootAbsolute || remoteBasePath || '';
         var paths = r.file_paths;
         var pathsArr = Array.isArray(paths) ? paths : (typeof paths === 'string' && paths ? [paths] : []);
+        
         if (pathsArr.length > 0) {
-          // Extract folder path from first file path: uploads/project_xxx/filename -> project_xxx/upload
-          var first = pathsArr[0].replace(/\\/g, '/').replace(/^uploads\/?/, '');
-          var parts = first.split('/');
-          if (parts.length >= 1) {
-            // Get the project folder (first part) and add /upload subfolder
-            var projectFolder = parts[0];
-            var fullPath = projectFolder + '/upload';
-            return joinDisplayPath(base, fullPath);
-          }
+          // Get the directory of the first file path (which includes 'uploads/')
+          var firstFile = normalizePathForDisplay(pathsArr[0]);
+          var lastSlash = firstFile.lastIndexOf('/');
+          var projectDir = (lastSlash !== -1) ? firstFile.substring(0, lastSlash) : firstFile;
+          
+          return joinDisplayPath(base, projectDir);
         }
-        // SFTP project upload: use project_id as folder with /upload subfolder
-        if (r.project_id) return joinDisplayPath(base, r.project_id + '/upload');
+        
+        // Fallback for SFTP project uploads
+        if (r.project_id) return joinDisplayPath(base, 'uploads/' + r.project_id);
         return '– (not available)';
       }
 
@@ -800,8 +824,7 @@
               } else if (r.status === 'processing' || r.status === 'pending') {
                 actionBtn =
                   '<div class="d-flex flex-column gap-2">' +
-                  '<small class="text-muted"><i class="bx bx-server me-1"></i>Place result in WinSCP at:<code class="d-block mt-1" style="font-size:0.75rem">' + escapeHtml(sftpPath) + '</code></small>' +
-                  '<button type="button" class="btn btn-sm btn-success mark-delivered-btn" data-request-id="' + r.id + '"><i class="bx bx-check me-1"></i>Mark as Delivered</button>' +
+                  '<button type="button" class="btn btn-sm btn-success mark-delivered-btn" data-request-id="' + r.id + '" data-upload-id="' + r.upload_id + '"><i class="bx bx-check me-1"></i>Mark as Delivered</button>' +
                   '</div>';
               } else if (r.status === 'completed') {
                 actionBtn = '<button type="button" class="btn btn-sm btn-outline-success mark-delivered-btn" data-request-id="' + r.id + '"><i class="bx bx-check me-1"></i>Mark as Delivered</button>';
@@ -822,7 +845,18 @@
             tbody.querySelectorAll('.mark-delivered-btn').forEach(function (btn) {
               btn.addEventListener('click', function () {
                 pendingDeliverId = btn.getAttribute('data-request-id');
+                var uploadId = btn.getAttribute('data-upload-id');
+                var meta = uploadMetaById[uploadId] || {};
+                
+                // Show path hint for manual SFTP delivery
+                var base = uploadRootAbsolute || remoteBasePath || '';
+                var targetPath = joinDisplayPath(base, 'deliveries/' + (meta.project_id || uploadId));
+                document.getElementById('deliverPathHint').textContent = targetPath;
+
                 document.getElementById('deliverNotesInput').value = '';
+                document.getElementById('deliverManualPathInput').value = '';
+                document.getElementById('deliverGDriveLinkInput').value = '';
+                document.getElementById('deliverFileInput').value = '';
                 if (deliverModal) deliverModal.show();
               });
             });

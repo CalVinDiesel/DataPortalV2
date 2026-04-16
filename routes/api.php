@@ -19,6 +19,7 @@ Route::middleware('web')->group(function () {
     Route::post('/upload/google-drive-project', [ProjectController::class, 'storeGoogleDrive']);
     Route::post('/upload/init', [\App\Http\Controllers\UploadController::class, 'init']);
     Route::post('/upload/chunk', [\App\Http\Controllers\UploadController::class, 'chunk']);
+    Route::post('/upload/assemble-file', [\App\Http\Controllers\UploadController::class, 'assembleFile']);
     Route::post('/upload/finalize', [\App\Http\Controllers\UploadController::class, 'finalize']);
 
     Route::prefix('auth')->group(function () {

@@ -45,5 +45,6 @@ class ClientUpload extends Model
         'decided_at' => 'datetime',
         'capture_date' => 'date',
         'delivered_at' => 'datetime',
+        'delivered_expires_at' => 'datetime',
     ];
 }

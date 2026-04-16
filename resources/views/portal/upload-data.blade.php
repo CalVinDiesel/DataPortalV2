@@ -453,17 +453,27 @@
             <input type="radio" name="cameraConfiguration" id="gdriveUpload" value="gdrive" class="d-none" required>
             
             
+              <div class="invalid-feedback d-block" id="cameraError" style="display:none !important;">Please select an upload type.</div>
+            </div>
+
+            <!-- New: SFTP Upload Card -->
             <div class="mb-4">
-              <div class="upload-card" id="cardMulti" onclick="selectUploadType('multiple')">
-                <i class="bx bxs-video upload-card-icon"></i>
-                <div class="upload-card-title">Multi-lens Photos Folder</div>
-                <div class="upload-card-text">Drag or click to upload<br><small>only jpg, jpeg</small></div>
-                <i class="bx bx-question-mark question-mark"></i>
-                <input type="radio" name="cameraConfiguration" id="multipleCamera" value="multiple" class="d-none"
-                  required>
-              </div>
-              <div class="invalid-feedback d-block" id="cameraError" style="display:none !important;">Please select an
-                upload type.</div>
+              @if(Auth::user()->role === 'trusted' || Auth::user()->role === 'admin' || Auth::user()->role === 'superadmin')
+                <div class="upload-card" id="cardSftp" onclick="selectUploadType('sftp')">
+                  <i class="bx bx-server upload-card-icon"></i>
+                  <div class="upload-card-title">Direct SFTP Upload (WinSCP)</div>
+                  <div class="upload-card-text">Upload massive raw datasets<br><small>Best for 1000+ photos</small></div>
+                  <i class="bx bx-check-shield question-mark text-primary"></i>
+                  <input type="radio" name="cameraConfiguration" id="sftpUpload" value="sftp" class="d-none" required>
+                </div>
+              @else
+                <div class="upload-card opacity-50 cursor-not-allowed" title="Requires Trusted Access">
+                  <i class="bx bx-lock-alt upload-card-icon"></i>
+                  <div class="upload-card-title text-muted">Direct SFTP Upload</div>
+                  <div class="upload-card-text">Locked: Contact admin for access<br><small>Requires 'Trusted' status</small></div>
+                  <i class="bx bx-shield-x question-mark"></i>
+                </div>
+              @endif
             </div>
           </div>
 
@@ -500,11 +510,38 @@
           </div>
 
           <!-- Google Drive Link Input (Hidden until gdrive selected) -->
-          <div class="mb-3 d-none" id="gdriveLinkWrapper">
-            <label class="form-label" for="googleDriveLink">Google Drive Link <span class="text-danger">*</span></label>
-            <input type="url" class="form-control form-control-sm" id="googleDriveLink" name="googleDriveLink"
-              placeholder="https://drive.google.com/drive/folders/..." required>
             <div class="form-text text-muted" style="font-size: 0.75rem;">Make sure the link is set to <strong>"Anyone with the link"</strong> can view.</div>
+          </div>
+
+          <!-- New: SFTP Credential Display -->
+          <div class="mb-4 d-none" id="sftpCredentialsWrapper">
+            <div class="alert alert-primary border-0 shadow-sm p-4">
+              <h6 class="fw-bold mb-3 d-flex align-items-center">
+                <i class="bx bx-terminal me-2"></i> WinSCP / FileZilla Credentials
+              </h6>
+              <div class="bg-white rounded p-3 mb-3 border">
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-muted small">Host:</span>
+                  <span class="fw-bold text-dark">{{ config('filesystems.disks.sftp_delivery.host', 'sftp.geovidia.my') }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-muted small">Port:</span>
+                  <span class="fw-bold text-dark">{{ config('filesystems.disks.sftp_delivery.port', 22) }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-muted small">Username:</span>
+                  <span class="fw-bold text-dark">{{ config('filesystems.disks.sftp_delivery.username', 'incoming_data') }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <span class="text-muted small">Password:</span>
+                  <span class="fw-bold text-primary">**********</span>
+                </div>
+              </div>
+              <p class="mb-0 small text-dark opacity-75">
+                <strong>Instruction:</strong> Upload all images to the folder: <br>
+                <code class="bg-label-primary px-2 py-1 rounded mt-1 d-inline-block">/uploads/<span id="sftpFolderHint">project-id</span>/</code>
+              </p>
+            </div>
           </div>
 
           <!-- Optional POS File Upload Section -->
@@ -993,18 +1030,21 @@
         document.getElementById('cameraDetailsSection').classList.add('d-none');
         document.getElementById('gdriveLinkWrapper').classList.remove('d-none');
         document.getElementById('googleDriveLink').setAttribute('required', 'required');
-        
-        // If activated via URL, we might want to hide other choices to avoid confusion
-        if (new URLSearchParams(window.location.search).get('type') === 'gdrive') {
-           document.getElementById('cardSingle').parentElement.style.display = 'none';
-           document.getElementById('cardMulti').parentElement.style.display = 'none';
-        }
+        document.getElementById('sftpCredentialsWrapper').classList.add('d-none');
+      } else if (type === 'sftp') {
+        const cardSftp = document.getElementById('cardSftp');
+        if (cardSftp) cardSftp.classList.add('active');
+        document.getElementById('sftpUpload').checked = true;
+        document.getElementById('cameraDetailsSection').classList.add('d-none');
+        document.getElementById('gdriveLinkWrapper').classList.add('d-none');
+        document.getElementById('googleDriveLink').removeAttribute('required');
+        document.getElementById('sftpCredentialsWrapper').classList.remove('d-none');
       }
     }
 
     function selectUploadType(type) {
       activateUploadType(type);
-      if (type !== 'gdrive') {
+      if (type !== 'gdrive' && type !== 'sftp') {
         // Programmatically trigger the hidden file input
         document.getElementById('dataFile').click();
       }
@@ -1600,10 +1640,14 @@
         document.getElementById('singleCamera').checked = false;
         document.getElementById('multipleCamera').checked = false;
         document.getElementById('gdriveUpload').checked = false;
+        const sftpRadio = document.getElementById('sftpUpload');
+        if (sftpRadio) sftpRadio.checked = false;
 
         // Hide the camera selection extra options
         document.getElementById('cameraDetailsSection').classList.add('d-none');
         document.getElementById('cameraError').style.setProperty('display', 'none', 'important');
+        const sftpCreds = document.getElementById('sftpCredentialsWrapper');
+        if (sftpCreds) sftpCreds.classList.add('d-none');
 
         return;
       }
@@ -1715,7 +1759,8 @@
       e.preventDefault();
 
       // Ensure a camera option is selected
-      if (!document.getElementById('singleCamera').checked && !document.getElementById('multipleCamera').checked && !document.getElementById('gdriveUpload').checked) {
+      const selectedType = document.querySelector('input[name="cameraConfiguration"]:checked');
+      if (!selectedType) {
         document.getElementById('cameraError').style.setProperty('display', 'block', 'important');
         return;
       }
@@ -1730,9 +1775,12 @@
         return;
       }
 
-      // Ensure images are actually selected unless it's a google drive upload
+      // Ensure images are actually selected unless it's a google drive or sftp upload
       const isGDrive = document.getElementById('gdriveUpload').checked;
-      if (!isGDrive && pendingUploadFiles.length === 0) {
+      const sftpRadio = document.getElementById('sftpUpload');
+      const isSftp = sftpRadio ? sftpRadio.checked : false;
+
+      if (!isGDrive && !isSftp && pendingUploadFiles.length === 0) {
         alert('Please upload a folder containing images. A POS file alone is not sufficient.');
         return;
       }
@@ -1786,10 +1834,22 @@
         cameraModels: document.getElementById('multipleCamera').checked ? (document.getElementById('cameraModels').value || '') : '',
         captureDate: document.getElementById('captureDate').value || new Date().toISOString().split('T')[0],
         organizationName: document.getElementById('organizationName').value,
-        totalFiles: isGDrive ? 0 : pendingUploadFiles.length,
-        totalSizeBytes: isGDrive ? 0 : pendingUploadFiles.reduce((acc, f) => acc + (f.size || 0), 0),
-        googleDriveLink: isGDrive ? document.getElementById('googleDriveLink').value.trim() : null
+        totalFiles: (isGDrive || isSftp) ? 0 : pendingUploadFiles.length,
+        totalSizeBytes: (isGDrive || isSftp) ? 0 : pendingUploadFiles.reduce((acc, f) => acc + (f.size || 0), 0),
+        googleDriveLink: isGDrive ? document.getElementById('googleDriveLink').value.trim() : null,
+        uploadType: isSftp ? 'sftp' : (isGDrive ? 'gdrive' : 'browser')
       };
+
+      // 1b. Large Dataset Warning (User requested: recommend SFTP for large files)
+      if (!isGDrive && initMetadata.totalSizeBytes > 5 * 1024 * 1024 * 1024) { // 5GB limit
+          const confirmLarge = confirm(`The total size of your project is ${formatBytes(initMetadata.totalSizeBytes)}. Uploading such a large dataset via the browser can be unstable. We highly recommend using the "SFTP Upload" method for projects larger than 5GB.\n\nDo you want to continue with the browser upload anyway?`);
+          if (!confirmLarge) {
+              submitBtn.disabled = false;
+              progressContainer.style.display = 'none';
+              isUploadActive = false;
+              return;
+          }
+      }
 
       try {
         if (isGDrive) {
@@ -1800,6 +1860,7 @@
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
+              'Accept': 'application/json',
               'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
             body: JSON.stringify(initMetadata),
@@ -1821,11 +1882,42 @@
           return;
         }
 
+        if (isSftp) {
+          statusText.textContent = 'Registering SFTP project...';
+          msgDiv.textContent = 'Creating technical workspace for your SFTP upload.';
+          
+          const sftpRes = await fetch(UPLOAD_API + '/api/upload/sftp-project', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(initMetadata),
+            credentials: 'include'
+          });
+          
+          const sftpData = await sftpRes.json();
+          if (!sftpRes.ok || !sftpData.success) {
+            throw new Error(sftpData.message || 'Failed to register SFTP project');
+          }
+          
+          msgDiv.className = 'small mt-2 mb-0 text-center text-success pb-3 fw-bold';
+          msgDiv.textContent = '✓ SFTP Workspace Ready! You can now start the transfer in WinSCP.';
+          progressBar.style.width = '100%';
+          percentText.textContent = '100%';
+          isUploadActive = false;
+          
+          setTimeout(() => window.location.href = '{{ route('my_uploads') }}', 2500);
+          return;
+        }
+
         // 2. Initialize Upload Session
         const initRes = await fetch(UPLOAD_API + '/api/upload/init', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
           },
           body: JSON.stringify(initMetadata),
@@ -1947,6 +2039,7 @@
                 const chunkRes = await fetch(UPLOAD_API + '/api/upload/chunk', {
                   method: 'POST',
                   headers: {
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                   },
                   body: chunkFormData,
@@ -1987,6 +2080,30 @@
               }
             }
           }
+
+          // --- Step 3.5: Assemble and Transfer this specific file to SFTP ---
+          // This prevents timeouts by breaking the "Finalize" process into per-file requests
+          statusText.textContent = `Transferring to storage: ${file.name}...`;
+          msgDiv.textContent = `Assembling and transferring ${fIndex + 1} of ${allFilesToUpload.length} files`;
+          
+          const assembleRes = await fetch(UPLOAD_API + '/api/upload/assemble-file', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    uploadId: uploadId,
+                    filename: safeFilename,
+                    totalChunks: totalChunksFile
+                }),
+                credentials: 'include'
+          });
+          const assembleData = await assembleRes.json();
+          if (!assembleRes.ok || !assembleData.success) {
+              throw new Error(assembleData.message || `Failed to assemble file storage for: ${file.name}`);
+          }
         }
 
         statusText.textContent = 'Finalizing upload...';
@@ -2014,11 +2131,12 @@
           return;
         }
 
-        // 4. Finalize Upload
+        // 4. Finalize Metadata and Create DB Record
         const finalizeRes = await fetch(UPLOAD_API + '/api/upload/finalize', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
           },
           body: JSON.stringify({
@@ -2094,6 +2212,10 @@
       }
         
       idInput.value = slug;
+
+      // Update SFTP hint
+      const sftpHint = document.getElementById('sftpFolderHint');
+      if (sftpHint) sftpHint.textContent = slug || 'project-id';
     }
   </script>
 </body>

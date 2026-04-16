@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
@@ -45,47 +46,98 @@ class ProjectController extends Controller
     {
         // Enforce role permission: Only trusted users and admins can use SFTP.
         $role = Auth::user()->role;
-        if (!in_array($role, ['trusted', 'admin'])) {
+        if (!in_array($role, ['trusted', 'admin', 'superadmin'])) {
             return response()->json(['success' => false, 'message' => 'SFTP upload is only available for trusted users.'], 403);
         }
 
         $request->validate([
             'projectTitle' => 'required|string',
+            'projectID' => 'required|string',
             'projectDescription' => 'nullable|string',
-            'lensType' => 'required|string',
             'category' => 'required|string',
             'outputCategory' => 'required|array',
+            'latitude' => 'nullable|string',
+            'longitude' => 'nullable|string',
+            'cameraConfiguration' => 'nullable|string',
+            'cameraModels' => 'nullable|string',
+            'imageMetadata' => 'nullable|string',
+            'captureDate' => 'nullable|date',
         ]);
 
-        $projectId = Str::slug($request->projectTitle) . '-' . Str::random(4);
-
         $upload = ClientUpload::create([
-            'project_id' => $projectId,
+            'project_id' => $request->projectID,
             'project_title' => $request->projectTitle,
             'project_description' => $request->projectDescription,
             'upload_type' => 'sftp',
             'organization_name' => 'Self',
             'created_by_email' => Auth::user()->email,
             'request_status' => 'pending',
-            'camera_models' => $request->lensType,
+            'camera_models' => $request->cameraConfiguration ?? 'SFTP Upload',
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
             'category' => $request->category,
             'output_categories' => $request->outputCategory,
-            'delivery_method' => 'sftp',
+            'image_metadata' => $request->imageMetadata ?? '[]',
+            'capture_date' => $request->captureDate ?? now()->toDateString(),
+            'delivery_method' => 'portal', 
         ]);
 
-        // Return the user's real SFTP credentials from their account
+        // AUTO-CREATE SFTP DIRECTORIES: One for User Upload, One for Admin Delivery
+        try {
+            $sftpDisk = Storage::disk('sftp_delivery');
+            
+            // 1. User Upload Folder
+            $uploadPath = 'uploads/' . $upload->project_id;
+            if (!$sftpDisk->exists($uploadPath)) {
+                $sftpDisk->makeDirectory($uploadPath);
+                $sftpDisk->put($uploadPath . '/.ready_for_raw_data', 'Drag your photos into this folder.');
+            }
+
+            // 2. Admin Delivery Folder (Pre-created for you)
+            $deliveryPath = 'deliveries/' . $upload->project_id;
+            if (!$sftpDisk->exists($deliveryPath)) {
+                $sftpDisk->makeDirectory($deliveryPath);
+                $sftpDisk->put($deliveryPath . '/.ready_for_processed_model', 'Admin will drag the result here.');
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Could not auto-create SFTP directories: ' . $e->getMessage());
+        }
+
+        // Return connection details for the UI. (Personalized for the user)
+        $user = Auth::user();
+        $isAdmin = ($user->role === 'admin' || $user->role === 'superadmin');
+        
         $sftpDetails = [
-            'host'       => env('SFTP_DELIVERY_HOST', 'dl-dataportal.geovidia.my'),
+            'remotePath' => env('SFTP_DELIVERY_ROOT', '/home/tiquan/') . 'uploads/' . $upload->project_id . '/',
+            'host'       => env('SFTP_DELIVERY_HOST', '172.21.107.151'),
             'port'       => env('SFTP_DELIVERY_PORT', 22),
-            'username'   => Auth::user()->sftp_username ?? 'Not provisioned yet',
-            'password'   => Auth::user()->sftp_password ?? 'Contact admin to activate SFTP access',
-            'remotePath' => '/',  // User is chroot-jailed to their folder root
         ];
+
+        if ($isAdmin) {
+            // Admins see the master server credentials
+            $sftpDetails['username'] = env('SFTP_DELIVERY_USERNAME', 'tiquan');
+            $sftpDetails['password'] = env('SFTP_DELIVERY_PASSWORD', 'ubuntu23');
+        } else {
+            // Generate credentials if missing
+            if (!$user->sftp_username) {
+                $rawPassword = Str::random(12);
+                $user->sftp_username = Str::slug($user->name) . '_' . strtolower(Str::random(6));
+                $user->sftp_password = password_hash($rawPassword, PASSWORD_ARGON2ID);
+                $user->save();
+                
+                $sftpDetails['username'] = $user->sftp_username;
+                $sftpDetails['password'] = $rawPassword; // Give the raw password ONCE
+            } else {
+                $sftpDetails['username'] = $user->sftp_username;
+                $sftpDetails['password'] = '******** (Check your initial registration email or contact admin)';
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Project provisioned successfully.',
+            'message' => 'Project registered for SFTP upload.',
             'sftpDetails' => $sftpDetails,
+            'project' => $upload
         ]);
     }
 
@@ -158,11 +210,47 @@ class ProjectController extends Controller
             return response()->json(['error' => 'File not available yet.'], 404);
         }
 
+        // Check for expiry
+        if ($upload->delivered_expires_at && $upload->delivered_expires_at->isPast()) {
+            return response()->json(['error' => 'This download link has expired (1 week limit). Please contact admin if you still need the data.'], 410);
+        }
+
         if ($upload->delivery_method === 'portal' || $upload->delivery_method === 'sftp') {
-            if (!Storage::disk('sftp_delivery')->exists($upload->delivered_file_path)) {
+            // UNLIMITED Memory Boost for this request
+            if (function_exists('ini_set')) {
+                ini_set('memory_limit', '-1'); 
+            }
+            set_time_limit(0);
+
+            // Clear all output buffers to prevent memory bloat
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+
+            $disk = Storage::disk('sftp_delivery');
+            if (!$disk->exists($upload->delivered_file_path)) {
                 return response()->json(['error' => 'File not found on storage server.'], 404);
             }
-            return Storage::disk('sftp_delivery')->download($upload->delivered_file_path);
+
+            $fileName = basename($upload->delivered_file_path);
+            $size = $disk->size($upload->delivered_file_path);
+            $mimeType = $disk->mimeType($upload->delivered_file_path) ?: 'application/octet-stream';
+
+            // Return a direct stream response
+            return response()->stream(function() use ($disk, $upload) {
+                $stream = $disk->readStream($upload->delivered_file_path);
+                if ($stream) {
+                    fpassthru($stream);
+                    if (is_resource($stream)) {
+                        fclose($stream);
+                    }
+                }
+            }, 200, [
+                'Content-Type' => $mimeType,
+                'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+                'Content-Length' => $size,
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
         }
 
         // For Google Drive, we can't easily proxy stream it without massive memory usage if it's large,

@@ -601,6 +601,48 @@
               if (hasPos) configHtml += `<span class="badge bg-label-dark"><i class="bx bx-target-lock me-1"></i> POS Attached</span>`;
             }
 
+            // Download Button / Expiry logic
+            let downloadHtml = '';
+            let expiryIconHtml = '';
+            let isExpired = false;
+            
+            if (item.delivery_method === 'google_drive' && item.google_drive_link) {
+                // Google Drive Delivery
+                downloadHtml = `
+                    <li>
+                        <a class="dropdown-item btn-dropdown-link text-primary fw-bold" href="${item.google_drive_link}" target="_blank">
+                            <i class="bx bxl-google-cloud me-2"></i> Download (Google Drive)
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>`;
+                expiryIconHtml = `<div class="text-primary mt-1 fw-medium" style="font-size: 0.7rem;"><i class="bx bxl-google-cloud me-1"></i> Via Google Drive</div>`;
+            } else if (item.delivered_file_path) {
+                // Portal / SFTP Delivery with Expiry Check
+                if (item.delivered_expires_at) {
+                    const expiryDate = new Date(item.delivered_expires_at);
+                    const now = new Date();
+                    const diffMs = expiryDate - now;
+                    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                    
+                    if (diffMs < 0) {
+                        isExpired = true;
+                        expiryIconHtml = `<div class="text-danger mt-1 fw-bold" style="font-size: 0.7rem;"><i class="bx bx-error-circle me-1"></i> Link Expired</div>`;
+                    } else {
+                        expiryIconHtml = `<div class="text-warning mt-1 fw-medium" style="font-size: 0.7rem;"><i class="bx bx-time me-1"></i> Expires in ${diffDays} days</div>`;
+                    }
+                }
+
+                downloadHtml = `
+                    <li class="${isExpired ? 'opacity-50' : ''}">
+                        <a class="dropdown-item btn-dropdown-link ${isExpired ? 'text-muted disabled' : 'text-success fw-bold'}" 
+                           href="javascript:void(0);" 
+                           onclick="${isExpired ? 'alert(\'This link has expired.\')' : 'downloadDeliveredFile(' + item.id + ')'}">
+                           <i class="bx bx-download me-2"></i> ${isExpired ? 'Link Expired' : 'Download 3D Model'}
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>`;
+            }
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td>
@@ -614,7 +656,10 @@
                   </div>
                 </div>
               </td>
-              <td>${statusHtml}</td>
+              <td>
+                ${statusHtml}
+                ${(statusVal === 'completed' && (item.delivered_file_path || item.google_drive_link)) ? expiryIconHtml : ''}
+              </td>
               <td>
                 <div class="fw-medium text-dark" style="font-size: 0.9rem;">${formatDate(item.created_at)}</div>
                 <div class="project-meta">${formatBytes(itemSizeBytes)} • ${count} Photos</div>
@@ -626,9 +671,7 @@
                     <i class="bx bx-dots-vertical-rounded"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                    ${(statusVal === 'completed' && item.delivered_file_path) ? `
-                      <li><a class="dropdown-item btn-dropdown-link text-success fw-bold" href="javascript:void(0);" onclick="downloadDeliveredFile(${item.id})"><i class="bx bx-download"></i> Download Processed File</a></li>
-                      <li><hr class="dropdown-divider"></li>` : ''}
+                    ${downloadHtml}
                     ${statusVal === 'sent' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="javascript:void(0);" onclick="confirmReceived(' + item.id + ')"><i class="bx bx-check-circle"></i> Confirm Received</a></li>' : ''}
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showProjectDetails(${item.id})"><i class="bx bx-info-circle text-info"></i> View Details</a></li>
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showEditModal(${item.id})"><i class="bx bx-edit text-secondary"></i> Edit Metadata</a></li>
