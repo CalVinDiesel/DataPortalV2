@@ -1,0 +1,16 @@
+<?php
+require 'vendor/autoload.php';
+$app = require_once 'bootstrap/app.php';
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
+
+use Illuminate\Support\Facades\Storage;
+
+try {
+    $disk = Storage::disk('sftp_delivery');
+    echo "Listing root of SFTP disk:\n";
+    $files = $disk->directories('.');
+    print_r($files);
+} catch (\Exception $e) {
+    echo "Error: " . $e->getMessage() . "\n";
+}

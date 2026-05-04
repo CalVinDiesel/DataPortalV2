@@ -213,7 +213,7 @@
                       </a>
                     </li>
                     <li class="nav-item">
-                      <a class="nav-link mega-dropdown-link" href="payment-page.html">
+                      <a class="nav-link mega-dropdown-link" href="{{ route('payment') }}">
                         <i class="icon-base bx bx-radio-circle me-1"></i>
                         <span data-i18n="Payment">Payment</span>
                       </a>
@@ -472,7 +472,7 @@
                   <span class="badge p-50 w-px-20 h-px-20 rounded-pill bg-label-primary me-2"><i class="icon-base bx bx-check icon-xs"></i></span><span>Up to 2 subdomains</span>
                 </li>
               </ul>
-              <a href="payment-page.html" class="btn btn-label-success d-grid w-100">Your Current Plan</a>
+              <a href="{{ route('payment') }}" class="btn btn-label-success d-grid w-100">Your Current Plan</a>
             </div>
           </div>
         </div>
@@ -516,7 +516,7 @@
                   <span class="badge p-50 w-px-20 h-px-20 rounded-pill bg-label-primary me-2"><i class="icon-base bx bx-check icon-xs"></i></span><span>Custom “Thank you” page</span>
                 </li>
               </ul>
-              <a href="payment-page.html" class="btn btn-primary d-grid w-100">Upgrade</a>
+              <button type="button" class="btn btn-label-secondary d-grid w-100" disabled>Coming Soon</button>
             </div>
           </div>
         </div>
@@ -557,7 +557,7 @@
                   <span class="badge p-50 w-px-20 h-px-20 rounded-pill bg-label-primary me-2"><i class="icon-base bx bx-check icon-xs"></i></span><span>Stripe integration</span>
                 </li>
               </ul>
-              <a href="payment-page.html" class="btn btn-label-primary d-grid w-100">Upgrade</a>
+              <button type="button" class="btn btn-label-secondary d-grid w-100" disabled>Coming Soon</button>
             </div>
           </div>
         </div>
@@ -573,7 +573,7 @@
           <div class="text-center text-lg-start">
             <h4 class="text-primary mb-2">Still not convinced? Start with a 14-day FREE trial!</h4>
             <p class="text-body mb-6 mb-md-11">You will get full access to with all the features for 14 days.</p>
-            <a href="payment-page.html" class="btn btn-primary">Start 14-day free trial</a>
+            <button type="button" class="btn btn-label-secondary" disabled>Coming Soon</button>
           </div>
           <!-- image -->
           <div class="text-center">
@@ -762,13 +762,13 @@
                 <tr>
                   <td></td>
                   <td>
-                    <a href="payment-page.html" class="btn text-nowrap btn-label-primary">Choose Plan</a>
+                    <button type="button" class="btn text-nowrap btn-label-secondary" disabled>Coming Soon</button>
                   </td>
                   <td>
-                    <a href="payment-page.html" class="btn text-nowrap btn-primary">Choose Plan</a>
+                    <button type="button" class="btn text-nowrap btn-label-secondary" disabled>Coming Soon</button>
                   </td>
                   <td>
-                    <a href="payment-page.html" class="btn text-nowrap btn-label-primary">Choose Plan</a>
+                    <button type="button" class="btn text-nowrap btn-label-secondary" disabled>Coming Soon</button>
                   </td>
                 </tr>
               </tbody>

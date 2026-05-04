@@ -37,16 +37,26 @@ class AppServiceProvider extends ServiceProvider
 
         \Illuminate\Support\Facades\Storage::extend('google', function ($app, $config) {
             $client = new \Google\Client();
+            $client->addScope(\Google\Service\Drive::DRIVE);
             
+            // 🚀 DEBUG LOG: See if credentials actually reach this closure
+            \Log::info("GDrive Driver Booting. Config Keys: " . implode(', ', array_keys($config)));
+
             if (isset($config['serviceAccountJson']) && file_exists($config['serviceAccountJson'])) {
                 $client->setAuthConfig($config['serviceAccountJson']);
             } else {
                 if (isset($config['clientId'])) $client->setClientId($config['clientId']);
                 if (isset($config['clientSecret'])) $client->setClientSecret($config['clientSecret']);
-                if (isset($config['refreshToken'])) $client->refreshToken($config['refreshToken']);
+                if (isset($config['refreshToken'])) {
+                    $token = $client->fetchAccessTokenWithRefreshToken($config['refreshToken']);
+                    if (isset($token['error'])) {
+                        \Log::error("GDrive Refresh Token Error: " . ($token['error_description'] ?? $token['error']) . " (Client: " . substr($config['clientId'] ?? 'NONE', 0, 10) . "...)");
+                    } else {
+                        $client->setAccessToken($token);
+                    }
+                }
             }
 
-            $client->addScope(\Google\Service\Drive::DRIVE);
             $service = new \Google\Service\Drive($client);
 
             $adapter = new \Masbug\Flysystem\GoogleDriveAdapter($service, $config['folderId'] ?? '/');

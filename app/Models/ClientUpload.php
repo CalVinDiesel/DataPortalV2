@@ -36,7 +36,8 @@ class ClientUpload extends Model
         'sftp_delivery_path',
         'gdrive_delivery_folder_id',
         'delivered_file_path',
-        'delivered_at'
+        'delivered_at',
+        'delivered_expires_at'
     ];
 
     protected $casts = [

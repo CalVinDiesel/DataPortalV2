@@ -244,8 +244,17 @@
                 <div class="cred-value" id="resPass">-</div>
               </div>
               <div class="col-12 mt-2">
-                <div class="cred-label">Target Directory</div>
-                <div class="cred-value" id="resPath" style="word-break: break-all;">-</div>
+                <div class="cred-label">WinSCP Path (Copy this into WinSCP)</div>
+                <div class="d-flex align-items-center">
+                  <div class="cred-value cred-value-primary flex-grow-1" id="resClientPath" style="word-break: break-all;">-</div>
+                  <button type="button" class="btn btn-sm btn-outline-primary ms-2 flex-shrink-0" onclick="copyToClipboard('resClientPath', this)" title="Copy Path">
+                    <i class="bx bx-copy"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-12 mt-1">
+                <div class="cred-label text-muted">Full Server Path (For Reference)</div>
+                <div class="cred-value small text-muted" id="resAbsolutePath" style="word-break: break-all;">-</div>
               </div>
             </div>
           </div>
@@ -263,14 +272,30 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="projectDescription">Project Description</label>
-            <textarea id="projectDescription" class="form-control" rows="3" placeholder="Describe the survey area or purpose..."></textarea>
+            <textarea id="projectDescription" class="form-control" rows="2" placeholder="Describe the survey area or purpose..."></textarea>
           </div>
           <div class="mb-3">
-            <label class="form-label" for="lensType">Lens Configuration <span class="text-danger">*</span></label>
-            <select class="form-select" id="lensType" name="lensType" required>
+            <label class="form-label" for="lensType">Lens Type <span class="text-danger">*</span></label>
+            <select class="form-select" id="lensType" name="lensType" required onchange="toggleSftpCameraDetails()">
               <option value="single">Single-Lens</option>
               <option value="multiple">Multi-Lens</option>
             </select>
+          </div>
+          <div class="mb-3" id="cameraDetailsDiv" style="display: none;">
+            <label class="form-label" for="cameraModels">Camera Models</label>
+            <input type="text" id="cameraModels" class="form-control" placeholder="RGB, Thermal...">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="imageMetadata">Metadata Format <span class="text-danger">*</span></label>
+            <select class="form-select" id="imageMetadata" name="imageMetadata" required>
+              <option value="EXIF (embedded)">EXIF (embedded)</option>
+              <option value="POS file">POS file</option>
+              <option value="EXIF & POS">EXIF & POS</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="captureDate">Capture Date</label>
+            <input type="date" id="captureDate" class="form-control">
           </div>
           <div class="mb-3">
             <label class="form-label" for="category">Category <span class="text-danger">*</span></label>
@@ -337,6 +362,9 @@
         </div>
       </div>
     </div>
+    <div class="right-panel">
+      <div id="bgMap" style="width: 100%; height: 100%;"></div>
+    </div>
   </div>
 
   <script src="{{ asset('assets/vendor/js/bootstrap.js') }}"></script>
@@ -344,21 +372,29 @@
     const userRole = '{{ Auth::user()->role }}';
     const isAdmin = (userRole === 'admin' || userRole === 'superadmin');
 
-    // INITIALIZE MAP
-    // Default view over Malaysia
-    const map = L.map('map').setView([4.2105, 101.9758], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
+    // 🌍 BACKGROUND MAP (v128)
+    const bgMap = L.map('bgMap', { zoomControl: false, attributionControl: false }).setView([4.2105, 101.9758], 6);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(bgMap);
 
-    let marker;
-    map.on('click', function(e) {
-      if (marker) map.removeLayer(marker);
-      marker = L.marker(e.latlng).addTo(map);
-      document.getElementById('latitude').value = e.latlng.lat.toFixed(6);
-      document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
-    });
+    // INITIALIZE FORM MAP
+    try {
+      const map = L.map('map').setView([4.2105, 101.9758], 6);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+
+      let marker;
+      map.on('click', function(e) {
+        if (marker) map.removeLayer(marker);
+        marker = L.marker(e.latlng).addTo(map);
+        document.getElementById('latitude').value = e.latlng.lat.toFixed(6);
+        document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+      });
+    } catch (err) {
+      console.error("Map initialization failed:", err);
+      document.getElementById('map').innerHTML = '<div class="p-3 text-center text-muted small">Map failed to load. You can still enter coordinates manually or skip this step.</div>';
+    }
 
     // Project ID Generator with User Prefix to prevent collisions
     const projectTitleInput = document.getElementById('projectTitle');
@@ -390,6 +426,11 @@
       generatedIdInput.value = slug;
     });
 
+    function toggleSftpCameraDetails() {
+      const val = document.getElementById('lensType').value;
+      document.getElementById('cameraDetailsDiv').style.display = (val === 'multiple' ? 'block' : 'none');
+    }
+
     document.getElementById('sftpForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
@@ -411,17 +452,21 @@
       const outputCheckboxes = document.querySelectorAll('input[name="outputCategory"]:checked');
       const outputs = Array.from(outputCheckboxes).map(cb => cb.value);
       
+      const isMulti = document.getElementById('lensType').value === 'multiple';
+      const customCam = document.getElementById('cameraModels').value;
+      const cameraLine = isMulti ? ("Multi-Lens" + (customCam ? (": " + customCam) : "")) : "Single-Lens";
+
       const payload = {
         projectTitle: projectTitleInput.value,
         projectID: generatedIdInput.value,
         projectDescription: document.getElementById('projectDescription').value,
-        cameraConfiguration: document.getElementById('lensType').value,
+        cameraConfiguration: cameraLine,
         category: categoryVal,
         outputCategory: outputs,
         latitude: document.getElementById('latitude').value || null,
         longitude: document.getElementById('longitude').value || null,
-        imageMetadata: "[]",
-        captureDate: new Date().toISOString().split('T')[0]
+        imageMetadata: document.getElementById('imageMetadata').value,
+        captureDate: document.getElementById('captureDate').value || new Date().toISOString().split('T')[0]
       };
 
       try {
@@ -443,10 +488,13 @@
           document.getElementById('successView').style.display = 'block';
           document.getElementById('successFooter').style.display = 'flex';
           
-          // Show basic connection info (Filtered by backend for security)
-          document.getElementById('resHost').innerText = data.sftpDetails.host || '127.0.0.1';
-          document.getElementById('resPort').innerText = data.sftpDetails.port || '22';
-          document.getElementById('resPath').innerText = data.sftpDetails.remotePath;
+          // Show basic connection info
+          document.getElementById('resHost').innerText = data.sftpDetails.host || '{{ config('filesystems.disks.sftp_delivery.host', '172.21.107.151') }}';
+          document.getElementById('resPort').innerText = data.sftpDetails.port || '{{ env('SFTP_USER_PORT', 2223) }}';
+          
+          // 🚀 SMART-PATH SYNC (v118)
+          document.getElementById('resClientPath').innerText = data.sftpDetails.clientPath || data.sftpDetails.remotePath;
+          document.getElementById('resAbsolutePath').innerText = data.sftpDetails.absolutePath || data.sftpDetails.remotePath;
 
           // Populate individual credentials (Username/Password matching the user)
           document.getElementById('resUser').innerText = data.sftpDetails.username || 'Not Assigned';
@@ -455,7 +503,7 @@
           // Ensure connection instruction is clear
           const instruction = document.createElement('div');
           instruction.className = 'alert alert-info mt-3 text-start';
-          instruction.innerHTML = '<i class="bx bx-info-circle me-2"></i> Use the credentials above in WinSCP. Drag your raw data files into the <strong>Target Directory</strong> shown above.';
+          instruction.innerHTML = '<i class="bx bx-info-circle me-2"></i> <strong>WinSCP Tip:</strong> If you get a "Permission Denied" while dragging files, go to WinSCP <strong>Options > Preferences > Transfer > Default > Edit</strong> and <strong>UNCHECK "Preserve timestamp"</strong>. Then try again.';
           document.getElementById('successView').appendChild(instruction);
           
         } else {
@@ -485,6 +533,19 @@
         otherInput.required = false;
         otherInput.value = '';
       }
+    }
+    function copyToClipboard(elementId, btn) {
+      const text = document.getElementById(elementId).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const icon = btn.querySelector('i');
+        const originalClass = icon.className;
+        icon.className = 'bx bx-check';
+        btn.classList.replace('btn-outline-primary', 'btn-success');
+        setTimeout(() => {
+          icon.className = originalClass;
+          btn.classList.replace('btn-success', 'btn-outline-primary');
+        }, 2000);
+      });
     }
   </script>
 </body>

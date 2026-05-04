@@ -111,7 +111,7 @@
                     </div>
                     <div class="mb-3">
                       <label class="form-label" for="contact_number">Contact number <span class="text-danger">*</span></label>
-                      <input type="tel" class="form-control" id="contact_number" name="contact_number" value="{{ old('contact_number') }}" required placeholder="e.g. +60 12-345 6789" autocomplete="tel">
+                      <input type="tel" class="form-control" id="contact_number" name="contact_number" value="{{ old('contact_number') }}" required placeholder="e.g. {{ config('support.phone') }}" autocomplete="tel">
                       <x-input-error :messages="$errors->get('contact_number')" class="mt-2" />
                     </div>
                     <div class="mb-3">
@@ -220,7 +220,7 @@
 
                   <div class="mb-3">
                     <label class="form-label" for="regContact">Contact number <span class="text-danger">*</span></label>
-                    <input type="tel" class="form-control" id="regContact" name="contactNumber" placeholder="e.g. +60 12-345 6789">
+                    <input type="tel" class="form-control" id="regContact" name="contactNumber" placeholder="e.g. {{ config('support.phone') }}">
                     <div class="invalid-feedback">Please enter a valid contact number.</div>
                   </div>
 

@@ -123,6 +123,32 @@
 
   /* heading inside hero always uses body color */
   .hero-bg h2 { color: var(--bs-heading-color); }
+
+  /* 🚀 BORDER ALIGNMENT FIX (v150): Ensure merged input groups have seamless borders */
+  .input-group-merge.form-password-toggle {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    overflow: hidden;
+    background-color: var(--bs-body-bg);
+  }
+  .input-group-merge.form-password-toggle .form-control,
+  .input-group-merge.form-password-toggle .input-group-text {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+  .input-group-merge.form-password-toggle:focus-within {
+    border-color: #696cff;
+    box-shadow: 0 0 0.25rem 0.05rem rgba(105, 108, 255, 0.1);
+  }
+
+  /* 🚀 BROWSER OVERRIDE (v151): Hide native browser password reveal buttons to prevent duplicates */
+  input::-ms-reveal,
+  input::-ms-clear,
+  input::-webkit-contacts-auto-fill-button,
+  input::-webkit-credentials-auto-fill-button {
+    display: none !important;
+  }
 </style>
 </head>
 
@@ -215,7 +241,7 @@
       </div>
       <div id="inlineFormContact" class="profile-inline-form d-none">
         <label class="form-label small">New contact number</label>
-        <input type="tel" class="form-control form-control-sm" id="contactNumber" placeholder="e.g. +60 12-345 6789">
+        <input type="tel" class="form-control form-control-sm" id="contactNumber" placeholder="e.g. {{ config('support.phone') }}">
         <button type="button" class="btn btn-sm btn-primary" id="btnContactSubmit">Update contact</button>
         <button type="button" class="btn btn-sm btn-outline-secondary" id="btnContactCancel">Cancel</button>
         <span id="contactMessage" class="small ms-2"></span>
@@ -231,10 +257,22 @@
       </div>
       <form id="formChangePassword" class="profile-inline-form d-none">
         @csrf
-        <label class="form-label small">Current password</label>
-        <input type="password" class="form-control form-control-sm" id="currentPassword" name="currentPassword" autocomplete="current-password" placeholder="Current password">
-        <label class="form-label small mt-2">New password</label>
-        <input type="password" class="form-control form-control-sm" id="newPassword" name="newPassword" minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
+        <div class="mb-2">
+          <label class="form-label small">Current password</label>
+          <div class="input-group input-group-merge form-password-toggle">
+            <input type="password" class="form-control" id="currentPassword" name="currentPassword" autocomplete="current-password" placeholder="Current password">
+            <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+          </div>
+        </div>
+        
+        <div class="mb-2">
+          <label class="form-label small">New password</label>
+          <div class="input-group input-group-merge form-password-toggle">
+            <input type="password" class="form-control" id="newPassword" name="newPassword" minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
+            <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+          </div>
+        </div>
+        
         <button type="submit" class="btn btn-sm btn-primary" id="btnPasswordSubmit">Update password</button>
         <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPasswordCancel">Cancel</button>
         <span id="passwordMessage" class="small ms-2"></span>
@@ -261,6 +299,16 @@
         Use these credentials in any SFTP client (e.g. FileZilla, WinSCP) to connect and upload your files.
       </p>
 
+      <!-- SFTP Connection Details -->
+      <div class="profile-row">
+        <span class="profile-label">SFTP Host</span>
+        <span class="profile-value" id="profile-sftp-host">{{ config('filesystems.disks.sftp_delivery.host', '172.21.107.151') }}</span>
+      </div>
+      <div class="profile-row">
+        <span class="profile-label">SFTP Port</span>
+        <span class="profile-value text-primary fw-bold" id="profile-sftp-port">{{ env('SFTP_USER_PORT', 2223) }}</span>
+      </div>
+
       <!-- SFTP Username (read-only) -->
       <div class="profile-row">
         <span class="profile-label">SFTP Username</span>
@@ -278,10 +326,22 @@
       </div>
       <form id="formChangeSftpPassword" class="profile-inline-form d-none">
         @csrf
-        <label class="form-label small">New SFTP password</label>
-        <input type="password" class="form-control form-control-sm" id="newSftpPassword" name="newSftpPassword" placeholder="At least 8 characters" minlength="8" autocomplete="new-password">
-        <label class="form-label small mt-2">Confirm new SFTP password</label>
-        <input type="password" class="form-control form-control-sm" id="confirmSftpPassword" name="confirmSftpPassword" placeholder="Repeat new password" autocomplete="new-password">
+        <div class="mb-2">
+          <label class="form-label small">New SFTP password</label>
+          <div class="input-group input-group-merge form-password-toggle">
+            <input type="password" class="form-control" id="newSftpPassword" name="newSftpPassword" placeholder="At least 8 characters" minlength="8" autocomplete="new-password">
+            <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+          </div>
+        </div>
+        
+        <div class="mb-2">
+          <label class="form-label small">Confirm new SFTP password</label>
+          <div class="input-group input-group-merge form-password-toggle">
+            <input type="password" class="form-control" id="confirmSftpPassword" name="confirmSftpPassword" placeholder="Repeat new password" autocomplete="new-password">
+            <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+          </div>
+        </div>
+        
         <button type="submit" class="btn btn-sm btn-primary mt-2" id="btnSftpPasswordSubmit">Update SFTP password</button>
         <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="btnSftpPasswordCancel">Cancel</button>
         <span id="sftpPasswordMessage" class="small ms-2"></span>
@@ -311,11 +371,11 @@
       }
 
       function hideInlineForms() {
-        document.getElementById('inlineFormName').classList.add('d-none');
-        document.getElementById('inlineFormPassword').classList.add('d-none');
-        document.getElementById('inlineFormContact').classList.add('d-none');
-        document.getElementById('inlineFormEmail').classList.add('d-none');
-        document.getElementById('inlineFormSftpPassword').classList.add('d-none');
+        const ids = ['inlineFormName', 'formChangePassword', 'inlineFormContact', 'inlineFormEmail', 'formChangeSftpPassword'];
+        ids.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add('d-none');
+        });
       }
 
       function loadProfile() {
@@ -397,13 +457,13 @@
 
         document.getElementById('btnChangePassword').addEventListener('click', function () {
           hideInlineForms();
-          document.getElementById('inlineFormPassword').classList.remove('d-none');
+          document.getElementById('formChangePassword').classList.remove('d-none');
           document.getElementById('currentPassword').value = '';
           document.getElementById('newPassword').value = '';
           showMessage('passwordMessage', '');
         });
         document.getElementById('btnPasswordCancel').addEventListener('click', function () {
-          document.getElementById('inlineFormPassword').classList.add('d-none');
+          document.getElementById('formChangePassword').classList.add('d-none');
           showMessage('passwordMessage', '');
         });
         document.getElementById('formChangePassword').addEventListener('submit', function (e) {
@@ -540,6 +600,14 @@ var sftpPasswordVisible = false;
                 actualSftpPassword = data.sftpPassword || '';
                 document.getElementById('profile-sftp-password').textContent = '••••••••';
                 document.getElementById('sftpNotSetAlert').classList.add('d-none');
+                
+                // 🚀 PORT SYNC (v142): Ensure port 2223 is shown for clients
+                if (document.getElementById('profile-sftp-port')) {
+                  document.getElementById('profile-sftp-port').textContent = data.sftpPort || '{{ env('SFTP_USER_PORT', 2223) }}';
+                }
+                if (document.getElementById('profile-sftp-host')) {
+                  document.getElementById('profile-sftp-host').textContent = data.sftpHost || '{{ config('filesystems.disks.sftp_delivery.host', '172.21.107.151') }}';
+                }
               } else {
                 document.getElementById('profile-sftp-username').textContent = 'Not set';
                 document.getElementById('profile-sftp-password').textContent = 'Not set';
@@ -561,7 +629,7 @@ var sftpPasswordVisible = false;
         // Show change SFTP password form
         document.getElementById('btnChangeSftpPassword').addEventListener('click', function() {
           hideInlineForms();
-          document.getElementById('inlineFormSftpPassword').classList.remove('d-none');
+          document.getElementById('formChangeSftpPassword').classList.remove('d-none');
           document.getElementById('newSftpPassword').value = '';
           document.getElementById('confirmSftpPassword').value = '';
           showMessage('sftpPasswordMessage', '');
@@ -615,6 +683,22 @@ var sftpPasswordVisible = false;
             .finally(function() { btn.disabled = false; });
         });
 
+        // 🚀 CUSTOM TOGGLE LOGIC (v152): Since theme JS is not auto-loaded here
+        document.querySelectorAll('.form-password-toggle .input-group-text').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var inputGroup = this.closest('.form-password-toggle');
+            var input = inputGroup.querySelector('input');
+            var icon = this.querySelector('i');
+            
+            if (input.type === 'password') {
+              input.type = 'text';
+              icon.classList.replace('bx-hide', 'bx-show');
+            } else {
+              input.type = 'password';
+              icon.classList.replace('bx-show', 'bx-hide');
+            }
+          });
+        });
       });
     })();
   </script>

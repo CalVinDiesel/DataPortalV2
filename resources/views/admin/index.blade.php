@@ -192,12 +192,6 @@
                 </a>
               </div>
             </div>
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Quick info</h5>
-                <p class="mb-0">This admin portal is linked to the database (PostgreSQL when configured). Use <strong>Add 3D Model</strong> to register new tileset URLs so they appear on the public overview map. Use <strong>Client Uploads</strong> to handle client requests for <strong>custom image-to-3D processing</strong>: clients submit their own drone images via the <a href="../front-pages/{{ route('upload_data') }}" target="_blank">upload page</a>; you process them and deliver the resulting 3D model back to the client (paid service; not added to the map).</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>

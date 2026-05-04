@@ -757,7 +757,7 @@
                   </li>
                 </ul>
                 <div class="d-grid mt-8">
-                  <button type="button" class="btn btn-label-primary" id="pricingSubscribeBtn">Subscribe</button>
+                  <button type="button" class="btn btn-label-secondary" id="pricingSubscribeBtn" disabled>Coming Soon</button>
                 </div>
               </div>
             </div>
@@ -791,8 +791,7 @@
                   </li>
                 </ul>
                 <div class="d-grid mt-8">
-                  <a href="{{ route('payment') }}"
- class="btn btn-label-primary">Purchase/Reload</a>
+                  <button type="button" class="btn btn-label-secondary" disabled>Coming Soon</button>
                 </div>
               </div>
             </div>
@@ -826,46 +825,54 @@
             <div class="accordion" id="accordionExample">
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingOne">
-                  <button type="button" class="accordion-button" data-bs-toggle="collapse" data-bs-target="#accordionOne" aria-expanded="true" aria-controls="accordionOne">Do you charge for each upgrade?</button>
+                  <button type="button" class="accordion-button" data-bs-toggle="collapse" data-bs-target="#accordionOne" aria-expanded="true" aria-controls="accordionOne">How do I upload my raw data for 3D processing?</button>
                 </h2>
-
                 <div id="accordionOne" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">Lemon drops chocolate cake gummies carrot cake chupa chups muffin topping. Sesame snaps icing marzipan gummi bears macaroon dragée danish caramels powder. Bear claw dragée pastry topping soufflé. Wafer gummi bears marshmallow pastry pie.</div>
+                  <div class="accordion-body">To start a new project, log in to your account and navigate to the "Upload" menu. You can choose to upload your raw images or zip files directly through the portal, via our high-speed SFTP server, or by providing a Google Drive share link. Our team will then process your data into a high-quality 3D model.</div>
                 </div>
               </div>
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingTwo">
-                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionTwo" aria-expanded="false" aria-controls="accordionTwo">Do I need to purchase a license for each website?</button>
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionTwo" aria-expanded="false" aria-controls="accordionTwo">How long do I have to download my processed 3D models?</button>
                 </h2>
                 <div id="accordionTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">Dessert ice cream donut oat cake jelly-o pie sugar plum cheesecake. Bear claw dragée oat cake dragée ice cream halvah tootsie roll. Danish cake oat cake pie macaroon tart donut gummies. Jelly beans candy canes carrot cake. Fruitcake chocolate chupa chups.</div>
+                  <div class="accordion-body">Once your 3D model is processed and delivered by our admin team, you will have 7 days to download the files. After 7 days, the download links (including Google Drive and SFTP links) will automatically expire and be removed from our system to ensure data security and maintain portal performance.</div>
                 </div>
               </div>
               <div class="card accordion-item active">
                 <h2 class="accordion-header" id="headingThree">
-                  <button type="button" class="accordion-button" data-bs-toggle="collapse" data-bs-target="#accordionThree" aria-expanded="false" aria-controls="accordionThree">What is regular license?</button>
+                  <button type="button" class="accordion-button" data-bs-toggle="collapse" data-bs-target="#accordionThree" aria-expanded="false" aria-controls="accordionThree">What are the requirements for Google Drive uploads?</button>
                 </h2>
                 <div id="accordionThree" class="accordion-collapse collapse show" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
                   <div class="accordion-body">
-                    Regular license can be used for end products that do not charge users for access or service(access is free and there will be no monthly subscription fee). Single regular license can be used for single end product and end product can be used by you or your client. If you want to sell end product to multiple clients then you will need to purchase separate license for each client. The same rule applies if you want to use the same end product on multiple domains(unique setup).
-                    For more info on regular license you can check official description.
+                    When using Google Drive to upload raw data, please ensure your shared link is set to "Anyone with the link" and has "Viewer" or "Editor" permissions. This allows our admin team to access your raw data for processing. Our system will automatically detect the file size and photo count once you provide a valid shared link.
                   </div>
                 </div>
               </div>
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingFour">
-                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionFour" aria-expanded="false" aria-controls="accordionFour">What is extended license?</button>
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionFour" aria-expanded="false" aria-controls="accordionFour">Do I need an account to explore the 3D showcase?</button>
                 </h2>
                 <div id="accordionFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">Lorem ipsum dolor sit amet consectetur adipisicing elit. Nobis et aliquid quaerat possimus maxime! Mollitia reprehenderit neque repellat deleniti delectus architecto dolorum maxime, blanditiis earum ea, incidunt quam possimus cumque.</div>
+                  <div class="accordion-body">The 3D Model Showcase and Overview Map are public and can be explored by anyone visiting the portal. However, if you wish to upload your own raw data, track project statuses, or download processed 3D models, you must register for a free account.</div>
                 </div>
               </div>
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingFive">
-                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionFive" aria-expanded="false" aria-controls="accordionFive">Which license is applicable for SASS application?</button>
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionFive" aria-expanded="false" aria-controls="accordionFive">How do I track the status of my uploaded projects?</button>
                 </h2>
                 <div id="accordionFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">Lorem ipsum dolor sit amet consectetur, adipisicing elit. Sequi molestias exercitationem ab cum nemo facere voluptates veritatis quia, eveniet veniam at et repudiandae mollitia ipsam quasi labore enim architecto non!</div>
+                  <div class="accordion-body">You can track your projects in real-time by visiting the "My Projects" page under the Upload menu. Your project will move through various stages: "Pending" (uploaded), "Processing" (admin working on it), "Sent" (processed file ready), and "Completed" (once finalized).</div>
+                </div>
+              </div>
+              <div class="card accordion-item">
+                <h2 class="accordion-header" id="headingSix">
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionSix" aria-expanded="false" aria-controls="accordionSix">Are all project creation and upload methods available to every user?</button>
+                </h2>
+                <div id="accordionSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#accordionExample">
+                  <div class="accordion-body">
+                    While all registered users can utilize our standard Direct Portal Upload and Google Drive integration to submit their raw data, the high-speed SFTP (Secure File Transfer Protocol) method is exclusively reserved for our "Trusted" accounts. This ensures high-bandwidth availability for our power users. If your projects involve massive datasets and you require SFTP access, please contact our support team to discuss account verification.
+                  </div>
                 </div>
               </div>
             </div>
@@ -901,7 +908,7 @@
                       <div class="badge bg-label-primary rounded p-1_5 me-3"><i class="icon-base bx bx-envelope icon-lg"></i></div>
                       <div>
                         <p class="mb-0">Email</p>
-                        <h6 class="mb-0"><a href="mailto:example@gmail.com" class="text-heading">example@gmail.com</a></h6>
+                        <h6 class="mb-0"><a href="mailto:{{ config('support.email') }}" class="text-heading">{{ config('support.email') }}</a></h6>
                       </div>
                     </div>
                   </div>
@@ -910,7 +917,7 @@
                       <div class="badge bg-label-success rounded p-1_5 me-3"><i class="icon-base bx bx-phone-call icon-lg"></i></div>
                       <div>
                         <p class="mb-0">Phone</p>
-                        <h6 class="mb-0"><a href="tel:+1234-568-963" class="text-heading">+1234 568 963</a></h6>
+                        <h6 class="mb-0"><a href="tel:{{ str_replace([' ', '-', '+'], '', config('support.phone')) }}" class="text-heading">{{ config('support.phone') }}</a></h6>
                       </div>
                     </div>
                   </div>
@@ -923,22 +930,35 @@
               <div class="card-body">
                 <h4 class="mb-2">Send a message</h4>
                 <p class="mb-6">
-                  If you would like to discuss anything related to payment, account, licensing,<br class="d-none d-lg-block" />
-                  partnerships, or have pre-sales questions, you’re at the right place.
+                  If you would like to discuss anything related to 3D model processing, raw data uploads,<br class="d-none d-lg-block" />
+                  custom mapping services, or account inquiries, you’re at the right place.
                 </p>
-                <form>
+                @if(session('success'))
+                  <div class="alert alert-success alert-dismissible" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                @endif
+                @if(session('error'))
+                  <div class="alert alert-danger alert-dismissible" role="alert">
+                    {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                @endif
+                <form action="{{ route('contact.submit') }}" method="POST">
+                  @csrf
                   <div class="row g-4">
                     <div class="col-md-6">
                       <label class="form-label" for="contact-form-fullname">Full Name</label>
-                      <input type="text" class="form-control" id="contact-form-fullname" placeholder="john" />
+                      <input type="text" name="name" class="form-control" id="contact-form-fullname" placeholder="john" required />
                     </div>
                     <div class="col-md-6">
                       <label class="form-label" for="contact-form-email">Email</label>
-                      <input type="email" id="contact-form-email" class="form-control" placeholder="johndoe@gmail.com" />
+                      <input type="email" name="email" id="contact-form-email" class="form-control" placeholder="johndoe@gmail.com" required />
                     </div>
                     <div class="col-12">
                       <label class="form-label" for="contact-form-message">Message</label>
-                      <textarea id="contact-form-message" class="form-control" rows="11" placeholder="Write a message"></textarea>
+                      <textarea id="contact-form-message" name="message" class="form-control" rows="11" placeholder="Write a message" required></textarea>
                     </div>
                     <div class="col-12">
                       <button type="submit" class="btn btn-primary">Send inquiry</button>
@@ -1067,7 +1087,8 @@
     </script>
     <script>
       (function() {
-        var AUTH_API = 'http://localhost:3000';
+        // v166: Dynamic API detection to replace hardcoded localhost:3000
+        var AUTH_API = window.AppConfig ? window.AppConfig.baseUrl : (window.location.origin || 'http://localhost:8000');
         document.addEventListener('DOMContentLoaded', function() {
           var btn = document.getElementById('pricingSubscribeBtn');
           if (!btn) return;
@@ -1100,7 +1121,7 @@
               modal.show();
               return;
             }
-            window.location.href = 'payment-page.html';
+            window.location.href = '{{ route('payment') }}';
           });
         });
       })();
@@ -1301,7 +1322,7 @@
           } else {
             finalSrc = 'https://placehold.co/400x220/1a1a2e/696cff?text=' + encodeURIComponent((title || '3D').substring(0, 20));
           }
-          return '<div class="col-lg-4 col-md-6" id="tile-showcase-' + esc(id) + '"><a href="/loading-3d?id=' + esc(id) + '" class="tile-3d-card" target="_blank" rel="noopener"><div class="tile-3d-img"><img src="' + finalSrc + '" alt="' + esc(title) + '" onerror="this.src=\'https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model\'"></div><div class="tile-3d-body"><h6 class="tile-3d-title">' + esc(title) + '</h6><div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Kota Kinabalu</span></div><div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div></div></a></div>';
+          return '<div class="col-lg-4 col-md-6" id="tile-showcase-' + esc(id) + '"><a href="/viewer/' + esc(id) + '" class="tile-3d-card" target="_blank" rel="noopener"><div class="tile-3d-img"><img src="' + finalSrc + '" alt="' + esc(title) + '" onerror="this.src=\'https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model\'"></div><div class="tile-3d-body"><h6 class="tile-3d-title">' + esc(title) + '</h6><div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Kota Kinabalu</span></div><div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div></div></a></div>';
         }).join('');
         container.innerHTML = html;
       }).catch(function () {});

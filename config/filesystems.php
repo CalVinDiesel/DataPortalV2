@@ -61,23 +61,43 @@ return [
         ],
 
         'sftp_delivery' => [
-            'driver'     => 'sftp',
-            'host'       => env('SFTP_DELIVERY_HOST'),
-            'username'   => env('SFTP_DELIVERY_USERNAME'),
-            'password'   => env('SFTP_DELIVERY_PASSWORD'),
-            'port'       => (int) env('SFTP_DELIVERY_PORT', 22),  // Must be int — Flysystem strict type check
-            'root'       => env('SFTP_DELIVERY_ROOT', '/'),
-            'visibility' => 'private',
-            'timeout'    => 10,  // Reduced from 30s — fail fast on bad connection
+            'driver'          => 'sftp',
+            'host'            => env('SFTP_DELIVERY_HOST'),
+            'username'        => env('SFTP_DELIVERY_USERNAME'),
+            'password'        => env('SFTP_DELIVERY_PASSWORD'),
+            'port'            => (int) env('SFTP_DELIVERY_PORT', 22),
+            'root'            => env('SFTP_DELIVERY_ROOT', '/'),
+            'visibility'      => 'public',
+            'directory_visibility' => 'public',
+            'permissions' => [
+                'file' => [
+                    'public' => 0666,
+                    'private' => 0600,
+                ],
+                'dir' => [
+                    'public' => 0777,
+                    'private' => 0700,
+                ],
+            ],
+            'timeout'         => 30, 
+            'connectTimeout'  => 30,
+            'hostFingerprint' => null, 
+            'useAgent'        => false, // 🚀 PASSWORD-FIRST (v97 Fix)
         ],
 
         'google_drive' => [
             'driver' => 'google',
-            'clientId' => env('GOOGLE_SERVICE_ACCOUNT_CLIENT_ID'), // Not strictly needed for Service Account but useful for metadata
-            'clientSecret' => null,
-            'refreshToken' => null,
+            'clientId' => env('GOOGLE_CLIENT_ID'),
+            'clientSecret' => env('GOOGLE_CLIENT_SECRET'),
+            'refreshToken' => env('GOOGLE_REFRESH_TOKEN'),
             'folderId' => env('GOOGLE_DRIVE_DELIVERY_FOLDER_ID'),
             'serviceAccountJson' => storage_path('app/google-service-account.json'),
+        ],
+
+        'nitro' => [
+            'driver' => 'local',
+            'root' => env('NITRO_STORAGE_ROOT', 'C:/DataPortal_Nitro_Storage'),
+            'throw' => false,
         ],
 
     ],

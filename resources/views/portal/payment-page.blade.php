@@ -85,7 +85,7 @@
 
     <!-- Page CSS -->
     
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page-payment.css">
+  <!-- <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page-payment.css"> -->
 
     <!-- Footer logo: same as landing page – make "3D" and full logo visible on dark footer -->
     <style>
@@ -338,8 +338,20 @@
 
 
 <!-- Sections:Start -->
-
   <section class="section-py bg-body first-section-pt">
+    <div class="container text-center py-5">
+      <div class="card p-5">
+        <div class="card-body">
+          <i class="bx bx-time-five display-1 text-primary mb-4"></i>
+          <h2 class="mb-2">Coming Soon!</h2>
+          <p class="mb-4">The Token Reload and Payment Gateway features are currently under development and will be available in a future update.</p>
+          <a href="{{ route('landing') }}" class="btn btn-primary">Return to Home</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-py bg-body first-section-pt d-none">
     <div class="container">
       <div id="payment-signin-prompt" class="alert alert-info mb-4 d-none" role="alert">
         <a href="#" id="payment-signin-link">Sign in</a> to reload tokens.
@@ -459,7 +471,7 @@
     <!-- endbuild -->
 
     <!-- Vendors JS -->
-    <script src="{{ asset('assets') }}/vendor/libs/cleave-zen/cleave-zen.js"></script>
+    <!-- <script src="{{ asset('assets') }}/vendor/libs/cleave-zen/cleave-zen.js"></script> -->
 
     <!-- Main JS -->
     
@@ -467,7 +479,7 @@
     
 
     <!-- Page JS -->
-  <script src="{{ asset('assets') }}/js/front-page-payment.js"></script>
+  <!-- <script src="{{ asset('assets') }}/js/front-page-payment.js"></script> -->
   <script src="https://js.stripe.com/v3/"></script>
   <script>
     (function () {
@@ -600,7 +612,7 @@
           elements: elements,
           clientSecret: currentClientSecret,
           confirmParams: {
-            return_url: window.location.origin + '/html/front-pages/payment-page.html?success=1'
+            return_url: "{{ route('payment') }}?success=1"
           }
         });
   
@@ -613,10 +625,10 @@
       if (window.location.search.indexOf('success=1') !== -1) {
         showSuccess('Payment successful. Your balance will update shortly.');
         window.history.replaceState({}, '', window.location.pathname);
-        loadWallet();
+        // loadWallet(); // Future: Reactive this
       }
   
-      loadWallet();
+      // loadWallet(); // Future: Reactive this
     })();
   </script>
 

@@ -77,7 +77,7 @@
         </a>
         <div class="ms-auto">
           <a href="{{ route('landing') }}#landingShowCase" class="btn btn-label-secondary me-2">← Showcase</a>
-          <a href="payment-page.html" class="btn btn-outline-primary">Reload tokens</a>
+          <button type="button" class="btn btn-label-secondary" disabled>Coming Soon</button>
         </div>
       </div>
     </div>
@@ -94,8 +94,8 @@
           <p class="mb-2 fw-semibold" id="purchase-model-name">—</p>
           <p class="mb-2 text-body-secondary" id="purchase-model-price">—</p>
           <p class="mb-4">Your wallet: <strong id="purchase-wallet-balance">—</strong> tokens. Rate: RM <span id="purchase-rate">2</span> per token.</p>
-          <p class="mb-3">
-            <a href="payment-page.html" id="purchase-reload-link">Need more tokens? Reload tokens here.</a>
+          <p class="mb-3 text-body-secondary">
+            <i class="bx bx-info-circle me-1"></i> Token reload coming soon.
           </p>
           <button type="button" class="btn btn-primary" id="purchase-with-tokens-btn">Purchase with tokens</button>
           <div id="purchase-message" class="alert mt-4 d-none" role="alert"></div>
@@ -182,7 +182,7 @@
 
       document.addEventListener('DOMContentLoaded', function() {
         loadModel();
-        loadWallet();
+        // loadWallet(); // Future: Reactive this
 
         var btn = document.getElementById('purchase-with-tokens-btn');
         if (btn) btn.addEventListener('click', function() {
@@ -205,7 +205,7 @@
                   showMsg('You already own this 3D model.', false);
                 } else {
                   showMsg('Purchase complete. You now own this 3D model.', false);
-                  loadWallet();
+                  // loadWallet(); // Future: Reactive this
                 }
                 return;
               }

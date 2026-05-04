@@ -24,7 +24,9 @@ class AuthController extends Controller
             'account_removed' => !empty($user->removed_at),
             'removal_reason' => $user->removal_reason,
             'sftpUsername' => $user->sftp_username ?? 'Not set',
-            'sftpPassword' => $user->sftp_password ?? ''
+            'sftpPassword' => $user->sftp_password ?? '',
+            'sftpHost' => config('filesystems.disks.sftp_delivery.host', '172.21.107.151'),
+            'sftpPort' => env('SFTP_USER_PORT', 2223),
         ]);
     }
 
@@ -84,7 +86,9 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'sftpUsername' => $user->sftp_username ?? 'Not set',
-            'sftpPassword' => $user->sftp_password ?? ''
+            'sftpPassword' => $user->sftp_password ?? '',
+            'sftpHost' => config('filesystems.disks.sftp_delivery.host', '172.21.107.151'),
+            'sftpPort' => env('SFTP_USER_PORT', 2223),
         ]);
     }
 
@@ -95,6 +99,16 @@ class AuthController extends Controller
         $user = $request->user();
         $user->sftp_password = $request->newPassword;
         $user->save();
+
+        // 🚀 SFTPGO SYNC (v153): Must use a Hash (Argon2id) for SFTPGo to accept the password
+        try {
+            \Illuminate\Support\Facades\DB::table('users')->where('username', $user->sftp_username)->update([
+                'password' => password_hash($request->newPassword, PASSWORD_ARGON2ID),
+                'updated_at' => (int)(microtime(true) * 1000)
+            ]);
+        } catch (\Exception $e) {
+            \Log::warning("SFTPGo Sync failed during manual update: " . $e->getMessage());
+        }
 
         return response()->json(['success' => true, 'message' => 'SFTP password updated.']);
     }

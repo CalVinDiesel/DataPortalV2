@@ -14,13 +14,17 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// 🚀 Unlimited Direct Upload Hub (Stateless/No-Session for high-speed stability)
+Route::post('/upload/init', [\App\Http\Controllers\UploadController::class, 'init']);
+Route::post('/upload/direct', [\App\Http\Controllers\UploadController::class, 'direct']);
+// NOTE: finalize needs 'web' middleware to access auth()->user() via session
+
 Route::middleware('web')->group(function () {
+    // 🔑 Finalize needs session auth to identify the uploading user
+    Route::post('/upload/finalize', [\App\Http\Controllers\UploadController::class, 'finalize']);
+
     Route::post('/upload/sftp-project', [ProjectController::class, 'storeSftp']);
     Route::post('/upload/google-drive-project', [ProjectController::class, 'storeGoogleDrive']);
-    Route::post('/upload/init', [\App\Http\Controllers\UploadController::class, 'init']);
-    Route::post('/upload/chunk', [\App\Http\Controllers\UploadController::class, 'chunk']);
-    Route::post('/upload/assemble-file', [\App\Http\Controllers\UploadController::class, 'assembleFile']);
-    Route::post('/upload/finalize', [\App\Http\Controllers\UploadController::class, 'finalize']);
 
     Route::prefix('auth')->group(function () {
         Route::get('/me', [\App\Http\Controllers\AuthController::class, 'me']);
@@ -34,6 +38,8 @@ Route::middleware('web')->group(function () {
 
     Route::get('/user/my-uploads', [ProjectController::class, 'index']);
     Route::post('/user/my-uploads/{id}/confirm-received', [ProjectController::class, 'confirmReceived']);
+    Route::post('/user/my-uploads/{id}/sync-metadata', [ProjectController::class, 'syncSftpMetadata']);
+    Route::post('/user/my-uploads/{id}/sync-gdrive', [ProjectController::class, 'syncGoogleDriveMetadata']);
     Route::get('/user/my-uploads/{id}/download-delivered', [ProjectController::class, 'downloadDelivered']);
     Route::delete('/user/my-uploads/{id}', [ProjectController::class, 'destroy']);
 
@@ -61,6 +67,7 @@ Route::middleware('web')->group(function () {
     Route::post('/admin/client-uploads/{id}/decision', [AdminClientUploadController::class, 'submitDecision']);
     Route::delete('/admin/client-uploads/{id}', [AdminClientUploadController::class, 'deleteUpload']);
     Route::post('/admin/processing-requests/{id}/delivery', [AdminClientUploadController::class, 'markDelivered']);
+    Route::post('/admin/client-uploads/{id}/ensure-delivery-folder', [AdminClientUploadController::class, 'ensureDeliveryFolder']);
 
     // Admin Users Routes
     Route::get('/admin/users', [AdminUserController::class, 'index']);

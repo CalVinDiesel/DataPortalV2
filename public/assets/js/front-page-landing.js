@@ -68,20 +68,20 @@
     if (reviewsSwiper) return;
 
     {
-      // ——— 4-slide carousel: no Swiper loop; we handle “wrap” ourselves ———
-      const REVIEWS_SLIDES = 4;
-      const AUTOPLAY_DELAY_MS = 4000;
-      let reviewsAutoplayTimer = null;
-
+      // v165: 4-slide carousel: Use native Swiper loop and autoplay for smooth, unidirectional right-side rotation
       reviewsSwiper = new Swiper(swiperEl, {
         slidesPerView: 1,
         slidesPerGroup: 1,
         spaceBetween: 5,
         grabCursor: true,
-        speed: 600,
+        speed: 800,
         allowTouchMove: true,
         watchSlidesProgress: true,
-        loop: false,
+        loop: true, // Enable native loop for infinite right-side rotation
+        autoplay: {
+          delay: 3500,
+          disableOnInteraction: false,
+        },
         breakpoints: {
           1200: {
             slidesPerView: 3,
@@ -95,30 +95,6 @@
           },
         },
       });
-
-      function getMaxIndex() {
-        var spv = reviewsSwiper.params.slidesPerView;
-        return Math.max(0, REVIEWS_SLIDES - (typeof spv === 'number' ? spv : 1));
-      }
-      function isAtEnd() {
-        return reviewsSwiper.realIndex >= getMaxIndex();
-      }
-      function goNext() {
-        if (isAtEnd()) {
-          reviewsSwiper.slideTo(0, 600);
-        } else {
-          reviewsSwiper.slideNext();
-        }
-      }
-      function startReviewsAutoplay() {
-        if (reviewsAutoplayTimer) clearInterval(reviewsAutoplayTimer);
-        reviewsAutoplayTimer = setInterval(function () {
-          if (!reviewsSwiper) return;
-          goNext();
-        }, AUTOPLAY_DELAY_MS);
-      }
-
-      startReviewsAutoplay();
 
       window.addEventListener("resize", function () {
         if (reviewsSwiper) reviewsSwiper.update();

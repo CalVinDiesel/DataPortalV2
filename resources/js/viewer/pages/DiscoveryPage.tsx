@@ -74,10 +74,10 @@ export default function DiscoveryPageWrapper() {
 
     // Fetch map data logic
     useEffect(() => {
-        console.log('ðŸ“ DiscoveryPageWrapper: useEffect triggered for modelId:', modelId);
+        console.log('📍 DiscoveryPageWrapper: useEffect triggered for modelId:', modelId);
         
         if (directTilesetUrl) {
-            console.log('âœ… DiscoveryPageWrapper: Using direct tileset URL:', directTilesetUrl);
+            console.log('✅ DiscoveryPageWrapper: Using direct tileset URL:', directTilesetUrl);
             setLocationData({
                 name: directTitle || 'Project Model',
                 description: 'Uploaded Project 3D Model',
@@ -90,7 +90,7 @@ export default function DiscoveryPageWrapper() {
         }
 
         if (!modelId) {
-            console.error('âŒ DiscoveryPageWrapper: No modelId provided!');
+            console.error('❌ DiscoveryPageWrapper: No modelId provided!');
             setDataError("No ID or tileset parameter provided");
             setLoadingData(false);
             return;
@@ -98,12 +98,12 @@ export default function DiscoveryPageWrapper() {
 
         const fetchLocationData = async () => {
             const API_BASE = (window as any).TemaDataPortal_API_BASE || '';
-            console.log('ðŸ” DiscoveryPageWrapper: Fetching data from API...', `${API_BASE}/api/map-data/${modelId}`);
+            console.log('🔍 DiscoveryPageWrapper: Fetching data from API...', `${API_BASE}/api/map-data/${modelId}`);
 
             try {
                 // 1) Try MapData API
                 const apiRes = await fetch(`${API_BASE}/api/map-data/${encodeURIComponent(modelId)}`);
-                console.log('ðŸ“¡ DiscoveryPageWrapper: API response status:', apiRes.status);
+                console.log('📡 DiscoveryPageWrapper: API response status:', apiRes.status);
                 if (apiRes.ok) {
                     const mapData = await apiRes.json();
                     const priceTokens = mapData.purchase_price_tokens != null ? Number(mapData.purchase_price_tokens) : 0;
@@ -528,9 +528,9 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             return `${acres.toFixed(2)} acres`;
         }
         if (sqMeters > 1000000) {
-            return `${(sqMeters / 1000000).toFixed(2)} kmÂ²`;
+            return `${(sqMeters / 1000000).toFixed(2)} kmÃ‚Â²`;
         }
-        return `${sqMeters.toFixed(2)} mÂ²`;
+        return `${sqMeters.toFixed(2)} mÃ‚Â²`;
     };
 
     useEffect(() => {
@@ -1086,7 +1086,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
         };
 
-        // Hypotenuse â€” solid white line
+        // Hypotenuse Ã¢â‚¬â€ solid white line
         const slantEntity = viewer.entities.add({
             polyline: new PolylineGraphics({
                 positions: [p1, p2],
@@ -1097,7 +1097,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             label: new LabelGraphics({ ...labelStyle, text: convertDistance(slantDist) }),
         });
 
-        // Vertical â€” solid white line
+        // Vertical Ã¢â‚¬â€ solid white line
         const vertEntity = viewer.entities.add({
             polyline: new PolylineGraphics({
                 positions: [p2, p3],
@@ -1108,7 +1108,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             label: new LabelGraphics({ ...labelStyle, text: convertDistance(vertDist) }),
         });
 
-        // Horizontal â€” dashed white line
+        // Horizontal Ã¢â‚¬â€ dashed white line
         const horizEntity = viewer.entities.add({
             polyline: new PolylineGraphics({
                 positions: [p1, p3],
@@ -1262,9 +1262,19 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
     };
 
     const createLine = (points: Cartesian3[]) => {
-        if (!viewerRef.current) return;
+        if (!viewerRef.current || points.length < 2) return;
 
         const viewer = viewerRef.current;
+        
+        // Calculate total distance
+        let totalDistance = 0;
+        for (let i = 0; i < points.length - 1; i++) {
+            totalDistance += Cartesian3.distance(points[i], points[i + 1]);
+        }
+
+        // Calculate midpoint for label position
+        const midpoint = Cartesian3.midpoint(points[0], points[points.length - 1], new Cartesian3());
+
         const entity = viewer.entities.add({
             polyline: new PolylineGraphics({
                 positions: points,
@@ -1272,6 +1282,20 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 material: Color.ORANGE,
                 clampToGround: true,
             }),
+            label: new LabelGraphics({
+                text: convertDistance(totalDistance),
+                font: '14px sans-serif',
+                fillColor: Color.BLACK,
+                showBackground: true,
+                backgroundColor: Color.WHITE,
+                backgroundPadding: new Cartesian2(7, 5),
+                style: 0,
+                pixelOffset: new Cartesian2(0, -10),
+                horizontalOrigin: HorizontalOrigin.CENTER,
+                verticalOrigin: VerticalOrigin.BOTTOM,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            }),
+            position: midpoint,
         });
 
         const counter = measurementCounters.current.lines++;
@@ -1286,9 +1310,36 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
     };
 
     const createPolygon = (points: Cartesian3[]) => {
-        if (!viewerRef.current) return;
+        if (!viewerRef.current || points.length < 3) return;
 
         const viewer = viewerRef.current;
+
+        // Calculate perimeter
+        let perimeter = 0;
+        for (let i = 0; i < points.length; i++) {
+            const j = (i + 1) % points.length;
+            perimeter += Cartesian3.distance(points[i], points[j]);
+        }
+
+        // Simple area calculation approximation
+        const area = perimeter * perimeter / 16;
+
+        // Calculate centroid for label position
+        let lonSum = 0;
+        let latSum = 0;
+        let minHeight = Number.POSITIVE_INFINITY;
+        const cartos = points.map(p => Cartographic.fromCartesian(p));
+        cartos.forEach(c => {
+            lonSum += c.longitude;
+            latSum += c.latitude;
+            if (c.height < minHeight) minHeight = c.height;
+        });
+        const centroid = Cartesian3.fromRadians(
+            lonSum / cartos.length,
+            latSum / cartos.length,
+            minHeight
+        );
+
         const entity = viewer.entities.add({
             polygon: new PolygonGraphics({
                 hierarchy: points,
@@ -1298,6 +1349,19 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 outlineWidth: 2,
                 classificationType: ClassificationType.CESIUM_3D_TILE,
             }),
+            label: new LabelGraphics({
+                text: `Area: ${convertArea(area)}\nPerimeter: ${convertDistance(perimeter)}`,
+                font: '14px sans-serif',
+                fillColor: Color.BLACK,
+                showBackground: true,
+                backgroundColor: Color.WHITE,
+                backgroundPadding: new Cartesian2(7, 5),
+                style: 0,
+                horizontalOrigin: HorizontalOrigin.CENTER,
+                verticalOrigin: VerticalOrigin.CENTER,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            }),
+            position: centroid,
         });
 
         const counter = measurementCounters.current.polygons++;
@@ -1505,7 +1569,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                             ? `${locationData.purchase_price_tokens} token${locationData.purchase_price_tokens !== 1 ? 's' : ''} (RM ${(locationData.purchase_price_tokens * 2).toFixed(2)})`
                             : locationData.purchase_price_tokens === 0
                                 ? 'Free'
-                                : 'â€”'}
+                                : 'Ã¢â‚¬â€'}
                     </span>
                     <a
                         href={`${typeof window !== 'undefined' ? window.location.origin : ''}/html/front-pages/purchase-3d-model.html${modelId ? '?id=' + encodeURIComponent(modelId) : ''}`}
@@ -1567,12 +1631,22 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 />
                 <div className="cesium-container">
                     <AnnotationToolbar
-                        onToolSelect={setActiveAnnotationTool}
+                        onToolSelect={(tool) => {
+                            if (tool) {
+                                resetDrawing(); // Deactivate measurement tool and clear temp state
+                            }
+                            setActiveAnnotationTool(tool);
+                        }}
                         activeTool={activeAnnotationTool}
                         isSidebarOpen={sidebarOpen}
                     />
                     <MeasurementToolbar
-                        onToolSelect={setActiveTool}
+                        onToolSelect={(tool) => {
+                            if (tool) {
+                                resetAnnotationDrawing(); // Deactivate annotation tool and clear temp state
+                            }
+                            setActiveTool(tool);
+                        }}
                         activeTool={activeTool}
                         isSidebarOpen={sidebarOpen}
                     />
@@ -1585,22 +1659,22 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                     {/* Drawing Hint Banner */}
                     {(activeTool === 'area' || activeAnnotationTool === 'line' || activeAnnotationTool === 'polygon') && (
                         <div className="drawing-hint-banner">
-                            <span className="drawing-hint-icon">ðŸ–±ï¸</span>
-                            <span><strong>Click</strong> to add points &nbsp;Â·&nbsp; <strong>Double-click</strong> to finish &nbsp;Â·&nbsp; <strong>ESC</strong> to cancel</span>
+                            <span className="drawing-hint-icon">Mouse:</span>
+                            <span><strong>Click</strong> to add points &nbsp;|&nbsp; <strong>Double-click</strong> to finish &nbsp;|&nbsp; <strong>ESC</strong> to cancel</span>
                         </div>
                     )}
 
                     {(activeTool === 'length' || activeTool === 'height' || activeTool === 'triangle' || activeTool === 'circle') && (
                         <div className="drawing-hint-banner">
-                            <span className="drawing-hint-icon">ðŸ–±ï¸</span>
-                            <span><strong>Click</strong> 2 points to draw &nbsp;Â·&nbsp; <strong>ESC</strong> to cancel</span>
+                            <span className="drawing-hint-icon">Mouse:</span>
+                            <span><strong>Click</strong> 2 points to draw &nbsp;|&nbsp; <strong>ESC</strong> to cancel</span>
                         </div>
                     )}
 
                     {activeAnnotationTool === 'marker' && (
                         <div className="drawing-hint-banner">
-                            <span className="drawing-hint-icon">ðŸ“</span>
-                            <span><strong>Click</strong> to place marker &nbsp;Â·&nbsp; <strong>ESC</strong> to cancel</span>
+                            <span className="drawing-hint-icon">Pin:</span>
+                            <span><strong>Click</strong> to place marker &nbsp;|&nbsp; <strong>ESC</strong> to cancel</span>
                         </div>
                     )}
 
@@ -1849,3 +1923,4 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         </div>
     );
 }
+

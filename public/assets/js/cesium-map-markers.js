@@ -233,7 +233,7 @@
     description: '3D model from GeoSabah 3D Hub (Kota Kinabalu area).',
     xAxis: 116.070466,
     yAxis: 5.957839,
-    '3dTiles': 'https://3dhub.geosabah.my/3dmodel/KK_OSPREY/tileset.json',
+    '3dTiles': API_BASE + '/3dmodel/KK_OSPREY/tileset.json',
     thumbNailUrl: '',
     updateDateTime: null
   };
@@ -420,7 +420,18 @@
     }
 
     var clusterToBounds = new Map();
+    var lastClusterFrame = -1;
+
     dataSource.clustering.clusterEvent.addEventListener(function (entities, cluster) {
+      // v164: Smart batch clear — only clear the map when a NEW frame of cluster updates starts.
+      // This eliminates "ghost" pins from old zoom levels while keeping the map populated during idle time.
+      var currentFrame = (viewer.scene && viewer.scene.frameState) ? viewer.scene.frameState.frameNumber : -1;
+      if (currentFrame !== lastClusterFrame && currentFrame !== -1) {
+        clusterToLocationIds.clear();
+        clusterToBounds.clear();
+        lastClusterFrame = currentFrame;
+      }
+
       cluster.label.show = true;
       cluster.label.text = entities.length.toString();
       cluster.label.font = 'bold ' + (16 * PIN_SIZE_SCALE) + 'px sans-serif';
@@ -435,7 +446,11 @@
       if (cluster.billboard) cluster.billboard.show = false;
       if (cluster.point) cluster.point.show = false;
       var ids = entities.map(function (e) { return e.id; }).filter(Boolean);
-      if (ids.length) clusterToLocationIds.set(cluster, ids);
+      if (ids.length) {
+        clusterToLocationIds.set(cluster, ids);
+        // v158: Ensure the cluster object itself knows its ID list for faster pick lookup
+        cluster.locationIds = ids;
+      }
       var lonMin = Infinity, latMin = Infinity, lonMax = -Infinity, latMax = -Infinity;
       var time = viewer.clock.currentTime;
       for (var i = 0; i < entities.length; i++) {
@@ -469,7 +484,7 @@
       var entityOpt = {
         position: position,
         name: loc.name,
-        description: '<a href="loading-3d.html?id=' + encodeURIComponent(loc.id) + '" target="_blank" rel="noopener">View 3D model (opens in new page)</a>',
+        description: '<a href="/viewer/' + encodeURIComponent(loc.id) + '" target="_blank" rel="noopener">View 3D model (opens in new page)</a>',
         id: loc.id
       };
       if (imageOrDataUrl && billboardW > 0 && billboardH > 0) {
@@ -824,7 +839,10 @@
 
     setupLocationChoiceBar(viewer, locations, clusterToLocationIds, getLocationsForClusterEntity);
 
-    viewer.camera.moveEnd.addEventListener(updateClusterPixelRange);
+    viewer.camera.moveEnd.addEventListener(function() {
+      // v162: Removed map clearing to prevent "dead" periods after resize/fullscreen
+      updateClusterPixelRange();
+    });
     viewer.camera.changed.addEventListener(throttledUpdateClusterPixelRange);
     viewer.scene.requestRender();
     dataSource.clustering.pixelRange = INITIAL_PIXEL_RANGE;
@@ -841,8 +859,14 @@
     var locationById = {};
     locations.forEach(function (loc) { locationById[loc.id] = loc; });
     var cameraIsMoving = false;
-    viewer.camera.moveStart.addEventListener(function () { cameraIsMoving = true; hideBar(); });
-    viewer.camera.moveEnd.addEventListener(function () { cameraIsMoving = false; });
+    viewer.camera.moveStart.addEventListener(function () { 
+      cameraIsMoving = true; 
+      hideBar(); 
+    });
+    viewer.camera.moveEnd.addEventListener(function () { 
+      cameraIsMoving = false;
+      canvasRect = canvas.getBoundingClientRect();
+    });
     var getClusterLocs = typeof getLocationsForClusterEntity === 'function' ? getLocationsForClusterEntity : null;
 
     function getNearbyLocations(screenX, screenY) {
@@ -884,31 +908,52 @@
       return count === 0 ? null : { x: sumX / count, y: sumY / count };
     }
 
-    var PIN_BOX_HALF_W = 60;
-    var PIN_BOX_HALF_H = 45;
+    var PIN_BOX_HALF_W = 28;
+    var PIN_BOX_HALF_H = 28;
 
     function getLocationsForHover(screenX, screenY) {
       var picked = viewer.scene.pick(new C.Cartesian2(screenX, screenY));
       if (C.defined(picked) && picked.id) {
-        if (clusterMap.has(picked.id)) {
-          var ids0 = clusterMap.get(picked.id) || [];
-          if (ids0.length >= 2) {
-            var list0 = ids0.map(function (id) { return locationById[id]; }).filter(Boolean);
-            if (list0.length >= 2) return ensureExactlyNLocs(list0, ids0.length);
-          }
-          return [];
+        var entity = picked.id;
+        // v158: Priority 1 - Precise 'pick' from clusterMap or direct property
+        var ids0 = clusterMap.get(entity) || entity.locationIds;
+        if (ids0 && ids0.length >= 2) {
+          var list0 = ids0.map(function (id) { return locationById[id]; }).filter(Boolean);
+          if (list0.length >= 2) return ensureExactlyNLocs(list0, ids0.length);
         }
-        var eid = typeof picked.id.id === 'string' ? picked.id.id : (picked.id.id && picked.id.id.id);
+        // Priority 2 - Single pin pick
+        var eid = typeof entity.id === 'string' ? entity.id : (entity.id && entity.id.id);
         if (eid && locationById[eid]) return [locationById[eid]];
       }
+
+      // Priority 3 - Precise fuzzy fallback
       var DIST_SQ_TIE_THRESHOLD = 200;
       var bestCluster = null, bestDistSq = Infinity, bestCount = 0;
+      
       clusterMap.forEach(function (ids, entity) {
         if (!ids || ids.length < 2) return;
-        var pos = getClusterScreenPositionFromIds(ids);
+        
+        // v159: Use the actual entity position for the hit box center (more precise than averaging IDs)
+        var pos = null;
+        if (entity.position) {
+          var cartesian = typeof entity.position.getValue === 'function' ? entity.position.getValue(viewer.clock.currentTime) : entity.position;
+          if (cartesian) {
+            try { pos = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, cartesian); } catch(e) {}
+          }
+        }
+        
+        // Fallback to average if entity position lookup fails
+        if (!pos) pos = getClusterScreenPositionFromIds(ids);
         if (!pos || typeof pos.x !== 'number' || typeof pos.y !== 'number') return;
+
         var dx = Math.abs(screenX - pos.x), dy = Math.abs(screenY - pos.y);
-        if (dx <= PIN_BOX_HALF_W && dy <= PIN_BOX_HALF_H) {
+        
+        // v163: Calculate dynamic half-width based on the number of digits to cover the entire blue box perfectly
+        var digitCount = ids.length.toString().length;
+        var dynamicHalfW = 22 + (digitCount * 14); // 1 digit ~ 36px, 2 digits ~ 50px, 3 digits ~ 64px
+        var dynamicHalfH = 34; // Height is generally constant for the font size
+
+        if (dx <= dynamicHalfW && dy <= dynamicHalfH) {
           var distSq = (screenX - pos.x) * (screenX - pos.x) + (screenY - pos.y) * (screenY - pos.y);
           var list = ids.map(function (id) { return locationById[id]; }).filter(Boolean);
           if (list.length < 2) return;
@@ -1063,32 +1108,48 @@
     var hoverRaf = null, lastHoverX = -1, lastHoverY = -1;
 
     function runHoverUpdate(screenX, screenY) {
-      canvasRect = canvas.getBoundingClientRect();
-      var clientX = canvasRect.left + screenX, clientY = canvasRect.top + screenY;
-      var nearby = getLocationsForHover(screenX, screenY);
-      if (nearby.length > 0) {
-        var anchor = getPinCenterClientPosition(nearby);
-        showBar(nearby, anchor ? anchor.clientX : clientX, anchor ? anchor.clientY : clientY, true);
-      } else {
-        if (!isMouseOverBar(clientX, clientY)) hideBar();
+      try {
+        // v161: Standardize coordinate lookup
+        var rect = canvas.getBoundingClientRect();
+        var clientX = rect.left + screenX, clientY = rect.top + screenY;
+        var nearby = getLocationsForHover(screenX, screenY);
+        
+        if (nearby.length > 0) {
+          var anchor = getPinCenterClientPosition(nearby);
+          showBar(nearby, anchor ? anchor.clientX : clientX, anchor ? anchor.clientY : clientY, true);
+        } else {
+          if (!isMouseOverBar(clientX, clientY)) hideBar();
+        }
+      } catch (err) {
+        if (typeof console !== 'undefined' && console.warn) console.warn('Hover update skipped:', err);
       }
     }
 
-    var moveHandler = new Cesium.ScreenSpaceEventHandler(canvas);
+    // v161: Use native DOM events instead of Cesium ScreenSpaceEventHandler for 100% reliability
     var lastHoverTime = 0;
-    var HOVER_THROTTLE_MS = 80;
+    var HOVER_THROTTLE_MS = 60;
 
-    moveHandler.setInputAction(function (movement) {
+    canvas.addEventListener('mousemove', function (e) {
       if (cameraIsMoving) return;
-      var x = movement.endPosition.x, y = movement.endPosition.y;
+      
+      // Get coordinates relative to the canvas
+      var rect = canvas.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      var y = e.clientY - rect.top;
+
       if (x === lastHoverX && y === lastHoverY) return;
       lastHoverX = x; lastHoverY = y;
+      
       var now = Date.now();
       if (now - lastHoverTime < HOVER_THROTTLE_MS) return;
       lastHoverTime = now;
+      
       if (hoverRaf) cancelAnimationFrame(hoverRaf);
-      hoverRaf = requestAnimationFrame(function () { hoverRaf = null; runHoverUpdate(x, y); });
-    }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+      hoverRaf = requestAnimationFrame(function () { 
+        hoverRaf = null; 
+        runHoverUpdate(x, y); 
+      });
+    });
 
     mapContainer.addEventListener('mouseleave', hideBar);
 
@@ -1098,6 +1159,29 @@
       var overCanvas = rect.left <= e.clientX && e.clientX <= rect.right && rect.top <= e.clientY && e.clientY <= rect.bottom;
       if (!isMouseOverBar(e.clientX, e.clientY) && !overCanvas) hideBar();
     });
+
+    // v162: Robust layout refresh with forced Cesium resize
+    var resizeTimer = null;
+    function refreshLayout() {
+      cameraIsMoving = false;
+      canvasRect = canvas.getBoundingClientRect();
+      
+      // v162: Force Cesium to re-sync its internal coordinate engine
+      if (viewer && viewer.resize) {
+        viewer.resize();
+        viewer.scene.requestRender();
+      }
+      
+      hideBar();
+      if (typeof console !== 'undefined') console.log('[3DHub] Layout refreshed & Cesium resized');
+    }
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(refreshLayout, 200);
+    });
+    document.addEventListener('fullscreenchange', refreshLayout);
+    document.addEventListener('webkitfullscreenchange', refreshLayout);
+    document.addEventListener('mozfullscreenchange', refreshLayout);
   }
 
   var markersLoaded = false;

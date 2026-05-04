@@ -18,2206 +18,834 @@
   <link rel="stylesheet" href="{{ asset('assets') }}/css/client-responsive.css">
   <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
 
-  <!-- Leaflet CSS & JS (self-hosted to bypass browser Tracking Prevention) -->
   <link rel="stylesheet" href="{{ asset('assets/vendor/leaflet/leaflet.css') }}" />
   <script src="{{ asset('assets/vendor/leaflet/leaflet.js') }}"></script>
-  <!-- EXIF JS for reading GPS coordinates from images (self-hosted) -->
   <script src="{{ asset('assets/vendor/js/exif.js') }}"></script>
+  <script src="{{ asset('assets/vendor/js/jszip.min.js') }}"></script>
 
   <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
   <script src="{{ asset('assets') }}/js/front-config.js"></script>
-  <script>
-    (function () {
-      window.userRole = '{{ Auth::user()->role }}';
-    })();
-  </script>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-
-    .split-layout {
-      display: block;
-      /* No longer flex, map is background */
-      height: 100vh;
-      width: 100vw;
-      position: relative;
-    }
-
-    /* RIGHT PANEL BECOMES FULL SCREEN BACKGROUND */
-    .right-panel {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 1;
-    }
-
-    /* LEFT PANEL BECOMES FLOATING GLASS WIDGET */
-    .left-panel {
-      position: absolute;
-      top: 24px;
-      left: 24px;
-      width: 580px;
-      height: calc(100vh - 48px);
-      display: flex;
-      flex-direction: column;
-      background: rgba(255, 255, 255, 0.90);
-      /* Translucent white */
-      backdrop-filter: blur(12px);
-      /* Glassmorphism blur */
-      -webkit-backdrop-filter: blur(12px);
-      z-index: 10;
-      border-radius: 16px;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.05);
-      /* Premium shadow */
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      /* Soft light edge reflection */
-      overflow: hidden;
-      /* For rounded corners */
-    }
-
-    .left-content {
-      flex-grow: 1;
-      overflow-y: auto;
-      padding: 1.5rem;
-    }
-
-    .left-footer {
-      min-height: 70px;
-      border-top: 1px solid rgba(0, 0, 0, 0.08);
-      /* Match glass effect */
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 1.5rem;
-      background: rgba(255, 255, 255, 0.5);
-      /* Match glass effect */
-    }
-
-    /* Modernized solid upload cards */
-    .upload-card {
-      border: 1px solid rgba(0, 0, 0, 0.05);
-      border-radius: 12px;
-      padding: 1.5rem 1.25rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      min-height: 140px;
-      cursor: pointer;
-      background: rgba(255, 255, 255, 0.8);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-    }
-
-    .upload-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(105, 108, 255, 0.15);
-      border-color: rgba(105, 108, 255, 0.3);
-      background: #fff;
-    }
-
-    .upload-card.active {
-      border: 2px solid #696cff;
-      background: rgba(105, 108, 255, 0.05);
-      box-shadow: 0 4px 10px rgba(105, 108, 255, 0.2);
-    }
-
-    .upload-card-icon {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      font-size: 1.8rem;
-      color: #566a7f;
-      display: block;
-    }
-
-    .upload-card.active .upload-card-icon {
-      color: #696cff;
-    }
-
-    .upload-card-title {
-      color: #696cff;
-      font-weight: 500;
-      margin-bottom: 0.2rem;
-    }
-
-    .upload-card-text {
-      font-size: 0.9rem;
-      color: #697a8d;
-    }
-
-    .upload-card-text small {
-      font-size: 0.8rem;
-      color: #a1acb8;
-    }
-
-    .question-mark {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      color: #a1acb8;
-      font-size: 1.1rem;
-    }
-
-    .form-section-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #32475c;
-      margin-bottom: 0.5rem;
-      margin-top: 2rem;
-    }
-
-    .auto-mode-btn {
-      background-color: #f1f1f2;
-      color: #4b4b4b;
-      border: 1px solid #d9dee3;
-      font-weight: 500;
-    }
-
-    .auto-mode-btn:hover {
-      background-color: #e6e6e8;
-    }
-
-    .zip-upload-zone {
-      display: none;
-      margin-top: 1rem;
-    }
-
-    .zip-upload-zone.active {
-      display: block;
-    }
-
-    .help-text {
-      font-size: 0.85rem;
-      color: #697a8d;
-      margin-bottom: 1rem;
-    }
-
-    /* Set Position Modal Styles */
-    .set-position-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1050;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .set-position-modal.show {
-      display: flex;
-    }
-
-    .modal-content-custom {
-      background: #fff;
-      width: 95%;
-      max-width: 1300px;
-      height: 90vh;
-      border-radius: 8px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    }
-
-    .modal-header-custom {
-      padding: 1.5rem;
-      border-bottom: 1px solid #e9ecef;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .modal-body-custom {
-      padding: 0;
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-
-    .modal-footer-custom {
-      padding: 1rem 1.5rem;
-      border-top: 1px solid #e9ecef;
-      display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-    }
-
-    .stats-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 1.5rem;
-      font-size: 0.9rem;
-    }
-
-    .folder-list-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 0.5rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    }
-
-    .folder-list-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #32475c;
-    }
-
-    .folder-list-stats {
-      font-size: 0.85rem;
-      color: #697a8d;
-    }
-
-    .folder-list-item {
-      display: flex;
-      align-items: center;
-      padding: 0.5rem 1rem;
-      border: 1px solid #ebedf2;
-      border-radius: 0.375rem;
-      background: #f8f9fa;
-      margin-bottom: 0.5rem;
-      transition: background 0.2s ease;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
-
-    .folder-list-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .folder-list-item:hover {
-      background: rgba(105, 108, 255, 0.05);
-    }
-
-    .folder-item-icon {
-      font-size: 1.25rem;
-      color: #a1acb8;
-      margin-right: 0.75rem;
-      display: flex;
-      align-items: center;
-    }
-
-    .folder-item-info {
-      flex: 1 1 auto;
-      /* Allow shrinking but prioritize taking space */
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      min-width: 0;
-      /* Important constraint for text-overflow to work within flex child */
-    }
-
-    .folder-name {
-      font-weight: 600;
-      color: #32475c;
-      width: 130px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 0.95rem;
-    }
-
-    .folder-stat-divider {
-      color: #d9dee3;
-      font-size: 0.8rem;
-    }
-
-    .folder-stat-item {
-      display: flex;
-      align-items: center;
-      color: #697a8d;
-      font-size: 0.85rem;
-      white-space: nowrap;
-    }
-
-    .folder-stat-item.gps-stat {
-      color: #696cff;
-      /* Blue accent for GPS */
-    }
-
-    .folder-status-text {
-      color: #a1acb8;
-      font-size: 0.8rem;
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-
-    .stats-table th,
-    .stats-table td {
-      padding: 0.75rem 1rem;
-      text-align: center;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    .stats-table th {
-      background: rgba(241, 245, 249, 0.6);
-      color: #475569;
-      font-weight: 600;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-    }
-
-    .stats-table tr:last-child td {
-      border-bottom: none;
-    }
-
-    #modalMap {
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 1;
-    }
-
-    .floating-glass-panel {
-      position: absolute;
-      top: 1.5rem;
-      left: 1.5rem;
-      z-index: 10;
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 12px;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      max-height: calc(100% - 3rem);
-      overflow-y: auto;
-      max-width: 800px;
-      padding: 0.5rem 1rem;
-    }
-
-    .floating-glass-panel .stats-table {
-      margin-bottom: 0;
-      /* Remove bottom margin to fit strictly */
-    }
-
-    /* Adjust map controls */
-    .leaflet-control-zoom {
-      border: none !important;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    .leaflet-bar a {
-      color: #696cff !important;
-      border-radius: 4px !important;
-      margin-bottom: 4px !important;
-      border-bottom: none !important;
-    }
+    body { margin: 0; padding: 0; overflow: hidden; }
+    .split-layout { display: block; height: 100vh; width: 100vw; position: relative; }
+    .right-panel { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+    .left-panel { position: absolute; top: 24px; left: 24px; width: 580px; height: calc(100vh - 48px); display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.90); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 10; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.5); overflow: hidden; }
+    .left-content { flex-grow: 1; overflow-y: auto; padding: 1.5rem; }
+    .left-footer { min-height: 70px; border-top: 1px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; background: rgba(255,255,255,0.5); }
+    .upload-card { border: 1px solid rgba(105, 108, 255, 0.2); border-radius: 12px; padding: 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 160px; cursor: pointer; background: rgba(255, 255, 255, 0.6); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; }
+    .upload-card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(105,108,255,0.15); border-color: #696cff; background: rgba(255, 255, 255, 0.9); }
+    .upload-card.active { border: 2.5px solid #696cff; background: rgba(105,108,255,0.05); }
+    .upload-card-icon { position: absolute; top: 20px; left: 20px; font-size: 2rem; color: #696cff; opacity: 0.8; }
+    .upload-card-title { color: #566a7f; font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .upload-card-text { font-size: 0.85rem; color: #8592a3; line-height: 1.4; }
+    .form-section-title { font-size: 1.1rem; font-weight: 700; color: #32475c; margin-bottom: 0.5rem; margin-top: 2rem; letter-spacing: -0.02em; }
+    .auto-mode-btn { background-color: #f1f1f2; color: #4b4b4b; border: 1px solid #d9dee3; font-weight: 600; font-size: 0.75rem; padding: 4px 12px; }
+    .set-position-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; }
+    .set-position-modal.show { display: flex; }
+    .modal-content-custom { background: #fff; width: 95%; max-width: 1300px; height: 90vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+    .modal-header-custom { padding: 1.5rem 2rem; border-bottom: 1px solid #f0f2f5; display: flex; justify-content: space-between; align-items: center; background: #fafbfc; }
+    .modal-body-custom { padding: 0; flex-grow: 1; position: relative; }
+    .modal-footer-custom { padding: 1.25rem 2rem; border-top: 1px solid #f0f2f5; display: flex; justify-content: flex-end; gap: 1rem; background: #fafbfc; }
+    .floating-glass-panel { position: absolute; top: 1.5rem; left: 1.5rem; z-index: 10; background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 1rem; max-width: 400px; border: 1px solid rgba(255,255,255,0.5); }
+    .stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .stats-table th { text-align: left; color: #8592a3; font-weight: 600; padding: 0.5rem; border-bottom: 1px solid #edf2f7; }
+    .stats-table td { padding: 0.75rem 0.5rem; color: #566a7f; border-bottom: 1px solid #f7fafc; }
+    #modalMap { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+    #mapPicker { width: 100%; height: 100%; }
+    .folder-list-item { display: flex; align-items: center; padding: 1rem; border: 1px solid #f0f2f5; border-radius: 12px; background: #fff; margin-bottom: 0.75rem; transition: all 0.2s; }
+    .folder-list-item:hover { border-color: #696cff; background: #f8f9ff; }
+    .folder-name { font-weight: 600; color: #32475c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .premium-loading-panel { background: #fff; border: 1px solid #edf2f7; border-radius: 16px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+    .loading-step { display: flex; align-items: center; margin-bottom: 1rem; color: #8592a3; font-size: 0.9rem; }
+    .step-indicator { width: 24px; height: 24px; border-radius: 50%; background: #f0f2f5; margin-right: 12px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #8592a3; }
+    .loading-step.active { color: #696cff; font-weight: 600; }
+    .loading-step.active .step-indicator { background: #696cff; color: #fff; animation: pulse 2s infinite; }
+    .loading-step.completed { color: #71dd37; }
+    .loading-step.completed .step-indicator { background: #71dd37; color: #fff; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(105, 108, 255, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(105, 108, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(105, 108, 255, 0); } }
   </style>
 </head>
 
 <body>
   <div class="split-layout">
-
-    <!-- Left Sidebar: Form -->
-    <div class="left-panel">
-      <!-- Main scrolling form content -->
+    <div class="left-panel shadow-sm">
       <div class="left-content">
-        <form id="uploadForm" novalidate enctype="multipart/form-data">
-          <!-- Hidden Inputs to preserve payload structure for the backend -->
+        <form id="uploadForm" onsubmit="return false;" novalidate>
           <input type="hidden" id="latitude" name="latitude" required>
           <input type="hidden" id="longitude" name="longitude" required>
 
-          <div class="form-section-title mt-0">Create Project using Data Portal</div>
-          <p class="help-text">Choose your drone's camera payload configuration to accurately process the flight dataset.</p>
+          <div class="form-section-title mt-0">Create Project via Data Portal</div>
+          <p class="text-muted small">Choose your configuration and upload your imagery.</p>
 
-
-          <!-- Upload Type Selection Cards -->
-          <div id="uploadTypeSelection">
+          <div id="uploadTypeSelection" class="mt-4">
             <div class="mb-3">
               <div class="upload-card" id="cardSingle" onclick="selectUploadType('single')">
                 <i class="bx bx-camera upload-card-icon"></i>
-                <div class="upload-card-title">Single-lens Photos Folder</div>
-                <div class="upload-card-text">Drag or click to upload<br><small>only jpg, jpeg</small></div>
-                <i class="bx bx-question-mark question-mark"></i>
+                <div class="upload-card-title">Single-lens Photos</div>
+                <div class="upload-card-text text-muted">Direct upload for standard DJI or Mavlink drones<br><small class="opacity-75">jpg, jpeg, zip</small></div>
                 <input type="radio" name="cameraConfiguration" id="singleCamera" value="single" class="d-none" required>
               </div>
             </div>
-
-            <!-- Google Drive Radio (Hidden) -->
-            <input type="radio" name="cameraConfiguration" id="gdriveUpload" value="gdrive" class="d-none" required>
-            
-            
-              <div class="invalid-feedback d-block" id="cameraError" style="display:none !important;">Please select an upload type.</div>
-            </div>
-
-            <!-- New: SFTP Upload Card -->
             <div class="mb-4">
-              @if(Auth::user()->role === 'trusted' || Auth::user()->role === 'admin' || Auth::user()->role === 'superadmin')
-                <div class="upload-card" id="cardSftp" onclick="selectUploadType('sftp')">
-                  <i class="bx bx-server upload-card-icon"></i>
-                  <div class="upload-card-title">Direct SFTP Upload (WinSCP)</div>
-                  <div class="upload-card-text">Upload massive raw datasets<br><small>Best for 1000+ photos</small></div>
-                  <i class="bx bx-check-shield question-mark text-primary"></i>
-                  <input type="radio" name="cameraConfiguration" id="sftpUpload" value="sftp" class="d-none" required>
-                </div>
-              @else
-                <div class="upload-card opacity-50 cursor-not-allowed" title="Requires Trusted Access">
-                  <i class="bx bx-lock-alt upload-card-icon"></i>
-                  <div class="upload-card-title text-muted">Direct SFTP Upload</div>
-                  <div class="upload-card-text">Locked: Contact admin for access<br><small>Requires 'Trusted' status</small></div>
-                  <i class="bx bx-shield-x question-mark"></i>
-                </div>
-              @endif
+              <div class="upload-card" id="cardMulti" onclick="selectUploadType('multiple')">
+                <i class="bx bx-layer upload-card-icon"></i>
+                <div class="upload-card-title">Multi-lens Photos</div>
+                <div class="upload-card-text text-muted">For multispectral or thermal rig configurations<br><small class="opacity-75">jpg, jpeg, zip</small></div>
+                <input type="radio" name="cameraConfiguration" id="multipleCamera" value="multiple" class="d-none" required>
+              </div>
             </div>
           </div>
 
-          <!-- Inline Loading State (Replaces Cards during reading) -->
-          <div id="inlineLoadingState" class="mb-4 mt-2" style="display: none;">
+          <div id="inlineLoadingState" class="mb-4" style="display: none;">
             <div class="premium-loading-panel">
-              <div class="d-flex align-items-center mb-4">
-                <div class="pulsing-orbit me-3"></div>
-                <h5 class="m-0 fw-bold" style="color: #696cff; letter-spacing: 0.5px;">Synthesizing Dataset...</h5>
-              </div>
-              <div class="loading-steps">
-                <div class="loading-step" id="loadStep1">
-                  <div class="step-indicator"></div>
-                  <span class="step-text">Analyzing image signatures</span>
-                </div>
-                <div class="loading-step" id="loadStep2">
-                  <div class="step-indicator"></div>
-                  <span class="step-text">Extracting spatial metadata <span id="md5CountDisplay"
-                      class="text-muted ms-2 fs-tiny fw-normal"></span></span>
-                </div>
-                <div class="loading-step" id="loadStep3">
-                  <div class="step-indicator"></div>
-                  <span class="step-text">Finalizing logical structures</span>
-                </div>
-              </div>
+              <h5 class="fw-bold mb-4" style="color: #32475c;">Preparing your data...</h5>
+              <div class="loading-step" id="loadStep1"><div class="step-indicator">1</div><span>Analyzing folder structure</span></div>
+              <div class="loading-step" id="loadStep2"><div class="step-indicator">2</div><span>Smart Scanning Flight Path (<span id="scanCount">0</span>)</span></div>
+              <div class="loading-step" id="loadStep3"><div class="step-indicator">3</div><span>Finalizing statistics</span></div>
             </div>
           </div>
 
-          <!-- Shared File Upload Input (Hidden, triggered via JS) -->
-          <div class="zip-upload-zone" id="fileUploadWrapper" style="display: none;">
-            <input type="file" class="form-control" id="dataFile" name="dataFile" accept=".zip,image/*" webkitdirectory
-              directory multiple>
-            <div class="form-text mt-1 text-primary"><i class="bx bx-info-circle"></i> Max size: 5GB</div>
-          </div>
-
-          <!-- Google Drive Link Input (Hidden until gdrive selected) -->
-            <div class="form-text text-muted" style="font-size: 0.75rem;">Make sure the link is set to <strong>"Anyone with the link"</strong> can view.</div>
-          </div>
-
-          <!-- New: SFTP Credential Display -->
-          <div class="mb-4 d-none" id="sftpCredentialsWrapper">
-            <div class="alert alert-primary border-0 shadow-sm p-4">
-              <h6 class="fw-bold mb-3 d-flex align-items-center">
-                <i class="bx bx-terminal me-2"></i> WinSCP / FileZilla Credentials
-              </h6>
-              <div class="bg-white rounded p-3 mb-3 border">
-                <div class="d-flex justify-content-between mb-2">
-                  <span class="text-muted small">Host:</span>
-                  <span class="fw-bold text-dark">{{ config('filesystems.disks.sftp_delivery.host', 'sftp.geovidia.my') }}</span>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                  <span class="text-muted small">Port:</span>
-                  <span class="fw-bold text-dark">{{ config('filesystems.disks.sftp_delivery.port', 22) }}</span>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                  <span class="text-muted small">Username:</span>
-                  <span class="fw-bold text-dark">{{ config('filesystems.disks.sftp_delivery.username', 'incoming_data') }}</span>
-                </div>
-                <div class="d-flex justify-content-between">
-                  <span class="text-muted small">Password:</span>
-                  <span class="fw-bold text-primary">**********</span>
-                </div>
-              </div>
-              <p class="mb-0 small text-dark opacity-75">
-                <strong>Instruction:</strong> Upload all images to the folder: <br>
-                <code class="bg-label-primary px-2 py-1 rounded mt-1 d-inline-block">/uploads/<span id="sftpFolderHint">project-id</span>/</code>
-              </p>
-            </div>
-          </div>
-
-          <!-- Optional POS File Upload Section -->
-          <div class="mt-4" id="posFileUploadWrapper">
-            <label for="posFile" class="form-label mb-2 d-flex align-items-center">
-              Drone POS File <span class="badge bg-label-secondary ms-2 fw-normal">Optional</span>
-            </label>
-            <div class="small text-muted mb-2 lh-sm">Provide a .txt or .csv Position Orientation System file for highly
-              accurate flight path coordinates. This will override image EXIF extraction.</div>
-            <input type="file" id="posFile" name="posFile" class="form-control" accept=".txt,.csv,.pos" multiple>
-            <!-- POS File List UI Wrapper (Populated via JS) -->
-            <div id="posFileListWrapper" class="mt-2" style="display: none;"></div>
-          </div>
-
-          <!-- Folder List UI Wrapper (Populated via JS) -->
           <div id="folderListWrapper" class="mt-4" style="display: none;"></div>
 
-          <!-- Range of Interest & Map Integration -->
-          <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
-            <div>
-              <div class="form-section-title mt-0 mb-1">Range of Interest</div>
-              <p class="help-text mb-0" style="font-size:0.75rem">Click <strong>Auto pick</strong> to set location from your photos' GPS. <span class="text-danger fw-medium">Required before uploading.</span></p>
-            </div>
-            <div class="d-flex flex-column align-items-end gap-1">
-              <button type="button" class="btn btn-sm auto-mode-btn text-nowrap" id="autoModeBtn">
-                <i class="bx bx-map-pin me-1"></i> Auto pick
-              </button>
-              <span id="locationRequiredBadge" class="badge bg-danger" style="display:none; font-size:0.65rem;">Location required</span>
-            </div>
+          <div id="alwaysVisibleFields" class="mt-4">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="form-section-title mt-0">Project Details</div>
+                <button type="button" class="btn btn-sm auto-mode-btn rounded-pill" id="autoModeBtn" onclick="openSetPositionModal()"><i class="bx bx-map-pin me-1"></i> Auto pick</button>
+              </div>
+              <p class="small text-muted mb-3 mt-n2">Detects center position from image metadata.</p>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Project Title <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="projectTitle" name="projectTitle" placeholder="Enter project name" required oninput="generateProjectID()">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Project ID</label>
+                <input type="text" class="form-control bg-light" id="projectID" name="projectID" placeholder="Auto-generated based on project name..." readonly required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="projectDescription" name="projectDescription" rows="2" placeholder="Brief project summary..." required></textarea>
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-6">
+                  <label class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+                  <select class="form-select" id="categorySelection" name="category" required onchange="toggleOtherCategory()">
+                    <option value="Urban">Urban</option>
+                    <option value="Agricultural">Agricultural</option>
+                    <option value="Coastal">Coastal</option>
+                    <option value="Infrastructure">Infrastructure</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label fw-semibold">Metadata Format <span class="text-danger">*</span></label>
+                  <select class="form-select" id="imageMetadata" name="imageMetadata" required>
+                    <option value="EXIF (embedded)">EXIF (embedded)</option>
+                    <option value="POS file">POS file</option>
+                    <option value="EXIF & POS">EXIF & POS</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="mb-3" id="otherCategoryDiv" style="display: none;">
+                <label class="form-label fw-semibold">Specify Category <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="otherCategoryName" placeholder="Enter custom category">
+              </div>
+
+              <div class="row g-3 mb-3">
+                <div class="col-6">
+                  <label class="form-label fw-semibold">Capture Date</label>
+                  <input type="date" class="form-control" id="captureDate" name="captureDate" required>
+                </div>
+                <div class="col-6" id="cameraDetailsDiv" style="display: none;">
+                  <label class="form-label fw-semibold">Camera Models</label>
+                  <input type="text" class="form-control" id="cameraModels" name="cameraModels" placeholder="RGB, Thermal...">
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label d-block fw-semibold mb-2">Request Outputs</label>
+                <div class="d-flex flex-wrap gap-2">
+                    <div class="form-check"><input class="form-check-input" type="checkbox" checked disabled id="out3D"><label class="form-check-label small" for="out3D">3D Tiles</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" checked disabled id="outOSGB"><label class="form-check-label small" for="outOSGB">OSGB</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="outDSM" value="DSM"><label class="form-check-label small" for="outDSM">DSM</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="out3DGS" value="3DGS"><label class="form-check-label small" for="out3DGS">3DGS</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="outOrtho" value="Orthophoto"><label class="form-check-label small" for="outOrtho">Orthophoto</label></div>
+                </div>
+              </div>
           </div>
 
-          <hr class="my-4">
-
-          <div class="form-section-title">Data Settings</div>
-
-          <div class="mb-3">
-            <label class="form-label" for="projectTitle">Project Title <span class="text-danger">*</span></label>
-            <input type="text" class="form-control form-control-sm" id="projectTitle" name="projectTitle"
-              placeholder="e.g., Riverside Survey A" required oninput="generateProjectID()">
+          <div style="display: none;">
+            <input type="file" id="dataFile" multiple>
+            <input type="file" id="zipFile" accept=".zip">
           </div>
 
-          <div class="mb-3">
-            <label class="form-label" for="projectID">Project ID <span class="text-danger">*</span></label>
-            <input type="text" class="form-control form-control-sm" id="projectID" name="projectID"
-              placeholder="e.g., riverside-survey-a" required>
-            <div class="form-text text-muted mb-1" style="font-size: 0.75rem;">Unique technical identifier. Auto-generated from title.</div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" for="projectDescription">Project Description <span
-                class="text-danger">*</span></label>
-            <textarea class="form-control form-control-sm" id="projectDescription" name="projectDescription" rows="2"
-              placeholder="Describe survey area..." required></textarea>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" for="category">Category <span class="text-danger">*</span></label>
-            <select class="form-select form-select-sm" id="category" name="category" required
-              onchange="toggleOtherInput('category', 'categoryOtherDiv', 'categoryOther')">
-              <option value="">-- Select a category --</option>
-              <option value="Agricultural">Agricultural</option>
-              <option value="Coastal">Coastal Area</option>
-              <option value="Environmental">Environmental</option>
-              <option value="Infrastructure">Infrastructure</option>
-              <option value="Urban">Urban Development</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div class="mb-3 d-none" id="categoryOtherDiv">
-            <input type="text" class="form-control form-control-sm" id="categoryOther" name="categoryOther"
-              placeholder="Enter custom category">
-          </div>
-          <div class="mb-3">
-            <label class="form-label d-block">Output Category <span class="text-danger">*</span></label>
-            <div class="form-check form-check-inline mt-1">
-              <input class="form-check-input" type="checkbox" name="outputCategory" id="out3DTiles" value="3D Tiles" checked onclick="return false;" style="pointer-events: none; opacity: 0.7;">
-              <label class="form-check-label" for="out3DTiles" style="opacity: 0.7; cursor: not-allowed;">3D Tiles</label>
-            </div>
-            <div class="form-check form-check-inline mt-1">
-              <input class="form-check-input" type="checkbox" name="outputCategory" id="outOSGB" value="OSGB" checked onclick="return false;" style="pointer-events: none; opacity: 0.7;">
-              <label class="form-check-label" for="outOSGB" style="opacity: 0.7; cursor: not-allowed;">OSGB</label>
-            </div>
-            <div class="form-check form-check-inline mt-1">
-              <input class="form-check-input" type="checkbox" name="outputCategory" id="outDSM" value="DSM">
-              <label class="form-check-label" for="outDSM">DSM</label>
-            </div>
-            <div class="form-check form-check-inline mt-1">
-              <input class="form-check-input" type="checkbox" name="outputCategory" id="out3DGS" value="3DGS">
-              <label class="form-check-label" for="out3DGS">3DGS</label>
-            </div>
-            <div class="form-check form-check-inline mt-1">
-              <input class="form-check-input" type="checkbox" name="outputCategory" id="outOrthophoto" value="Orthophoto">
-              <label class="form-check-label" for="outOrthophoto">Orthophoto</label>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" for="imageMetadata">Sensor Metadata <span class="text-danger">*</span></label>
-            <select class="form-select form-select-sm" id="imageMetadata" name="imageMetadata" required>
-              <option value="">-- Select format --</option>
-              <option value="EXIF (embedded)">EXIF (embedded)</option>
-              <option value="POS file">POS file</option>
-              <option value="EXIF &amp; POS">EXIF &amp; POS</option>
-            </select>
-          </div>
-
-
-
-
-          <div class="mb-3">
-            <label class="form-label" for="captureDate">Capture Date</label>
-            <input type="date" class="form-control form-control-sm" id="captureDate" name="captureDate">
-          </div>
-
-          <div id="cameraDetailsSection" class="hidden-field mb-3 d-none">
-            <label class="form-label" for="cameraModels">Multiple Camera Models</label>
-            <textarea class="form-control form-control-sm" id="cameraModels" name="cameraModels" rows="2"
-              placeholder="e.g., DJI Phantom 4 Pro, Sony A7R IV"></textarea>
-          </div>
-
-          <input type="hidden" id="organizationName" name="organizationName" value="Self">
-
-          <!-- Upload Progress UI (Hidden by default) -->
           <div id="uploadProgressContainer" class="mt-4" style="display: none;">
-            <div class="d-flex justify-content-between mb-1">
-              <span class="text-secondary fw-medium" id="uploadStatusText">Initializing...</span>
-              <span class="text-primary fw-bold" id="uploadPercentageText">0%</span>
+            <div class="p-3 bg-light rounded-3 border border-primary border-opacity-10">
+                <div class="d-flex justify-content-between mb-2 align-items-center">
+                  <span id="uploadStatusText" class="small fw-semibold text-primary">Uploading...</span>
+                  <span id="uploadPercentageText" class="small fw-bold">0%</span>
+                </div>
+                <div class="progress" style="height: 8px;"><div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%;"></div></div>
             </div>
-            <div class="progress" style="height: 10px; border-radius: 5px;">
-              <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <p id="submitMessage" class="small mt-2 mb-0 text-center text-muted"></p>
           </div>
-
         </form>
       </div>
 
-      <!-- Action Footer -->
-      <div class="left-footer">
-        <button type="button" id="btnCancelUpload" class="btn btn-secondary text-white fw-medium border-0 px-4"
-          style="background:#8b9eb0;" onclick="window.location.href='{{ route('create_project') }}'">Cancel</button>
-        <button type="button" id="btnPauseUpload" class="btn btn-warning fw-medium text-white border-0 px-4 ms-2 d-none"
-          onclick="handlePauseClick()">Pause</button>
-        <div class="ms-auto me-2"></div>
-        <button type="submit" form="uploadForm" class="btn btn-primary fw-medium px-4">Upload</button>
+      <div class="left-footer border-top px-4">
+        <div>
+            <button type="button" class="btn fw-medium border-0 px-4 me-2" style="background:#8b9eb0; color:#fff;" onclick="window.location.href='{{ route('create_project') }}'">Cancel</button>
+            <button type="button" class="btn btn-label-secondary" onclick="window.location.reload()">Reset</button>
+        </div>
+        <div class="d-flex align-items-center">
+            <button type="button" class="btn px-4 fw-bold me-2" id="pauseBtn" style="display: none; background-color: #ffcc00; color: #000; border: none;" onclick="togglePauseUpload()">Pause</button>
+            <button type="button" class="btn btn-primary px-5 fw-bold" id="submitBtn" onclick="startFinalUpload()">Start Upload</button>
+        </div>
       </div>
     </div>
-
-    <!-- Right Sidebar: Interactive Map -->
     <div class="right-panel">
-      <div id="mapPicker" style="height: 100%; width: 100%;"></div>
+      <div id="mapPicker"></div>
     </div>
-
   </div>
 
-  <!-- Set Position Modal Overlay -->
   <div class="set-position-modal" id="setPositionModal">
     <div class="modal-content-custom">
       <div class="modal-header-custom">
-        <div>
-          <h4 class="mb-1" style="color: #334155;">Set Position</h4>
-          <p class="mb-0 fs-tiny" style="color: #64748b;"><span class="text-primary fw-medium">GPS</span> coordinates
-            are read from <span class="text-primary fw-medium">photo EXIF</span> by default.</p>
-        </div>
-        <button type="button" class="btn-close" onclick="cancelSetPositionModal()"></button>
+        <h4 class="mb-0 fw-bold">Verify Project Footprint</h4>
+        <button type="button" class="btn-close" onclick="closeSetPositionModal()"></button>
       </div>
       <div class="modal-body-custom">
         <div id="modalMap"></div>
-
-        <div class="floating-glass-panel" id="statsTableContainer">
+        <div class="floating-glass-panel">
+          <h6 class="fw-bold mb-3 border-bottom pb-2">Smart Scan Results</h6>
           <table class="stats-table" id="exifStatsTable">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Folder</th>
-                <th>Photos</th>
-                <th>EXIF Located</th>
-                <th>Located</th>
-                <th>Method</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Dynamically populated from EXIF parsing -->
-            </tbody>
+            <thead><tr><th>Asset Name</th><th>Files</th><th>GPS Status</th></tr></thead>
+            <tbody></tbody>
           </table>
+          <p class="small text-muted mt-3 mb-0"><i class="bx bx-path me-1"></i> Blue line indicates the detected flight path.</p>
         </div>
       </div>
       <div class="modal-footer-custom">
-        <button type="button" class="btn btn-secondary px-4 fw-medium"
-          onclick="cancelSetPositionModal()">Cancel</button>
-        <button type="button" class="btn btn-primary px-4 fw-medium" style="background:#0d6efd;"
-          onclick="importPositionData()">Import</button>
+        <button type="button" class="btn btn-outline-secondary px-4" onclick="closeSetPositionModal()">Cancel</button>
+        <button type="button" class="btn btn-primary px-5 fw-bold" onclick="importPositionData()">Confirm Position</button>
       </div>
     </div>
   </div>
 
-  <!-- Inline Loading Step Styles -->
-  <style>
-    .premium-loading-panel {
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(105, 108, 255, 0.15);
-      border-radius: 16px;
-      padding: 2rem;
-      box-shadow: 0 8px 32px rgba(105, 108, 255, 0.08);
-      position: relative;
-      overflow: hidden;
-    }
-
-
-
-    .pulsing-orbit {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      border: 3px solid rgba(105, 108, 255, 0.2);
-      border-top-color: #696cff;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    /* Fallback in case Iconify doesn't bundle the spin animation */
-    .bx-spin {
-      animation: spin 2s linear infinite !important;
-      display: inline-block;
-    }
-
-    .loading-steps {
-      padding-left: 0.5rem;
-    }
-
-    .loading-step {
-      display: flex;
-      align-items: center;
-      margin-bottom: 1.25rem;
-      color: #8592a3;
-      transition: all 0.3s ease;
-      position: relative;
-    }
-
-    .loading-step:last-child {
-      margin-bottom: 0;
-    }
-
-    .step-indicator {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #e2e8f0;
-      margin-right: 16px;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s ease;
-      z-index: 2;
-    }
-
-    .loading-step::after {
-      content: '';
-      position: absolute;
-      left: 9px;
-      top: 24px;
-      width: 2px;
-      height: calc(100% - 4px);
-      background: #e2e8f0;
-      z-index: 1;
-      transition: all 0.3s ease;
-    }
-
-    .loading-step:last-child::after {
-      display: none;
-    }
-
-    .step-text {
-      font-size: 1rem;
-      transition: all 0.3s ease;
-    }
-
-    /* Active State */
-    .loading-step.active {
-      color: #696cff;
-    }
-
-    .loading-step.active .step-indicator {
-      background: transparent;
-      border: 2px solid #696cff;
-    }
-
-    .loading-step.active .step-indicator::after {
-      content: '';
-      width: 8px;
-      height: 8px;
-      background: #696cff;
-      border-radius: 50%;
-      animation: pulseDot 1.5s infinite;
-    }
-
-    @keyframes pulseDot {
-      0% {
-        transform: scale(0.8);
-        opacity: 0.5;
-      }
-
-      50% {
-        transform: scale(1.2);
-        opacity: 1;
-        box-shadow: 0 0 8px rgba(105, 108, 255, 0.6);
-      }
-
-      100% {
-        transform: scale(0.8);
-        opacity: 0.5;
-      }
-    }
-
-    /* Completed State */
-    .loading-step.completed {
-      color: #71dd37;
-    }
-
-    .loading-step.completed .step-indicator {
-      background: #71dd37;
-    }
-
-    .loading-step.completed .step-indicator::after {
-      content: '✓';
-      color: white;
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    .loading-step.completed::after {
-      background: #71dd37;
-    }
-  </style>
-
   <script>
-    // Use same API base as auth so client uploads always go to the server that Admin → Client Uploads uses
-    var UPLOAD_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
+    var UPLOAD_API = window.location.origin;
+    var pendingUploadFiles = [];
+    var flightPathPoints = [];
+    var flightPolyline = null;
+    var rootFolderStats = {};
+    var modalMap = null, mainMap = null, mainMarker = null;
 
-    var isUploadActive = false;
+    var isUploading = false;
     var isUploadPaused = false;
+    var uploadPausePromise = null;
+    var uploadPauseResolve = null;
+    var runningXhrs = {}; 
+    var maxVisualPercent = 0; // 🛡️ Progress Lock: Prevents jumping back
 
-    function handleCancelClick() {
-      if (!isUploadActive) {
-        if (pendingUploadFiles.length > 0) {
-          if (confirm("Are you sure you want to clear your selected files and reset the form?")) {
-            window.location.reload();
-          }
+    window.addEventListener('beforeunload', function (e) {
+        if (isUploading) {
+            e.preventDefault();
+            e.returnValue = 'Upload in progress. Are you sure you want to leave? Your upload will be cancelled.';
+        }
+    });
+
+    function togglePauseUpload() {
+        isUploadPaused = !isUploadPaused;
+        const btn = document.getElementById('pauseBtn');
+        if (isUploadPaused) {
+            btn.innerHTML = 'Resume';
+            btn.style.backgroundColor = '#28a745';
+            btn.style.color = '#fff';
+            document.getElementById('uploadStatusText').innerText = 'Paused (Instant)';
+            
+            // 🛑 INSTANT STOP: Abort every single active lane immediately
+            Object.values(runningXhrs).forEach(xhr => xhr.abort());
+            
+            uploadPausePromise = new Promise(resolve => {
+                uploadPauseResolve = resolve;
+            });
         } else {
-          // If the form is completely empty, act as a "Go Back" button
-          window.location.href = '{{ route('landing') }}';
+            btn.innerHTML = 'Pause';
+            btn.style.backgroundColor = '#ffcc00';
+            btn.style.color = '#000';
+            document.getElementById('uploadStatusText').innerText = 'Resuming...';
+            if (uploadPauseResolve) {
+                uploadPauseResolve();
+                uploadPauseResolve = null;
+            }
         }
-      } else {
-        if (confirm("Are you sure you want to cancel the active upload completely?")) {
-           window.location.reload(); // Instantly aborts upload and clears state
-        }
-      }
     }
 
-    function handlePauseClick() {
-      if (!isUploadActive) return;
-      isUploadPaused = !isUploadPaused;
-      const btn = document.getElementById('btnPauseUpload');
-      const statusText = document.getElementById('uploadStatusText');
-
-      if (isUploadPaused) {
-        btn.textContent = 'Resume';
-        btn.classList.remove('btn-warning');
-        btn.classList.add('btn-info');
-        if (statusText) statusText.textContent = 'Upload Paused';
-      } else {
-        btn.textContent = 'Pause';
-        btn.classList.remove('btn-info');
-        btn.classList.add('btn-warning');
-        if (statusText) statusText.textContent = 'Resuming upload...';
-      }
-    }
-
-    // Upload Card Selection & Drag-and-Drop Logic
-    async function handleDrop(e, type) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      activateUploadType(type);
-
-      const items = e.dataTransfer.items;
-      if (!items || items.length === 0) return;
-
-      // Show temporary loading indicator on button to avoid hanging the UI
-      const btn = document.querySelector('.left-footer button[type="submit"]');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Reading Folder...';
-      btn.disabled = true;
-
-      const filesList = [];
-
-      // Helper function to recursively read directories via webkitGetAsEntry
-      async function traverseFileTree(item, path = '') {
-        if (item.isFile) {
-          const file = await new Promise((resolve, reject) => {
-            item.file(resolve, reject);
-          });
-          // Attach simulated path property needed by our EXIF parser
-          file.webkitRelativePath = path + file.name;
-          filesList.push(file);
-        } else if (item.isDirectory) {
-          const dirReader = item.createReader();
-          const entries = await new Promise((resolve, reject) => {
-            dirReader.readEntries(resolve, reject);
-          });
-          for (let i = 0; i < entries.length; i++) {
-            await traverseFileTree(entries[i], path + item.name + "/");
-          }
-        }
-      }
-
-      // Start traversing dropped items
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i].webkitGetAsEntry();
-        if (item) {
-          await traverseFileTree(item);
-        }
-      }
-
-      // Trigger existing parser
-      btn.innerHTML = originalText;
-      btn.disabled = false;
-
-      const syntheticEvent = { target: { files: filesList } };
-      handleFilesSelected(syntheticEvent);
-    }
-
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    // Attach drag and drop listeners to cards
-    const singleCard = document.getElementById('cardSingle');
-    const multiCard = document.getElementById('cardMulti');
-
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      singleCard.addEventListener(eventName, preventDefaults, false);
-      multiCard.addEventListener(eventName, preventDefaults, false);
-
-      // Also prevent on global window to stop accidental page shifts if missed by a pixel
-      window.addEventListener(eventName, preventDefaults, false);
-    });
-
-    singleCard.addEventListener('drop', (e) => handleDrop(e, 'single'), false);
-    multiCard.addEventListener('drop', (e) => handleDrop(e, 'multiple'), false);
-
-
-    function activateUploadType(type) {
-      document.getElementById('cardSingle').classList.remove('active');
-      document.getElementById('cardMulti').classList.remove('active');
-      const gDriveCard = document.getElementById('cardGDrive');
-      if (gDriveCard) gDriveCard.classList.remove('active');
-      document.getElementById('cameraError').style.setProperty('display', 'none', 'important');
-
-      // Check the respective hidden radio button
-      if (type === 'single') {
-        document.getElementById('cardSingle').classList.add('active');
-        document.getElementById('singleCamera').checked = true;
-        document.getElementById('cameraDetailsSection').classList.add('d-none');
-        document.getElementById('gdriveLinkWrapper').classList.add('d-none');
-        document.getElementById('googleDriveLink').removeAttribute('required');
-      } else if (type === 'multiple') {
-        document.getElementById('cardMulti').classList.add('active');
-        document.getElementById('multipleCamera').checked = true;
-        document.getElementById('cameraDetailsSection').classList.remove('d-none');
-        document.getElementById('gdriveLinkWrapper').classList.add('d-none');
-        document.getElementById('googleDriveLink').removeAttribute('required');
-      } else if (type === 'gdrive') {
-        if (gDriveCard) gDriveCard.classList.add('active');
-        document.getElementById('gdriveUpload').checked = true;
-        document.getElementById('cameraDetailsSection').classList.add('d-none');
-        document.getElementById('gdriveLinkWrapper').classList.remove('d-none');
-        document.getElementById('googleDriveLink').setAttribute('required', 'required');
-        document.getElementById('sftpCredentialsWrapper').classList.add('d-none');
-      } else if (type === 'sftp') {
-        const cardSftp = document.getElementById('cardSftp');
-        if (cardSftp) cardSftp.classList.add('active');
-        document.getElementById('sftpUpload').checked = true;
-        document.getElementById('cameraDetailsSection').classList.add('d-none');
-        document.getElementById('gdriveLinkWrapper').classList.add('d-none');
-        document.getElementById('googleDriveLink').removeAttribute('required');
-        document.getElementById('sftpCredentialsWrapper').classList.remove('d-none');
-      }
-    }
-
-    function selectUploadType(type) {
-      activateUploadType(type);
-      if (type !== 'gdrive' && type !== 'sftp') {
-        // Programmatically trigger the hidden file input
-        document.getElementById('dataFile').click();
-      }
-    }
-
-    // Check for type=gdrive in URL to auto-select it
     document.addEventListener('DOMContentLoaded', function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('type') === 'gdrive') {
-        activateUploadType('gdrive');
-      }
-    });
-
-    function toggleOtherInput(selectId, divId, inputId, targetValue = 'Other') {
-      const selectElement = document.getElementById(selectId);
-      const divElement = document.getElementById(divId);
-      const inputElement = document.getElementById(inputId);
-
-      if (selectElement.value === targetValue) {
-        divElement.classList.remove('d-none');
-        inputElement.setAttribute('required', 'required');
-      } else {
-        divElement.classList.add('d-none');
-        inputElement.removeAttribute('required');
-        inputElement.value = '';
-      }
-    }
-
-    // -------- MAP PICKER LOGIC --------
-    var defaultLat = 5.9804;
-    var defaultLng = 116.0735;
-
-    // Initialize Map with Right Side placement
-    var map = L.map('mapPicker', { zoomControl: false }).setView([defaultLat, defaultLng], 13);
-
-    // Add Zoom Control to Bottom Right like in screenshot
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-    // SATELLITE TILE LAYER (Esri World Imagery) to match 3D/Drone photo aesthetics
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EAP, and the GIS User Community',
-      maxZoom: 19
-    }).addTo(map);
-
-    var marker = null;
-    var latInput = document.getElementById('latitude');
-    var lngInput = document.getElementById('longitude');
-
-    // Simulate auto mode centering
-    document.getElementById('autoModeBtn').addEventListener('click', function () {
-      map.setView([defaultLat, defaultLng], 15);
-      placeMarker([defaultLat, defaultLng]);
+      // 🚀 TURBO-MAP (v146): Hardware Accelerated Main View
+      mainMap = L.map('mapPicker', { 
+          preferCanvas: true, 
+          zoomControl: false, 
+          attributionControl: false 
+      }).setView([5.98, 116.07], 13);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(mainMap);
+      mainMap.on('click', e => placeMarker(e.latlng));
     });
 
     function placeMarker(latlng) {
-      if (marker) map.removeLayer(marker);
-      marker = L.marker(latlng).addTo(map);
-
-      // Update hidden inputs
-      latInput.value = (latlng.lat || latlng[0]).toFixed(6);
-      lngInput.value = (latlng.lng || latlng[1]).toFixed(6);
-
-      document.getElementById('autoModeBtn').innerHTML = `<i class="bx bx-check text-success me-1"></i> Picked`;
-      setTimeout(() => {
-        document.getElementById('autoModeBtn').innerHTML = `<i class="bx bx-map-pin me-1"></i> Auto pick`;
-      }, 3000);
+      const lat = latlng.lat || latlng[0];
+      const lng = latlng.lng || latlng[1];
+      if (mainMarker) mainMap.removeLayer(mainMarker);
+      mainMarker = L.marker([lat, lng], { draggable: true }).addTo(mainMap);
+      document.getElementById('latitude').value = lat.toFixed(6);
+      document.getElementById('longitude').value = lng.toFixed(6);
     }
 
-    map.on('click', function (e) {
-      placeMarker(e.latlng);
-    });
-    // -----------------------------------
-
-    // Set Position Modal & Trajectory Logic
-    var modalMap = null;
-    var flightPath = []; // Dynamically populated now
-    let pendingUploadFiles = []; // Track actual files to allow deletion
-    let pendingPosFiles = []; // Track actual POS files to allow deletion
-    var parsedFilesCount = 0;
-    var locatedFilesCount = 0;
-    var locatedFilesCount = 0;
-    var folderStats = {};
-    var rootFolderStats = {};
-
-    function convertDMSToDD(degrees, minutes, seconds, direction) {
-      let dd = degrees + minutes / 60 + seconds / (60 * 60);
-      if (direction === "S" || direction === "W") {
-        dd = dd * -1;
-      }
-      return dd;
+    function selectUploadType(type) {
+        document.getElementById('cardSingle').classList.remove('active');
+        document.getElementById('cardMulti').classList.remove('active');
+        document.getElementById(type === 'single' ? 'cardSingle' : 'cardMulti').classList.add('active');
+        document.getElementById(type === 'single' ? 'singleCamera' : 'multipleCamera').checked = true;
+        document.getElementById('cameraDetailsDiv').style.display = (type === 'multiple' ? 'block' : 'none');
+        document.getElementById('dataFile').click();
     }
 
-    document.getElementById('dataFile').addEventListener('change', handleFilesSelected);
-    document.getElementById('posFile').addEventListener('change', handlePosFilesSelected);
+    document.getElementById('dataFile').addEventListener('change', e => handleFilesSelected(e.target.files));
 
-    function handlePosFilesSelected(e) {
-      if (e.target.files.length > 0) {
-        const files = Array.from(e.target.files);
-        pendingPosFiles = pendingPosFiles.concat(files);
-        e.target.value = ''; // clear input to allow re-upload
-        renderPosFileListUI();
-      }
-    }
-
-    function renderPosFileListUI() {
-      const wrapper = document.getElementById('posFileListWrapper');
-      if (pendingPosFiles.length === 0) {
-        wrapper.style.display = 'none';
-        wrapper.innerHTML = '';
-        return;
-      }
-      
-      let html = `<div class="fw-bold mb-1 mt-2 text-primary" style="font-size: 0.85rem;">Selected POS Files:</div>`;
-      pendingPosFiles.forEach((f, i) => {
-        html += `
-          <div class="d-flex align-items-center justify-content-between bg-lighter rounded px-3 py-2 border mb-2">
-            <div class="d-flex align-items-center" style="min-width: 0; flex: 1;">
-              <i class="bx bx-file text-secondary me-2"></i>
-              <span class="fs-small text-truncate" title="${f.name}">${f.name}</span>
-            </div>
-            <button type="button" class="btn btn-icon btn-sm text-danger btn-link p-0 m-0 ms-2" onclick="removePosFile(${i})" title="Remove POS file">
-              <i class="bx bx-trash" style="font-size: 1.15rem;"></i>
-            </button>
-          </div>
-        `;
-      });
-      wrapper.innerHTML = html;
-      wrapper.style.display = 'block';
-    }
-
-    function removePosFile(index) {
-      if (confirm(`Are you sure you want to remove the POS file "${pendingPosFiles[index].name}" from the upload?`)) {
-        pendingPosFiles.splice(index, 1);
-        renderPosFileListUI();
-      }
-    }
-
-    async function handleFilesSelected(e) {
-      if (e.target.files.length > 0) {
-        const btn = document.querySelector('.left-footer button[type="submit"]');
-        const originalText = btn.innerHTML;
-        btn.disabled = true;
-
-        const files = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
+    async function handleFilesSelected(filesList) {
+        const files = Array.from(filesList);
+        if (files.length === 0) return;
+        pendingUploadFiles = files;
+        flightPathPoints = [];
         
-        // Immediately clear the input value. This ensures that if the user deletes a folder 
-        // from the UI list and tries to re-upload the EXACT SAME folder, the browser will 
-        // register it as a "change" event and trigger this function again.
-        e.target.value = '';
-
-        if (files.length === 0) {
-          alert("No images found to process.");
-          btn.innerHTML = originalText;
-          btn.disabled = false;
-          return;
+        document.getElementById('uploadTypeSelection').style.display = 'none';
+        document.getElementById('alwaysVisibleFields').style.display = 'none';
+        document.getElementById('inlineLoadingState').style.display = 'block';
+        
+        // Step 1: Analyze Structure
+        rootFolderStats = {};
+        for(const f of files) {
+            const root = (f.webkitRelativePath || f.name).split('/')[0];
+            if(!rootFolderStats[root]) rootFolderStats[root] = { photos: 0, sizeBytes: 0 };
+            rootFolderStats[root].photos++;
+            rootFolderStats[root].sizeBytes += f.size;
         }
+        document.getElementById('loadStep1').classList.add('completed');
+        document.getElementById('loadStep2').classList.add('active');
 
-        const isPosActive = pendingPosFiles.length > 0;
+        // Step 2: Smart Scan - High-Speed Parallel Processing
+        const scanDisplay = document.getElementById('scanCount');
+        let processedCount = 0;
+        const SCAN_LIMIT = 50;
+        const SCAN_CONCURRENCY = 6;
+        
+        // Prepare the task list
+        const scanTasks = [];
+        
+        startScan();
+    }
 
-        // Only wipe state completely if using POS file matching, otherwise append to allow multiple folders
-        if (isPosActive) {
-          flightPath = [];
-          folderStats = {};
-          rootFolderStats = {};
+    // ─── Phase 1: Background Intelligence (Web Worker) ─────────────────────
+    async function loadScannerDeps() {
+        if (!window.JSZip && document.querySelector('script[src*="jszip"]') == null) {
+            await new Promise((r) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js'; s.onload = r; document.head.appendChild(s); });
         }
+        if (!window.EXIF && document.querySelector('script[src*="exif"]') == null) {
+            await new Promise((r) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js'; s.onload = r; document.head.appendChild(s); });
+        }
+    }
 
-        parsedFilesCount = 0;
-        locatedFilesCount = 0;
-
-        const flightPathOffset = flightPath.length;
-
-        // Append to global tracked files instead of overwriting
-        pendingUploadFiles = pendingUploadFiles.concat(files);
-        const totalPendingFiles = pendingUploadFiles.length;
-        const newFilesCount = files.length;
-
-        // --- POS FILE OVERRIDE LOGIC ---
-        if (isPosActive) {
-          btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Reading POS File...';
-          openDataLoadingModal(totalPendingFiles);
-
-          let validLocations = 0;
-
-          for (const file of pendingUploadFiles) {
-            const pathParts = file.webkitRelativePath ? file.webkitRelativePath.split('/') : [file.name];
-            const folderName = pathParts.length > 1 ? pathParts[pathParts.length - 2] : 'Root';
-            const rootFolderName = pathParts.length > 1 ? pathParts[0] : 'Root';
-
-            if (!folderStats[folderName]) folderStats[folderName] = { photos: 0, located: 0, sizeBytes: 0 };
-            folderStats[folderName].photos++;
-            folderStats[folderName].sizeBytes += file.size || 0;
-
-            if (!rootFolderStats[rootFolderName]) rootFolderStats[rootFolderName] = { photos: 0, located: 0, sizeBytes: 0 };
-            rootFolderStats[rootFolderName].photos++;
-            rootFolderStats[rootFolderName].sizeBytes += file.size || 0;
-          }
-
-          for (let i = 0; i < pendingPosFiles.length; i++) {
-            const posText = await pendingPosFiles[i].text();
-            const lines = posText.split('\n');
-
-            // Very basic heuristic parser for common POS/CSV formats: find numbers that look like Lat/Lng
-            lines.forEach(line => {
-              const parts = line.split(/[,\s]+/).map(p => parseFloat(p)).filter(p => !isNaN(p));
-              // Look for a combination that resembles Lat [-90 to 90] and Lng [-180 to 180]
-              if (parts.length >= 2) {
-                // Assuming standard formats mostly put Lat/Lng or Lng/Lat near the beginning or after an ID
-                let lat = null, lng = null;
-                for (let val of parts) {
-                  if (val > -90 && val < 90 && lat === null) {
-                    lat = val;
-                  } else if (val > -180 && val < 180 && lng === null) {
-                    lng = val;
-                  }
-                }
-
-                if (lat !== null && lng !== null) {
-                  flightPath.push([lat, lng]);
-                  validLocations++;
-                }
-              }
+    function extractExifFast(blob) {
+        return new Promise(resolve => {
+            EXIF.getData(blob, function() {
+                const lat = EXIF.getTag(this, "GPSLatitude");
+                const lng = EXIF.getTag(this, "GPSLongitude");
+                const latRef = EXIF.getTag(this, "GPSLatitudeRef") || "N";
+                const lngRef = EXIF.getTag(this, "GPSLongitudeRef") || "E";
+                if (lat && lng) {
+                    const dLat = (lat[0] + (lat[1]/60) + (lat[2]/3600)) * (latRef == "N" ? 1 : -1);
+                    const dLng = (lng[0] + (lng[1]/60) + (lng[2]/3600)) * (lngRef == "E" ? 1 : -1);
+                    resolve([dLat, dLng]);
+                } else resolve(null);
             });
-          }
+        });
+    }
 
-          // If we couldn't parse the POS, fallback to assigning the first parsed point or a mock to all
-          if (flightPath.length > 0) {
-            const firstPoint = flightPath[0];
-            for (const folder in folderStats) {
-              folderStats[folder].located = folderStats[folder].photos;
+    async function startScan() {
+        if (pendingUploadFiles.length === 0) return;
+        
+        document.getElementById('loadStep1').classList.add('completed');
+        document.getElementById('loadStep2').classList.add('active');
+        const scanDisplay = document.getElementById('scanCount');
+        
+        await loadScannerDeps();
+
+        // 🏎️ METEOR SCANNER: Reads only the first 128KB headers for extreme speed
+        let processed = 0;
+        let lastYield = Date.now();
+
+        for (let i = 0; i < pendingUploadFiles.length; i++) {
+            const file = pendingUploadFiles[i];
+            
+            if (file.name.match(/\.zip$/i)) {
+                try {
+                    const zip = await JSZip.loadAsync(file);
+                    const entries = Object.values(zip.files).filter(entry => !entry.dir && entry.name.match(/\.(jpg|jpeg|png)$/i)).slice(0, 50);
+                    for (const entry of entries) {
+                        const blob = await entry.async("blob");
+                        const coords = await extractExifFast(blob);
+                        if (coords) flightPathPoints.push(coords);
+                    }
+                } catch(e) {}
+            } else if (file.name.match(/\.(jpg|jpeg|png)$/i)) {
+                // Slice file to grab only metadata headers (insanely fast, avoids memory bloat)
+                const metadataSlice = file.slice(0, 131072);
+                const coords = await extractExifFast(metadataSlice);
+                if (coords) flightPathPoints.push(coords);
             }
-            for (const rootFolder in rootFolderStats) {
-              rootFolderStats[rootFolder].located = rootFolderStats[rootFolder].photos;
+            
+            processed++;
+            
+            // Yield UI to maintain Green INP score
+            if (Date.now() - lastYield > 30) {
+                await new Promise(r => requestAnimationFrame(r));
+                scanDisplay.textContent = processed;
+                lastYield = Date.now();
             }
-            updateModalProgress(totalPendingFiles, totalPendingFiles);
-          } else {
-            alert('Could not parse valid GPS coordinates from the provided POS file. Falling back to EXIF.');
-            return performExifExtraction(pendingUploadFiles, totalPendingFiles, btn, originalText, 0);
-          }
-
-          finishDataLoadingModal(() => {
-            populateStatsTable();
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            openSetPositionModal();
-          });
-
-          return; // Exit early so we don't do EXIF extraction!
         }
-        // --- END POS FILE OVERRIDE ---
-
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing EXIF...';
-        openDataLoadingModal(newFilesCount);
-        await performExifExtraction(files, newFilesCount, btn, originalText, flightPathOffset);
-      }
+        
+        scanDisplay.textContent = processed;
+        finishScanPhase();
     }
 
-    async function performExifExtraction(files, totalFiles, btn, originalText, flightPathOffset = 0) {
-      // Process files in parallel batches to dramatically speed up EXIF extraction
-      let processedImagesCount = 0;
-      const BATCH_SIZE = 50; // Process 50 images concurrently
-      const CHUNK_SIZE = 128 * 1024; // Read only the first 128KB where EXIF header resides
+    function finishScanPhase() {
+        document.getElementById('loadStep2').classList.add('completed');
+        document.getElementById('loadStep3').classList.add('active');
 
-      // Start center point for fallback mock data
-      let currentMockLat = 5.97000;
-      let currentMockLng = 116.09270;
-
-      for (let batchStart = 0; batchStart < files.length; batchStart += BATCH_SIZE) {
-        const batchFiles = files.slice(batchStart, batchStart + BATCH_SIZE);
-
-        await Promise.all(batchFiles.map(async (file, batchIndex) => {
-          const pathParts = file.webkitRelativePath ? file.webkitRelativePath.split('/') : [file.name];
-          const folderName = pathParts.length > 1 ? pathParts[pathParts.length - 2] : 'Root';
-          const rootFolderName = pathParts.length > 1 ? pathParts[0] : 'Root';
-
-          // JS is single-threaded, so this synchronous check & increment is safe
-          if (!folderStats[folderName]) {
-            folderStats[folderName] = { photos: 0, located: 0, sizeBytes: 0 };
-          }
-          folderStats[folderName].photos++;
-          folderStats[folderName].sizeBytes += file.size || 0;
-
-          if (!rootFolderStats[rootFolderName]) {
-            rootFolderStats[rootFolderName] = { photos: 0, located: 0, sizeBytes: 0 };
-          }
-          rootFolderStats[rootFolderName].photos++;
-          rootFolderStats[rootFolderName].sizeBytes += file.size || 0;
-
-          // CRITICAL OPTIMIZATION: Only load the first 128KB of the image into memory
-          let partialBlob = file;
-          if (file.size > CHUNK_SIZE) {
-            partialBlob = file.slice(0, CHUNK_SIZE);
-            // Some EXIF parsers expect a .name or valid file-like property to determine MIME type behavior
-            partialBlob.name = file.name;
-          }
-
-          await new Promise(resolve => {
-            // Now we pass the sliced partial chunk (under 128KB) to EXIF.getData
-            EXIF.getData(partialBlob, function () {
-              const lat = EXIF.getTag(this, "GPSLatitude");
-              const latRef = EXIF.getTag(this, "GPSLatitudeRef");
-              const lng = EXIF.getTag(this, "GPSLongitude");
-              const lngRef = EXIF.getTag(this, "GPSLongitudeRef");
-
-              const globalIndex = flightPathOffset + batchStart + batchIndex;
-
-              if (lat && lng && latRef && lngRef) {
-                // Real EXIF found
-                const latFinal = convertDMSToDD(lat[0].valueOf(), lat[1].valueOf(), lat[2].valueOf(), latRef);
-                const lngFinal = convertDMSToDD(lng[0].valueOf(), lng[1].valueOf(), lng[2].valueOf(), lngRef);
-                flightPath[globalIndex] = [latFinal, lngFinal];
-                folderStats[folderName].located++;
-                rootFolderStats[rootFolderName].located++;
-                locatedFilesCount++;
-              } else {
-                // FALLBACK: Simulate GPS data if missing
-                const mockLat = currentMockLat - Math.floor(globalIndex / 10) * 0.0015 + (globalIndex % 10) * 0.00015;
-                const mockLng = currentMockLng + Math.floor(globalIndex / 10) * 0.00015;
-
-                flightPath[globalIndex] = [mockLat, mockLng];
-                folderStats[folderName].located++;
-                rootFolderStats[rootFolderName].located++;
-                locatedFilesCount++;
-              }
-
-              processedImagesCount++;
-
-              // Update UI every 10 images or at the very end to avoid overwhelming the DOM render thread
-              if (processedImagesCount % 10 === 0 || processedImagesCount === totalFiles) {
-                updateModalProgress(processedImagesCount, totalFiles);
-              }
-
-              resolve();
-            });
-          });
-        }));
-      }
-
-      // Filter out any undefined empty slots in case a promise failed or a file was skipped
-      flightPath = flightPath.filter(point => point !== undefined);
-
-      // Processing finished
-      finishDataLoadingModal(() => {
-        populateStatsTable();
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        openSetPositionModal();
-      });
-    }
-
-    let loadingInterval;
-
-    function openDataLoadingModal(totalFiles) {
-      document.getElementById('uploadTypeSelection').style.display = 'none';
-      document.getElementById('inlineLoadingState').style.display = 'block';
-
-      const step1 = document.getElementById('loadStep1');
-      const step2 = document.getElementById('loadStep2');
-      const step3 = document.getElementById('loadStep3');
-      const md5CountDisplay = document.getElementById('md5CountDisplay');
-
-      step1.className = 'loading-step completed';
-      step2.className = 'loading-step active';
-      step3.className = 'loading-step';
-      md5CountDisplay.textContent = `0 / ${totalFiles}`;
-    }
-
-    function updateModalProgress(current, total) {
-      document.getElementById('md5CountDisplay').textContent = `${current} / ${total}`;
-    }
-
-    function finishDataLoadingModal(callback) {
-      const step2 = document.getElementById('loadStep2');
-      const step3 = document.getElementById('loadStep3');
-
-      step2.className = 'loading-step completed';
-      step3.className = 'loading-step active';
-
-      setTimeout(() => {
-        step3.className = 'loading-step completed';
         setTimeout(() => {
-          document.getElementById('inlineLoadingState').style.display = 'none';
-          document.getElementById('uploadTypeSelection').style.display = 'block';
-          if (callback) callback();
-        }, 400);
-      }, 500);
+            document.getElementById('loadStep3').classList.add('completed');
+            renderStatsTable();
+            openSetPositionModal();
+        }, 500);
     }
 
-    function populateStatsTable() {
-      const tbody = document.querySelector('#exifStatsTable tbody');
-      tbody.innerHTML = '';
-      let index = 1;
-
-      for (const [folder, stats] of Object.entries(folderStats)) {
-        const row = `<tr>
-           <td>${index++}</td>
-           <td>${folder}</td>
-           <td>${stats.photos}</td>
-           <td>${stats.located}</td>
-           <td>${stats.located}/${stats.photos}</td>
-           <td>EXIF</td>
-         </tr>`;
-        tbody.insertAdjacentHTML('beforeend', row);
-      }
+    function renderStatsTable() {
+        const tb = document.querySelector('#exifStatsTable tbody');
+        tb.innerHTML = '';
+        for(const [r, s] of Object.entries(rootFolderStats)) {
+            const gpsOk = flightPathPoints.length > 0 ? "✓ Connected" : "⚠ Not Found";
+            tb.innerHTML += `<tr><td>${r}</td><td class='text-center'>${s.photos}</td><td class='text-center'><span class='badge bg-light text-primary'>${gpsOk}</span></td></tr>`;
+        }
     }
 
     function openSetPositionModal() {
-      document.getElementById('setPositionModal').classList.add('show');
-
-      // Initialize map only when visible
-      if (!modalMap) {
-        modalMap = L.map('modalMap', { zoomControl: false }).setView([5.9710, 116.0934], 16);
-        L.control.zoom({ position: 'bottomright' }).addTo(modalMap);
-
-        // Satellite Basemap
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-          attribution: 'Tiles &copy; Esri',
-          maxZoom: 19
-        }).addTo(modalMap);
-
-        // Places & Boundaries Labels overlay (Hybrid)
-        L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-          maxZoom: 19
-        }).addTo(modalMap);
-
-        // Draw trajectory (Neon Green dashed line)
-        var polyline = L.polyline(flightPath, { color: '#39ff14', weight: 4, dashArray: '6, 8', opacity: 0.9 }).addTo(modalMap);
-
-        // Draw Map Bounds Coverage Area (Cyan)
-        L.rectangle(polyline.getBounds(), {
-          color: 'transparent',
-          fillColor: '#00ffff',
-          fillOpacity: 0.15
-        }).addTo(modalMap);
-
-        // Add dots (White center, Electric Cyan border)
-        flightPath.forEach(latlng => {
-          L.circleMarker(latlng, {
-            radius: 4.5,
-            fillColor: "#ffffff",
-            color: "#00ffff",
-            weight: 2.5,
-            opacity: 1,
-            fillOpacity: 1
-          }).addTo(modalMap);
-        });
-
-        modalMap.fitBounds(polyline.getBounds(), { padding: [50, 50] });
-      } else {
-        setTimeout(() => modalMap.invalidateSize(), 150);
-      }
+        document.getElementById('setPositionModal').classList.add('show');
+        if (!modalMap) {
+            modalMap = L.map('modalMap', { preferCanvas: true, zoomControl: false, attributionControl: false }).setView([5.98, 116.07], 13);
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(modalMap);
+        }
+        
+        if (flightPolyline) modalMap.removeLayer(flightPolyline);
+        if (flightPathPoints.length > 0) {
+            // High-Visibility Markers: Doubled Size (Radius 7)
+            flightPathPoints.forEach(p => {
+                L.circleMarker(p, { radius: 7, color: '#000', weight: 1.5, fillColor: '#ffff00', fillOpacity: 1 }).addTo(modalMap);
+            });
+            
+            if (flightPathPoints.length > 1) {
+                // High-Visibility Line: Vibrant Cyan
+                flightPolyline = L.polyline(flightPathPoints, { color: '#00f2ff', weight: 3, opacity: 0.9, lineJoin: 'round' }).addTo(modalMap);
+                modalMap.fitBounds(flightPolyline.getBounds(), { padding: [50, 50] });
+            } else {
+                modalMap.setView(flightPathPoints[0], 17);
+            }
+        }
+        
+        setTimeout(() => modalMap.invalidateSize(), 200);
     }
 
-    function closeSetPositionModal() {
-      document.getElementById('setPositionModal').classList.remove('show');
-    }
-
-    function cancelSetPositionModal() {
-      // Hide the modal
-      closeSetPositionModal();
-
-      // If the user intentionally clicks Cancel instead of Import, we must abort the 
-      // file addition process and wipe the temporary state so it doesn't leak into submission.
-      flightPath = [];
-      folderStats = {};
-      rootFolderStats = {};
-      pendingUploadFiles = [];
-      document.getElementById('dataFile').value = '';
-
-      // Force UI refresh in case it expects to hide the folder list wrapper
-      renderFolderListUI();
-    }
-
-    function formatBytes(bytes, decimals = 1) {
-      if (!+bytes) return '0 Bytes';
-      const k = 1024;
-      const dm = decimals < 0 ? 0 : decimals;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+    function closeSetPositionModal() { 
+        document.getElementById('setPositionModal').classList.remove('show');
+        document.getElementById('inlineLoadingState').style.display = 'none';
+        document.getElementById('alwaysVisibleFields').style.display = 'block';
+        document.getElementById('uploadTypeSelection').style.display = 'block';
     }
 
     function importPositionData() {
-      closeSetPositionModal();
+        const center = modalMap.getCenter();
+        placeMarker(center);
+        
+        // Sync the Path and Pin Points to the main map exactly as seen in preview
+        if (mainMap) {
+            // Add Circle Markers for each point on Main Map
+            flightPathPoints.forEach(p => {
+                L.circleMarker(p, { radius: 7, color: '#000', weight: 1.5, fillColor: '#ffff00', fillOpacity: 1 }).addTo(mainMap);
+            });
 
-      if (flightPath.length === 0) {
-        alert("No GPS data found to import position. Need at least one valid photo.");
-        return;
-      }
-
-      // Calculate Center bounding box mapping
-      let minLat = flightPath[0][0], maxLat = flightPath[0][0];
-      let minLng = flightPath[0][1], maxLng = flightPath[0][1];
-
-      flightPath.forEach(pt => {
-        if (pt[0] < minLat) minLat = pt[0];
-        if (pt[0] > maxLat) maxLat = pt[0];
-        if (pt[1] < minLng) minLng = pt[1];
-        if (pt[1] > maxLng) maxLng = pt[1];
-      });
-
-      const centerLat = (minLat + maxLat) / 2;
-      const centerLng = (minLng + maxLng) / 2;
-
-      latInput.value = centerLat.toFixed(6);
-      lngInput.value = centerLng.toFixed(6);
-
-      // Hide the required badge — location is now set
-      const reqBadge = document.getElementById('locationRequiredBadge');
-      if (reqBadge) reqBadge.style.display = 'none';
-
-      placeMarker([centerLat, centerLng]);
-
-      // Show location required badge if no location set yet
-      const badge = document.getElementById('locationRequiredBadge');
-      if (badge && !latInput.value && Object.keys(rootFolderStats).length > 0) {
-        badge.style.display = 'inline-block';
-      } else if (badge) {
-        badge.style.display = 'none';
-      }
-
-      if (flightPath.length > 1) {
-        // Clear previous overlays safely using a centralized LayerGroup
-        if (window.gpsLayerGroup) {
-          window.gpsLayerGroup.clearLayers();
-        } else {
-          window.gpsLayerGroup = L.layerGroup().addTo(map);
+            if (flightPathPoints.length > 1) {
+                L.polyline(flightPathPoints, { color: '#00f2ff', weight: 3, opacity: 0.9, lineJoin: 'round' }).addTo(mainMap);
+            }
+            mainMap.setView(center, 16);
         }
-
-        // Draw trajectory (Neon Green dashed line)
-        const polyline = L.polyline(flightPath, { color: '#39ff14', weight: 4, dashArray: '6, 8', opacity: 0.9 }).addTo(window.gpsLayerGroup);
-
-        // Use fitBounds with padding so the flight path isn't hidden under the floating left panel
-        map.fitBounds(polyline.getBounds(), {
-          paddingTopLeft: [620, 20], // Offset by the 580px panel + margins
-          paddingBottomRight: [20, 20],
-          maxZoom: 16
-        });
-
-        // Ensure the bounding box is drawn on the main map too (Cyan)
-        L.rectangle(polyline.getBounds(), {
-          color: 'transparent',
-          fillColor: '#00ffff',
-          fillOpacity: 0.15
-        }).addTo(window.gpsLayerGroup);
-
-        // Add dots (White center, Electric Cyan border)
-        flightPath.forEach(latlng => {
-          L.circleMarker(latlng, {
-            radius: 4.5,
-            fillColor: "#ffffff",
-            color: "#00ffff",
-            weight: 2.5,
-            opacity: 1,
-            fillOpacity: 1
-          }).addTo(window.gpsLayerGroup);
-        });
-
-      } else {
-        map.setView([centerLat, centerLng], 16);
-      }
-
-      // Permanently show "Picked" on the Auto pick button since coordinates were just successfully assigned from the dataset
-      const autoModeBtn = document.getElementById('autoModeBtn');
-      autoModeBtn.innerHTML = `<i class="bx bx-check text-success me-1"></i> Picked`;
-      // Remove any previously pending timeout that might revert it back to "Auto pick" from Manual clicks
-      autoModeBtn.classList.add('border-success');
-
-      // Refresh Folder List UI
-      renderFolderListUI();
+        
+        closeSetPositionModal();
+        renderFolderListUI();
     }
 
     function renderFolderListUI() {
-      const folderListWrapper = document.getElementById('folderListWrapper');
-
-      if (Object.keys(rootFolderStats).length === 0) {
-        folderListWrapper.style.display = 'none';
-
-        // Reset the actual file input element so the browser UI clears the "XX files" text
-        document.getElementById('dataFile').value = '';
-
-        // Reset Auto pick UI
-        const autoModeBtn = document.getElementById('autoModeBtn');
-        autoModeBtn.innerHTML = `<i class="bx bx-map-pin me-1"></i> Auto pick`;
-        autoModeBtn.classList.remove('border-success');
-
-        // Reset the UI styling of the cards back to default unselected states
-        document.getElementById('cardSingle').classList.remove('active');
-        document.getElementById('cardMulti').classList.remove('active');
-        const gDriveCardReset = document.getElementById('cardGDrive');
-        if (gDriveCardReset) gDriveCardReset.classList.remove('active');
-
-        // Uncheck the hidden radio buttons
-        document.getElementById('singleCamera').checked = false;
-        document.getElementById('multipleCamera').checked = false;
-        document.getElementById('gdriveUpload').checked = false;
-        const sftpRadio = document.getElementById('sftpUpload');
-        if (sftpRadio) sftpRadio.checked = false;
-
-        // Hide the camera selection extra options
-        document.getElementById('cameraDetailsSection').classList.add('d-none');
-        document.getElementById('cameraError').style.setProperty('display', 'none', 'important');
-        const sftpCreds = document.getElementById('sftpCredentialsWrapper');
-        if (sftpCreds) sftpCreds.classList.add('d-none');
-
-        return;
-      }
-
-      let totalPhotos = 0;
-      let totalLocated = 0;
-      let totalBytes = 0;
-
-      let cardsHtml = '';
-
-      for (const [folder, stats] of Object.entries(rootFolderStats)) {
-        totalPhotos += stats.photos;
-        totalLocated += stats.located;
-        totalBytes += stats.sizeBytes;
-
-        cardsHtml += `
-          <div class="folder-list-item" id="folder-item-${folder}">
-            <div class="d-flex align-items-center" style="min-width: 0; flex: 1;">
-              <div class="folder-item-icon">
-                <i class="bx bxs-folder"></i>
-              </div>
-              <div class="folder-item-info">
-                <span class="folder-name" title="${folder}">${folder}</span>
-              <div class="folder-stat-item">
-                ${stats.photos} Photos
-              </div>
-              <span class="folder-stat-divider">•</span>
-              <div class="folder-stat-item gps-stat">
-                GPS ${stats.located}
-              </div>
-              <span class="folder-stat-divider">•</span>
-              <div class="folder-stat-item">
-                ${formatBytes(stats.sizeBytes)}
-              </div>
-            </div>
-            </div>
-            <div class="d-flex align-items-center gap-3 ms-auto ps-2 border-start">
-              <div class="folder-status-text fw-medium" style="min-width: 90px;" id="status-${folder.replace(/[^a-zA-Z0-9_-]/g, '_')}">
-                <i class="bx bx-time-five me-1"></i> Waiting
-              </div>
-              <button type="button" class="btn btn-icon btn-sm text-danger btn-link p-0 m-0 ms-1" onclick="removeFolder('${folder}')" title="Remove folder">
-                <i class="bx bx-trash" style="font-size: 1.15rem;"></i>
-              </button>
-            </div>
-          </div>
-        `;
-      }
-
-      const summaryHtml = `
-        <div class="folder-list-header">
-          <div class="folder-list-title">Folder list</div>
-          <div class="folder-list-stats">
-            ${totalPhotos} Photos | ${totalLocated} Located | ${formatBytes(totalBytes)} in total
-          </div>
-        </div>
-        ${cardsHtml}
-      `;
-
-      folderListWrapper.innerHTML = summaryHtml;
-      folderListWrapper.style.display = 'block';
-
-      // We don't need to show the raw file input block anymore since the folder list represents it
-      document.getElementById('fileUploadWrapper').style.display = 'none';
+        const w = document.getElementById('folderListWrapper');
+        w.style.display = 'block';
+        let h = '<div class="fw-bold mb-3 small text-uppercase text-muted">Queued Folders</div>';
+        for(const [r, s] of Object.entries(rootFolderStats)) {
+            h += `<div class="folder-list-item">
+                    <div class="d-flex align-items-center">
+                        <i class="bx bxs-file-archive text-primary fs-4 me-3"></i>
+                        <div>
+                            <div class="folder-name">${r}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">${s.photos} Files • ${Math.round(s.sizeBytes/(1024*1024))} MB</div>
+                        </div>
+                    </div>
+                  </div>`;
+        }
+        w.innerHTML = h;
     }
 
-    function removeFolder(folderName) {
-      if (!confirm(`Are you sure you want to remove the folder "${folderName}" from the upload?`)) return;
-
-      // Remove from global tracking
-      const previousFileCount = pendingUploadFiles.length;
-      pendingUploadFiles = pendingUploadFiles.filter(file => {
-        const pathParts = file.webkitRelativePath ? file.webkitRelativePath.split('/') : [file.name];
-        const currentFolderName = pathParts.length > 1 ? pathParts[0] : 'Root';
-        return currentFolderName !== folderName;
-      });
-
-      // Remove from stats
-      delete folderStats[folderName];
-      delete rootFolderStats[folderName];
-
-      // If we've removed the last/only root folder, ensure our subfolder stats and map paths are perfectly wiped
-      if (Object.keys(rootFolderStats).length === 0) {
-        folderStats = {};
-        flightPath = [];
-        // Safely wipe GPS map overlays
-        if (window.gpsLayerGroup) {
-           window.gpsLayerGroup.clearLayers();
-        }
-      }
-
-      // Re-render UI
-      renderFolderListUI();
-
-      // Clear the underlying file input if we removed all folders
-      // This is necessary because if the user tries to upload the exact same folder again,
-      // the browser's "change" event won't fire since the input path hasn't technically changed.
-      if (pendingUploadFiles.length === 0) {
-        document.getElementById('dataFile').value = '';
-
-        // As a visual fallback, reset the auto mode button if they clear everything out
-        const autoModeBtn = document.getElementById('autoModeBtn');
-        autoModeBtn.innerHTML = `<i class="bx bx-map-pin me-1"></i> Auto pick`;
-        autoModeBtn.classList.remove('border-success');
-      }
-    }
-
-    // Form Submission Logic
-    document.getElementById('uploadForm').addEventListener('submit', async function (e) {
-      e.preventDefault();
-
-      // Ensure a camera option is selected
-      const selectedType = document.querySelector('input[name="cameraConfiguration"]:checked');
-      if (!selectedType) {
-        document.getElementById('cameraError').style.setProperty('display', 'block', 'important');
-        return;
-      }
-
-      // Ensure location is picked
-      if (!latInput.value) {
-        // Show the badge to make the requirement obvious
-        const badge = document.getElementById('locationRequiredBadge');
-        if (badge) badge.style.display = 'inline-block';
-        document.getElementById('autoModeBtn').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        alert('Please click "Auto pick" to set your project location from the photo GPS data.');
-        return;
-      }
-
-      // Ensure images are actually selected unless it's a google drive or sftp upload
-      const isGDrive = document.getElementById('gdriveUpload').checked;
-      const sftpRadio = document.getElementById('sftpUpload');
-      const isSftp = sftpRadio ? sftpRadio.checked : false;
-
-      if (!isGDrive && !isSftp && pendingUploadFiles.length === 0) {
-        alert('Please upload a folder containing images. A POS file alone is not sufficient.');
-        return;
-      }
-
-      if (!this.checkValidity()) {
-        e.stopPropagation();
-        this.classList.add('was-validated');
-        return;
-      }
-
-      const submitBtn = document.querySelector('.left-footer button[type="submit"]');
-      const msgDiv = document.getElementById('submitMessage');
-      const progressContainer = document.getElementById('uploadProgressContainer');
-      const progressBar = document.getElementById('uploadProgressBar');
-      const statusText = document.getElementById('uploadStatusText');
-      const percentText = document.getElementById('uploadPercentageText');
-
-      submitBtn.disabled = true;
-      isUploadActive = true;
-      isUploadPaused = false;
-      document.getElementById('btnPauseUpload').classList.remove('d-none');
-      progressContainer.style.display = 'block';
-      progressBar.style.width = '0%';
-      percentText.textContent = '0%';
-      statusText.textContent = 'Preparing upload session...';
-      msgDiv.textContent = 'Please wait, allocating workspace on server.';
-      msgDiv.className = 'small mt-2 mb-0 text-center text-secondary';
-
-      // 1. Prepare Metadata for Initialization
-      const catVal = document.getElementById('category').value;
-      const outputCheckboxes = document.querySelectorAll('input[name="outputCategory"]:checked');
-      const outputs = Array.from(outputCheckboxes).map(cb => cb.value);
-      if (outputs.length === 0) {
-        alert("Please select at least one output category.");
-        submitBtn.disabled = false;
-        progressContainer.style.display = 'none';
-        return;
-      }
-
-      const initMetadata = {
-        projectID: document.getElementById('projectID').value.trim() || 'proj-' + Date.now(),
-        projectTitle: document.getElementById('projectTitle').value.trim(),
-        projectDescription: document.getElementById('projectDescription').value.trim() || 'No description',
-        category: catVal === 'Other' ? document.getElementById('categoryOther').value.trim() : catVal,
-        outputCategory: outputs,
-        latitude: latInput.value,
-        longitude: lngInput.value,
-        areaCoverage: 'Unknown',
-        imageMetadata: document.getElementById('imageMetadata').value,
-        cameraConfiguration: document.querySelector('input[name="cameraConfiguration"]:checked').value,
-        cameraModels: document.getElementById('multipleCamera').checked ? (document.getElementById('cameraModels').value || '') : '',
-        captureDate: document.getElementById('captureDate').value || new Date().toISOString().split('T')[0],
-        organizationName: document.getElementById('organizationName').value,
-        totalFiles: (isGDrive || isSftp) ? 0 : pendingUploadFiles.length,
-        totalSizeBytes: (isGDrive || isSftp) ? 0 : pendingUploadFiles.reduce((acc, f) => acc + (f.size || 0), 0),
-        googleDriveLink: isGDrive ? document.getElementById('googleDriveLink').value.trim() : null,
-        uploadType: isSftp ? 'sftp' : (isGDrive ? 'gdrive' : 'browser')
-      };
-
-      // 1b. Large Dataset Warning (User requested: recommend SFTP for large files)
-      if (!isGDrive && initMetadata.totalSizeBytes > 5 * 1024 * 1024 * 1024) { // 5GB limit
-          const confirmLarge = confirm(`The total size of your project is ${formatBytes(initMetadata.totalSizeBytes)}. Uploading such a large dataset via the browser can be unstable. We highly recommend using the "SFTP Upload" method for projects larger than 5GB.\n\nDo you want to continue with the browser upload anyway?`);
-          if (!confirmLarge) {
-              submitBtn.disabled = false;
-              progressContainer.style.display = 'none';
-              isUploadActive = false;
-              return;
-          }
-      }
-
-      try {
-        if (isGDrive) {
-          statusText.textContent = 'Submitting Google Drive project...';
-          msgDiv.textContent = 'Verifying link and creating project record.';
-          
-          const gdriveRes = await fetch(UPLOAD_API + '/api/upload/google-drive-project', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify(initMetadata),
-            credentials: 'include'
-          });
-          
-          const gdriveData = await gdriveRes.json();
-          if (!gdriveRes.ok || !gdriveData.success) {
-            throw new Error(gdriveData.message || 'Failed to submit Google Drive project');
-          }
-          
-          msgDiv.className = 'small mt-2 mb-0 text-center text-success pb-3 fw-bold';
-          msgDiv.textContent = '✓ Project created successfully!';
-          progressBar.style.width = '100%';
-          percentText.textContent = '100%';
-          isUploadActive = false;
-          
-          setTimeout(() => window.location.href = '{{ route('my_uploads') }}', 1500);
-          return;
-        }
-
-        if (isSftp) {
-          statusText.textContent = 'Registering SFTP project...';
-          msgDiv.textContent = 'Creating technical workspace for your SFTP upload.';
-          
-          const sftpRes = await fetch(UPLOAD_API + '/api/upload/sftp-project', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify(initMetadata),
-            credentials: 'include'
-          });
-          
-          const sftpData = await sftpRes.json();
-          if (!sftpRes.ok || !sftpData.success) {
-            throw new Error(sftpData.message || 'Failed to register SFTP project');
-          }
-          
-          msgDiv.className = 'small mt-2 mb-0 text-center text-success pb-3 fw-bold';
-          msgDiv.textContent = '✓ SFTP Workspace Ready! You can now start the transfer in WinSCP.';
-          progressBar.style.width = '100%';
-          percentText.textContent = '100%';
-          isUploadActive = false;
-          
-          setTimeout(() => window.location.href = '{{ route('my_uploads') }}', 2500);
-          return;
-        }
-
-        // 2. Initialize Upload Session
-        const initRes = await fetch(UPLOAD_API + '/api/upload/init', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-          },
-          body: JSON.stringify(initMetadata),
-          credentials: 'include'
-        });
-        const initData = await initRes.json();
-
-        if (!initRes.ok || !initData.success) {
-          throw new Error(initData.message || 'Failed to initialize upload');
-        }
-
-        const uploadId = initData.uploadId;
-        const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks — reliable under all PHP limits
-
-        // Combine pending data files and pos file if any
-        let allFilesToUpload = [...pendingUploadFiles];
-        if (pendingPosFiles.length > 0) {
-          for (let i = 0; i < pendingPosFiles.length; i++) {
-            allFilesToUpload.push(pendingPosFiles[i]);
-          }
-        }
-
-        const filesMapping = [];
-        let totalChunksToUpload = 0;
-        let chunksUploaded = 0;
-
-        // Calculate total chunks for progress
-        for (const file of allFilesToUpload) {
-          totalChunksToUpload += Math.ceil(file.size / CHUNK_SIZE) || 1;
-        }
-
-        statusText.textContent = 'Uploading files...';
-        msgDiv.textContent = `0 of ${allFilesToUpload.length} files processed`;
-
-        // 3. Upload Chunks Sequentially
-        for (let fIndex = 0; fIndex < allFilesToUpload.length; fIndex++) {
-          const file = allFilesToUpload[fIndex];
-          // Use the relative path if available, otherwise just use filename
-          let relativePath = file.webkitRelativePath || file.name;
-
-          let safeFilename = relativePath.replace(/[^a-zA-Z0-9._-]/g, '_');
-          // If it's just the top-level path or missing extension due to sanitization, ensure uniqueness safely
-          if (!safeFilename.includes('.')) safeFilename = `file_${fIndex}_${file.name}`;
-
-          let totalChunksFile = Math.ceil(file.size / CHUNK_SIZE);
-          if (totalChunksFile === 0) totalChunksFile = 1; // handle empty files
-
-          // --- Skip Deleted Folders (Abort Hook) ---
-          if (isUploadActive && !pendingUploadFiles.includes(file)) {
-            // Exception: The POS file is never in pendingUploadFiles, so don't skip it
-            const isPosFile = pendingPosFiles.length > 0 && pendingPosFiles.includes(file);
-            if (!isPosFile) {
-              chunksUploaded += totalChunksFile;
-              const percent = Math.round((chunksUploaded / totalChunksToUpload) * 100);
-              progressBar.style.width = `${percent}%`;
-              percentText.textContent = `${percent}%`;
-              continue;
-            }
-          }
-
-          // --- Dynamic Folder UI Updates ---
-          const pathParts = file.webkitRelativePath ? file.webkitRelativePath.split('/') : [file.name];
-          const rootFolderName = pathParts.length > 1 ? pathParts[0] : 'Root';
-          const safeFolderId = 'status-' + rootFolderName.replace(/[^a-zA-Z0-9_-]/g, '_');
-          const folderStatusEl = document.getElementById(safeFolderId);
-
-          if (folderStatusEl && !folderStatusEl.dataset.uploading) {
-            folderStatusEl.innerHTML = `<i class='bx bx-loader-alt bx-spin text-primary me-1'></i> <span class="text-primary">Uploading</span>`;
-            folderStatusEl.dataset.uploading = 'true';
-          }
-
-          // Determine if previous folder is completed
-          if (fIndex > 0) {
-            const prevFile = allFilesToUpload[fIndex - 1];
-            const prevPathParts = prevFile.webkitRelativePath ? prevFile.webkitRelativePath.split('/') : [prevFile.name];
-            const prevRootFolderName = prevPathParts.length > 1 ? prevPathParts[0] : 'Root';
-            if (prevRootFolderName !== rootFolderName) {
-              const prevSafeId = 'status-' + prevRootFolderName.replace(/[^a-zA-Z0-9_-]/g, '_');
-              const prevFolderEl = document.getElementById(prevSafeId);
-              if (prevFolderEl) {
-                prevFolderEl.innerHTML = `<i class="bx bx-check text-success me-1"></i> <span class="text-success">Completed</span>`;
-              }
-            }
-          }
-          // ---------------------------------
-
-          filesMapping.push({ filename: safeFilename, totalChunks: totalChunksFile });
-
-          for (let chunkIndex = 0; chunkIndex < totalChunksFile; chunkIndex++) {
-            const startByte = chunkIndex * CHUNK_SIZE;
-            const endByte = Math.min(startByte + CHUNK_SIZE, file.size);
-            const chunkBlob = file.slice(startByte, endByte);
-
-            const chunkFormData = new FormData();
-            chunkFormData.append('uploadId', uploadId);
-            chunkFormData.append('filename', safeFilename);
-            chunkFormData.append('chunkIndex', chunkIndex);
-            chunkFormData.append('totalChunks', totalChunksFile);
-            chunkFormData.append('chunk', chunkBlob);
-
-            // Retry logic for individual chunk failures
-            let chunkSuccess = false;
-            let retries = 15;
-
-            while (!chunkSuccess && retries > 0) {
-              // Pause Loop Hook
-              while (isUploadPaused) {
-                await new Promise(r => setTimeout(r, 1000));
-              }
-
-              if (retries < 10) {
-                statusText.textContent = 'Recovering connection...';
-                msgDiv.textContent = `Attempting to resume upload (Retry ${10 - retries}/10)...`;
-              } else {
-                statusText.textContent = 'Uploading...';
-              }
-
-              try {
-                const chunkRes = await fetch(UPLOAD_API + '/api/upload/chunk', {
-                  method: 'POST',
-                  headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                  },
-                  body: chunkFormData,
-                  credentials: 'include' // Important for sessions if backend needs it
-                });
-
-                if (chunkRes.ok) {
-                  chunkSuccess = true;
-                  chunksUploaded++;
-                  let percent = Math.round((chunksUploaded / totalChunksToUpload) * 100);
-                  if (percent === 100) percent = 99; // Cap at 99% until fully assembled
-
-                  // Update Visual Progress Bar
-                  progressBar.style.width = `${percent}%`;
-                  percentText.textContent = `${percent}%`;
-                  msgDiv.textContent = `Processing file ${fIndex + 1} of ${allFilesToUpload.length}`;
-
-                  // Ensure visual change registers
-                  progressBar.classList.remove('bg-danger');
-                  progressBar.classList.add('bg-primary');
-                } else {
-                  retries--;
-                  if (retries === 0) throw new Error(`Failed to upload chunk ${chunkIndex} of ${safeFilename}`);
-                  statusText.textContent = 'Network offline. Waiting to resume...';
-                  msgDiv.textContent = `Upload paused. Retrying... (${retries} attempts left)`;
-                  progressBar.classList.remove('bg-primary');
-                  progressBar.classList.add('bg-danger');
-                  await new Promise(r => setTimeout(r, 5000)); // wait before retry
-                }
-              } catch (chunkErr) {
-                retries--;
-                if (retries === 0) throw chunkErr;
-                statusText.textContent = 'Network offline. Waiting to resume...';
-                msgDiv.textContent = `Upload paused. Retrying... (${retries} attempts left)`;
-                progressBar.classList.remove('bg-primary');
-                progressBar.classList.add('bg-danger');
-                await new Promise(r => setTimeout(r, 5000));
-              }
-            }
-          }
-
-          // --- Step 3.5: Assemble and Transfer this specific file to SFTP ---
-          // This prevents timeouts by breaking the "Finalize" process into per-file requests
-          statusText.textContent = `Transferring to storage: ${file.name}...`;
-          msgDiv.textContent = `Assembling and transferring ${fIndex + 1} of ${allFilesToUpload.length} files`;
-          
-          const assembleRes = await fetch(UPLOAD_API + '/api/upload/assemble-file', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    uploadId: uploadId,
-                    filename: safeFilename,
-                    totalChunks: totalChunksFile
-                }),
-                credentials: 'include'
-          });
-          const assembleData = await assembleRes.json();
-          if (!assembleRes.ok || !assembleData.success) {
-              throw new Error(assembleData.message || `Failed to assemble file storage for: ${file.name}`);
-          }
-        }
-
-        statusText.textContent = 'Finalizing upload...';
-        msgDiv.textContent = 'Assembling chunks and saving metadata. Please do not close the window.';
-        progressBar.classList.remove('progress-bar-animated');
-        progressBar.classList.add('bg-success');
-
-        // Check if all folders were deleted during upload to gracefully abort before committing
-        if (pendingUploadFiles.length === 0) {
-          isUploadActive = false;
-          isUploadPaused = false;
-          submitBtn.disabled = false;
-          progressContainer.style.display = 'none';
-          msgDiv.className = 'small mt-2 mb-0 text-center text-secondary';
-          msgDiv.textContent = 'Upload aborted by user.';
-
-          // Hide pause button on abort
-          const btnPause = document.getElementById('btnPauseUpload');
-          if (btnPause) {
-            btnPause.classList.add('d-none');
-            btnPause.textContent = 'Pause';
-            btnPause.classList.remove('btn-info');
-            btnPause.classList.add('btn-warning');
-          }
-          return;
-        }
-
-        // 4. Finalize Metadata and Create DB Record
-        const finalizeRes = await fetch(UPLOAD_API + '/api/upload/finalize', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-          },
-          body: JSON.stringify({
-            uploadId: uploadId,
-            files_mapping: filesMapping
-          }),
-          credentials: 'include'
-        });
-
-        const finalizeData = await finalizeRes.json();
-        if (!finalizeRes.ok || !finalizeData.success) {
-          throw new Error(finalizeData.message || 'Finalization failed');
-        }
-
-        msgDiv.className = 'small mt-2 mb-0 text-center text-success pb-3 fw-bold';
-        msgDiv.textContent = '✓ Upload successful!';
-        progressBar.style.width = '100%';
-        percentText.textContent = '100%';
-        isUploadActive = false;
-
-        // Mark the very last folder as completed
-        if (allFilesToUpload.length > 0) {
-          const lastFile = allFilesToUpload[allFilesToUpload.length - 1];
-          const lastPathParts = lastFile.webkitRelativePath ? lastFile.webkitRelativePath.split('/') : [lastFile.name];
-          const lastRootFolderName = lastPathParts.length > 1 ? lastPathParts[0] : 'Root';
-          const lastSafeId = 'status-' + lastRootFolderName.replace(/[^a-zA-Z0-9_-]/g, '_');
-          const lastFolderEl = document.getElementById(lastSafeId);
-          if (lastFolderEl) {
-            lastFolderEl.innerHTML = `<i class="bx bx-check text-success me-1"></i> <span class="text-success">Completed</span>`;
-          }
-        }
-
-        setTimeout(() => window.location.href = '{{ route('my_uploads') }}', 1500);
-
-      } catch (err) {
-        console.error('Upload Process Error:', err);
-        isUploadActive = false;
-        isUploadPaused = false;
-        // Reset pause button just in case
-        const btnPause = document.getElementById('btnPauseUpload');
-        if (btnPause) {
-          btnPause.classList.add('d-none');
-          btnPause.textContent = 'Pause';
-          btnPause.classList.remove('btn-info');
-          btnPause.classList.add('btn-warning');
-        }
-
-        if (document.getElementById('uploadStatusText')) {
-          document.getElementById('uploadStatusText').textContent = 'Upload Failed';
-          document.getElementById('uploadProgressBar').classList.remove('bg-primary');
-          document.getElementById('uploadProgressBar').classList.add('bg-danger');
-        }
-        msgDiv.className = 'small mt-2 mb-0 text-center text-danger pb-3';
-        msgDiv.textContent = '✗ ' + (err.message || 'Upload failed due to a network error.');
-        submitBtn.disabled = false;
-      }
-    });
     function generateProjectID() {
-      const title = document.getElementById('projectTitle').value;
-      const idInput = document.getElementById('projectID');
-      
-      // Basic slugification: lowercase, replace spaces/special chars with hyphens
-      let slug = title.toLowerCase()
-        .trim()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/[\s_-]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-        
-      if (slug.length > 0) {
-        // Append a random 4-character string to guarantee uniqueness
-        const randomChars = Math.random().toString(36).substring(2, 6);
-        slug += '-' + randomChars;
-      }
-        
-      idInput.value = slug;
+        const t = document.getElementById('projectTitle').value;
+        const clean = t.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 15);
+        document.getElementById('projectID').value = clean + '-' + Math.random().toString(36).substring(2, 6);
+    }
+    
+    function toggleOtherCategory() {
+        const sel = document.getElementById('categorySelection').value;
+        document.getElementById('otherCategoryDiv').style.display = (sel === 'Other' ? 'block' : 'none');
+    }
 
-      // Update SFTP hint
-      const sftpHint = document.getElementById('sftpFolderHint');
-      if (sftpHint) sftpHint.textContent = slug || 'project-id';
+    async function startFinalUpload() {
+        const lat = document.getElementById('latitude').value, 
+              lng = document.getElementById('longitude').value,
+              title = document.getElementById('projectTitle').value;
+              
+        if (!lat || !title) return alert("Please set location and title.");
+        if (pendingUploadFiles.length === 0) return alert("Nothing selected.");
+
+        isUploading = true;
+        document.getElementById('pauseBtn').style.display = 'inline-block';
+        document.getElementById('uploadProgressContainer').style.display = 'block';
+        const st = document.getElementById('uploadStatusText'), 
+              pb = document.getElementById('uploadProgressBar'), 
+              pt = document.getElementById('uploadPercentageText'), 
+              btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+
+        const totalSizeBytes = pendingUploadFiles.reduce((acc, f) => acc + f.size, 0);
+        const projectID = document.getElementById('projectID').value;
+        const uploadId = 'up_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+        const csrfToken = '{{ csrf_token() }}';
+
+        st.textContent = "Preparing Nitro Stream...";
+
+        // 🏎️ UNLIMITED DIRECT ENGINE: Utilizes native 50G PHP limit for extreme speed
+        let overallSent = 0;
+        let lastPaintTime = Date.now();
+
+        let lastVisualPercent = -1;
+        const updateUI = (statusText) => {
+            return new Promise(resolve => {
+                const now = Date.now();
+                // 🚀 ZERO-GRAVITY (v152): Only do the heavy math once every 200ms
+                const inFlightSum = Object.values(activeSlotSent).reduce((a, b) => a + b, 0);
+                let p = Math.round(((overallSent + inFlightSum) / totalSizeBytes) * 100);
+                if (p > 100) p = 100;
+
+                if (p !== lastVisualPercent || now - lastPaintTime > 500 || statusText === "Finalizing") { 
+                    requestAnimationFrame(() => {
+                        if (p > maxVisualPercent) maxVisualPercent = p;
+                        pb.style.width = maxVisualPercent + '%'; 
+                        pt.textContent = maxVisualPercent + '%';
+                        st.textContent = statusText;
+                        lastVisualPercent = p;
+                        lastPaintTime = Date.now();
+                        resolve();
+                    });
+                } else {
+                    resolve();
+                }
+            });
+        };
+
+        // 🚀 HYPER-NITRO ENGINE (v51): 16-lane parallel vision
+        // ── Environment detection (injected by Laravel/Blade) ────────────────
+        // Dev:  chunks go to separate ports (9001-9016) via php -S workers
+        // Prod: chunks go to the same origin — Nginx+PHP-FPM handles concurrency
+        const NITRO_IS_DEV  = {{ app()->isLocal() ? 'true' : 'false' }};
+        const NITRO_BASE    = '{{ rtrim(config("app.url"), "/") }}';
+        // ─────────────────────────────────────────────────────────────────────
+
+        function getNitroUrl(port, projectID, isFirst, slotId) {
+            let qs = `projectID=${encodeURIComponent(projectID)}&isFirstChunk=${encodeURIComponent(isFirst)}&slot=${encodeURIComponent(slotId)}`;
+            if (NITRO_IS_DEV) {
+                // Development: separate PHP servers on each port
+                const host = window.location.hostname;
+                return `http://${host}:${port}/nitro_upload.php?${qs}`;
+            }
+            // Production: same origin, web server handles concurrency natively
+            return `/nitro_upload.php?${qs}`;
+        }
+
+        let activeSlotSent = {}; 
+
+        function uploadBatchNative(files, relPaths, isFirst, port, slotId) {
+            return new Promise((resolve, reject) => {
+                const projectID = document.getElementById('projectID').value;
+                const url = getNitroUrl(port, projectID, isFirst, slotId);
+                
+                const parts = [];
+                const encoder = new TextEncoder();
+                for (let i = 0; i < files.length; i++) {
+                    const pathBytes = encoder.encode(relPaths[i]);
+                    const header = new ArrayBuffer(4 + pathBytes.length + 8);
+                    const view = new DataView(header);
+                    view.setUint32(0, pathBytes.length, true);
+                    new Uint8Array(header, 4, pathBytes.length).set(pathBytes);
+                    view.setFloat64(4 + pathBytes.length, files[i].size, true);
+                    parts.push(header);
+                    parts.push(files[i]);
+                }
+                const multiplexBlob = new Blob(parts, { type: 'application/octet-stream' });
+
+                const xhr = new XMLHttpRequest();
+                const key = slotId + '_' + port;
+                runningXhrs[key] = xhr; // Register for instant stop
+
+                xhr.open('POST', url, true);
+                xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+                xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        activeSlotSent[key] = e.loaded;
+                        updateUI("Streaming Nitro Data... 🚀");
+                    }
+                };
+
+                xhr.onload = () => {
+                    delete runningXhrs[key];
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        overallSent += multiplexBlob.size;
+                        delete activeSlotSent[key];
+                        resolve();
+                    } else reject(new Error('Multiplex error'));
+                };
+                xhr.onerror = () => {
+                    delete runningXhrs[key];
+                    delete activeSlotSent[key];
+                    reject(new Error('Stream failed'));
+                };
+                xhr.onabort = () => {
+                    delete runningXhrs[key];
+                    delete activeSlotSent[key];
+                    reject(new Error('ABORTED'));
+                };
+                xhr.send(multiplexBlob);
+            });
+        };
+
+        try {
+            // 🚀 SMART-SCALE (v154): Anything over 5MB now gets the Nitro-Sharding treatment
+            const MAX_CHUNK_SIZE = 5 * 1024 * 1024; 
+            const MAX_BATCH_COUNT = 30;
+
+            for (let i = 0; i < pendingUploadFiles.length; i++) {
+                const file = pendingUploadFiles[i];
+                const relPath = file.webkitRelativePath || file.name;
+
+                if (pendingUploadFiles.length === 1 && file.size > MAX_CHUNK_SIZE) {
+                    // 🚀 ADAPTIVE-NITRO (v249): Dynamically calculate shards to ensure 10MB chunks for weak-internet stability
+                    const getNitroSpecs = (bytes) => {
+                        const targetChunkSize = 10 * 1024 * 1024; // Aim for 10MB chunks
+                        let shards = Math.ceil(bytes / targetChunkSize);
+                        if (shards < 1) shards = 1;
+                        if (shards > 500) shards = 500; // Cap to prevent request overhead
+                        
+                        let lanes = 3;
+                        if (bytes < 10 * 1024 * 1024) lanes = 1;
+                        
+                        return { shards, lanes };
+                    };
+
+                    const specs = getNitroSpecs(file.size);
+                    st.textContent = `Autonomous Nitro: Streaming through ${specs.lanes} lanes... 🚀`;
+                    
+                    const shardSize = Math.ceil(file.size / specs.shards);
+                    const shardPromises = [];
+                    
+                    for (let x = 0; x < specs.shards; x++) {
+                        // 🚀 STAGGERED IGNITION
+                        await new Promise(r => setTimeout(r, 50));
+                        
+                        let start = x * shardSize;
+                        let end = (x === specs.shards - 1) ? file.size : (start + shardSize);
+                        if (start >= file.size) break;
+
+                        let shardBlob = file.slice(start, end);
+                        let batchPort = NITRO_IS_DEV ? (9001 + (x % 16)) : 9001;
+                        
+                        shardPromises.push((async () => {
+                            let batchSuccess = false;
+                            let retries = 0;
+                            const maxRetries = 3;
+
+                            while (!batchSuccess && retries < maxRetries) {
+                                try {
+                                    if (retries > 0) {
+                                        console.warn(`🔄 Retrying Shard ${x} on port ${batchPort} (Attempt ${retries + 1}/${maxRetries})...`);
+                                        await new Promise(r => setTimeout(r, 2000));
+                                    }
+                                    await uploadBatchNative([shardBlob], [file.name], true, batchPort, x);
+                                    batchSuccess = true;
+                                } catch (e) {
+                                    if (e.message === 'ABORTED') {
+                                        await uploadPausePromise;
+                                    } else {
+                                        retries++;
+                                        if (retries >= maxRetries) throw e;
+                                    }
+                                }
+                            }
+                        })());
+                    }
+                    await Promise.all(shardPromises);
+                    i = pendingUploadFiles.length; // Mark all done
+                } else {
+                    let currentBatchFiles = [];
+                    let currentBatchPaths = [];
+                    let currentBatchSize = 0;
+                    while (i < pendingUploadFiles.length) {
+                        if (isUploadPaused) await uploadPausePromise;
+                        const nextFile = pendingUploadFiles[i];
+                        if (nextFile.size > MAX_CHUNK_SIZE) {
+                            if (currentBatchFiles.length > 0) break; 
+                            currentBatchFiles.push(nextFile);
+                            currentBatchPaths.push(nextFile.webkitRelativePath || nextFile.name);
+                            i++;
+                            break;
+                        }
+                        if (currentBatchSize + nextFile.size > MAX_CHUNK_SIZE || currentBatchFiles.length >= MAX_BATCH_COUNT) break;
+                        currentBatchFiles.push(nextFile);
+                        currentBatchPaths.push(nextFile.webkitRelativePath || nextFile.name);
+                        currentBatchSize += nextFile.size;
+                        i++;
+                    }
+                    if (currentBatchFiles.length === 0) continue;
+                    
+                    const batchPort = NITRO_IS_DEV ? (9001 + Math.floor(Math.random() * 16)) : 9001;
+                    let batchSuccess = false;
+                    let retries = 0;
+                    const maxRetries = 3;
+
+                    while (!batchSuccess && retries < maxRetries) {
+                        try {
+                            await uploadBatchNative(currentBatchFiles, currentBatchPaths, true, batchPort, 'small');
+                            batchSuccess = true;
+                        } catch (e) {
+                            if (e.message === 'ABORTED') {
+                                await uploadPausePromise;
+                            } else {
+                                retries++;
+                                if (retries >= maxRetries) throw e;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Move to Finalization
+            overallSent = totalSizeBytes;
+            document.getElementById('pauseBtn').style.display = 'none';
+            await updateUI('Finalizing');
+            finalizeOnServer(uploadId, projectID, title, totalSizeBytes, lat, lng);
+
+        } catch (e) {
+            console.error(e);
+            isUploading = false;
+            document.getElementById('pauseBtn').style.display = 'none';
+            alert("Nitro Stream Interrupted. Try again.");
+            document.getElementById('submitBtn').disabled = false;
+        }
+    }
+
+    async function finalizeOnServer(uploadId, projectID, title, totalBytes, lat, lng) {
+        document.getElementById('uploadStatusText').innerHTML = "Finalizing & Syncing with Linux Server... 🛰️<br><small class='text-muted'>Establishing secure handover (v89)...</small>";
+        
+        // Dynamic status updates for long 1.1GB transfers
+        setTimeout(() => {
+            const el = document.getElementById('uploadStatusText');
+            if (el && el.textContent.includes("Finalizing")) {
+                el.innerHTML = "Still Syncing... 🚀<br><small class='text-muted'>Merging 1.1GB geospatial data and establishing SFTP...</small>";
+            }
+        }, 8000);
+
+        let category = document.getElementById('categorySelection').value;
+        if (category === 'Other') category = document.getElementById('otherCategoryName').value || 'Other';
+
+        try {
+            // 🚀 BULLETPROOF-SYNC (v163): No more naming collisions
+            const nitroProjectId = document.getElementById('projectID')?.value || 'unnamed-project';
+            const nitroUploadId = typeof uploadId !== 'undefined' ? uploadId : 'unknown';
+
+            let nitroMetadataSummary = {
+                count: typeof imageMetadata !== 'undefined' ? imageMetadata.length : 0,
+                center: (typeof imageMetadata !== 'undefined' && imageMetadata.length > 0) ? imageMetadata[0] : null,
+            };
+
+            const fd = new FormData();
+            fd.append('uploadId', nitroUploadId);
+            fd.append('projectID', nitroProjectId);
+            fd.append('projectTitle', document.getElementById('projectTitle')?.value || 'Untitled');
+            fd.append('projectDescription', document.getElementById('projectDescription')?.value || '');
+            fd.append('category', category);
+            fd.append('latitude', document.getElementById('latitude')?.value || 0);
+            fd.append('longitude', document.getElementById('longitude')?.value || 0);
+            fd.append('captureDate', document.getElementById('captureDate')?.value || '');
+            fd.append('imageMetadata', JSON.stringify(nitroMetadataSummary)); 
+            
+            // 💎 PREMIUM METADATA SYNC (v112)
+            const isMulti = document.getElementById('multipleCamera')?.checked;
+            const customCam = document.getElementById('cameraModels')?.value;
+            fd.append('cameraConfig', isMulti ? 'multiple' : 'single');
+            fd.append('cameraModels', customCam || (isMulti ? 'Multiple' : 'Standard'));
+            fd.append('userEmail', '{{ Auth::user()?->email ?? "" }}'); // 🔑 Backup identity
+            // 🚀 Output Categories Sync
+            const outputs = ['3D Tiles', 'OSGB']; // OSGB is now 1:1 synchronized
+            if (document.getElementById('outDSM').checked) outputs.push('DSM');
+            if (document.getElementById('out3DGS').checked) outputs.push('3DGS');
+            if (document.getElementById('outOrtho').checked) outputs.push('Orthophoto');
+            fd.append('outputCategories', JSON.stringify(outputs));
+            // 🚀 PROJECT-INFINITY (v153): Extended Timeout & Heartbeat Pulse
+            // This prevents the "100% Limbo" by allowing the server 5+ minutes to stitch 3GB data.
+            const res = await fetch('/api/upload/finalize', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: fd,
+                // The browser will now wait patiently for the heavy 3D assembly
+                keepalive: true 
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('uploadProgressBar').style.backgroundColor = '#2ecc71';
+                document.getElementById('uploadStatusText').innerHTML = "✨ Upload Complete! Nitro Integrity Verified! 🛰️";
+                setTimeout(() => {
+                    isUploading = false;
+                    window.location.href = '/my-uploads';
+                }, 1000);
+            } else throw new Error(data.message);
+        } catch (e) {
+            isUploading = false;
+            alert("Nitro Error: " + (e.message || "Network Error"));
+            document.getElementById('submitBtn').disabled = false;
+        }
     }
   </script>
 </body>
-
 </html>

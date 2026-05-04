@@ -192,11 +192,14 @@
 
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label class="form-label" for="cameraConfiguration">Camera Configuration <span class="text-danger">*</span></label>
-              <select class="form-select" id="cameraConfiguration" name="cameraConfiguration" required>
+              <select class="form-select" id="cameraConfiguration" name="cameraConfiguration" required onchange="toggleGdriveCameraDetails()">
                 <option value="single">Single-Lens</option>
                 <option value="multiple">Multi-Lens</option>
               </select>
+            </div>
+            <div class="col-md-12 mb-3" id="cameraDetailsDiv" style="display: none;">
+              <label class="form-label" for="cameraModels">Camera Models</label>
+              <input type="text" id="cameraModels" class="form-control" placeholder="RGB, Thermal...">
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label" for="category">Category <span class="text-danger">*</span></label>
@@ -306,6 +309,11 @@
       }
     }
 
+    function toggleGdriveCameraDetails() {
+      const val = document.getElementById('cameraConfiguration').value;
+      document.getElementById('cameraDetailsDiv').style.display = (val === 'multiple' ? 'block' : 'none');
+    }
+
     document.getElementById('gdriveForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
@@ -327,10 +335,14 @@
       const outputCheckboxes = document.querySelectorAll('input[name="outputCategory"]:checked');
       const outputs = Array.from(outputCheckboxes).map(cb => cb.value);
 
+      const isMulti = document.getElementById('cameraConfiguration').value === 'multiple';
+      const customCam = document.getElementById('cameraModels').value;
+      const cameraLine = isMulti ? ("Multi-Lens" + (customCam ? (": " + customCam) : "")) : "Single-Lens";
+
       const payload = {
         projectTitle: document.getElementById('projectTitle').value,
         projectDescription: document.getElementById('projectDescription').value,
-        cameraConfiguration: document.getElementById('cameraConfiguration').value,
+        cameraConfiguration: cameraLine,
         googleDriveLink: document.getElementById('googleDriveLink').value,
         latitude: null,
         longitude: null,

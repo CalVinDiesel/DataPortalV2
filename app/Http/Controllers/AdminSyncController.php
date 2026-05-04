@@ -93,6 +93,13 @@ class AdminSyncController extends Controller
         $locations = [];
 
         foreach ($mapData as $row) {
+            $tileset = $row->getAttribute('3dTiles');
+            
+            // Skip records that look like client uploads to keep locations.json clean
+            if (str_contains($tileset, 'nitro') || str_contains($tileset, 'delivered')) {
+                continue;
+            }
+
             $locations[] = [
                 'id' => $row->mapDataID,
                 'name' => $row->title,
@@ -103,7 +110,7 @@ class AdminSyncController extends Controller
                     'height' => 50
                 ],
                 'dataPaths' => [
-                    'tileset' => $row->getAttribute('3dTiles')
+                    'tileset' => $tileset
                 ]
             ];
         }

@@ -8,6 +8,29 @@ use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\RequestReceived;
 use App\Mail\NewRequestAlert;
+use App\Mail\ContactInquiry;
+
+Route::post('/contact', function (Request $request) {
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|max:255',
+        'message' => 'required|string|max:5000',
+    ]);
+
+    try {
+        $supportEmail = config('support.email');
+        Mail::to($supportEmail)->send(new ContactInquiry(
+            $request->name,
+            $request->email,
+            $request->message
+        ));
+        return back()->with('success', 'Your message has been sent successfully! We will get back to you shortly.');
+    } catch (\Exception $e) {
+        \Log::error('Contact form submission failed', ['error' => $e->getMessage()]);
+        return back()->with('error', 'Sorry, there was an error sending your message. Please try again later.');
+    }
+})->name('contact.submit');
+
 
 Route::get('/', function () {
     return view('portal.landing-page');
@@ -151,9 +174,16 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
     Route::get('/admin/manage-users', function () {
         return view('admin.manage-users');
     })->name('admin.manage_users');
+
+    Route::post('/admin/client-uploads/check-sftp-status', [UploadController::class, 'checkSftpStatus'])
+        ->name('admin.client_uploads.check_sftp_status');
+
+    Route::post('/admin/client-uploads/retry-sftp', [UploadController::class, 'retrySftpHandover'])
+        ->name('admin.client_uploads.retry_sftp');
 });
 
 Route::post('/upload/pin-image', [UploadController::class, 'uploadPinImage'])
+
     ->name('upload.pin-image');
 
 require __DIR__.'/auth.php';

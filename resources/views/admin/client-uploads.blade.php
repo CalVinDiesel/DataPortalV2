@@ -112,23 +112,6 @@
               <span class="badge bg-label-success px-3 py-2"><i class="bx bx-check-circle me-1"></i> Completed</span>
             </div>
 
-            <!-- SFTP Guide Banner -->
-            <div class="alert alert-info d-flex align-items-start gap-3 mb-4" role="alert">
-              <i class="bx bx-info-circle fs-4 mt-1 flex-shrink-0"></i>
-              <div>
-                <strong>Admin SFTP Workflow:</strong>
-                <ol class="mb-0 mt-1 ps-3">
-                  <li>Client uploads raw images → files arrive in your <strong>WinSCP / SFTPGo</strong> folder</li>
-                  <li>Click <strong>Accept</strong> → status becomes Review. Open WinSCP, download the raw files to your
-                    processing machine</li>
-                  <li>Click <strong>Start Processing</strong> → status becomes Processing. Run your 3D processing
-                    software</li>
-                  <li>When done, put the processed result back into the client's SFTP folder via WinSCP</li>
-                  <li>Click <strong>Mark as Delivered</strong> → client is notified and can download their 3D model</li>
-                </ol>
-              </div>
-            </div>
-
             <div id="uploadsAlert" class="alert d-none"></div>
 
             <!-- Reject reason modal -->
@@ -186,10 +169,13 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
                   <div class="modal-body">
-                    <!-- SFTP Location Box -->
-                    <div class="alert alert-secondary mb-3">
+                    <!-- SFTP Location Box (Conditional) -->
+                    <div class="alert alert-secondary mb-3 d-none" id="detailSftpBox">
                       <div class="fw-bold mb-1"><i class="bx bx-server me-1"></i> SFTP File Location</div>
-                      <div class="small text-muted mb-1">Find the raw files at this path on your SFTP Server:</div>
+                      <div class="small text-muted mb-2">
+                        <i class="bx bx-info-circle me-1"></i> Connect via WinSCP: 
+                        <strong><span id="detailSftpHostDisplay">{{ config('filesystems.disks.sftp_delivery.host', '172.21.107.151') }}</span></strong> | Port: <strong><span id="detailSftpPortDisplay">{{ env('SFTP_USER_PORT', 2223) }}</span></strong> | User: <strong><span id="detailSftpUserDisplay">{{ config('filesystems.disks.sftp_delivery.username', 'tiquan') }}</span></strong>
+                      </div>
                       <div class="d-flex align-items-center gap-2">
                         <code id="detailSftpPath" class="d-block p-2 bg-white border rounded flex-grow-1"
                           style="font-size:0.85rem; word-break:break-all;">–</code>
@@ -209,6 +195,18 @@
                           });
                         " title="Copy path"><i class="bx bx-copy"></i> Copy</button>
                       </div>
+                      <div class="mt-2 d-flex align-items-center justify-content-between">
+                        <div id="detailSftpStatus" class="small fw-bold"></div>
+                        <button type="button" id="syncSftpBtn" class="btn btn-xs btn-primary d-none" onclick="syncProjectToSftp()">
+                          <i class="bx bx-sync me-1"></i> Sync to SFTP
+                        </button>
+                      </div>
+                    </div>
+                    <!-- Google Drive Link Box (Conditional) -->
+                    <div class="alert alert-primary mb-3 d-none" id="detailGDriveBox">
+                      <div class="fw-bold mb-1"><i class="bx bxl-google-cloud me-1"></i> Google Drive Link</div>
+                      <div class="small text-muted mb-1">Client shared files via this link:</div>
+                      <a href="#" id="detailGDriveLink" target="_blank" class="text-break fw-bold text-primary">Browse files on Drive <i class="bx bx-link-external small mt-n1"></i></a>
                     </div>
                     <div class="row small">
                       <div class="col-12 mb-2"><strong>Project</strong></div>
@@ -218,11 +216,12 @@
                       <div class="col-12 mb-2"><span class="text-muted">Category:</span> <span id="detailCategory">–</span></div>
                       <div class="col-md-6 mb-2"><span class="text-muted">Latitude:</span> <span id="detailLatitude">–</span></div>
                       <div class="col-md-6 mb-2"><span class="text-muted">Longitude:</span> <span id="detailLongitude">–</span></div>
-                      <div class="col-12 mb-2"><span class="text-muted">Sensor / image metadata:</span> <span id="detailImageMetadata">–</span></div>
-                      <div class="col-md-6 mb-2"><span class="text-muted">Camera models:</span> <span id="detailCameraModels">–</span></div>
+                      <div class="col-md-6 mb-2"><span class="text-muted">Sensor / Lens:</span> <span id="detailCameraModels" class="fw-bold text-dark">–</span></div>
+                      <div class="col-md-6 mb-2"><span class="text-muted">Geotagging:</span> <span id="detailImageMetadata">–</span></div>
                       <div class="col-md-6 mb-2"><span class="text-muted">Capture date:</span> <span id="detailCaptureDate">–</span></div>
+                      <div class="col-md-6 mb-2"><span class="text-muted">Outputs:</span> <span id="detailOutputCategories">–</span></div>
                       <div class="col-12 mb-2"><span class="text-muted">Upload type:</span> <span id="detailUploadType">–</span></div>
-                      <div class="col-12 mb-2"><span class="text-muted">File count:</span> <span id="detailFileCount">–</span></div>
+                      <div class="col-md-12 mb-2" id="detailFileCountRow"><span class="text-muted">File count:</span> <span id="detailFileCount">–</span></div>
                       <div class="col-12 mb-2"><span class="text-muted">Submitted:</span> <span id="detailCreatedAt">–</span></div>
                       <div class="col-12 mb-2"><span class="text-muted">Submitted by:</span> <span id="detailCreatedBy">–</span></div>
                       <div class="col-12 mb-2"><span class="text-muted">Status:</span> <span id="detailStatus">–</span></div> 
@@ -247,54 +246,65 @@
                     </div>
                     <div class="modal-body">
                       <!-- SFTP Path Hint (For Manual Delivery) -->
-                      <div class="alert alert-info mb-3">
+                      <div class="alert alert-info mb-3" id="deliverPathHintBox">
                         <div class="fw-bold mb-1"><i class="bx bx-info-circle me-1"></i> Manual Delivery Path</div>
-                        <div class="small">If using WinSCP, place your file in:</div>
-                        <code id="deliverPathHint" class="d-block p-2 mt-1 bg-white border rounded" style="font-size:0.8rem; word-break:break-all;">–</code>
+                        <div class="small mb-2">
+                          Connect to: <strong><span id="deliverHostDisplay">{{ config('filesystems.disks.sftp_delivery.host', '172.21.107.151') }}</span></strong> | Port: <strong><span id="deliverPortDisplay">{{ env('SFTP_DELIVERY_PORT', 2222) }}</span></strong> | User: <strong><span id="deliverUserDisplay">{{ config('filesystems.disks.sftp_delivery.username', 'tiquan') }}</span></strong>
+                        </div>
+                        <div class="small d-flex align-items-center justify-content-between">
+                          <span>Place your file in:</span>
+                          <div id="deliverPathStatus"></div>
+                        </div>
+                        <div class="d-flex align-items-center mt-1">
+                          <code id="deliverPathHint" class="flex-grow-1 p-2 bg-white border rounded" style="font-size:0.8rem; word-break:break-all;">–</code>
+                          <button type="button" class="btn btn-sm btn-outline-info ms-2" onclick="copyDeliverPath(event)" title="Copy Path">
+                            <i class="bx bx-copy"></i>
+                          </button>
+                        </div>
                       </div>
 
                       <div class="mb-3">
                         <label class="form-label">Delivery Method</label>
                         <select id="deliverMethodSelect" name="delivery_method" class="form-select">
-                          <option value="portal">Web Portal (SFTP Streamed)</option>
-                          <option value="sftp">Direct SFTP</option>
-                          <option value="google_drive">Google Drive</option>
+                          <option value="portal" id="optPortal">Web Portal (SFTP Streamed)</option>
+                          <option value="sftp" id="optSftp">Direct SFTP</option>
+                          <option value="google_drive" id="optGDrive">Google Drive</option>
                         </select>
-                        <div class="form-text">Choose how the client receives their processed 3D model.</div>
+                        <div class="form-text" id="deliverMethodHint">Choose how the client receives their processed 3D model.</div>
                       </div>
 
                       <div class="row">
                         <div class="col-12 mb-3">
-                          <label class="form-label">Option A: Upload Processed File (.zip)</label>
+                          <label class="form-label">Upload Processed File (.zip)</label>
                           <input type="file" id="deliverFileInput" name="delivered_file" class="form-control" accept=".zip,.rar,.7z">
                           <div class="form-text">System will upload this to the SFTP deliveries folder.</div>
                         </div>
-                        <div class="col-12 mb-3">
+                        <div class="col-12 mb-3" id="sectionOR1">
                           <div class="text-center text-muted my-2">-- OR --</div>
                         </div>
-                        <div class="col-12 mb-3">
-                          <label class="form-label">Option B: Existing SFTP Filename</label>
+                        <div class="col-12 mb-3" id="sectionOptionB">
+                          <label class="form-label">Existing SFTP Filename</label>
                           <input type="text" id="deliverManualPathInput" name="manual_file_name" class="form-control" placeholder="e.g. results_final.zip">
                           <div class="form-text">Use this if you already moved the file to the <strong>Manual Delivery Path</strong> via WinSCP.</div>
                         </div>
-                        <div class="col-12 mb-3">
+                        <div class="col-12 mb-3" id="sectionOR2">
                           <div class="text-center text-muted my-2">-- OR --</div>
                         </div>
-                        <div class="col-12 mb-3">
-                          <label class="form-label text-primary fw-bold">Option C: Google Drive Share Link (Best for Large Files)</label>
-                          <input type="url" id="deliverGDriveLinkInput" name="google_drive_link" class="form-control" placeholder="https://drive.google.com/file/d/...">
-                          <div class="form-text text-primary">Paste the 'Anyone with the link can view' share link here. No server memory limits!</div>
+                        <div class="col-12 mb-3" id="sectionOptionC">
+                          <label class="form-label text-primary fw-bold">Google Drive Share Link <span class="text-danger">* (Required)</span></label>
+                          <input type="url" id="deliverGDriveLinkInput" name="google_drive_link" class="form-control" placeholder="https://drive.google.com/file/d/..." required>
+                          <div class="form-text text-primary">Paste the 'Anyone with the link can view' share link here. This link is required to complete the delivery.</div>
                         </div>
                       </div>
 
                       <div class="mb-3">
-                        <label class="form-label">Delivery Notes</label>
+                        <label class="form-label fw-bold">Delivery Notes <span class="text-danger">*</span></label>
                         <textarea id="deliverNotesInput" name="delivery_notes" class="form-control" rows="3"
-                          placeholder="e.g. Processed result ready for download."></textarea>
+                          placeholder="e.g. Processed result ready for download. Please confirm receipt." required></textarea>
                       </div>
                     </div>
                     <div class="modal-footer">
-                      <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                      <button type="button" class="btn btn-outline-secondary" id="deliverCancelBtn">Cancel</button>
                       <button type="submit" class="btn btn-success" id="deliverConfirmBtn"><i
                           class="bx bx-check me-1"></i> Confirm Delivered</button>
                     </div>
@@ -311,8 +321,14 @@
                   <p class="text-muted small mb-0">All file transfers are managed through WinSCP / SFTPGo. Use the
                     buttons below only to update the status.</p>
                 </div>
-                <button class="btn btn-sm btn-outline-secondary" onclick="loadUploads()"><i
-                    class="bx bx-refresh me-1"></i> Refresh</button>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="input-group input-group-sm" style="width: 250px;">
+                    <span class="input-group-text"><i class="bx bx-search"></i></span>
+                    <input type="text" id="uploadsSearch" class="form-control" placeholder="Search projects...">
+                  </div>
+                  <button class="btn btn-sm btn-outline-secondary" onclick="loadUploads()"><i
+                      class="bx bx-refresh me-1"></i> Refresh</button>
+                </div>
               </div>
               <div class="card-body">
                 <div class="table-responsive">
@@ -336,6 +352,7 @@
                     </tbody>
                   </table>
                 </div>
+                <div id="uploadsPagination" class="d-flex justify-content-center mt-3"></div>
               </div>
             </div>
 
@@ -347,8 +364,14 @@
                   <p class="text-muted small mb-0">After processing is done, place the result in the client's SFTP
                     folder via WinSCP, then click <strong>Mark as Delivered</strong>.</p>
                 </div>
-                <button class="btn btn-sm btn-outline-secondary" onclick="loadRequests()"><i
-                    class="bx bx-refresh me-1"></i> Refresh</button>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="input-group input-group-sm" style="width: 250px;">
+                    <span class="input-group-text"><i class="bx bx-search"></i></span>
+                    <input type="text" id="requestsSearch" class="form-control" placeholder="Search projects...">
+                  </div>
+                  <button class="btn btn-sm btn-outline-secondary" onclick="loadRequests()"><i
+                      class="bx bx-refresh me-1"></i> Refresh</button>
+                </div>
               </div>
               <div class="card-body">
                 <div class="table-responsive">
@@ -372,6 +395,7 @@
                     </tbody>
                   </table>
                 </div>
+                <div id="requestsPagination" class="d-flex justify-content-center mt-3"></div>
               </div>
             </div>
 
@@ -381,23 +405,79 @@
     </div>
   </div>
 
-  <script>
-    (function () {
-      var API_BASE = (typeof window !== 'undefined' && window.TemaDataPortal_API_BASE) || (window.location ? window.location.origin : '') || 'http://localhost:3000';
+  <style>
+  #map {
+      height: 250px;
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #d9dee3;
+      margin-top: 0.5rem;
+      z-index: 1 !important;
+    }
+    
+    /* 🚀 PERFORMANCE OPTIMIZATION (v133): Fix CLS by reserving space */
+    .modal-content { min-height: 400px; }
+    .table-responsive { min-height: 300px; }
+    .card { contain: content; }
+  </style>
 
-      var rejectModal = null;
-      var deliverModal = null;
-      var deleteUploadModal = null;
+  <script>
+    function copyDeliverPath(event) {
+        const path = document.getElementById('deliverPathHint').textContent;
+        const btn = event.currentTarget;
+        const icon = btn.querySelector('i');
+        
+        navigator.clipboard.writeText(path).then(() => {
+            const oldIcon = icon.className;
+            const oldBtnClass = btn.className;
+            
+            icon.className = 'bx bx-check';
+            btn.className = 'btn btn-sm btn-success ms-2';
+            
+            setTimeout(() => {
+                icon.className = oldIcon;
+                btn.className = oldBtnClass;
+            }, 2000);
+        });
+    }
+
+    (function () {
+      var API_BASE = window.location.origin;
+
+      var rejectBSModal = null;
+      var deliverBSModal = null;
+      var deleteUploadBSModal = null;
+
       var pendingRejectId = null;
       var pendingDeliverId = null;
       var pendingDeleteUploadId = null;
       var uploadRootAbsolute = '';
       var remoteBasePath = '';
+      var sftpUsername = '';
+      var sftpPort = '';
+      var sftpHost = '';
+      
+      // 🚀 PAGINATION & SEARCH STATE (v238)
+      var allUploads = [];
+      var allRequests = [];
+      var uploadsPage = 1;
+      var requestsPage = 1;
+      var itemsPerPage = 10;
+      var uploadsSearch = '';
+      var requestsSearch = '';
 
       // Cache upload rows for detail modal
       var uploadsRowsById = {};
       // Cache upload rows for processing table enrichment
       var uploadMetaById = {};
+      var activeMeta = null; // 🚀 META TRACKER (v173)
+      
+      // 🚀 UPLOAD CONTROL (v169): Track active streams for cancellation
+      var activeNitroXHRs = [];
+      var nitroAborted = false;
+      
+      // 🚀 UPLOAD CONTROL (v169): Track active streams for cancellation
+      var activeUploadController = null;
 
       function escapeHtml(s) {
         if (!s) return '';
@@ -434,25 +514,37 @@
         return b + '/' + s;
       }
 
-      // Build SFTP path for a given upload row
-      function buildSftpPath(r) {
-        var base = uploadRootAbsolute || remoteBasePath || '';
-        var paths = r.file_paths;
-        var pathsArr = Array.isArray(paths) ? paths : (typeof paths === 'string' && paths ? [paths] : []);
-        
-        if (pathsArr.length > 0) {
-          // Get the directory of the first file path (which includes 'uploads/')
-          var firstFile = normalizePathForDisplay(pathsArr[0]);
-          var lastSlash = firstFile.lastIndexOf('/');
-          var projectDir = (lastSlash !== -1) ? firstFile.substring(0, lastSlash) : firstFile;
-          
-          return joinDisplayPath(base, projectDir);
-        }
-        
-        // Fallback for SFTP project uploads
-        if (r.project_id) return joinDisplayPath(base, 'uploads/' + r.project_id);
-        return '– (not available)';
+      function formatSftpPath(path) {
+          if (!path) return '–';
+          // 🚀 FULL PATH DISPLAY (v168): Reverted to show absolute system paths
+          var p = normalizePathForDisplay(path);
+          return p.replace(/\/+/g, '/');
       }
+
+      function buildSftpPath(row) {
+          if (!row || !row.file_paths) return '–';
+          let path = '';
+          try {
+            const paths = Array.isArray(row.file_paths) ? row.file_paths : JSON.parse(row.file_paths);
+            if (!paths || paths.length === 0) return '–';
+            path = paths[0];
+          } catch (e) {
+            path = String(row.file_paths);
+          }
+
+          // 🚀 SMART-PATH CLEANUP (v168): Reverted to plural 'uploads'
+          const base = (uploadRootAbsolute || '/home/tiquan/uploads/').replace(/\/+$/, '');
+          
+          let displayPath = path;
+          // Ensure it has a base if it's just a partial path
+          if (!displayPath.startsWith('/') && !displayPath.startsWith('C:')) {
+             displayPath = base + '/' + displayPath.replace(/^\//, '');
+          }
+          
+          return formatSftpPath(displayPath);
+      }
+
+
 
       function actionCells(r) {
         var status = (r.request_status || 'pending').toLowerCase();
@@ -521,143 +613,332 @@
       }
 
       function showDetailsModal(row) {
-        function text(v) { return (v != null && v !== '') ? escapeHtml(String(v)) : '–'; }
-        function num(v) { return (v != null && v !== '' && !isNaN(Number(v))) ? String(v) : '–'; }
+        const text = (v) => (v != null && v !== '') ? escapeHtml(String(v)) : '–';
+        const num = (v) => (v != null && v !== '' && !isNaN(Number(v))) ? String(v) : '–';
 
-        // SFTP path
-        document.getElementById('detailSftpPath').textContent = buildSftpPath(row);
+        const type = row.upload_type || 'browser';
+        
+        // Toggle Method-Specific UI
+        const sftpBox = document.getElementById('detailSftpBox');
+        const gdriveBox = document.getElementById('detailGDriveBox');
+        const fileCountRow = document.getElementById('detailFileCountRow');
 
+        sftpBox.classList.add('d-none');
+        gdriveBox.classList.add('d-none');
+        fileCountRow.classList.add('d-none');
+        fileCountRow.classList.add('d-none');
+
+        if (type === 'sftp' || type === 'sftp_single' || type === 'sftp_multiple' || type === 'browser' || type === 'multiple') {
+          sftpBox.classList.remove('d-none');
+          document.getElementById('detailSftpPath').textContent = buildSftpPath(row);
+          
+          // 🚀 SYNC CONNECTION DETAILS (v188)
+          if (window.remoteBasePath) {
+              document.getElementById('detailSftpHostDisplay').innerText = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? '172.21.107.151' : window.location.hostname;
+              document.getElementById('detailSftpPortDisplay').innerText = window.sftpPort || '2222';
+              document.getElementById('detailSftpUserDisplay').innerText = window.sftpUsername || 'tiquan';
+          }
+        } else if (type === 'google_drive') {
+          gdriveBox.classList.remove('d-none');
+          const link = document.getElementById('detailGDriveLink');
+          link.href = row.google_drive_link || '#';
+          link.textContent = row.google_drive_link || 'Link missing';
+        } else {
+          // Browser upload
+          fileCountRow.classList.remove('d-none');
+          document.getElementById('detailFileCount').textContent = text(row.file_count);
+          document.getElementById('detailFileCount').textContent = text(row.file_count);
+        }
+
+        // Shared Details
         document.getElementById('detailProjectId').textContent = text(row.project_id);
         document.getElementById('detailProjectTitle').textContent = text(row.project_title);
         document.getElementById('detailProjectDescription').textContent = text(row.project_description);
         document.getElementById('detailCategory').textContent = text(row.category);
         document.getElementById('detailLatitude').textContent = num(row.latitude);
         document.getElementById('detailLongitude').textContent = num(row.longitude);
-        document.getElementById('detailImageMetadata').textContent = text(row.image_metadata);
-        document.getElementById('detailCameraModels').textContent = text(row.camera_models);
-        document.getElementById('detailCaptureDate').textContent = text(row.capture_date);
-        var typeDisplay = row.upload_type || '–';
-        if (typeDisplay === 'sftp_single') typeDisplay = 'SFTP (Single-Lens)';
-        else if (typeDisplay === 'sftp_multiple') typeDisplay = 'SFTP (Multi-Lens)';
-        else if (typeDisplay === 'sftp') typeDisplay = 'SFTP';
-        else if (typeDisplay === 'multiple' || typeDisplay === 'multilens') typeDisplay = 'Web (Multi-Lens)';
-        else if (typeDisplay === 'single') typeDisplay = 'Web (Single-Lens)';
+        
+        // 📅 CLEAN DATE (v129): Strip ISO time/milliseconds (e.g. 2026-04-13T00:00:00.000000Z -> 2026-04-13)
+        let rawDate = row.capture_date || '–';
+        let cleanDate = (rawDate.includes('T')) ? rawDate.split('T')[0] : rawDate;
+        document.getElementById('detailCaptureDate').textContent = cleanDate;
+        
+        // Output Categories Display
+        const outputs = row.output_categories;
+        const outputsArr = Array.isArray(outputs) ? outputs : (typeof outputs === 'string' ? [outputs] : []);
+        document.getElementById('detailOutputCategories').innerHTML = outputsArr.length > 0 
+          ? outputsArr.map(o => '<span class="badge bg-label-info me-1">' + escapeHtml(o) + '</span>').join('')
+          : '–';
+        
+        // Metadata & Sensor Display
+        var metaEl = document.getElementById('detailImageMetadata');
+        var camEl  = document.getElementById('detailCameraModels');
+        
+        camEl.textContent = text(row.camera_models) || 'Standard Sensor';
 
+        if (type === 'sftp' || type === 'sftp_single' || type === 'sftp_multiple') {
+          metaEl.innerHTML = '<i class="bx bx-info-circle me-1"></i> Manual SFTP Upload';
+        } else {
+          try {
+            var nitro = typeof row.image_metadata === 'string' ? JSON.parse(row.image_metadata) : row.image_metadata;
+            if (nitro && typeof nitro.count !== 'undefined') {
+               metaEl.innerHTML = '<span class="badge bg-label-success">' + nitro.count + ' GPS Points Detected</span>';
+            } else {
+               metaEl.textContent = text(row.image_metadata) || 'No metadata';
+            }
+          } catch(e) {
+            metaEl.textContent = text(row.image_metadata) || 'No metadata';
+          }
+        }
+
+        var typeDisplay = type;
+        if (type === 'sftp_single') typeDisplay = 'SFTP (Single-Lens)';
+        else if (type === 'sftp_multiple') typeDisplay = 'SFTP (Multi-Lens)';
+        else if (type === 'sftp') typeDisplay = 'SFTP (Provisioned)';
+        else if (type === 'google_drive') typeDisplay = 'Google Drive Link';
+        else if (type === 'browser') typeDisplay = 'Nitro Browser Upload';
         document.getElementById('detailUploadType').textContent = typeDisplay;
-        document.getElementById('detailFileCount').textContent = text(row.file_count);
+
         document.getElementById('detailCreatedAt').textContent = row.created_at ? new Date(row.created_at).toLocaleString() : '–';
         document.getElementById('detailCreatedBy').textContent = text(row.created_by_email);
         document.getElementById('detailStatus').innerHTML = statusBadge(row.request_status);
-        document.getElementById('detailCategory').textContent           = text(row.category);
-        document.getElementById('detailLatitude').textContent           = num(row.latitude);
-        document.getElementById('detailLongitude').textContent          = num(row.longitude);
-        // Clean display of image metadata depending on upload type
-        var metaEl = document.getElementById('detailImageMetadata');
-        if (row.upload_type === 'sftp') {
-          metaEl.textContent = 'Uploaded via SFTP software (FileZilla / WinSCP)';
-        } else {
-          // Try to parse JSON in case it slipped in, otherwise show as-is
-          var rawMeta = row.image_metadata || '–';
-          try {
-            var parsed = JSON.parse(rawMeta);
-            // If it's a JSON object (sftp details leaked in), show clean message
-            if (typeof parsed === 'object' && parsed !== null) {
-              metaEl.textContent = 'Uploaded via SFTP software (FileZilla / WinSCP)';
-            } else {
-              metaEl.textContent = rawMeta;
-            }
-          } catch (e) {
-            metaEl.textContent = rawMeta;
-          }
-        }
-        document.getElementById('detailCameraModels').textContent       = text(row.camera_models);
-        document.getElementById('detailCaptureDate').textContent        = text(row.capture_date);
-        document.getElementById('detailUploadType').textContent         = text(row.upload_type);
-        document.getElementById('detailFileCount').textContent          = text(row.file_count);
-        document.getElementById('detailCreatedAt').textContent          = row.created_at ? new Date(row.created_at).toLocaleString() : '–';
-        document.getElementById('detailCreatedBy').textContent          = text(row.created_by_email);
-        document.getElementById('detailStatus').innerHTML               = statusBadge(row.request_status);
 
         var modalEl = document.getElementById('detailsModal');
         if (modalEl && typeof bootstrap !== 'undefined') {
           bootstrap.Modal.getOrCreateInstance(modalEl).show();
+          checkProjectSftpStatus(row.project_id);
         }
       }
 
+      window.checkProjectSftpStatus = function(projectId) {
+          const statusDiv = document.getElementById('detailSftpStatus');
+          const syncBtn = document.getElementById('syncSftpBtn');
+          
+          statusDiv.innerHTML = '<span class="text-muted"><i class="bx bx-loader-alt bx-spin me-1"></i> Checking SFTP storage...</span>';
+          syncBtn.classList.add('d-none');
+
+          fetch(API_BASE + '/admin/client-uploads/check-sftp-status', {
+              method: 'POST',
+              headers: { 
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': '{{ csrf_token() }}'
+              },
+              body: JSON.stringify({ projectID: projectId })
+          })
+          .then(r => r.json())
+          .then(data => {
+              if (data.success) {
+                  if (data.exists) {
+                      statusDiv.innerHTML = '<span class="text-success"><i class="bx bx-check-circle me-1"></i> Synced to SFTP</span>';
+                      syncBtn.classList.add('d-none');
+                  } else {
+                      statusDiv.innerHTML = '<span class="text-warning"><i class="bx bx-error me-1"></i> Not on SFTP (Local Storage)</span>';
+                      syncBtn.classList.remove('d-none');
+                  }
+              } else {
+                  statusDiv.innerHTML = '<span class="text-danger"><i class="bx bx-x-circle me-1"></i> Storage check failed</span>';
+              }
+          })
+          .catch(() => {
+              statusDiv.innerHTML = '<span class="text-danger"><i class="bx bx-x-circle me-1"></i> Connection Error</span>';
+          });
+      };
+
+      window.syncProjectToSftp = function() {
+          const projectId = document.getElementById('detailProjectId').textContent;
+          const statusDiv = document.getElementById('detailSftpStatus');
+          const syncBtn = document.getElementById('syncSftpBtn');
+
+          syncBtn.disabled = true;
+          syncBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Syncing...';
+          statusDiv.innerHTML = '<span class="text-primary"><i class="bx bx-cloud-upload bx-pulse me-1"></i> Moving files to SFTP server...</span>';
+
+          fetch(API_BASE + '/admin/client-uploads/retry-sftp', {
+              method: 'POST',
+              headers: { 
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': '{{ csrf_token() }}'
+              },
+              body: JSON.stringify({ projectID: projectId })
+          })
+          .then(r => r.json())
+          .then(data => {
+              if (data.success) {
+                  statusDiv.innerHTML = '<span class="text-success"><i class="bx bx-check-double me-1"></i> Handover Complete!</span>';
+                  syncBtn.classList.add('d-none');
+                  // Update path display if it changed
+                  if (data.path) document.getElementById('detailSftpPath').textContent = data.path;
+              } else {
+                  statusDiv.innerHTML = '<span class="text-danger"><i class="bx bx-error-circle me-1"></i> Handover Failed: ' + data.message + '</span>';
+                  syncBtn.disabled = false;
+                  syncBtn.innerHTML = '<i class="bx bx-sync me-1"></i> Retry Sync';
+              }
+          })
+          .catch(() => {
+              statusDiv.innerHTML = '<span class="text-danger"><i class="bx bx-wifi-off me-1"></i> Sync Error</span>';
+              syncBtn.disabled = false;
+              syncBtn.innerHTML = '<i class="bx bx-sync me-1"></i> Retry Sync';
+          });
+      };
+
       window.loadUploads = function loadUploads() {
+        document.getElementById('uploadsTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-muted">Loading…</td></tr>';
         fetch(API_BASE + '/api/admin/client-uploads')
           .then(function (r) { return r.json(); })
           .then(function (rows) {
-            var tbody = document.getElementById('uploadsTableBody');
-            if (!rows || rows.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No client requests yet.</td></tr>';
-              return;
-            }
-            uploadsRowsById = {};
-            uploadMetaById = {};
-            tbody.innerHTML = rows.map(function (r) {
-              uploadsRowsById[r.id] = r;
-              uploadMetaById[r.id] = r;
-              var created = r.created_at ? new Date(r.created_at).toLocaleString() : '–';
-              var typeDisplay = r.upload_type || '–';
-              if (typeDisplay === 'sftp_single') typeDisplay = '<span class="text-info">SFTP (Single)</span>';
-              else if (typeDisplay === 'sftp_multiple') typeDisplay = '<span class="text-info">SFTP (Multi)</span>';
-              else if (typeDisplay === 'sftp') typeDisplay = '<span class="text-info">SFTP</span>';
-              else if (typeDisplay === 'multiple' || typeDisplay === 'multilens') typeDisplay = 'Web (Multi)';
-              else if (typeDisplay === 'single') typeDisplay = 'Web (Single)';
-
-              return '<tr>' +
-                '<td>' + r.id + '</td>' +
-                '<td><strong>' + escapeHtml(r.project_title || r.project_id || '–') + '</strong></td>' +
-                '<td><small class="text-muted">' + escapeHtml(r.created_by_email || '–') + '</small></td>' +
-                '<td>' + typeDisplay + '</td>' +
-                '<td>' + (r.file_count || 0) + '</td>' +
-                '<td><small>' + created + '</small></td>' +
-                '<td>' + statusBadge(r.request_status) + '</td>' +
-                '<td>' + actionCells(r) + '</td>' +
-                '</tr>';
-            }).join('');
-
-            tbody.querySelectorAll('.details-btn').forEach(function (btn) {
-              btn.addEventListener('click', function () {
-                var id = parseInt(this.getAttribute('data-upload-id'), 10);
-                if (uploadsRowsById[id]) showDetailsModal(uploadsRowsById[id]);
-              });
-            });
-            tbody.querySelectorAll('.accept-btn').forEach(function (btn) {
-              btn.addEventListener('click', function () {
-                submitDecision(this.getAttribute('data-upload-id'), 'accept', '');
-              });
-            });
-            tbody.querySelectorAll('.start-processing-btn').forEach(function (btn) {
-              btn.addEventListener('click', function () {
-                submitDecision(this.getAttribute('data-upload-id'), 'processing', '');
-              });
-            });
-            tbody.querySelectorAll('.reject-btn').forEach(function (btn) {
-              btn.addEventListener('click', function () {
-                pendingRejectId = this.getAttribute('data-upload-id');
-                document.getElementById('rejectReasonInput').value = '';
-                if (rejectModal) rejectModal.show();
-              });
-            });
-
-            tbody.querySelectorAll('.delete-upload-btn').forEach(function (btn) {
-              btn.addEventListener('click', function () {
-                var id = this.getAttribute('data-upload-id');
-                var row = uploadsRowsById[parseInt(id, 10)];
-                var label = (row && (row.project_title || row.project_id)) ? (row.project_title || row.project_id) : ('#' + id);
-                pendingDeleteUploadId = id;
-                var hint = document.getElementById('deleteUploadModalHint');
-                if (hint) hint.textContent = 'Delete upload "' + label + '" (ID ' + id + ')? This also removes linked processing request records.';
-                if (deleteUploadModal) deleteUploadModal.show();
-              });
-            });
+            allUploads = rows || [];
+            uploadsPage = 1; // Reset to page 1 on fresh load
+            renderUploadsTable();
           })
           .catch(function () {
             document.getElementById('uploadsTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Failed to load. Ensure the server is running and PostgreSQL is configured.</td></tr>';
           });
       }
+
+      function renderUploadsTable() {
+        var tbody = document.getElementById('uploadsTableBody');
+        var container = document.getElementById('uploadsPagination');
+        
+        // 1. Filter
+        var filtered = allUploads.filter(function(r) {
+          if (!uploadsSearch) return true;
+          var term = uploadsSearch.toLowerCase();
+          return (
+            String(r.id).includes(term) ||
+            (r.project_title || '').toLowerCase().includes(term) ||
+            (r.project_id || '').toLowerCase().includes(term) ||
+            (r.created_by_email || '').toLowerCase().includes(term)
+          );
+        });
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No matching upload requests found.</td></tr>';
+          container.innerHTML = '';
+          return;
+        }
+
+        // 2. Paginate
+        var totalPages = Math.ceil(filtered.length / itemsPerPage);
+        if (uploadsPage > totalPages) uploadsPage = totalPages || 1;
+        var start = (uploadsPage - 1) * itemsPerPage;
+        var paginated = filtered.slice(start, start + itemsPerPage);
+
+        // 3. Render
+        tbody.innerHTML = paginated.map(function (r) {
+          uploadsRowsById[r.id] = r;
+          uploadMetaById[r.id] = r;
+
+          var created = r.created_at ? new Date(r.created_at).toLocaleString() : '–';
+          var typeDisplay = r.upload_type || 'browser';
+          if (typeDisplay === 'google_drive') typeDisplay = '<span class="text-success"><i class="bx bxl-google-cloud me-1"></i>GDrive</span>';
+          else if (typeDisplay === 'sftp_multiple') typeDisplay = '<span class="text-info">SFTP (Multi)</span>';
+          else if (typeDisplay === 'sftp') typeDisplay = '<span class="text-info">SFTP</span>';
+          else if (typeDisplay === 'multiple' || typeDisplay === 'multilens') typeDisplay = 'Web (Multi)';
+          else if (typeDisplay === 'single') typeDisplay = 'Web (Single)';
+
+          return '<tr>' +
+            '<td>' + r.id + '</td>' +
+            '<td><strong>' + escapeHtml(r.project_title || r.project_id || '–') + '</strong></td>' +
+            '<td><small class="text-muted">' + escapeHtml(r.created_by_email || '–') + '</small></td>' +
+            '<td>' + typeDisplay + '</td>' +
+            '<td>' + (r.file_count || 0) + '</td>' +
+            '<td><small>' + created + '</small></td>' +
+            '<td>' + statusBadge(r.request_status) + '</td>' +
+            '<td>' + actionCells(r) + '</td>' +
+            '</tr>';
+        }).join('');
+
+        // Re-attach event listeners
+        attachUploadListeners(tbody);
+        
+        // Render Pagination UI
+        renderPaginationUI(container, uploadsPage, totalPages, function(p) {
+          uploadsPage = p;
+          renderUploadsTable();
+        });
+      }
+
+      function attachUploadListeners(tbody) {
+        tbody.querySelectorAll('.details-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var id = parseInt(this.getAttribute('data-upload-id'), 10);
+            if (uploadsRowsById[id]) showDetailsModal(uploadsRowsById[id]);
+          });
+        });
+        tbody.querySelectorAll('.accept-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            submitDecision(this.getAttribute('data-upload-id'), 'accept', '');
+          });
+        });
+        tbody.querySelectorAll('.start-processing-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            submitDecision(this.getAttribute('data-upload-id'), 'processing', '');
+          });
+        });
+        tbody.querySelectorAll('.reject-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            pendingRejectId = this.getAttribute('data-upload-id');
+            document.getElementById('rejectReasonInput').value = '';
+            if (rejectModal) rejectModal.show();
+          });
+        });
+        tbody.querySelectorAll('.delete-upload-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var id = this.getAttribute('data-upload-id');
+            var row = uploadsRowsById[parseInt(id, 10)];
+            var label = (row && (row.project_title || row.project_id)) ? (row.project_title || row.project_id) : ('#' + id);
+            pendingDeleteUploadId = id;
+            var hint = document.getElementById('deleteUploadModalHint');
+            if (hint) hint.textContent = 'Delete upload "' + label + '" (ID ' + id + ')? This also removes linked processing request records.';
+            if (deleteUploadModal) deleteUploadModal.show();
+          });
+        });
+      }
+
+      function renderPaginationUI(container, current, total, onPage) {
+        if (total <= 1) {
+          container.innerHTML = '';
+          return;
+        }
+
+        var html = '<ul class="pagination pagination-sm mb-0">';
+        // Prev
+        html += '<li class="page-item ' + (current === 1 ? 'disabled' : '') + '"><a class="page-link" href="javascript:void(0)" data-page="' + (current - 1) + '"><i class="bx bx-chevron-left"></i></a></li>';
+        
+        // Page numbers (simplified version)
+        for (var i = 1; i <= total; i++) {
+          if (total > 7 && i > 3 && i < total - 2 && Math.abs(i - current) > 1) {
+            if (i === 4 || i === total - 3) html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+            continue;
+          }
+          html += '<li class="page-item ' + (current === i ? 'active' : '') + '"><a class="page-link" href="javascript:void(0)" data-page="' + i + '">' + i + '</a></li>';
+        }
+
+        // Next
+        html += '<li class="page-item ' + (current === total ? 'disabled' : '') + '"><a class="page-link" href="javascript:void(0)" data-page="' + (current + 1) + '"><i class="bx bx-chevron-right"></i></a></li>';
+        html += '</ul>';
+
+        container.innerHTML = html;
+        container.querySelectorAll('.page-link').forEach(function(link) {
+          link.addEventListener('click', function() {
+            var p = parseInt(this.getAttribute('data-page'));
+            if (p && p >= 1 && p <= total && p !== current) onPage(p);
+          });
+        });
+      }
+
+      // Search listeners
+      document.getElementById('uploadsSearch').addEventListener('input', function(e) {
+        uploadsSearch = e.target.value;
+        uploadsPage = 1;
+        renderUploadsTable();
+      });
+
+      document.getElementById('requestsSearch').addEventListener('input', function(e) {
+        requestsSearch = e.target.value;
+        requestsPage = 1;
+        renderRequestsTable();
+      });
 
       function loadPathConfig() {
         return fetch(API_BASE + '/api/admin/client-uploads/path-config')
@@ -665,7 +946,14 @@
           .then(function (cfg) {
             if (!cfg || !cfg.success) return;
             uploadRootAbsolute = normalizePathForDisplay(cfg.uploadRootAbsolute || '');
-            remoteBasePath = normalizePathForDisplay(cfg.remoteBasePath || '');
+            remoteBasePath = cfg.remoteBasePath;
+            sftpUsername = cfg.sftpUsername;
+            sftpPort = cfg.sftpPort;
+            sftpHost = cfg.sftpHost;
+            window.remoteBasePath = remoteBasePath;
+            window.sftpUsername = sftpUsername;
+            window.sftpPort = sftpPort;
+            window.sftpHost = sftpHost;
           })
           .catch(function () { /* keep fallback behavior */ });
       }
@@ -697,29 +985,28 @@
           .catch(function () { alert('Request failed.'); });
       }
 
-      (function initRejectModal() {
-        var modalEl = document.getElementById('rejectModal');
-        if (modalEl && typeof bootstrap !== 'undefined') rejectModal = new bootstrap.Modal(modalEl);
-        var confirmBtn = document.getElementById('rejectConfirmBtn');
-        if (confirmBtn) {
-          confirmBtn.addEventListener('click', function () {
-            var reason = (document.getElementById('rejectReasonInput').value || '').trim();
-            if (!reason) { alert('Please enter a reason for rejecting this request.'); return; }
-            if (pendingRejectId) submitDecision(pendingRejectId, 'reject', reason);
-          });
-        }
-      })();
+      // 🚀 MODAL INITIALIZATION (v186)
+      var rEl_init = document.getElementById('rejectModal');
+      if (rEl_init && typeof bootstrap !== 'undefined') rejectModal = new bootstrap.Modal(rEl_init);
+      var rejectConfirmBtn = document.getElementById('rejectConfirmBtn');
+      if (rejectConfirmBtn) {
+        rejectConfirmBtn.addEventListener('click', function () {
+          var reason = (document.getElementById('rejectReasonInput').value || '').trim();
+          if (!reason) { alert('Please enter a reason for rejecting this request.'); return; }
+          if (pendingRejectId) submitDecision(pendingRejectId, 'reject', reason);
+        });
+      }
 
-      (function initDeleteUploadModal() {
-        var modalEl = document.getElementById('deleteUploadModal');
-        if (modalEl && typeof bootstrap !== 'undefined') deleteUploadModal = new bootstrap.Modal(modalEl);
-        var confirmBtn = document.getElementById('deleteUploadConfirmBtn');
-        if (confirmBtn) {
-          confirmBtn.addEventListener('click', function () {
+
+        var duEl_init = document.getElementById('deleteUploadModal');
+        if (duEl_init && typeof bootstrap !== 'undefined') deleteUploadModal = new bootstrap.Modal(duEl_init);
+        var delConfirmBtn = document.getElementById('deleteUploadConfirmBtn');
+        if (delConfirmBtn) {
+          delConfirmBtn.addEventListener('click', function () {
             if (!pendingDeleteUploadId) return;
             var id = pendingDeleteUploadId;
-            confirmBtn.disabled = true;
-            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting...';
+            delConfirmBtn.disabled = true;
+            delConfirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting...';
 
             fetch(API_BASE + '/api/admin/client-uploads/' + id, { method: 'DELETE' })
               .then(function (r) { return r.json(); })
@@ -738,132 +1025,484 @@
               })
               .catch(function () { alert('Delete failed.'); })
               .finally(function () {
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = '<i class="bx bx-trash me-1"></i> Delete';
+                delConfirmBtn.disabled = false;
+                delConfirmBtn.innerHTML = '<i class="bx bx-trash me-1"></i> Delete';
               });
           });
         }
-      })();
+        
+        // 🚀 BOOTSTRAP MODAL INITIALIZATION (v183)
+        var dEl = document.getElementById('deliverModal');
+        if (dEl && typeof bootstrap !== 'undefined') deliverBSModal = new bootstrap.Modal(dEl);
+        
+        // 🛡️ RE-SYNC: Ensure all modals use the same naming pattern (v186)
+        if (!rejectModal && rEl_init) rejectModal = new bootstrap.Modal(rEl_init);
+        if (!deleteUploadModal && duEl_init) deleteUploadModal = new bootstrap.Modal(duEl_init);
 
-      (function initDeliverModal() {
-        var modalEl = document.getElementById('deliverModal');
-        if (modalEl && typeof bootstrap !== 'undefined') deliverModal = new bootstrap.Modal(modalEl);
+
         var form = document.getElementById('deliverForm');
         var confirmBtn = document.getElementById('deliverConfirmBtn');
         
         if (form) {
-          form.addEventListener('submit', function (e) {
+          form.addEventListener('submit', async function (e) {
             e.preventDefault();
             if (!pendingDeliverId) return;
 
+            const fileInput = document.getElementById('deliverFileInput');
+            const file = fileInput ? fileInput.files[0] : null;
+            
+            // 🛡️ Safety check for element IDs (v132)
+            const notesEl = document.getElementById('deliverNotesInput');
+            const methodEl = document.getElementById('deliverMethodSelect');
+            const manualPathEl = document.getElementById('deliverManualPathInput');
+            const gdriveLinkEl = document.getElementById('deliverGDriveLinkInput');
+
+            if (!methodEl) {
+                console.error("Critical UI element 'deliverMethodSelect' missing.");
+                return;
+            }
+
+            const notes = notesEl ? notesEl.value : '';
+            const method = methodEl.value;
+            const manualPath = manualPathEl ? manualPathEl.value : '';
+            const gdriveLink = gdriveLinkEl ? gdriveLinkEl.value : '';
+
             confirmBtn.disabled = true;
-            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Uploading & Delivering…';
+            
+            // 🚀 HYPER-NITRO ADMIN DELIVERY (v130)
+            if (file && method === 'portal') {
+                confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Nitro Stream: <span id="adminNitroPercent">0%</span>';
+                
+                // 🚀 MODAL LOCK (v178): Prevent accidental closing via backdrop/ESC
+                var modalEl = document.getElementById('deliverModal');
+                modalEl.setAttribute('data-bs-backdrop', 'static');
+                modalEl.setAttribute('data-bs-keyboard', 'false');
+                var closeBtn = modalEl.querySelector('.btn-close');
+                if (closeBtn) closeBtn.style.display = 'none';
+                
+                // 🚀 NAV PROTECTION (v178)
+                window.onbeforeunload = function() {
+                    return "A 3D model delivery is currently in progress. Leaving now will abort the upload. Are you sure?";
+                };
 
-            var formData = new FormData(form);
+                // 🚀 FREEZE FORM (v179): Prevent changes during active upload
+                document.getElementById('deliverNotesInput').disabled = true;
+                document.getElementById('deliverMethodSelect').disabled = true;
+                document.getElementById('deliverFileInput').disabled = true;
 
-            fetch(API_BASE + '/api/admin/processing-requests/' + pendingDeliverId + '/delivery', {
-              method: 'POST',
-              body: formData
-            })
-              .then(function (r) { return r.json(); })
-              .then(function (data) {
-                if (data.success) {
-                  deliverModal.hide();
-                  pendingDeliverId = null;
-                  form.reset();
-                  loadRequests();
-                  loadUploads();
-                  var al = document.getElementById('uploadsAlert');
-                  var methodLabel = data.upload.delivery_method || 'selected method';
-                  al.textContent = 'Project delivered via ' + methodLabel + '. The client has been notified via email.';
-                  al.className = 'alert alert-success';
-                } else {
-                  alert(data.message || 'Failed to mark as delivered.');
+                // Reset abort state
+                nitroAborted = false;
+                if (activeUploadController) activeUploadController.abort();
+                activeUploadController = new AbortController();
+                const { signal } = activeUploadController;
+
+                try {
+                    // 🚀 ADAPTIVE-NITRO (v249): Dynamically calculate shards to ensure 10MB chunks for weak-internet stability
+                    const getNitroSpecs = (bytes) => {
+                        const targetChunkSize = 10 * 1024 * 1024; // Aim for 10MB chunks
+                        let shards = Math.ceil(bytes / targetChunkSize);
+                        if (shards < 1) shards = 1;
+                        if (shards > 500) shards = 500; // Cap to prevent request overhead
+                        
+                        let lanes = 3;
+                        if (bytes < 10 * 1024 * 1024) lanes = 1;
+                        
+                        return { shards, lanes };
+                    };
+
+                    const specs = getNitroSpecs(file.size);
+                    const chunks = specs.shards;
+                    const pool = specs.lanes;
+                    const chunkSize = Math.ceil(file.size / chunks);
+                    const uploadId = 'admin-del-' + pendingDeliverId + '-' + Date.now();
+                    let totalBytesUploaded = Array(chunks).fill(0);
+                    
+                    const uploadChunk = (i) => {
+                        return new Promise((resolve, reject) => {
+                            const start = i * chunkSize;
+                            const end = Math.min(file.size, start + chunkSize);
+                            const blob = file.slice(start, end);
+                            
+                            const xhr = new XMLHttpRequest();
+                            activeNitroXHRs.push(xhr);
+                            xhr.open('POST', '/api/upload/direct', true);
+                            xhr.setRequestHeader('X-CSRF-TOKEN', '{{ csrf_token() }}');
+                            
+                            xhr.upload.onprogress = (e) => {
+                                if (e.lengthComputable) {
+                                    totalBytesUploaded[i] = e.loaded;
+                                    const sumUploaded = totalBytesUploaded.reduce((a, b) => a + b, 0);
+                                    const overallPercent = Math.round((sumUploaded / file.size) * 100);
+                                    document.getElementById('adminNitroPercent').innerText = overallPercent + '%';
+                                }
+                            };
+                            
+                            xhr.onload = () => {
+                                const idx = activeNitroXHRs.indexOf(xhr);
+                                if (idx > -1) activeNitroXHRs.splice(idx, 1);
+                                if (xhr.status === 200) {
+                                    resolve();
+                                } else {
+                                    reject(new Error("Server returned " + xhr.status + " for shard " + i));
+                                }
+                            };
+                            xhr.onerror = () => reject(new Error("Network error during shard " + i));
+                            xhr.onabort = () => reject({ name: 'AbortError' });
+                            
+                            const formData = new FormData();
+                            formData.append('file_chunk', blob);
+                            formData.append('upload_id', uploadId);
+                            formData.append('file_name', file.name);
+                            formData.append('chunk_index', i);
+                            formData.append('total_chunks', chunks);
+                            formData.append('project_id', (activeMeta && activeMeta.project_id) ? activeMeta.project_id : ''); // 🚀 Shard into Project Folder (v173)
+                            xhr.send(formData);
+                        });
+                    };
+
+                    const uploadChunkWithRetry = async (i, attempt = 1) => {
+                        try {
+                            await uploadChunk(i);
+                        } catch (err) {
+                            if (err && err.name === 'AbortError') throw err;
+                            if (attempt < 3) {
+                                console.warn(`Shard ${i} failed (Attempt ${attempt}). Retrying...`);
+                                await new Promise(r => setTimeout(r, 1000 * attempt)); // Exponential backoff
+                                return uploadChunkWithRetry(i, attempt + 1);
+                            }
+                            throw err;
+                        }
+                    };
+
+                    // Run in pools to prevent browser freeze
+                    for (let i = 0; i < chunks; i += pool) {
+                        if (nitroAborted) break;
+                        const batch = [];
+                        for (let j = 0; j < pool && (i + j) < chunks; j++) {
+                            batch.push(uploadChunkWithRetry(i + j));
+                        }
+                        await Promise.all(batch);
+                    }
+                    
+                    // 2. Finalize on Server
+                    const finalRes = await fetch(API_BASE + '/api/admin/processing-requests/' + pendingDeliverId + '/delivery', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        signal: signal, // 🚀 CANCEL-AWARE (v169)
+                        body: JSON.stringify({
+                            nitro_delivery: true,
+                            upload_id: uploadId,
+                            file_name: file.name,
+                            notes: notes,
+                            delivery_method: method
+                        })
+                    });
+                    
+                    if (!finalRes.ok) {
+                        let errMsg = "Server rejected final merge";
+                        try {
+                            const errData = await finalRes.json();
+                            errMsg = errData.message || errMsg;
+                        } catch (e) {
+                            // Fallback if not JSON (e.g. 500 error page)
+                        }
+                        throw new Error(errMsg);
+                    }
+
+                    const data = await finalRes.json();
+                    
+                    // 🚀 UNLOCK MODAL (v178)
+                    var modalEl = document.getElementById('deliverModal');
+                    modalEl.setAttribute('data-bs-backdrop', 'true');
+                    modalEl.setAttribute('data-bs-keyboard', 'true');
+                    var closeBtn = modalEl.querySelector('.btn-close');
+                    if (closeBtn) closeBtn.style.display = 'block';
+                    window.onbeforeunload = null;
+
+                    handleDeliveryResponse(data);
+
+                } catch (err) {
+                    if (err && err.name === 'AbortError') {
+                        console.log("Nitro Delivery Aborted by user.");
+                        return;
+                    }
+                    console.error("Nitro Delivery Failed:", err);
+                    alert("Nitro Stream failed: " + (err.message || "Connection lost or server timeout."));
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<i class="bx bx-check me-1"></i> Confirm Delivered';
+                } finally {
+                    activeUploadController = null;
+                    // Ensure cleanup on failure
+                    if (nitroAborted || confirmBtn.disabled) {
+                         var modalEl = document.getElementById('deliverModal');
+                         modalEl.setAttribute('data-bs-backdrop', 'true');
+                         modalEl.setAttribute('data-bs-keyboard', 'true');
+                         var closeBtn = modalEl.querySelector('.btn-close');
+                         if (closeBtn) closeBtn.style.display = 'block';
+                         window.onbeforeunload = null;
+                    }
                 }
-              })
-              .catch(function (error) { 
-                console.error(error);
-                alert('Request failed. Check console for details.'); 
-              })
-              .finally(function () {
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = '<i class="bx bx-check me-1"></i> Confirm Delivered';
-              });
+            } else {
+                // Standard delivery for SFTP/GDrive (no file upload needed usually)
+                confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Delivering…';
+                var formData = new FormData(form);
+                fetch(API_BASE + '/api/admin/processing-requests/' + pendingDeliverId + '/delivery', {
+                  method: 'POST',
+                  body: formData
+                })
+                  .then(r => r.json())
+                  .then(data => handleDeliveryResponse(data))
+                  .catch(err => {
+                      console.error(err);
+                      alert("Delivery failed.");
+                      confirmBtn.disabled = false;
+                      confirmBtn.innerHTML = '<i class="bx bx-check me-1"></i> Confirm Delivered';
+                  });
+            }
           });
         }
-      })();
+
+        function handleDeliveryResponse(data) {
+            if (data.success) {
+              deliverBSModal.hide();
+              pendingDeliverId = null;
+              document.getElementById('deliverForm').reset();
+              loadRequests();
+              loadUploads();
+              var al = document.getElementById('uploadsAlert');
+              var methodLabel = data.upload.delivery_method || 'selected method';
+              var msg = 'Project delivered via ' + methodLabel + '. The client has been notified via email.';
+              
+              if (methodLabel.toLowerCase().includes('portal') || data.nitro_delivery) {
+                  msg = '✅ Nitro Integrity Check Passed. Project delivered and data integrity verified! 🛰️';
+              }
+
+              al.textContent = msg;
+              al.className = 'alert alert-success';
+            } else {
+              alert(data.message || 'Failed to mark as delivered.');
+            }
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="bx bx-check me-1"></i> Confirm Delivered';
+        }
+
+        // 🚀 SAFE-CANCEL (v170): Confirmation popup before aborting active uploads
+        var cancelBtn = document.getElementById('deliverCancelBtn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function() {
+                if (activeNitroXHRs.length > 0) {
+                    if (confirm("Are you sure you want to cancel the active upload? All progress will be lost.")) {
+                        deliverBSModal.hide();
+                    }
+                } else {
+                    deliverBSModal.hide();
+                }
+            });
+        }
+
+        // 🚀 AUTO-CLEANUP (v169): Only cleanup if the user explicitly canceled
+        var modalEl = document.getElementById('deliverModal');
+        if (modalEl) {
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                // If modal is hidden while activeNitroXHRs exist AND nitroAborted is true, we clean up.
+                if (nitroAborted && activeNitroXHRs.length > 0) {
+                    console.log("Cleanup: Nitro session aborted by user.");
+                    if (activeUploadController) activeUploadController.abort();
+                    activeNitroXHRs.forEach(xhr => xhr.abort());
+                    activeNitroXHRs = [];
+                }
+            });
+        }
 
       window.loadRequests = function loadRequests() {
         fetch(API_BASE + '/api/admin/processing-requests')
           .then(function (r) { return r.json(); })
           .then(function (rows) {
-            var tbody = document.getElementById('requestsTableBody');
-            if (!rows || rows.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No processing requests yet. Processing requests appear here when you click "Start Processing" on a client upload above.</td></tr>';
-              return;
-            }
-            tbody.innerHTML = rows.map(function (r) {
-              var requested = r.requested_at ? new Date(r.requested_at).toLocaleString() : '–';
-              var delivered = r.delivered_at ? new Date(r.delivered_at).toLocaleString() + (r.delivery_notes ? '<br><small class="text-muted">' + escapeHtml(r.delivery_notes) + '</small>' : '') : '–';
-
-              // Enrich with upload metadata
-              var meta = uploadMetaById[r.upload_id] || {};
-              var projectTitle = escapeHtml(meta.project_title || meta.project_id || '–');
-              var clientEmail = escapeHtml(meta.created_by_email || '–');
-
-              // SFTP path hint for result placement
-              var sftpPath = meta.id ? buildSftpPath(meta) : '–';
-
-              // Determine status: if delivered_at is set, status is completed
-              var displayStatus = r.delivered_at ? 'completed' : r.status;
-              var statusBadgeHtml = '<span class="badge bg-label-' + (displayStatus === 'completed' ? 'success' : displayStatus === 'failed' ? 'danger' : 'primary') + '"><i class="bx ' + (displayStatus === 'completed' ? 'bx-check-circle' : displayStatus === 'failed' ? 'bx-x-circle' : 'bx-loader-alt') + ' me-1"></i>' + escapeHtml(displayStatus) + '</span>';
-
-              var actionBtn = '–';
-              if (r.delivered_at) {
-                actionBtn = '<span class="badge bg-label-success"><i class="bx bx-check-circle me-1"></i>Delivered</span>';
-              } else if (r.status === 'processing' || r.status === 'pending') {
-                actionBtn =
-                  '<div class="d-flex flex-column gap-2">' +
-                  '<button type="button" class="btn btn-sm btn-success mark-delivered-btn" data-request-id="' + r.id + '" data-upload-id="' + r.upload_id + '"><i class="bx bx-check me-1"></i>Mark as Delivered</button>' +
-                  '</div>';
-              } else if (r.status === 'completed') {
-                actionBtn = '<button type="button" class="btn btn-sm btn-outline-success mark-delivered-btn" data-request-id="' + r.id + '"><i class="bx bx-check me-1"></i>Mark as Delivered</button>';
-              }
-
-              return '<tr>' +
-                '<td>' + r.id + '</td>' +
-                '<td>' + r.upload_id + '</td>' +
-                '<td><strong>' + projectTitle + '</strong></td>' +
-                '<td><small class="text-muted">' + clientEmail + '</small></td>' +
-                '<td>' + statusBadgeHtml + '</td>' +
-                '<td><small>' + requested + '</small></td>' +
-                '<td><small>' + delivered + '</small></td>' +
-                '<td>' + actionBtn + '</td>' +
-                '</tr>';
-            }).join('');
-
-            tbody.querySelectorAll('.mark-delivered-btn').forEach(function (btn) {
-              btn.addEventListener('click', function () {
-                pendingDeliverId = btn.getAttribute('data-request-id');
-                var uploadId = btn.getAttribute('data-upload-id');
-                var meta = uploadMetaById[uploadId] || {};
-                
-                // Show path hint for manual SFTP delivery
-                var base = uploadRootAbsolute || remoteBasePath || '';
-                var targetPath = joinDisplayPath(base, 'deliveries/' + (meta.project_id || uploadId));
-                document.getElementById('deliverPathHint').textContent = targetPath;
-
-                document.getElementById('deliverNotesInput').value = '';
-                document.getElementById('deliverManualPathInput').value = '';
-                document.getElementById('deliverGDriveLinkInput').value = '';
-                document.getElementById('deliverFileInput').value = '';
-                if (deliverModal) deliverModal.show();
-              });
-            });
+            allRequests = rows || [];
+            requestsPage = 1;
+            renderRequestsTable();
           })
           .catch(function () {
             document.getElementById('requestsTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-muted">Could not load processing requests.</td></tr>';
           });
+      }
+
+      function renderRequestsTable() {
+        var tbody = document.getElementById('requestsTableBody');
+        var container = document.getElementById('requestsPagination');
+        
+        // 1. Filter
+        var filtered = allRequests.filter(function(r) {
+          if (!requestsSearch) return true;
+          var term = requestsSearch.toLowerCase();
+          var meta = uploadMetaById[r.upload_id] || {};
+          return (
+            String(r.id).includes(term) ||
+            String(r.upload_id).includes(term) ||
+            (meta.project_title || '').toLowerCase().includes(term) ||
+            (meta.created_by_email || '').toLowerCase().includes(term)
+          );
+        });
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No matching processing requests found.</td></tr>';
+          container.innerHTML = '';
+          return;
+        }
+
+        // 2. Paginate
+        var totalPages = Math.ceil(filtered.length / itemsPerPage);
+        if (requestsPage > totalPages) requestsPage = totalPages || 1;
+        var start = (requestsPage - 1) * itemsPerPage;
+        var paginated = filtered.slice(start, start + itemsPerPage);
+
+        // 3. Render
+        tbody.innerHTML = paginated.map(function (r) {
+          var requested = r.requested_at ? new Date(r.requested_at).toLocaleString() : '–';
+          var delivered = r.delivered_at ? new Date(r.delivered_at).toLocaleString() + (r.delivery_notes ? '<br><small class="text-muted">' + escapeHtml(r.delivery_notes) + '</small>' : '') : '–';
+
+          // Enrich with upload metadata
+          var meta = uploadMetaById[r.upload_id] || {};
+          var projectTitle = escapeHtml(meta.project_title || meta.project_id || '–');
+          var clientEmail = escapeHtml(meta.created_by_email || '–');
+
+          // Determine status
+          var displayStatus = r.delivered_at ? 'completed' : r.status;
+          var statusBadgeHtml = '<span class="badge bg-label-' + (displayStatus === 'completed' ? 'success' : displayStatus === 'failed' ? 'danger' : 'primary') + '"><i class="bx ' + (displayStatus === 'completed' ? 'bx-check-circle' : displayStatus === 'failed' ? 'bx-x-circle' : 'bx-loader-alt') + ' me-1"></i>' + escapeHtml(displayStatus) + '</span>';
+
+          var actionBtn = '–';
+          if (r.delivered_at) {
+            actionBtn = '<span class="badge bg-label-success"><i class="bx bx-check-circle me-1"></i>Delivered</span>';
+          } else if (r.status === 'processing' || r.status === 'pending') {
+            actionBtn =
+              '<div class="d-flex flex-column gap-2">' +
+              '<button type="button" class="btn btn-sm btn-success mark-delivered-btn" data-request-id="' + r.id + '" data-upload-id="' + r.upload_id + '"><i class="bx bx-check me-1"></i>Mark as Delivered</button>' +
+              '</div>';
+          }
+
+          return '<tr>' +
+            '<td>' + r.id + '</td>' +
+            '<td>' + r.upload_id + '</td>' +
+            '<td><strong>' + projectTitle + '</strong></td>' +
+            '<td><small class="text-muted">' + clientEmail + '</small></td>' +
+            '<td>' + statusBadgeHtml + '</td>' +
+            '<td><small>' + requested + '</small></td>' +
+            '<td><small>' + delivered + '</small></td>' +
+            '<td>' + actionBtn + '</td>' +
+            '</tr>';
+        }).join('');
+
+        // Re-attach listeners
+        attachRequestListeners(tbody);
+        
+        // Pagination UI
+        renderPaginationUI(container, requestsPage, totalPages, function(p) {
+          requestsPage = p;
+          renderRequestsTable();
+        });
+      }
+
+      function attachRequestListeners(tbody) {
+        tbody.querySelectorAll('.mark-delivered-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            pendingDeliverId = btn.getAttribute('data-request-id');
+            var uploadId = btn.getAttribute('data-upload-id');
+            activeMeta = uploadMetaById[uploadId] || {}; 
+            var meta = activeMeta;
+            
+            var base = (uploadRootAbsolute || remoteBasePath || '/home/tiquan/').replace(/\/+$/, '');
+            var clientUser = meta.client_sftp_user || 'guest';
+            var targetPath = formatSftpPath(joinDisplayPath(base, 'uploads/' + clientUser + '/' + (meta.project_id || uploadId) + '/delivered/'));
+            document.getElementById('deliverPathHint').textContent = targetPath;
+            
+            if (window.sftpHost) {
+                document.getElementById('deliverHostDisplay').innerText = window.sftpHost;
+            } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                document.getElementById('deliverHostDisplay').innerText = '172.21.107.151';
+            } else {
+                document.getElementById('deliverHostDisplay').innerText = window.location.hostname;
+            }
+            document.getElementById('deliverPortDisplay').innerText = window.sftpPort || '2222';
+            document.getElementById('deliverUserDisplay').innerText = window.sftpUsername || 'tiquan';
+
+            var pathStatusEl = document.getElementById('deliverPathStatus');
+            pathStatusEl.innerHTML = '<span class="badge bg-label-warning"><i class="bx bx-loader-alt bx-spin me-1"></i>Preparing Folder...</span>';
+
+            fetch('/api/admin/client-uploads/' + uploadId + '/ensure-delivery-folder', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    pathStatusEl.innerHTML = '<span class="badge bg-label-success"><i class="bx bx-check me-1"></i>Folder Ready</span>';
+                } else {
+                    pathStatusEl.innerHTML = '<span class="badge bg-label-danger"><i class="bx bx-x me-1"></i>Preparation Failed</span>';
+                }
+            })
+            .catch(err => {
+                pathStatusEl.innerHTML = '<span class="badge bg-label-danger"><i class="bx bx-error me-1"></i>Network Error</span>';
+            });
+
+            if (activeNitroXHRs.length === 0) {
+                document.getElementById('deliverNotesInput').value = '';
+                document.getElementById('deliverManualPathInput').value = '';
+                document.getElementById('deliverGDriveLinkInput').value = '';
+                document.getElementById('deliverFileInput').value = '';
+                
+                document.getElementById('deliverNotesInput').disabled = false;
+                document.getElementById('deliverMethodSelect').disabled = false;
+                document.getElementById('deliverFileInput').disabled = false;
+            }
+
+            var methodSelect = document.getElementById('deliverMethodSelect');
+            var methodHint   = document.getElementById('deliverMethodHint');
+            var type         = (meta.upload_type || '').toLowerCase();
+            
+            var secOR1 = document.getElementById('sectionOR1');
+            var secB   = document.getElementById('sectionOptionB');
+            var secOR2 = document.getElementById('sectionOR2');
+            var secC   = document.getElementById('sectionOptionC');
+            var secA   = document.getElementById('deliverFileInput').closest('.col-12');
+            var pathBox = document.getElementById('deliverPathHintBox');
+            
+            const setDisplay = (a, b, c, or1, or2, path) => {
+                secA.style.display    = a    ? 'block' : 'none';
+                secB.style.display    = b    ? 'block' : 'none';
+                secC.style.display    = c    ? 'block' : 'none';
+                secOR1.style.display  = or1  ? 'block' : 'none';
+                secOR2.style.display  = or2  ? 'block' : 'none';
+                pathBox.style.display = path ? 'block' : 'none';
+                document.getElementById('deliverGDriveLinkInput').required = c;
+            };
+
+            const filterDropdown = (val) => {
+                methodSelect.value = val;
+                Array.from(methodSelect.options).forEach(opt => {
+                    opt.style.display = (opt.value === val) ? 'block' : 'none';
+                });
+            };
+
+            if (type === 'browser' || type === 'multiple' || !type) {
+                filterDropdown('portal');
+                setDisplay(true, false, false, false, false, false);
+            } 
+            else if (type.includes('sftp')) {
+                filterDropdown('sftp');
+                setDisplay(false, true, false, false, false, true);
+            }
+            else if (type === 'google_drive') {
+                filterDropdown('google_drive');
+                setDisplay(false, false, true, false, false, false);
+            }
+
+            if (deliverBSModal) deliverBSModal.show();
+          });
+        });
       }
 
       loadPathConfig().finally(function () {

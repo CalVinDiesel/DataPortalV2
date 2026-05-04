@@ -21,7 +21,7 @@
 
   <!-- Icons -->
   <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css">
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/boxicons.css" />
+    <!-- 📦 CONSOLE CLEANUP (v62): Removed external links to stop Tracking Prevention warnings -->
 
   <!-- Core CSS -->
   <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css">
@@ -278,7 +278,7 @@
             <div id="storageProgressBar" class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
           <div id="storageStatusText" class="mt-3 text-muted" style="font-size: 0.8rem;">
-            You have used 0% of your available storage. <a href="#" class="text-primary fw-medium">Upgrade plan</a>
+            You have used 0% of your available storage.
           </div>
         </div>
       </div>
@@ -337,16 +337,17 @@
         <table class="table table-hover mb-0">
           <thead>
             <tr>
-              <th style="width: 40%">Project Information</th>
+              <th style="width: 30%">Project Information</th>
               <th>Status</th>
               <th>Date / Size</th>
+              <th>Delivered Date</th>
               <th>Configuration</th>
               <th class="text-center">Actions</th>
             </tr>
           </thead>
           <tbody id="uploadsTableBody">
             <tr>
-              <td colspan="5" class="text-center py-5">
+              <td colspan="6" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status"></div>
                 <div class="mt-2 text-muted small">Loading your datasets...</div>
               </td>
@@ -359,14 +360,14 @@
       <div class="d-flex justify-content-between align-items-center p-3 border-top bg-lighter">
         <div class="text-muted small" id="paginationText">Loading...</div>
         <ul class="pagination pagination-sm mb-0">
-          <li class="page-item disabled">
-            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+          <li class="page-item" id="prevPageItem">
+            <a class="page-link" href="javascript:void(0)" onclick="changePage(-1)">Previous</a>
           </li>
-          <li class="page-item active"><a class="page-link" href="#">1</a></li>
-          <li class="page-item"><a class="page-link" href="#">2</a></li>
-          <li class="page-item"><a class="page-link" href="#">3</a></li>
-          <li class="page-item">
-            <a class="page-link" href="#">Next</a>
+          <li class="page-item active" id="page1Item"><a class="page-link" href="javascript:void(0)" onclick="goToPage(1)">1</a></li>
+          <li class="page-item" id="page2Item"><a class="page-link" href="javascript:void(0)" onclick="goToPage(2)">2</a></li>
+          <li class="page-item" id="page3Item"><a class="page-link" href="javascript:void(0)" onclick="goToPage(3)">3</a></li>
+          <li class="page-item" id="nextPageItem">
+            <a class="page-link" href="javascript:void(0)" onclick="changePage(1)">Next</a>
           </li>
         </ul>
       </div>
@@ -407,6 +408,13 @@
             <div class="col-12">
               <div class="detail-label">Survey Date</div>
               <div class="detail-value" id="detailDate"></div>
+            </div>
+            <div class="col-12 d-none" id="detailDeliverySection">
+              <div class="detail-label text-success"><i class="bx bx-check-shield me-1"></i> Processed Data Path (SFTP)</div>
+              <div class="alert alert-success d-flex align-items-center p-2 mt-1" style="font-size: 0.8rem;">
+                 <code id="detailDeliveryPath" class="flex-grow-1 bg-transparent border-0 text-dark" style="word-break: break-all;"></code>
+                 <button type="button" class="btn btn-sm btn-link p-0 ms-2 text-success" onclick="copyTextFromElement('detailDeliveryPath', this)"><i class="bx bx-copy"></i></button>
+              </div>
             </div>
           </div>
         </div>
@@ -474,6 +482,9 @@
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
   
   <script>
+    // 🚀 DYNAMIC CONFIG (v196)
+    window.remoteBasePath = '{{ config("filesystems.disks.sftp_delivery.root", "/home/tiquan/") }}';
+    
     function logout() {
       if (!confirm('Are you sure you want to log out?')) return;
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
@@ -482,6 +493,10 @@
         .then(function () { window.location.href = AUTH_API + '/api/auth/sign-out?callbackURL=' + encodeURIComponent(LANDING_URL); })
         .catch(function () { window.location.href = LANDING_URL; });
     }
+
+    // Pagination Variables
+    window.currentPage = 1;
+    window.pageSize = 10;
 
     // Dynamic Data Fetching
     document.addEventListener("DOMContentLoaded", function() {
@@ -503,7 +518,8 @@
     }
 
     function fetchUploadsList() {
-      fetch('/api/user/my-uploads', { credentials: 'include' })
+      // 🚀 CACHE-BUSTER (v210): Add timestamp to ensure we always get the freshest data after a sync
+      fetch('/api/user/my-uploads?t=' + new Date().getTime(), { credentials: 'include' })
         .then(res => res.json())
         .then(data => {
           const tbody = document.getElementById('uploadsTableBody');
@@ -512,7 +528,7 @@
           if (!data || data.length === 0) {
             tbody.innerHTML = `
               <tr>
-                <td colspan="5" class="text-center py-5">
+                <td colspan="6" class="text-center py-5">
                   <div class="text-muted mb-2"><i class="bx bx-folder-open" style="font-size: 3rem; opacity: 0.5;"></i></div>
                   <h6 class="mb-1 fw-bold text-dark">No datasets found</h6>
                   <p class="text-muted small">You haven't uploaded any drone imagery yet.</p>
@@ -601,43 +617,62 @@
               if (hasPos) configHtml += `<span class="badge bg-label-dark"><i class="bx bx-target-lock me-1"></i> POS Attached</span>`;
             }
 
-            // Download Button / Expiry logic
+            // Download Button / Expiry logic (v245: Robust Expiry with Fallback)
             let downloadHtml = '';
             let expiryIconHtml = '';
             let isExpired = false;
             
-            if (item.delivery_method === 'google_drive' && item.google_drive_link) {
-                // Google Drive Delivery
+            const deliveredAt = item.delivered_at ? new Date(item.delivered_at) : null;
+            let expiresAt = item.delivered_expires_at ? new Date(item.delivered_expires_at) : null;
+
+            // 🚀 FALLBACK LOGIC (v245): If no expiry date exists, assume 7 days from delivery
+            if (!expiresAt && deliveredAt) {
+                expiresAt = new Date(deliveredAt.getTime() + (7 * 24 * 60 * 60 * 1000));
+            }
+
+            if (expiresAt) {
+                const now = new Date();
+                const diffMs = expiresAt - now;
+                const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                
+                if (diffMs < 0) {
+                    isExpired = true;
+                    expiryIconHtml = `<div class="text-danger mt-1 fw-bold" style="font-size: 0.7rem;"><i class="bx bx-error-circle me-1"></i> Link Expired</div>`;
+                } else {
+                    expiryIconHtml = `<div class="text-warning mt-1 fw-medium" style="font-size: 0.7rem;"><i class="bx bx-time me-1"></i> Expires in ${diffDays} days</div>`;
+                }
+            }
+
+            const deliveryPath = item.delivered_file_path || (item.delivery_method === 'google_drive' ? item.google_drive_link : null);
+
+            // 🚀 ROBUST DROPDOWN (v246): Always show status in dropdown if expired, even if path is missing
+            if (isExpired) {
+                const icon = item.delivery_method === 'google_drive' ? 'bxl-google-cloud' : 'bx-download';
+                const label = item.delivery_method === 'google_drive' ? 'Link Expired (Google Drive)' : 'Link Expired';
+                downloadHtml = `
+                    <li class="opacity-50">
+                        <a class="dropdown-item btn-dropdown-link text-muted disabled" href="javascript:void(0);">
+                            <i class="bx ${icon} me-2"></i> ${label}
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>`;
+            } else if (item.delivery_method === 'google_drive' && deliveryPath && (statusVal === 'sent' || statusVal === 'completed')) {
                 downloadHtml = `
                     <li>
-                        <a class="dropdown-item btn-dropdown-link text-primary fw-bold" href="${item.google_drive_link}" target="_blank">
+                        <a class="dropdown-item btn-dropdown-link text-primary fw-bold" 
+                           href="${deliveryPath}" 
+                           target="_blank">
                             <i class="bx bxl-google-cloud me-2"></i> Download (Google Drive)
                         </a>
                     </li>
                     <li><hr class="dropdown-divider"></li>`;
-                expiryIconHtml = `<div class="text-primary mt-1 fw-medium" style="font-size: 0.7rem;"><i class="bx bxl-google-cloud me-1"></i> Via Google Drive</div>`;
-            } else if (item.delivered_file_path) {
-                // Portal / SFTP Delivery with Expiry Check
-                if (item.delivered_expires_at) {
-                    const expiryDate = new Date(item.delivered_expires_at);
-                    const now = new Date();
-                    const diffMs = expiryDate - now;
-                    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                    
-                    if (diffMs < 0) {
-                        isExpired = true;
-                        expiryIconHtml = `<div class="text-danger mt-1 fw-bold" style="font-size: 0.7rem;"><i class="bx bx-error-circle me-1"></i> Link Expired</div>`;
-                    } else {
-                        expiryIconHtml = `<div class="text-warning mt-1 fw-medium" style="font-size: 0.7rem;"><i class="bx bx-time me-1"></i> Expires in ${diffDays} days</div>`;
-                    }
-                }
-
+            } else if (deliveryPath && (statusVal === 'sent' || statusVal === 'completed')) {
                 downloadHtml = `
-                    <li class="${isExpired ? 'opacity-50' : ''}">
-                        <a class="dropdown-item btn-dropdown-link ${isExpired ? 'text-muted disabled' : 'text-success fw-bold'}" 
+                    <li>
+                        <a class="dropdown-item btn-dropdown-link text-success fw-bold" 
                            href="javascript:void(0);" 
-                           onclick="${isExpired ? 'alert(\'This link has expired.\')' : 'downloadDeliveredFile(' + item.id + ')'}">
-                           <i class="bx bx-download me-2"></i> ${isExpired ? 'Link Expired' : 'Download 3D Model'}
+                           onclick="downloadDeliveredFile(${item.id})">
+                           <i class="bx bx-download me-2"></i> Download 3D Model
                         </a>
                     </li>
                     <li><hr class="dropdown-divider"></li>`;
@@ -658,11 +693,19 @@
               </td>
               <td>
                 ${statusHtml}
-                ${(statusVal === 'completed' && (item.delivered_file_path || item.google_drive_link)) ? expiryIconHtml : ''}
+                ${((statusVal === 'completed' || statusVal === 'sent') && expiryIconHtml) ? expiryIconHtml : ''}
               </td>
               <td>
                 <div class="fw-medium text-dark" style="font-size: 0.9rem;">${formatDate(item.created_at)}</div>
-                <div class="project-meta">${formatBytes(itemSizeBytes)} • ${count} Photos</div>
+                <div class="project-meta">
+                  ${formatBytes(itemSizeBytes)} • 
+                  <span id="photoCount-${item.id}">${count} Photos</span>
+                </div>
+              </td>
+              <td>
+                ${(statusVal === 'completed') ? 
+                  `<div class="fw-bold text-success" style="font-size: 0.85rem;">${formatDate(item.delivered_at)}</div>` : 
+                  `<div class="text-muted small">–</div>`}
               </td>
               <td>${configHtml}</td>
               <td class="text-center">
@@ -673,6 +716,8 @@
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                     ${downloadHtml}
                     ${statusVal === 'sent' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="javascript:void(0);" onclick="confirmReceived(' + item.id + ')"><i class="bx bx-check-circle"></i> Confirm Received</a></li>' : ''}
+                    ${(item.upload_type && item.upload_type.includes('sftp')) ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="javascript:void(0);" onclick="syncSftpMetadata(' + item.id + ')"><i class="bx bx-refresh"></i> Sync Data Info</a></li>' : ''}
+                    ${(item.upload_type === 'google_drive') ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="javascript:void(0);" onclick="syncGoogleDriveMetadata(' + item.id + ')"><i class="bx bx-refresh"></i> Sync Data Info</a></li>' : ''}
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showProjectDetails(${item.id})"><i class="bx bx-info-circle text-info"></i> View Details</a></li>
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showEditModal(${item.id})"><i class="bx bx-edit text-secondary"></i> Edit Metadata</a></li>
                     <li><hr class="dropdown-divider"></li>
@@ -682,13 +727,24 @@
               </td>
             `;
             tbody.appendChild(tr);
+
+            // 🚀 AUTO-SYNC (v235): Trigger background sync if data seems incomplete
+            const needsSync = (parseInt(item.total_size_bytes) === 0 || !item.total_size_bytes || parseInt(item.file_count) <= 1 || !item.file_count);
+            if (item.upload_type && item.upload_type.includes('sftp') && (parseInt(item.file_count) === 0 || !item.file_count)) {
+                setTimeout(() => syncSftpMetadata(item.id, true), 1000);
+            }
+            if (item.upload_type === 'google_drive' && needsSync) {
+                setTimeout(() => syncGoogleDriveMetadata(item.id, true), 1500);
+            }
           });
 
           // Update Stats UI
           document.getElementById('statTotalProjects').textContent = data.length.toLocaleString();
           document.getElementById('statPhotosStored').textContent = totalPhotos.toLocaleString();
           document.getElementById('statProcessingJobs').textContent = processingJobs.toLocaleString();
-          document.getElementById('paginationText').textContent = `Showing 1 to ${data.length} of ${data.length} entries`;
+          
+          // Initialize Pagination
+          applyPagination();
           
           // Dummy UI Storage recalculate
           updateStorageUI(totalBytes);
@@ -697,7 +753,7 @@
         .catch(err => {
           console.error("Error fetching uploads:", err);
           document.getElementById('uploadsTableBody').innerHTML = `
-            <tr><td colspan="5" class="text-danger text-center py-4">Failed to connect to database. Please refresh.</td></tr>
+            <tr><td colspan="6" class="text-danger text-center py-4">Failed to connect to database. Please refresh.</td></tr>
           `;
         });
     }
@@ -767,32 +823,190 @@
       });
     }
 
-    // Live Search Logic
-    function filterProjects() {
-      const input = document.getElementById('projectSearch');
-      const filter = input.value.toLowerCase();
+    const syncingProjects = new Set();
+
+    function syncSftpMetadata(uploadId, isSilent = false) {
+      if (syncingProjects.has(uploadId)) return;
+      syncingProjects.add(uploadId);
+      
+      fetch('/api/user/my-uploads/' + uploadId + '/sync-metadata', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // 🚀 UI-SYNC (v210): Trigger a full list refresh to update the Top Cards and Storage Quota
+          fetchUploadsList();
+        }
+      })
+      .catch(err => console.error("Sync Error:", err))
+      .finally(() => {
+         // Keep it in the set for a while to prevent immediate re-sync
+         setTimeout(() => syncingProjects.delete(uploadId), 30000); 
+      });
+    }
+
+    function syncGoogleDriveMetadata(uploadId, isSilent = false) {
+      if (syncingProjects.has(uploadId)) return;
+      syncingProjects.add(uploadId);
+      
+      fetch('/api/user/my-uploads/' + uploadId + '/sync-gdrive', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const countEl = document.getElementById('photoCount-' + uploadId);
+          if (countEl) {
+            countEl.textContent = data.count + ' Photos';
+            // Update the size text which is usually the previous text node or element
+            const sizeEl = document.getElementById('photoCount-' + uploadId).previousSibling;
+            if (sizeEl) {
+               // Update the text node directly if possible
+               let sizeText = data.formattedSize + ' \u2022 ';
+               if (sizeEl.nodeType === Node.TEXT_NODE) {
+                   sizeEl.textContent = sizeText;
+               }
+            }
+          }
+        }
+      })
+      .catch(err => console.error("GDrive Sync Error:", err))
+      .finally(() => {
+         setTimeout(() => syncingProjects.delete(uploadId), 30000); 
+      });
+    }
+
+    function goToPage(pageNum) {
+      window.currentPage = pageNum;
+      applyPagination();
+    }
+
+    function changePage(delta) {
+      const newPage = window.currentPage + delta;
+      if (newPage >= 1 && newPage <= 3) {
+        goToPage(newPage);
+      }
+    }
+
+    function applyPagination() {
       const tbody = document.getElementById('uploadsTableBody');
-      const rows = tbody.getElementsByTagName('tr');
+      if (!tbody) return;
 
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        // Skip the "No datasets found" or "Loading" rows
-        if (row.cells.length < 2) continue;
+      const rows = Array.from(tbody.querySelectorAll('tr:not(.empty-page-row)'));
+      
+      // Remove existing empty page row
+      const existingEmpty = tbody.querySelector('.empty-page-row');
+      if (existingEmpty) existingEmpty.remove();
 
-        const projectName = row.querySelector('.project-name')?.textContent || "";
-        const projectMeta = row.querySelector('.project-meta')?.textContent || "";
-        const status = row.cells[1]?.textContent || "";
-
-        if (
-          projectName.toLowerCase().indexOf(filter) > -1 ||
-          projectMeta.toLowerCase().indexOf(filter) > -1 ||
-          status.toLowerCase().indexOf(filter) > -1
-        ) {
-          row.style.display = "";
-        } else {
-          row.style.display = "none";
+      // Check if we are in "No datasets found" or "Loading" state
+      if (rows.length === 1) {
+        const firstRowText = rows[0].textContent.toLowerCase();
+        if (firstRowText.includes('no datasets found') || firstRowText.includes('loading')) {
+          updatePaginationUI(0);
+          return;
         }
       }
+
+      const filter = (document.getElementById('projectSearch')?.value || "").toLowerCase();
+      const filteredRows = rows.filter(row => {
+        const text = row.textContent.toLowerCase();
+        return text.includes(filter);
+      });
+
+      // Hide all rows first
+      rows.forEach(row => row.style.display = 'none');
+
+      let visibleCount = 0;
+      filteredRows.forEach((row, index) => {
+        const pageOfRow = Math.floor(index / window.pageSize) + 1;
+        if (pageOfRow === window.currentPage) {
+          row.style.display = '';
+          visibleCount++;
+        }
+      });
+
+      // Handle empty page higher than page 1
+      if (visibleCount === 0 && window.currentPage > 1) {
+        const lastValidPage = Math.max(1, Math.ceil(filteredRows.length / window.pageSize));
+        const emptyRow = document.createElement('tr');
+        emptyRow.className = 'empty-page-row';
+        emptyRow.innerHTML = `
+          <td colspan="6" class="text-center py-5">
+            <div class="text-muted mb-2"><i class="bx bx-folder-open" style="font-size: 3rem; opacity: 0.5;"></i></div>
+            <h6 class="mb-1 fw-bold text-dark">No more history</h6>
+            <p class="text-muted small">This page doesn't have any uploaded files yet.</p>
+            <a href="javascript:void(0)" onclick="goToPage(${lastValidPage})" class="btn btn-primary btn-sm mt-2">Go back to view your uploaded file history</a>
+          </td>
+        `;
+        tbody.appendChild(emptyRow);
+      }
+
+      updatePaginationUI(filteredRows.length);
+    }
+
+    function updatePaginationUI(totalEntries) {
+      const start = (window.currentPage - 1) * window.pageSize + 1;
+      const end = Math.min(window.currentPage * window.pageSize, totalEntries);
+      
+      const pagText = document.getElementById('paginationText');
+      if (pagText) {
+        if (totalEntries === 0) {
+          pagText.textContent = 'Showing 0 entries';
+        } else if (start > totalEntries) {
+          // The current page starts after the last entry
+          pagText.textContent = `Showing 0 entries of ${totalEntries} total`;
+        } else {
+          pagText.textContent = `Showing ${start} to ${end} of ${totalEntries} entries`;
+        }
+      }
+
+      // Update active class on page buttons
+      for (let i = 1; i <= 3; i++) {
+        const item = document.getElementById(`page${i}Item`);
+        if (item) {
+          if (i === window.currentPage) item.classList.add('active');
+          else item.classList.remove('active');
+        }
+      }
+
+      // Update Previous/Next disabled state
+      const prevItem = document.getElementById('prevPageItem');
+      const nextItem = document.getElementById('nextPageItem');
+      
+      if (prevItem) {
+        if (window.currentPage === 1) prevItem.classList.add('disabled');
+        else prevItem.classList.remove('disabled');
+      }
+      
+      if (nextItem) {
+        if (window.currentPage === 3) nextItem.classList.add('disabled');
+        else nextItem.classList.remove('disabled');
+      }
+    }
+
+    // Live Search Logic
+    function copyTextFromElement(elId, btn) {
+      const text = document.getElementById(elId).textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const icon = btn.querySelector('i');
+        const oldClass = icon.className;
+        icon.className = 'bx bx-check';
+        setTimeout(() => icon.className = oldClass, 2000);
+      });
+    }
+
+    function filterProjects() {
+      window.currentPage = 1;
+      applyPagination();
     }
 
     function showProjectDetails(projectId) {
@@ -812,6 +1026,46 @@
       document.getElementById('detailConfig').textContent = isMulti ? 'Multi-Lens' : 'Single-Lens';
       document.getElementById('detailModels').textContent = project.camera_models || (isMulti ? 'Multiple' : 'Standard');
       document.getElementById('detailDate').textContent = formatDate(project.created_at);
+
+      // 🚀 DELIVERY PATH (v130): Show SFTP path if available
+      const delSection = document.getElementById('detailDeliverySection');
+      if (project.upload_type && project.upload_type.includes('sftp') && project.delivered_file_path) {
+          delSection.classList.remove('d-none');
+          
+          // 🚀 JAIL-AWARE PATH STRIPPING (v217): Strip everything before and including the username for chrooted view
+          let displayPath = project.delivered_file_path;
+          const sftpUser = project.client_sftp_user || '';
+          
+          if (sftpUser && displayPath.includes('/' + sftpUser + '/')) {
+              // Extract everything after the username folder
+              displayPath = displayPath.substring(displayPath.indexOf('/' + sftpUser + '/') + sftpUser.length + 1);
+          } else {
+              // Fallback: Remove known system roots
+              const rootPrefix = (window.remoteBasePath || '/home/tiquan/uploads').replace(/\/+$/, '');
+              if (displayPath.startsWith(rootPrefix)) {
+                  displayPath = displayPath.substring(rootPrefix.length);
+              }
+              if (sftpUser && displayPath.startsWith('/' + sftpUser)) {
+                  displayPath = displayPath.substring(sftpUser.length + 1);
+              }
+          }
+          
+          // Ensure it starts with / for WinSCP navigation
+          if (!displayPath.startsWith('/')) displayPath = '/' + displayPath;
+          
+          // Handle filenames vs folders
+          if (displayPath.includes('.') && displayPath.lastIndexOf('/') > 0) {
+              displayPath = displayPath.substring(0, displayPath.lastIndexOf('/'));
+          }
+          if (!displayPath.endsWith('/')) displayPath += '/';
+          
+          // Step 5: Final cleanup (prevent double slashes)
+          displayPath = displayPath.replace(/\/+/g, '/');
+
+          document.getElementById('detailDeliveryPath').textContent = displayPath;
+      } else {
+          delSection.classList.add('d-none');
+      }
 
       const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
       modal.show();
@@ -885,7 +1139,7 @@
         progressBar.setAttribute('aria-valuenow', percent);
       }
       if (statusText) {
-        statusText.innerHTML = `You have used ${percent}% of your available storage. <a href="#" class="text-primary fw-medium">Upgrade plan</a>`;
+        statusText.innerHTML = `You have used ${percent}% of your available storage.`;
       }
     }
   </script>

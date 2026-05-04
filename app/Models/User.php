@@ -52,4 +52,25 @@ class User extends Authenticatable
             'password_hash' => 'hashed',
         ];
     }
+
+    /**
+     * 🚀 SECURE BUT VIEWABLE (v148): Custom Accessor for SFTP Password
+     * This allows us to decrypt the password for the user while keeping it "scrambled" in the DB.
+     * It also includes a "Failsafe" so old hashed passwords don't crash the site.
+     */
+    protected function sftpPassword(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: function ($value) {
+                if (!$value) return null;
+                try {
+                    return \Illuminate\Support\Facades\Crypt::decryptString($value);
+                } catch (\Exception $e) {
+                    // Failsafe: If it's an old one-way hash, return it as-is so the UI doesn't crash
+                    return $value; 
+                }
+            },
+            set: fn ($value) => $value ? \Illuminate\Support\Facades\Crypt::encryptString($value) : null,
+        );
+    }
 }

@@ -23,7 +23,6 @@
 <style>
   .selection-card {
     transition: all 0.3s ease;
-    cursor: pointer;
     border: 2px solid transparent;
     height: 100%;
   }
@@ -90,6 +89,7 @@
             </li>
           </ul>
           <!-- / Style Switcher -->
+          <a href="{{ route('my_uploads') }}" class="btn btn-primary btn-sm me-2">My Upload</a>
           <a href="{{ route('landing') }}" class="btn btn-outline-primary btn-sm">Back to Home</a>
         </div>
       </div>
@@ -110,11 +110,11 @@
       <div class="row g-6 justify-content-center">
         <!-- Data Portal Option -->
         <div class="col-md-4">
-          <div class="card selection-card text-center p-8 h-100" onclick="window.location.href='{{ route('upload_data') }}'">
+          <div class="card selection-card text-center p-8 h-100">
             <div class="card-body">
               <h3 class="fw-bold mb-4">Create Project using Data Portal</h3>
               <p class="text-muted mb-6">Directly upload your drone imagery and POS files through our secure web interface. Best for individual projects and smaller datasets.</p>
-              <button class="btn btn-primary btn-lg px-6">Select Data Portal</button>
+              <button class="btn btn-primary btn-lg px-6" onclick="window.location.href='{{ route('upload_data') }}'">Select Data Portal</button>
             </div>
           </div>
         </div>
@@ -125,18 +125,18 @@
             <div class="card-body">
               <h3 class="fw-bold mb-4">Create Project using SFTP</h3>
               <p class="text-muted mb-6">Provision a dedicated SFTP drop-folder on our secure server. Use an SFTP client to comfortably upload massive datasets without internet browser limits.</p>
-              <button class="btn btn-primary btn-lg px-6">Select SFTP</button>
+              <button class="btn btn-primary btn-lg px-6" id="btnSftp">Select SFTP</button>
             </div>
           </div>
         </div>
 
         <!-- Google Drive Option -->
         <div class="col-md-4">
-          <div class="card selection-card text-center p-8 h-100" id="gdriveCard" onclick="window.location.href='{{ route('upload_gdrive') }}'">
+          <div class="card selection-card text-center p-8 h-100" id="gdriveCard">
             <div class="card-body">
               <h3 class="fw-bold mb-4">Create Project using Google Drive</h3>
               <p class="text-muted mb-6">Provide a shared link to your raw drone imagery stored in Google Drive. Ensure the link is public ("Anyone with the link") for us to read.</p>
-              <button class="btn btn-primary btn-lg px-6">Select Google Drive</button>
+              <button class="btn btn-primary btn-lg px-6" onclick="window.location.href='{{ route('upload_gdrive') }}'">Select Google Drive</button>
             </div>
           </div>
         </div>
@@ -148,7 +148,7 @@
   <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
   <script>
-    document.getElementById('sftpCard').addEventListener('click', function() {
+    document.getElementById('btnSftp').addEventListener('click', function() {
       if (window.userRole !== 'trusted' && window.userRole !== 'admin') {
         alert('Create project using SFTP is only available for trusted users. Please proceed with using Data Portal to create your project.');
       } else {

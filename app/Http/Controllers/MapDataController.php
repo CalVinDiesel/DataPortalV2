@@ -44,6 +44,15 @@ class MapDataController extends Controller
             '3dTiles' => 'required|string',
         ]);
 
+        // 🛡️ SAFETY GUARD: Prevent client-side processed data from entering Map Pins table
+        $tilesetUrl = $request->input('3dTiles');
+        if (str_contains($tilesetUrl, 'nitro') || str_contains($tilesetUrl, 'delivered')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This path appears to be a private client upload or delivery. Map Pins are restricted to public site locations only.'
+            ], 422);
+        }
+
         $data = MapData::updateOrCreate(
             ['mapDataID' => $request->mapDataID],
             [
