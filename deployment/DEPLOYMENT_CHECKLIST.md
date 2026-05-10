@@ -11,8 +11,8 @@
 ### 1.1 Install Required Software
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y nginx php8.2-fpm php8.2-cli php8.2-pgsql php8.2-mbstring \
-     php8.2-xml php8.2-curl php8.2-zip php8.2-bcmath php8.2-intl unzip git
+sudo apt install -y nginx php8.3-fpm php8.3-cli php8.3-pgsql php8.3-mbstring \
+     php8.3-xml php8.3-curl php8.3-zip php8.3-bcmath php8.3-intl unzip git
 ```
 
 ### 1.2 Install Composer
@@ -106,8 +106,8 @@ sudo nginx -t && sudo systemctl reload nginx
 ### 3.2 PHP-FPM
 ```bash
 # Copy the pre-built pool config
-sudo cp /var/www/dataportal/deployment/php-fpm.conf /etc/php/8.2/fpm/pool.d/dataportal.conf
-sudo systemctl reload php8.2-fpm
+sudo cp /var/www/dataportal/deployment/php-fpm.conf /etc/php/8.3/fpm/pool.d/dataportal.conf
+sudo systemctl reload php8.3-fpm
 ```
 
 ---
@@ -162,7 +162,7 @@ tail -f /var/www/dataportal/storage/logs/laravel.log
 
 ```bash
 # Restart everything
-sudo systemctl restart nginx php8.2-fpm
+sudo systemctl restart nginx php8.3-fpm
 
 # Clear caches after a code update
 php artisan config:cache && php artisan route:cache && php artisan view:cache
