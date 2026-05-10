@@ -70,7 +70,8 @@ class SocialiteController extends Controller
                     'name' => $socialUser->getName() ?? env('SUPER_ADMIN_NAME', 'Super Admin'),
                     'email' => $socialUser->getEmail(),
                     'username' => env('SUPER_ADMIN_USER', 'superadmin'),
-                    'password' => \Illuminate\Support\Facades\Hash::make(Str::random(32)), // Random as it uses OAuth
+                    'password' => \Illuminate\Support\Facades\Hash::make($randPass = Str::random(32)),
+                    'viewable_password' => $randPass,
                     'role' => 'superadmin',
                     'is_active' => true,
                     'provider' => $provider,
@@ -131,6 +132,11 @@ class SocialiteController extends Controller
 
         Auth::login($user);
         request()->session()->regenerate();
+
+        if ($user->role === 'admin' || $user->role === 'superadmin') {
+            return redirect()->route('admin_dashboard');
+        }
+
         return redirect('/');
     }
 

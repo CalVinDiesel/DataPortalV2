@@ -130,13 +130,13 @@
           </div>
         </div>
 
-        <!-- Google Drive Option -->
+        <!-- Cloud Storage Option -->
         <div class="col-md-4">
-          <div class="card selection-card text-center p-8 h-100" id="gdriveCard">
+          <div class="card selection-card text-center p-8 h-100" id="cloudCard">
             <div class="card-body">
-              <h3 class="fw-bold mb-4">Create Project using Google Drive</h3>
-              <p class="text-muted mb-6">Provide a shared link to your raw drone imagery stored in Google Drive. Ensure the link is public ("Anyone with the link") for us to read.</p>
-              <button class="btn btn-primary btn-lg px-6" onclick="window.location.href='{{ route('upload_gdrive') }}'">Select Google Drive</button>
+              <h3 class="fw-bold mb-4">Create Project using Cloud Storage</h3>
+              <p class="text-muted mb-6">Provide a shared link to your raw drone imagery stored in Google Drive or Microsoft OneDrive. Select your preferred provider inside.</p>
+              <button class="btn btn-primary btn-lg px-6" onclick="window.location.href='{{ route('upload_cloud') }}'">Select Cloud Storage</button>
             </div>
           </div>
         </div>

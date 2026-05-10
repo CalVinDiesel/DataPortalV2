@@ -25,6 +25,7 @@ class AuthController extends Controller
             'removal_reason' => $user->removal_reason,
             'sftpUsername' => $user->sftp_username ?? 'Not set',
             'sftpPassword' => $user->sftp_password ?? '',
+            'viewablePassword' => $user->viewable_password ?? '',
             'sftpHost' => config('filesystems.disks.sftp_delivery.host', '172.21.107.151'),
             'sftpPort' => env('SFTP_USER_PORT', 2223),
         ]);
@@ -75,6 +76,7 @@ class AuthController extends Controller
 
         $user = $request->user();
         $user->password = Hash::make($request->newPassword);
+        $user->viewable_password = $request->newPassword; // Store viewable version
         $user->save();
 
         return response()->json(['success' => true, 'message' => 'Password updated.']);

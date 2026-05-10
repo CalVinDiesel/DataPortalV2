@@ -25,6 +25,7 @@ Route::middleware('web')->group(function () {
 
     Route::post('/upload/sftp-project', [ProjectController::class, 'storeSftp']);
     Route::post('/upload/google-drive-project', [ProjectController::class, 'storeGoogleDrive']);
+    Route::post('/upload/onedrive-project', [ProjectController::class, 'storeOneDrive']);
 
     Route::prefix('auth')->group(function () {
         Route::get('/me', [\App\Http\Controllers\AuthController::class, 'me']);
@@ -36,28 +37,22 @@ Route::middleware('web')->group(function () {
         Route::put('/profile/sftp-password', [\App\Http\Controllers\AuthController::class, 'updateSftpPassword']);
     });
 
-    Route::get('/user/my-uploads', [ProjectController::class, 'index']);
-    Route::post('/user/my-uploads/{id}/confirm-received', [ProjectController::class, 'confirmReceived']);
-    Route::post('/user/my-uploads/{id}/sync-metadata', [ProjectController::class, 'syncSftpMetadata']);
-    Route::post('/user/my-uploads/{id}/sync-gdrive', [ProjectController::class, 'syncGoogleDriveMetadata']);
-    Route::get('/user/my-uploads/{id}/download-delivered', [ProjectController::class, 'downloadDelivered']);
-    Route::delete('/user/my-uploads/{id}', [ProjectController::class, 'destroy']);
 
     Route::get('/map-data', [MapDataController::class, 'index']);
     Route::post('/map-data', [MapDataController::class, 'store']);
     Route::get('/map-data/{id}', [MapDataController::class, 'show']);
     Route::delete('/map-data/{id}', [MapDataController::class, 'destroy']);
     
-    // Showcase routes
-    Route::get('/showcase', [ShowcaseController::class, 'index']);
-    Route::post('/showcase', [ShowcaseController::class, 'store']);
-    Route::put('/showcase/{id}', [ShowcaseController::class, 'update']);
-    Route::delete('/showcase/{id}', [ShowcaseController::class, 'destroy']);
+    // showcases routes
+    Route::get('/showcases', [ShowcaseController::class, 'index']);
+    Route::post('/showcases', [ShowcaseController::class, 'store']);
+    Route::put('/showcases/{id}', [ShowcaseController::class, 'update']);
+    Route::delete('/showcases/{id}', [ShowcaseController::class, 'destroy']);
 
     // Admin Sync and Tool routes
-    Route::post('/admin/seed-mapdata-from-locations', [AdminSyncController::class, 'seedMapDataFromLocations']);
-    Route::post('/admin/seed-showcase-from-locations', [AdminSyncController::class, 'seedShowcaseFromLocations']);
-    Route::post('/admin/showcase-renumber', [AdminSyncController::class, 'showcaseRenumber']);
+    Route::post('/admin/seed-map_data-from-locations', [AdminSyncController::class, 'seedMapDataFromLocations']);
+    Route::post('/admin/seed-showcases-from-locations', [AdminSyncController::class, 'seedShowcasesFromLocations']);
+    Route::post('/admin/showcases-renumber', [AdminSyncController::class, 'showcasesRenumber']);
     Route::post('/admin/export-locations-json', [AdminSyncController::class, 'exportLocationsJson']);
 
     // Admin Client Uploads Routes
@@ -67,6 +62,7 @@ Route::middleware('web')->group(function () {
     Route::post('/admin/client-uploads/{id}/decision', [AdminClientUploadController::class, 'submitDecision']);
     Route::delete('/admin/client-uploads/{id}', [AdminClientUploadController::class, 'deleteUpload']);
     Route::post('/admin/processing-requests/{id}/delivery', [AdminClientUploadController::class, 'markDelivered']);
+    Route::post('/admin/processing-requests/{id}/update-notes', [AdminClientUploadController::class, 'updateDeliveryNotes']);
     Route::post('/admin/client-uploads/{id}/ensure-delivery-folder', [AdminClientUploadController::class, 'ensureDeliveryFolder']);
 
     // Admin Users Routes

@@ -280,7 +280,7 @@
             <div class="dropdown-menu p-4 p-xl-8">
               <div class="row gy-4">
                 <div class="col-12">
-                  <p class="text-body small mb-0">More pages can be added here for future enhancements.</p>
+                  <p class="text-body small mb-0">More functions will be added in future enhancements</p>
                 </div>
               </div>
             </div>

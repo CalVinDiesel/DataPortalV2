@@ -11,7 +11,7 @@ class AccessRequest extends Model
      *
      * @var string
      */
-    protected $table = 'AccessRequests';
+    protected $table = 'access_requests';
 
     /**
      * The attributes that are mass assignable.

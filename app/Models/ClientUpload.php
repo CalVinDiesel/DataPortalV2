@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ClientUpload extends Model
 {
-    protected $table = 'ClientUploads';
+    protected $table = 'client_uploads';
 
     protected $fillable = [
         'project_id',
@@ -17,7 +17,6 @@ class ClientUpload extends Model
         'file_paths',
         'camera_models',
         'capture_date',
-        'organization_name',
         'created_by_email',
         'request_status',
         'rejected_reason',
@@ -37,7 +36,11 @@ class ClientUpload extends Model
         'gdrive_delivery_folder_id',
         'delivered_file_path',
         'delivered_at',
-        'delivered_expires_at'
+        'delivered_expires_at',
+        'onedrive_link',
+        'onedrive_item_id',
+        'onedrive_drive_id',
+        'cloud_provider'
     ];
 
     protected $casts = [

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProcessingRequest extends Model
 {
-    protected $table = 'ProcessingRequests';
+    protected $table = 'processing_requests';
     public $timestamps = false;
     
     protected $fillable = [

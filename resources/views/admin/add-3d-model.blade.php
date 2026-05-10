@@ -16,72 +16,123 @@
 <body>
   <div class="layout-wrapper layout-content-navbar">
     <div class="layout-container">
-      <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
-        <div class="app-brand demo py-4">
-          <a href="{{ route('admin_dashboard') }}" class="app-brand-link d-flex align-items-center">
-            <span class="app-brand-logo demo me-2"><img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
-            <span class="app-brand-text demo menu-text fw-bold" style="font-size: 1.4em;">3DHub Admin</span>
-          </a>
+  <style>
+    /* 💎 ADMIN PREMIUM TOP NAV (v250) */
+    .admin-glass-nav {
+      position: fixed;
+      top: 1.5rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      z-index: 1050;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 1.25rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      padding: 0.5rem 1.5rem;
+      display: flex;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+    [data-bs-theme="dark"] .admin-glass-nav {
+      background: rgba(15, 23, 42, 0.7);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    .admin-nav-links {
+      display: flex;
+      gap: 0.5rem;
+      margin-left: 1.5rem;
+      align-items: center;
+    }
+    .admin-nav-link {
+      color: #566a7f;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+      font-size: 0.82rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: 0.75rem;
+      white-space: nowrap;
+    }
+    .admin-nav-link:hover {
+      color: #696cff;
+      background: rgba(105, 108, 255, 0.08);
+    }
+    .admin-nav-link.active {
+      color: #696cff;
+      background: rgba(105, 108, 255, 0.12);
+      font-weight: 700;
+    }
+    .email-hover-link { color: #8e94a3 !important; transition: color 0.2s ease; } .email-hover-link:hover {
+      color: #696cff !important;
+    }
+    .content-wrapper-premium {
+      margin-top: 7.5rem !important;
+    }
+    .layout-page {
+        padding: 0 !important;
+    }
+    @media (max-width: 1199.98px) {
+      .admin-nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout-wrapper layout-content-navbar">
+    <div class="layout-container">
+      
+      <!-- Premium Glass Top Nav -->
+      <nav class="admin-glass-nav">
+        <a href="{{ route('admin_dashboard') }}" class="app-brand-link d-flex align-items-center">
+          <span class="app-brand-logo demo me-2"><img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+          <span class="app-brand-text demo menu-text fw-bold text-heading" style="font-size: 1.1em;">3DHub Admin</span>
+        </a>
+        
+        <div class="admin-nav-links d-none d-xl-flex">
+          <a href="{{ route('admin_dashboard') }}" class="admin-nav-link">Dashboard</a>
+          <a href="{{ route('admin.add_3d_model') }}" class="admin-nav-link active">Add 3D Model</a>
+          <a href="{{ route('admin.manage_map_pins') }}" class="admin-nav-link">Manage Map Pins</a>
+          <a href="{{ route('admin.manage_showcases') }}" class="admin-nav-link">Manage Showcase</a>
+          <a href="{{ route('admin.client_uploads') }}" class="admin-nav-link">Client Uploads</a>
+          <a href="{{ route('admin.manage_users') }}" class="admin-nav-link">Manage Users</a>
+          <a href="{{ route('landing') }}" class="admin-nav-link" target="_blank">View Portal</a>
         </div>
-        <div class="menu-inner-shadow"></div>
-        <ul class="menu-inner py-1">
-          <li class="menu-item">
-            <a href="{{ route('admin_dashboard') }}" class="menu-link">
-              <i class="menu-icon tf-icons bx bx-home-circle"></i>
-              <div>Dashboard</div>
-            </a>
-          </li>
-          <li class="menu-item active">
-            <a href="{{ route('admin.add_3d_model') }}" class="menu-link">
-              <i class="menu-icon tf-icons bx bx-cube"></i>
-              <div>Add 3D Model</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="{{ route('admin.manage_map_pins') }}" class="menu-link">
-              <i class="menu-icon tf-icons bx bx-map-pin"></i>
-              <div>Manage Map Pins</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="{{ route('admin.manage_showcase') }}" class="menu-link">
-              <i class="menu-icon tf-icons bx bx-grid-alt"></i>
-              <div>Manage Showcase</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="{{ route('admin.client_uploads') }}" class="menu-link">
-              <i class="menu-icon tf-icons bx bx-cloud-upload"></i>
-              <div>Client Uploads</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="{{ route('admin.manage_users') }}" class="menu-link">
-              <i class="menu-icon tf-icons bx bx-user"></i>
-              <div>Manage Users</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="{{ route('landing') }}" class="menu-link" target="_blank">
-              <i class="menu-icon tf-icons bx bx-map"></i>
-              <div>View Portal</div>
-            </a>
-          </li>
-        </ul>
-      </aside>
+
+        <div class="ms-auto d-flex align-items-center gap-2">
+            <!-- Style Switcher -->
+            <div class="nav-item dropdown-style-switcher dropdown me-2">
+              <a class="nav-link dropdown-toggle hide-arrow" id="nav-theme" href="javascript:void(0);" data-bs-toggle="dropdown">
+                <i class="icon-base bx bx-sun icon-lg theme-icon-active"></i>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-theme-text">
+                <li><button type="button" class="dropdown-item align-items-center" data-bs-theme-value="light"><span><i class="icon-base bx bx-sun icon-md me-3"></i>Light</span></button></li>
+                <li><button type="button" class="dropdown-item align-items-center" data-bs-theme-value="dark"><span><i class="icon-base bx bx-moon icon-md me-3"></i>Dark</span></button></li>
+                <li><button type="button" class="dropdown-item align-items-center" data-bs-theme-value="system"><span><i class="icon-base bx bx-desktop icon-md me-3"></i>System</span></button></li>
+              </ul>
+            </div>
+
+            @auth
+            <div class="d-none d-md-flex align-items-center gap-3 border-start ps-3 ms-2">
+                <a href="{{ route('profile') }}" class="small text-muted fw-medium text-decoration-none email-hover-link">{{ Auth::user()->email }}</a>
+                <form method="POST" action="{{ route('logout') }}" id="adminLogoutForm" class="d-inline">
+                    @csrf
+                    <button type="button" id="adminLogoutBtn" class="btn btn-sm btn-outline-danger px-3 rounded-pill fw-bold">Log out</button>
+                </form>
+            </div>
+            @endauth
+
+            <button class="admin-menu-toggle btn btn-icon d-xl-none border-0 bg-transparent p-0" type="button" aria-label="Toggle menu"><i class="bx bx-menu icon-lg"></i></button>
+        </div>
+      </nav>
+
       <div class="layout-page">
-        <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme">
-          <div class="navbar-brand demo d-flex align-items-center py-0 me-3">
-            <button class="admin-menu-toggle btn btn-icon d-xl-none me-2 border-0 bg-transparent p-0" type="button" aria-label="Toggle menu"><i class="bx bx-menu icon-lg"></i></button>
-          </div>
-          <div class="navbar-nav-right d-flex align-items-center ms-auto">
-          <div class="navbar-nav-right d-flex align-items-center">
-            <a href="{{ route('admin_dashboard') }}" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
-          </div>
-        </nav>
-        <div class="content-wrapper">
+        <div class="content-wrapper content-wrapper-premium">
           <div class="container-xxl flex-grow-1 container-p-y">
-            <h4 class="fw-bold mb-4">Add 3D Model to Map</h4>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h4 class="fw-bold mb-0">Add 3D Model to Map</h4>
+              <a href="{{ route('admin_dashboard') }}" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
+            </div>
             <p class="text-muted mb-4">Create a new 3D model entry. It will appear on the overview map and in showcases. Store a tileset URL (e.g. Cesium 3D Tiles) and position (latitude/longitude).</p>
             <div class="card">
               <div class="card-body">
@@ -288,5 +339,36 @@
   </script>
   <script src="{{ asset('assets') }}/js/admin-responsive.js"></script>
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
+  <!-- Logout Confirmation Modal -->
+  <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="logoutConfirmLabel">Confirm Logout</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="logoutConfirmMessage">Are you sure you want to log out? You will need to sign in again to use the Admin Data Portal.</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="logoutConfirmBtn">Log out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var logoutBtn = document.getElementById('adminLogoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+          var modal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'));
+          modal.show();
+          document.getElementById('logoutConfirmBtn').onclick = function() {
+            document.getElementById('adminLogoutForm').submit();
+          };
+        });
+      }
+    });
+  </script>
 </body>
 </html>

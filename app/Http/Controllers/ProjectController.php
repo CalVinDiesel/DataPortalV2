@@ -13,12 +13,28 @@ class ProjectController extends Controller
 {
     public function index()
     {
-        $uploads = ClientUpload::where('created_by_email', Auth::user()->email)
+        $user = Auth::user();
+
+        if (!$user) {
+            \Log::warning("ProjectController@index: No authenticated user found. Session might be missing.");
+            return response()->json([
+                'error' => 'Unauthenticated',
+                'message' => 'Please log in to view your projects.'
+            ], 401);
+        }
+
+        $uploads = ClientUpload::where('created_by_email', $user->email)
             ->where('request_status', '!=', 'user_hidden') // 🚀 USER-HIDE (v211): Don't show projects the user "deleted"
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(function($u) {
-                $u->client_sftp_user = Auth::user()->sftp_username ?: \Illuminate\Support\Str::slug(Auth::user()->name);
+            ->map(function($u) use ($user) {
+                $u->client_sftp_user = $user->sftp_username ?: \Illuminate\Support\Str::slug($user->name);
+                
+                // 🚀 SPEED BOOST (v271): Auto-convert OneDrive preview links to direct download links
+                if ($u->delivery_method === 'onedrive' && $u->delivered_file_path) {
+                    $u->delivered_file_path = self::convertToDirectOneDriveUrl($u->delivered_file_path);
+                }
+                
                 return $u;
             });
 
@@ -82,22 +98,34 @@ class ProjectController extends Controller
             'captureDate' => 'nullable|date',
         ]);
 
+        // 🚀 CAMERA STANDARDIZATION (v251): Map 'Standard'/'Multiple' and enforce format
+        $camModels = $request->cameraConfiguration; 
+        if ($camModels === 'multiple' || $camModels === 'Multiple') {
+            $finalCam = 'Multi-Lens';
+        } elseif ($camModels === 'single' || $camModels === 'Standard' || empty($camModels)) {
+            $finalCam = 'Single-Lens';
+        } elseif (!str_starts_with(strtolower($camModels), 'multi-lens') && !str_starts_with(strtolower($camModels), 'single-lens')) {
+            // If it's just "Thermal", prefix it
+            $finalCam = 'Multi-Lens: ' . $camModels;
+        } else {
+            $finalCam = $camModels;
+        }
+
         $upload = ClientUpload::create([
             'project_id' => $request->projectID,
             'project_title' => $request->projectTitle,
             'project_description' => $request->projectDescription,
             'upload_type' => 'sftp',
-            'organization_name' => 'Self',
             'created_by_email' => Auth::user()->email,
             'request_status' => 'pending',
-            'camera_models' => $request->cameraConfiguration ?? 'SFTP Upload',
+            'camera_models' => $finalCam,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'category' => $request->category,
             'output_categories' => $request->outputCategory,
             'image_metadata' => $request->imageMetadata ?? '[]',
             'capture_date' => $request->captureDate ?? now()->toDateString(),
-            'delivery_method' => 'portal', 
+            'delivery_method' => 'sftp', 
         ]);
 
         // AUTO-CREATE SFTP DIRECTORIES: One for User Upload, One for Admin Delivery
@@ -107,7 +135,7 @@ class ProjectController extends Controller
             $sftpUser = $user->sftp_username ?: Str::slug($user->name);
 
             // 1. User Upload Folder (Locker-aware) - 🚀 PATH-SYNC (v163)
-            $diskRoot = '/home/tiquan';
+            $diskRoot = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
             
             $userBaseDir = 'uploads/' . $sftpUser; 
             if (!$sftpDisk->exists($userBaseDir)) {
@@ -128,8 +156,29 @@ class ProjectController extends Controller
             // 🚀 SMART-PATH SYNC (v163): 
             $upload->update([
                 'file_paths' => [$uploadPathAbsolute],
+                'sftp_delivery_path' => $uploadPathAbsolute, // 📂 Path Sync
+                'delivered_file_path' => $uploadPathAbsolute, // 📂 Portal View Sync
                 'request_status' => 'pending'
             ]);
+
+            // 🚀 SMART-POS DETECTION (v118): Scan for navigation files silently
+            try {
+                if (str_contains(strtolower($request->imageMetadata), 'pos')) {
+                    if (is_dir($uploadPathAbsolute)) {
+                        $filesInDir = scandir($uploadPathAbsolute);
+                        $posExtensions = ['pos', 'txt', 'csv', 'nav', 'log', 'mrk'];
+                        foreach ($filesInDir as $fileName) {
+                            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                            if (in_array($ext, $posExtensions)) {
+                                $upload->update(['drone_pos_file_path' => $uploadPathAbsolute . '/' . $fileName]);
+                                break; 
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::warning("  - [SFTP POS SCAN FAIL]: " . $e->getMessage());
+            }
 
             // 2. Admin Delivery Folder (Pre-created for you) - 🚀 PATH-SYNC (v213)
             $deliveryPath = 'uploads/' . $sftpUser . '/' . $upload->project_id . '/delivered';
@@ -248,23 +297,35 @@ class ProjectController extends Controller
 
         $projectId = Str::slug($request->projectTitle) . '-' . Str::random(4);
 
+        // 🚀 CAMERA STANDARDIZATION (v251)
+        $camModels = $request->cameraConfiguration;
+        if ($camModels === 'multiple' || $camModels === 'Multiple') {
+            $finalCam = 'Multi-Lens';
+        } elseif ($camModels === 'single' || $camModels === 'Standard' || empty($camModels)) {
+            $finalCam = 'Single-Lens';
+        } elseif (!str_starts_with(strtolower($camModels), 'multi-lens') && !str_starts_with(strtolower($camModels), 'single-lens')) {
+            $finalCam = 'Multi-Lens: ' . $camModels;
+        } else {
+            $finalCam = $camModels;
+        }
+
         $upload = ClientUpload::create([
             'project_id' => $projectId,
             'project_title' => $request->projectTitle,
             'project_description' => $request->projectDescription,
             'upload_type' => 'google_drive',
             'google_drive_link' => $link,
-            'camera_models' => $request->cameraConfiguration,
+            'camera_models' => $finalCam,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'category' => $request->category,
             'output_categories' => $request->outputCategory,
             'image_metadata' => $request->imageMetadata,
             'capture_date' => $request->captureDate,
-            'organization_name' => 'Self',
             'created_by_email' => Auth::user()->email,
             'request_status' => 'pending',
-            'delivery_method' => 'google_drive',
+            'delivered_file_path' => $link,
+            'gdrive_delivery_folder_id' => $this->extractGoogleDriveFolderId($link), // 📂 Save ID to DB
         ]);
 
         // 🚀 AUTO-DETECTION (v150): Try to count files and size immediately
@@ -280,6 +341,77 @@ class ProjectController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Google Drive project created successfully.',
+            'project' => $upload
+        ]);
+    }
+
+    public function storeOneDrive(Request $request)
+    {
+        $request->validate([
+            'projectTitle' => 'required|string',
+            'projectDescription' => 'required|string',
+            'cameraConfiguration' => 'required|string',
+            'onedriveLink' => 'required|url',
+            'onedriveItemId' => 'nullable|string',
+            'onedriveDriveId' => 'nullable|string',
+            'latitude' => 'nullable',
+            'longitude' => 'nullable',
+            'category' => 'required|string',
+            'outputCategory' => 'required|array',
+            'imageMetadata' => 'required|string',
+            'captureDate' => 'nullable|date',
+        ]);
+
+        $projectId = Str::slug($request->projectTitle) . '-' . Str::random(4);
+
+        // 🚀 CAMERA STANDARDIZATION (v251)
+        $camModels = $request->cameraConfiguration;
+        if ($camModels === 'multiple' || $camModels === 'Multiple') {
+            $finalCam = 'Multi-Lens';
+        } elseif ($camModels === 'single' || $camModels === 'Standard' || empty($camModels)) {
+            $finalCam = 'Single-Lens';
+        } elseif (!str_starts_with(strtolower($camModels), 'multi-lens') && !str_starts_with(strtolower($camModels), 'single-lens')) {
+            $finalCam = 'Multi-Lens: ' . $camModels;
+        } else {
+            $finalCam = $camModels;
+        }
+
+        $upload = ClientUpload::create([
+            'project_id' => $projectId,
+            'project_title' => $request->projectTitle,
+            'project_description' => $request->projectDescription,
+            'upload_type' => 'onedrive',
+            'cloud_provider' => 'onedrive',
+            'onedrive_link' => $request->onedriveLink,
+            'onedrive_item_id' => $request->onedriveItemId,
+            'onedrive_drive_id' => $request->onedriveDriveId,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'camera_models' => $finalCam,
+            'category' => $request->category,
+            'output_categories' => $request->outputCategory,
+            'image_metadata' => $request->imageMetadata,
+            'capture_date' => $request->captureDate,
+            'created_by_email' => Auth::user()->email,
+            'request_status' => 'pending',
+            'delivered_file_path' => $request->onedriveLink, // Fallback view path
+            'total_size_bytes' => $request->onedriveSize ?? 0,
+            'file_count' => $request->onedriveCount ?? 0,
+        ]);
+
+        // 🚀 AUTO-DETECTION (v265): Attempt immediate sync for OneDrive if size is not provided manually
+        if (!isset($request->onedriveSize) || $request->onedriveSize <= 0) {
+            try {
+                // If we don't have IDs yet (manual link), internal sync will try to resolve the link
+                $this->syncOneDriveMetadataInternal($upload, $upload->onedrive_item_id, $upload->onedrive_drive_id);
+            } catch (\Exception $e) {
+                \Log::warning("OneDrive Immediate Sync Failed: " . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OneDrive project created successfully.',
             'project' => $upload
         ]);
     }
@@ -309,10 +441,10 @@ class ProjectController extends Controller
             // 🚀 STABLE STREAM (v219): Let Laravel handle headers
             $disk = Storage::disk('sftp_delivery');
             
-            // 🚀 ROOT STRIPPING (v218): The disk root is already /home/tiquan/
+            // 🚀 ROOT STRIPPING (v218): The disk root is already defined in config.
             // We must remove it from the absolute path stored in the DB to avoid double-pathing.
             $filePath = $upload->delivered_file_path;
-            $root = config('filesystems.disks.sftp_delivery.root', '/home/tiquan/');
+            $root = config('filesystems.disks.sftp_delivery.root', '/');
             if (Str::startsWith($filePath, $root)) {
                 $filePath = Str::after($filePath, $root);
             }
@@ -373,8 +505,9 @@ class ProjectController extends Controller
         // For Google Drive, we can't easily proxy stream it without massive memory usage if it's large,
         // but we can redirect to a sharing link or use short-lived URLs.
         // For now, redirecting to the GDrive link if it's a link.
-        if ($upload->delivery_method === 'google_drive') {
-            return response()->json(['error' => 'Please download directly from the Google Drive link shared with you.'], 400);
+        if ($upload->delivery_method === 'google_drive' || $upload->delivery_method === 'onedrive') {
+            $provider = ($upload->delivery_method === 'google_drive') ? 'Google Drive' : 'OneDrive';
+            return response()->json(['error' => "Please download directly from the {$provider} link shared with you."], 400);
         }
 
         return response()->json(['error' => 'Unsupported download method.'], 400);
@@ -493,6 +626,7 @@ class ProjectController extends Controller
         }
 
         try {
+            $upload->update(['gdrive_delivery_folder_id' => $folderId]); // 🚀 BACKFILL (v151): Save missing ID during sync
             $this->syncGoogleDriveMetadataInternal($upload, $folderId);
             
             return response()->json([
@@ -503,6 +637,200 @@ class ProjectController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Sync failed: ' . $e->getMessage()]);
+        }
+    }
+
+    public function syncOneDriveMetadata($id)
+    {
+        $query = ClientUpload::where('id', $id);
+        if (Auth::user()->role !== 'admin' && Auth::user()->role !== 'superadmin') {
+            $query->where('created_by_email', Auth::user()->email);
+        }
+        $upload = $query->firstOrFail();
+
+        if ($upload->upload_type !== 'onedrive' || !$upload->onedrive_link) {
+            return response()->json(['success' => false, 'message' => 'Not a OneDrive project.']);
+        }
+
+        try {
+            $this->syncOneDriveMetadataInternal($upload, $upload->onedrive_item_id, $upload->onedrive_drive_id);
+            $upload->refresh(); // 🚀 UI SYNC (v286): Ensure latest DB values are returned
+            
+            return response()->json([
+                'success' => true,
+                'size' => $upload->total_size_bytes,
+                'count' => $upload->file_count,
+                'formattedSize' => $this->formatBytes($upload->total_size_bytes)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'OneDrive sync failed: ' . $e->getMessage()]);
+        }
+    }
+
+    private function syncOneDriveMetadataInternal($upload, $itemId = null, $driveId = null)
+    {
+        try {
+            \Log::info("OneDrive Sync [Public Mode]: Starting for {$upload->onedrive_link}");
+            
+            $longUrl = $this->expandOneDriveUrl($upload->onedrive_link);
+
+            // 🚀 METHOD 1: Unauthenticated Public API (Straight-forward, NO setup required)
+            try {
+                $shareId = 'u!' . str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($longUrl));
+                \Log::info("OneDrive Sync: Trying Unauthenticated API with ShareID: {$shareId}");
+                
+                $apiRes = \Illuminate\Support\Facades\Http::get("https://api.onedrive.com/v1.0/shares/{$shareId}/root");
+                
+                if ($apiRes->successful()) {
+                    $itemData = $apiRes->json();
+                    $totalCount = 0;
+                    $totalSizeBytes = $itemData['size'] ?? 0;
+                    
+                    if (isset($itemData['file'])) {
+                        $fileName = $itemData['name'] ?? '';
+                        if (str_ends_with(strtolower($fileName), '.zip')) {
+                            $downloadUrl = $itemData['@microsoft.graph.downloadUrl'] ?? $itemData['@content.downloadUrl'] ?? null;
+                            if ($downloadUrl) {
+                                $zipInfo = $this->peekOneDriveZipCount($downloadUrl);
+                                $totalCount = $zipInfo['count'];
+                            }
+                        } else {
+                            $totalCount = 1;
+                        }
+                    } else {
+                        // It's a folder, run recursive scan
+                        $scanFolder = function($url) use (&$scanFolder, &$totalCount, &$totalSizeBytes, $shareId) {
+                            while ($url) {
+                                $res = \Illuminate\Support\Facades\Http::get($url);
+                                if ($res->failed()) break;
+                                $data = $res->json();
+                                foreach ($data['value'] ?? [] as $item) {
+                                    if (isset($item['folder'])) {
+                                        $scanFolder("https://api.onedrive.com/v1.0/shares/{$shareId}/items/{$item['id']}/children");
+                                    } else {
+                                        $name = strtolower($item['name']);
+                                        if (preg_match('/\.(jpg|jpeg|png|tif|tiff|dng|webp|cr2|cr3|nef|arw|orf|raf|rw2|bmp|pos|exif|txt|csv)$/i', $name)) {
+                                            $totalCount++;
+                                        }
+                                    }
+                                }
+                                $url = $data['@odata.nextLink'] ?? null;
+                            }
+                        };
+                        $scanFolder("https://api.onedrive.com/v1.0/shares/{$shareId}/root/children");
+                    }
+                    
+                    if ($totalSizeBytes > 1024) {
+                        \Log::info("OneDrive Sync: Unauthenticated API Success. Size: {$totalSizeBytes}");
+                        $upload->total_size_bytes = $totalSizeBytes;
+                        $upload->file_count = $totalCount;
+                        $upload->save();
+                        return true;
+                    }
+                }
+            } catch (\Exception $apiEx) {
+                \Log::warning("OneDrive Sync: Unauthenticated API failed: " . $apiEx->getMessage());
+            }
+
+            // 🚀 METHOD 2: Human Mimicry (Fallback for SharePoint or strict links)
+            \Log::info("OneDrive Sync: Falling back to Mimicry Method");
+            
+            // 1. Setup Guzzle client to mimic a real browser
+            $jar = new \GuzzleHttp\Cookie\CookieJar();
+            $client = new \GuzzleHttp\Client([
+                'cookies' => $jar,
+                'allow_redirects' => true,
+                'timeout' => 30,
+                'headers' => [
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                    'Accept-Language' => 'en-US,en;q=0.9',
+                ]
+            ]);
+
+            // 2. Fetch the shared link's HTML page
+            $resp = $client->get($longUrl);
+            $html = (string)$resp->getBody();
+            
+            // 3. Try to extract direct downloadUrl from JSON
+            if (preg_match('/"downloadUrl":"([^"]+)"/', $html, $m)) {
+                $directUrl = str_replace('\\u0026', '&', $m[1]);
+                \Log::info("OneDrive Sync: Found direct downloadUrl in JSON!");
+                
+                $zipInfo = $this->peekOneDriveZipCount($directUrl, $jar);
+                if ($zipInfo['size'] > 1024) { // Real files are > 1KB
+                    $upload->total_size_bytes = $zipInfo['size'];
+                    $upload->file_count = $zipInfo['count'];
+                    $upload->save();
+                    return true;
+                }
+            }
+
+            // 4. Try to extract resid and authkey to build the public download URL
+            $resid = '';
+            $authkey = '';
+            
+            if (preg_match('/resid=([a-zA-Z0-9!%_-]+)/i', $html, $m)) $resid = urldecode($m[1]);
+            if (preg_match('/authkey=([a-zA-Z0-9!%_-]+)/i', $html, $m)) $authkey = urldecode($m[1]);
+            
+            // Removed erroneous extraction of e= parameter as authkey
+            // If not found in HTML, try URL expansion
+            if (!$resid || !$authkey) {
+                $expandedUrl = $this->expandOneDriveUrl($upload->onedrive_link);
+                if (preg_match('/[?&](resid|id)=([^&]+)/i', $expandedUrl, $m)) $resid = $m[2];
+                if (preg_match('/[?&]authkey=([^&]+)/i', $expandedUrl, $m)) $authkey = $m[1];
+                
+                // If authkey is still missing, check shortlink path segments
+                if (!$authkey && str_contains($upload->onedrive_link, '1drv.ms/u/c/')) {
+                    $pathParts = explode('/', parse_url($upload->onedrive_link, PHP_URL_PATH));
+                    $potentialKey = end($pathParts);
+                    if ($potentialKey && strlen($potentialKey) > 10) {
+                        $authkey = '!' . (str_starts_with($potentialKey, 'A') ? '' : 'A') . $potentialKey;
+                    }
+                }
+            }
+
+            // Extract CID
+            $cid = '';
+            if ($resid && str_contains($resid, '!')) {
+                $cid = explode('!', $resid)[0];
+            }
+            
+            \Log::info("OneDrive Sync: Extracted params: resid={$resid}, authkey={$authkey}, cid={$cid}");
+            
+            if ($resid && $authkey) {
+                $cidParam = $cid ? "&cid={$cid}" : "";
+                $publicDownloadUrl = "https://onedrive.live.com/download?resid={$resid}&authkey={$authkey}{$cidParam}";
+                \Log::info("OneDrive Sync: Constructed public URL: {$publicDownloadUrl}");
+                
+                $zipInfo = $this->peekOneDriveZipCount($publicDownloadUrl, $jar);
+                if ($zipInfo['size'] > 1024) {
+                    $upload->total_size_bytes = $zipInfo['size'];
+                    $upload->file_count = $zipInfo['count'];
+                    $upload->save();
+                    return true;
+                }
+            }
+            
+            // 5. If all else fails, use the ?download=1 appended URL
+            $fallbackUrl = $this->convertToDirectOneDriveUrl($upload->onedrive_link);
+            \Log::info("OneDrive Sync: Using fallback download URL: {$fallbackUrl}");
+            $zipInfo = $this->peekOneDriveZipCount($fallbackUrl, $jar);
+            if ($zipInfo['size'] > 1024) {
+                $upload->total_size_bytes = $zipInfo['size'];
+                $upload->file_count = $zipInfo['count'];
+                $upload->save();
+                return true;
+            }
+
+            \Log::warning("OneDrive Sync: Could not determine file size or count. Setting to 0 to clear false landing page sizes.");
+            $upload->total_size_bytes = 0;
+            $upload->file_count = 0;
+            $upload->save();
+            return true;
+
+        } catch (\Exception $e) {
+            \Log::error("OneDrive Sync Error [{$upload->project_id}]: " . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -675,6 +1003,149 @@ class ProjectController extends Controller
         }
         
         return $count;
+    }
+
+    public static function expandOneDriveUrl($url)
+    {
+        try {
+            $currentUrl = $url;
+            \Log::info("OneDrive Expansion Start: " . $url);
+            
+            for ($i = 0; $i < 5; $i++) {
+                $ch = curl_init($currentUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+                curl_setopt($ch, CURLOPT_HEADER, true);
+                // 🚀 GET-BASED EXPANSION (v286): Some servers reject NOBODY/HEAD requests. 
+                // We use GET with a tiny range to get the headers safely.
+                curl_setopt($ch, CURLOPT_HTTPHEADER, ['Range: bytes=0-0', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36']);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+                $response = curl_exec($ch);
+                $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $redirectUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+                curl_close($ch);
+
+                \Log::info("OneDrive Expansion Step {$i}: Status {$status}, Redirect: {$redirectUrl}");
+
+                if ($status >= 300 && $status < 400 && $redirectUrl) {
+                    if (str_starts_with($redirectUrl, '/')) {
+                        $parsed = parse_url($currentUrl);
+                        $currentUrl = ($parsed['scheme'] ?? 'https') . '://' . ($parsed['host'] ?? 'onedrive.live.com') . $redirectUrl;
+                    } else {
+                        $currentUrl = $redirectUrl;
+                    }
+                } else {
+                    // Check if the current URL already has what we need
+                    if (str_contains($currentUrl, 'resid=') || str_contains($currentUrl, 'id=')) {
+                        break;
+                    }
+                    break;
+                }
+            }
+            \Log::info("OneDrive Expansion Final: " . $currentUrl);
+            return $currentUrl;
+        } catch (\Exception $e) {
+            \Log::warning("OneDrive URL Expansion Failed: " . $e->getMessage());
+        }
+        return $url;
+    }
+
+    public static function convertToDirectOneDriveUrl($url)
+    {
+        if (!$url) return $url;
+        
+        // 🚀 STABLE REDIRECT (v277): Simple and reliable.
+        // Appending 'download=1' is the safest way to force a download across all OneDrive types.
+        if (str_contains($url, 'onedrive.live.com') || str_contains($url, '1drv.ms') || str_contains($url, 'sharepoint.com')) {
+            if (!str_contains($url, 'download=1')) {
+                $separator = str_contains($url, '?') ? '&' : '?';
+                return $url . $separator . 'download=1';
+            }
+        }
+        
+        return $url;
+    }
+
+    private function peekOneDriveZipCount($downloadUrl, $jar = null)
+    {
+        try {
+            $client = new \GuzzleHttp\Client([
+                'cookies' => $jar ?: true,
+                'timeout' => 30,
+                'headers' => [
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                    'Accept-Encoding' => 'gzip, deflate, br',
+                ]
+            ]);
+
+            \Log::info("OneDrive ZIP Peek: Fetching size for URL: " . substr($downloadUrl, 0, 100) . "...");
+
+            // 🚀 SIZE DETECTION: Try to get Content-Length from headers via GET Range 0-0
+            $resp = $client->get($downloadUrl, [
+                'headers' => ['Range' => 'bytes=0-0'],
+                'allow_redirects' => true,
+                'http_errors' => false // Prevent throwing exceptions on 4xx/5xx
+            ]);
+            
+            $status = $resp->getStatusCode();
+            if ($status >= 400) {
+                \Log::warning("OneDrive ZIP Peek: Request failed with status {$status}");
+                return ['count' => 0, 'size' => 0];
+            }
+
+            $contentType = strtolower($resp->getHeaderLine('Content-Type'));
+            if (str_contains($contentType, 'text/html')) {
+                \Log::warning("OneDrive ZIP Peek: URL returned HTML page instead of file. (Likely landing page size issue)");
+                return ['count' => 0, 'size' => 0];
+            }
+            
+            $size = 0;
+            if ($resp->hasHeader('Content-Range')) {
+                $range = $resp->getHeaderLine('Content-Range');
+                if (preg_match('/\/(\d+)/', $range, $m)) $size = (int)$m[1];
+            } elseif ($resp->hasHeader('Content-Length')) {
+                $size = (int)$resp->getHeaderLine('Content-Length');
+            }
+
+            \Log::info("OneDrive ZIP Peek: Detected Size: {$size}");
+            if ($size <= 0) return ['count' => 0, 'size' => 0];
+
+            // 🚀 ZIP PEEK: Fetch the last 1MB (Central Directory)
+            $rangeSize = 1048576; 
+            $start = max(0, $size - $rangeSize);
+            $rangeHeader = "bytes={$start}-" . ($size - 1);
+
+            $resp = $client->get($downloadUrl, [
+                'headers' => ['Range' => $rangeHeader],
+                'allow_redirects' => true,
+                'http_errors' => false
+            ]);
+
+            if ($resp->getStatusCode() !== 206) {
+                \Log::warning("OneDrive Range Request Refused (Status {$resp->getStatusCode()}). Likely security block.");
+                if ($resp->getStatusCode() === 200) return ['count' => 0, 'size' => $size];
+                return ['count' => 0, 'size' => 0];
+            }
+
+            $data = (string)$resp->getBody();
+            if (empty($data)) return ['count' => 0, 'size' => $size];
+
+            // 🚀 SMART SIGNATURE SCAN (v288): Search for ZIP Central Directory File Headers
+            $count = substr_count($data, "PK\x01\x02");
+            
+            // Fallback to extension counting if signatures are missing in the fetched chunk
+            if ($count === 0) {
+                $extensions = ['jpg', 'jpeg', 'png', 'tif', 'tiff', 'dng', 'webp', 'cr2', 'cr3', 'nef', 'arw', 'orf', 'raf', 'rw2', 'bmp', 'pos', 'exif', 'txt', 'csv'];
+                $pattern = '/\.(' . implode('|', $extensions) . ')/i';
+                $count = preg_match_all($pattern, $data);
+            }
+
+            \Log::info("OneDrive ZIP Peek Success: Found {$count} files.");
+            return ['count' => $count, 'size' => $size];
+        } catch (\Exception $e) {
+            \Log::error("OneDrive ZIP Peek Error: " . $e->getMessage());
+            return ['count' => 0, 'size' => 0];
+        }
     }
 }
 

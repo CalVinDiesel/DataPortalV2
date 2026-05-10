@@ -1,23 +1,122 @@
 /**
  * Client-facing pages: ensure nav and content stay visible and usable at half screen / small viewports.
  */
-@media (max-width: 1199.98px) {
-  /* Keep navbar toolbar (buttons, theme) visible when collapsed */
-  nav.layout-navbar .navbar.landing-navbar .navbar-nav.ms-auto {
-    flex-wrap: wrap;
-    justify-content: flex-end;
+/* 💎 Container Safety (v258) */
+.landing-navbar {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+/* Ensure the center links don't push the logout button out */
+@media (min-width: 1200px) and (max-width: 1400px) {
+  .landing-navbar .navbar-nav.me-auto {
+    gap: 0.1rem !important;
+  }
+  .landing-navbar .navbar-nav.me-auto .nav-link {
+    padding-left: 0.3rem !important;
+    padding-right: 0.3rem !important;
   }
 }
-@media (max-width: 991.98px) {
-  /* Collapsed menu and overlay above page content */
+
+@media (max-width: 1250px) {
+  /* Hide logo text earlier to prioritize nav links and user email */
+  .landing-navbar .navbar-brand.app-brand .app-brand-text {
+    display: none !important;
+  }
+  .landing-navbar .navbar-nav .nav-link {
+    padding-left: 0.3rem !important;
+    padding-right: 0.3rem !important;
+    font-size: 0.82rem;
+  }
+}
+
+/* Prevent nav links and logout text from wrapping */
+.landing-navbar .nav-link,
+#navLogoutBtn {
+  white-space: nowrap !important;
+}
+
+/* 💎 Full Email Visibility (v257) */
+#navUserWrap .navbar-text, 
+.landing-navbar .navbar-text {
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@media (max-width: 1199.98px) {
+  /* Ensure the toolbar stays inside and organized when menu is collapsed */
+  nav.layout-navbar .navbar.landing-navbar .navbar-nav.ms-auto {
+    flex-wrap: nowrap !important;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: auto !important;
+  }
+  
+  /* Shrink email slightly on mobile/collapsed views if needed to prevent overflow */
+  #navUserWrap .navbar-text {
+    font-size: 0.85rem;
+  }
+
+  /* 💎 Force Sidebar/Off-canvas style for all collapsed states (v259) */
   nav.layout-navbar .navbar.landing-navbar .landing-nav-menu {
-    z-index: 9999;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    width: 280px !important;
+    z-index: 9999 !important;
+    background: #fff !important;
+    padding: 1.5rem !important;
+    display: block !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.1);
   }
+
+  nav.layout-navbar .navbar.landing-navbar .landing-nav-menu.show {
+    transform: translateX(0) !important;
+  }
+
+  /* Ensure close button is visible in sidebar */
+  .landing-nav-menu .navbar-toggler {
+    display: block !important;
+  }
+
+  /* Overlay handling (v261): Only show when menu is actually open */
   nav.layout-navbar .navbar.landing-navbar .landing-menu-overlay {
-    z-index: 9998;
+    z-index: 9998 !important;
+    display: none !important;
   }
-  /* Ensure toggler is always visible and clickable */
-  nav.layout-navbar .navbar-toggler {
-    z-index: 1;
+  nav.layout-navbar .navbar.landing-navbar .landing-nav-menu.show ~ .landing-menu-overlay {
+    display: block !important;
+  }
+
+  /* 💎 Sidebar UI Refinements (v260) */
+  .landing-nav-menu .navbar-nav {
+    margin-top: 2rem !important;
+    flex-direction: column !important;
+  }
+  .landing-nav-menu .nav-item {
+    margin-bottom: 0.5rem;
+  }
+  .landing-nav-menu .nav-link {
+    font-size: 1rem !important;
+    color: #566a7f !important;
+    padding: 0.75rem 0 !important;
+  }
+  /* Close button positioning in sidebar */
+  .landing-nav-menu .navbar-toggler {
+    position: absolute !important;
+    top: 1rem !important;
+    right: 1rem !important;
+    padding: 0.5rem !important;
   }
 }

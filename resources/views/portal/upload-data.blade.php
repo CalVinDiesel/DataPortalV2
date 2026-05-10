@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Upload Geospatial Data | 3DHub Data Portal</title>
+  <title>Create Project Via Data Portal | 3DHub Data Portal</title>
   <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -273,7 +273,10 @@
             btn.innerHTML = 'Pause';
             btn.style.backgroundColor = '#ffcc00';
             btn.style.color = '#000';
-            document.getElementById('uploadStatusText').innerText = 'Resuming...';
+            
+            // 🚀 INSTANT RESUME UI: Change status immediately to feel responsive
+            document.getElementById('uploadStatusText').innerText = 'Streaming Nitro Data... 🚀';
+            
             if (uploadPauseResolve) {
                 uploadPauseResolve();
                 uploadPauseResolve = null;
@@ -558,7 +561,7 @@
                 let p = Math.round(((overallSent + inFlightSum) / totalSizeBytes) * 100);
                 if (p > 100) p = 100;
 
-                if (p !== lastVisualPercent || now - lastPaintTime > 500 || statusText === "Finalizing") { 
+                if (p !== lastVisualPercent || now - lastPaintTime > 100 || statusText === "Finalizing") { 
                     requestAnimationFrame(() => {
                         if (p > maxVisualPercent) maxVisualPercent = p;
                         pb.style.width = maxVisualPercent + '%'; 
@@ -652,8 +655,8 @@
         };
 
         try {
-            // 🚀 SMART-SCALE (v154): Anything over 5MB now gets the Nitro-Sharding treatment
-            const MAX_CHUNK_SIZE = 5 * 1024 * 1024; 
+            // 🚀 SMART-SCALE (v154): Anything over 2MB now gets the Nitro-Sharding treatment
+            const MAX_CHUNK_SIZE = 2 * 1024 * 1024; 
             const MAX_BATCH_COUNT = 30;
 
             for (let i = 0; i < pendingUploadFiles.length; i++) {
@@ -663,13 +666,13 @@
                 if (pendingUploadFiles.length === 1 && file.size > MAX_CHUNK_SIZE) {
                     // 🚀 ADAPTIVE-NITRO (v249): Dynamically calculate shards to ensure 10MB chunks for weak-internet stability
                     const getNitroSpecs = (bytes) => {
-                        const targetChunkSize = 10 * 1024 * 1024; // Aim for 10MB chunks
+                        const targetChunkSize = 2 * 1024 * 1024; // 🚀 INSTANT RESUME (v278): Smaller chunks (2MB) ensure faster resume recovery
                         let shards = Math.ceil(bytes / targetChunkSize);
                         if (shards < 1) shards = 1;
                         if (shards > 500) shards = 500; // Cap to prevent request overhead
                         
                         let lanes = 3;
-                        if (bytes < 10 * 1024 * 1024) lanes = 1;
+                        if (bytes < 5 * 1024 * 1024) lanes = 1;
                         
                         return { shards, lanes };
                     };
@@ -681,6 +684,9 @@
                     const shardPromises = [];
                     
                     for (let x = 0; x < specs.shards; x++) {
+                        // 🚀 PAUSE-RESPECT (v281): Stop spawning new shards if paused
+                        if (isUploadPaused) await uploadPausePromise;
+                        
                         // 🚀 STAGGERED IGNITION
                         await new Promise(r => setTimeout(r, 50));
                         
@@ -808,7 +814,8 @@
             fd.append('latitude', document.getElementById('latitude')?.value || 0);
             fd.append('longitude', document.getElementById('longitude')?.value || 0);
             fd.append('captureDate', document.getElementById('captureDate')?.value || '');
-            fd.append('imageMetadata', JSON.stringify(nitroMetadataSummary)); 
+            fd.append('imageMetadata', document.getElementById('imageMetadata')?.value || 'EXIF (embedded)'); 
+            fd.append('smartScanSummary', JSON.stringify(nitroMetadataSummary));
             
             // 💎 PREMIUM METADATA SYNC (v112)
             const isMulti = document.getElementById('multipleCamera')?.checked;

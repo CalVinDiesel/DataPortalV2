@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class MapData extends Model
 {
-    protected $table = 'MapData';
+    protected $table = 'map_data';
     protected $primaryKey = 'mapDataID';
     public $incrementing = false;
     protected $keyType = 'string';

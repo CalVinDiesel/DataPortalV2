@@ -14,13 +14,15 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password_hash', 'username', 'contact_number', 'role', 
+        'name', 'email', 'password', 'username', 'contact_number', 'role', 
         'provider', 'stripe_customer_id', 'is_active', 'invitation_token', 
-        'invitation_expires_at', 'oauth_id', 'sftp_username', 'sftp_password'
+        'invitation_expires_at', 'oauth_id', 'sftp_username', 'sftp_password',
+        'viewable_password'
     ];
 
     protected $hidden = [
-        'password_hash',
+        'password',
+        'viewable_password',
     ];
 
     /**
@@ -28,7 +30,7 @@ class User extends Authenticatable
      *
      * @var string
      */
-    protected $table = 'DataPortalUsers';
+    protected $table = 'portal_users';
 
     /**
      * Get the password for the user.
@@ -37,7 +39,7 @@ class User extends Authenticatable
      */
     public function getAuthPassword()
     {
-        return $this->password_hash;
+        return $this->password;
     }
 
     /**
@@ -49,7 +51,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password_hash' => 'hashed',
+            'password' => 'hashed',
         ];
     }
 
@@ -68,6 +70,25 @@ class User extends Authenticatable
                 } catch (\Exception $e) {
                     // Failsafe: If it's an old one-way hash, return it as-is so the UI doesn't crash
                     return $value; 
+                }
+            },
+            set: fn ($value) => $value ? \Illuminate\Support\Facades\Crypt::encryptString($value) : null,
+        );
+    }
+
+    /**
+     * 🚀 REVERSIBLE LOGIN PASSWORD (v155): Custom Accessor for Viewable Password
+     * This allows users to view their own login password in the profile.
+     */
+    protected function viewablePassword(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: function ($value) {
+                if (!$value) return null;
+                try {
+                    return \Illuminate\Support\Facades\Crypt::decryptString($value);
+                } catch (\Exception $e) {
+                    return null;
                 }
             },
             set: fn ($value) => $value ? \Illuminate\Support\Facades\Crypt::encryptString($value) : null,

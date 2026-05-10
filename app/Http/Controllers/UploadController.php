@@ -262,6 +262,28 @@ class UploadController extends Controller
             }
 
             // ── STEP 4: Save to DB first (always succeeds) ────────────────
+            // 🚀 CAMERA STANDARDIZATION (v251): Map 'Standard'/'Multiple' and enforce format
+            $camConfig = $request->cameraConfig; // 'single' or 'multiple'
+            $camModels = $request->cameraModels; // 'Standard', 'Multiple', or 'Thermal, RGB...'
+            
+            if ($camConfig === 'multiple') {
+                if ($camModels === 'Multiple' || empty($camModels)) {
+                    $finalCam = 'Multi-Lens';
+                } elseif (!str_starts_with(strtolower($camModels), 'multi-lens')) {
+                    $finalCam = 'Multi-Lens: ' . $camModels;
+                } else {
+                    $finalCam = $camModels;
+                }
+            } else {
+                if ($camModels === 'Standard' || empty($camModels)) {
+                    $finalCam = 'Single-Lens';
+                } elseif (!str_starts_with(strtolower($camModels), 'single-lens')) {
+                    $finalCam = 'Single-Lens: ' . $camModels;
+                } else {
+                    $finalCam = $camModels;
+                }
+            }
+
             $upload = \App\Models\ClientUpload::updateOrCreate(
                 ['project_id' => $projectId],
                 [
@@ -272,17 +294,77 @@ class UploadController extends Controller
                     'latitude'            => $request->latitude,
                     'longitude'           => $request->longitude,
                     'capture_date'        => $request->captureDate,
-                    'camera_models'       => $request->cameraModels,
+                    'camera_models'       => $finalCam,
                     'image_metadata'      => $request->imageMetadata,
                     'output_categories'   => json_decode($request->outputCategories, true),
-                    'total_size_bytes'    => $totalSizeBytes,   // ← correct column name
+                    'total_size_bytes'    => $totalSizeBytes,
                     'file_count'          => $fileCount,
                     'request_status'      => 'pending',
-                    'upload_type'         => $request->cameraConfig === 'multiple' ? 'multiple' : 'browser',
+                    'upload_type'         => 'browser',
+                    'delivery_method'     => 'portal',
                     'file_paths'          => [$absoluteSftpPath],
+                    'delivered_file_path' => $absoluteSftpPath
                 ]
             );
-            Log::info("  - DB saved: [{$projectId}]");
+
+            Log::info("  - DB saved: [" . $projectId . "]");
+
+            // 🚀 ULTIMATE-POS SCANNER (v280): Cross-Platform Deep Scan (ZIP + Recursive Subfolders)
+            try {
+                $metaType = strtolower($request->imageMetadata ?? '');
+                if (str_contains($metaType, 'pos')) {
+                    // Expanded professional GNSS/POS extension list
+                    $posExtensions = ['pos', 'txt', 'csv', 'nav', 'log', 'mrk', 'obs', 'sbf', 'jps', 'rin', 'dat', 'bin'];
+                    $foundPosFile = null;
+
+                    // 1. Recursive Scan: Handles subfolders and different OS path separators
+                    $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($targetDir, \RecursiveDirectoryIterator::SKIP_DOTS));
+                    foreach ($iterator as $fileInfo) {
+                        if (!$fileInfo->isFile()) continue;
+                        
+                        $fileName = $fileInfo->getFilename();
+                        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                        
+                        // Check if file itself matches POS extensions
+                        if (in_array($ext, $posExtensions)) {
+                            // Normalize paths to Linux-style (/) for database consistency regardless of Host OS
+                            $relativePath = str_replace([$targetDir, '\\'], ['', '/'], $fileInfo->getPathname());
+                            $foundPosFile = rtrim($absoluteSftpPath, '/') . '/' . ltrim($relativePath, '/');
+                            Log::info("  - [POS DETECTED]: " . $fileName . " at " . $foundPosFile);
+                            break;
+                        }
+                        
+                        // 2. Deep-Dive Inside ZIPs (Handles users uploading nested archives)
+                        if ($ext === 'zip') {
+                            $zip = new \ZipArchive();
+                            if ($zip->open($fileInfo->getPathname()) === TRUE) {
+                                for ($z = 0; $z < $zip->numFiles; $z++) {
+                                    $zipEntry = $zip->getNameIndex($z);
+                                    $zipEntryExt = strtolower(pathinfo($zipEntry, PATHINFO_EXTENSION));
+                                    
+                                    if (in_array($zipEntryExt, $posExtensions)) {
+                                        // Format: /path/to/archive.zip [Internal: folder/metadata.pos]
+                                        $zipRelativePath = str_replace([$targetDir, '\\'], ['', '/'], $fileInfo->getPathname());
+                                        $zipSftpPath = rtrim($absoluteSftpPath, '/') . '/' . ltrim($zipRelativePath, '/');
+                                        $foundPosFile = $zipSftpPath . " [Inside: " . $zipEntry . "]";
+                                        Log::info("  - [POS DETECTED IN ZIP]: " . $zipEntry . " inside " . $fileName);
+                                        break 2; // Found it, stop all loops
+                                    }
+                                }
+                                $zip->close();
+                            }
+                        }
+                    }
+
+                    if ($foundPosFile) {
+                        $upload->update(['drone_pos_file_path' => $foundPosFile]);
+                    } else {
+                        Log::warning("  - [POS SCAN EMPTY] No matching metadata file found in " . $projectId);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning("  - [POS SCAN ERROR]: " . $e->getMessage());
+            }
 
             // ── STEP 5: SFTP handover (NON-FATAL — data safe on disk) ─────
             $sftpSuccess = false;

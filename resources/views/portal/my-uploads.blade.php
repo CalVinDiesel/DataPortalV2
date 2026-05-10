@@ -606,12 +606,15 @@
             if (item.upload_type === 'google_drive') {
               configHtml = `<span class="badge bg-label-success mb-1"><i class="bx bxl-google-cloud me-1"></i> Google Drive</span><br>`;
               configHtml += `<a href="${item.google_drive_link}" target="_blank" class="small text-primary text-truncate d-block" style="max-width: 150px;" title="${item.google_drive_link}">View Shared Link</a>`;
+            } else if (item.upload_type === 'onedrive') {
+              configHtml = `<span class="badge bg-label-primary mb-1"><i class="bx bx-cloud me-1"></i> OneDrive</span><br>`;
+              configHtml += `<a href="${item.onedrive_link}" target="_blank" class="small text-primary text-truncate d-block" style="max-width: 150px;" title="${item.onedrive_link}">View Shared Link</a>`;
             } else if (item.upload_type === 'sftp' || (item.upload_type && item.upload_type.startsWith('sftp_'))) {
               configHtml = `<span class="badge bg-label-info mb-1"><i class="bx bx-server me-1"></i> SFTP Source</span><br>`;
               const isMulti = (item.upload_type === 'sftp_multiple');
               configHtml += `<span class="badge bg-label-secondary mb-1">${isMulti ? 'Multi-Lens' : 'Single-Lens'}</span>`;
             } else {
-              const isMultiLens = (item.upload_type === 'multilens' || item.upload_type === 'multiple');
+              const isMultiLens = (item.camera_models && item.camera_models.startsWith('Multi-Lens')) || (item.upload_type === 'multilens' || item.upload_type === 'multiple');
               const hasPos = item.drone_pos_file_path ? true : false;
               configHtml = `<span class="badge bg-label-secondary mb-1">${isMultiLens ? 'Multi-Lens' : 'Single-Lens'}</span><br>`;
               if (hasPos) configHtml += `<span class="badge bg-label-dark"><i class="bx bx-target-lock me-1"></i> POS Attached</span>`;
@@ -645,10 +648,15 @@
 
             const deliveryPath = item.delivered_file_path || (item.delivery_method === 'google_drive' ? item.google_drive_link : null);
 
+            const isCloudDelivery = (item.delivery_method === 'google_drive' || item.delivery_method === 'onedrive');
+
             // 🚀 ROBUST DROPDOWN (v246): Always show status in dropdown if expired, even if path is missing
             if (isExpired) {
-                const icon = item.delivery_method === 'google_drive' ? 'bxl-google-cloud' : 'bx-download';
-                const label = item.delivery_method === 'google_drive' ? 'Link Expired (Google Drive)' : 'Link Expired';
+                let icon = 'bx-download';
+                let label = 'Link Expired';
+                if (item.delivery_method === 'google_drive') { icon = 'bxl-google-cloud'; label = 'Link Expired (Google Drive)'; }
+                else if (item.delivery_method === 'onedrive') { icon = 'bx-cloud'; label = 'Link Expired (OneDrive)'; }
+                
                 downloadHtml = `
                     <li class="opacity-50">
                         <a class="dropdown-item btn-dropdown-link text-muted disabled" href="javascript:void(0);">
@@ -656,13 +664,17 @@
                         </a>
                     </li>
                     <li><hr class="dropdown-divider"></li>`;
-            } else if (item.delivery_method === 'google_drive' && deliveryPath && (statusVal === 'sent' || statusVal === 'completed')) {
+            } else if (isCloudDelivery && deliveryPath && (statusVal === 'sent' || statusVal === 'completed')) {
+                const icon = item.delivery_method === 'google_drive' ? 'bxl-google-cloud' : 'bx-cloud';
+                const color = item.delivery_method === 'google_drive' ? 'text-primary' : 'text-primary';
+                const label = item.delivery_method === 'google_drive' ? 'Download (Google Drive)' : 'Download (OneDrive)';
+                
                 downloadHtml = `
                     <li>
-                        <a class="dropdown-item btn-dropdown-link text-primary fw-bold" 
+                        <a class="dropdown-item btn-dropdown-link ${color} fw-bold" 
                            href="${deliveryPath}" 
                            target="_blank">
-                            <i class="bx bxl-google-cloud me-2"></i> Download (Google Drive)
+                            <i class="bx ${icon} me-2"></i> ${label}
                         </a>
                     </li>
                     <li><hr class="dropdown-divider"></li>`;
@@ -718,6 +730,7 @@
                     ${statusVal === 'sent' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="javascript:void(0);" onclick="confirmReceived(' + item.id + ')"><i class="bx bx-check-circle"></i> Confirm Received</a></li>' : ''}
                     ${(item.upload_type && item.upload_type.includes('sftp')) ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="javascript:void(0);" onclick="syncSftpMetadata(' + item.id + ')"><i class="bx bx-refresh"></i> Sync Data Info</a></li>' : ''}
                     ${(item.upload_type === 'google_drive') ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="javascript:void(0);" onclick="syncGoogleDriveMetadata(' + item.id + ')"><i class="bx bx-refresh"></i> Sync Data Info</a></li>' : ''}
+                    ${(item.upload_type === 'onedrive') ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="javascript:void(0);" onclick="syncOneDriveMetadata(' + item.id + ')"><i class="bx bx-refresh"></i> Sync Data Info</a></li>' : ''}
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showProjectDetails(${item.id})"><i class="bx bx-info-circle text-info"></i> View Details</a></li>
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showEditModal(${item.id})"><i class="bx bx-edit text-secondary"></i> Edit Metadata</a></li>
                     <li><hr class="dropdown-divider"></li>
@@ -735,6 +748,9 @@
             }
             if (item.upload_type === 'google_drive' && needsSync) {
                 setTimeout(() => syncGoogleDriveMetadata(item.id, true), 1500);
+            }
+            if (item.upload_type === 'onedrive' && needsSync) {
+                setTimeout(() => syncOneDriveMetadata(item.id, true), 1500);
             }
           });
 
@@ -885,6 +901,39 @@
       });
     }
 
+    function syncOneDriveMetadata(uploadId, isSilent = false) {
+      if (syncingProjects.has(uploadId)) return;
+      syncingProjects.add(uploadId);
+      
+      fetch('/api/user/my-uploads/' + uploadId + '/sync-onedrive', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const countEl = document.getElementById('photoCount-' + uploadId);
+          if (countEl) {
+            countEl.textContent = data.count + ' Photos';
+            const sizeEl = document.getElementById('photoCount-' + uploadId).previousSibling;
+            if (sizeEl) {
+                let sizeText = data.formattedSize + ' \u2022 ';
+                if (sizeEl.nodeType === Node.TEXT_NODE) {
+                    sizeEl.textContent = sizeText;
+                }
+            }
+          }
+        }
+      })
+      .catch(err => console.error("OneDrive Sync Error:", err))
+      .finally(() => {
+        setTimeout(() => syncingProjects.delete(uploadId), 30000); 
+      });
+    }
+
     function goToPage(pageNum) {
       window.currentPage = pageNum;
       applyPagination();
@@ -1022,9 +1071,17 @@
         : 'Pending (SFTP Scan)';
       document.getElementById('detailCoordinates').textContent = coords;
       
-      const isMulti = project.upload_type === 'multilens' || project.upload_type === 'multiple' || project.upload_type === 'sftp_multiple';
+      const isMulti = (project.camera_models && project.camera_models.startsWith('Multi-Lens')) || (project.upload_type === 'multilens' || project.upload_type === 'multiple' || project.upload_type === 'sftp_multiple');
       document.getElementById('detailConfig').textContent = isMulti ? 'Multi-Lens' : 'Single-Lens';
-      document.getElementById('detailModels').textContent = project.camera_models || (isMulti ? 'Multiple' : 'Standard');
+      
+      // 🚀 CLEAN-DISPLAY (v283): Strip redundant prefixes for a professional look
+      let displayModel = project.camera_models || '';
+      if (displayModel === 'Single-Lens' || displayModel === 'Multi-Lens') {
+          displayModel = isMulti ? 'Multiple' : 'Standard';
+      } else {
+          displayModel = displayModel.replace(/^Single-Lens:\s*/i, '').replace(/^Multi-Lens:\s*/i, '');
+      }
+      document.getElementById('detailModels').textContent = displayModel;
       document.getElementById('detailDate').textContent = formatDate(project.created_at);
 
       // 🚀 DELIVERY PATH (v130): Show SFTP path if available

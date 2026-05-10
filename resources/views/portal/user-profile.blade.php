@@ -157,7 +157,7 @@
   <div class="hero-bg">
     <div class="container">
       <div class="d-flex align-items-center justify-content-between mb-4">
-        <a href="{{ route('landing') }}" class="btn btn-label-secondary btn-sm fw-medium border shadow-sm back-btn" style="background: white; color: #566a7f;">
+        <a href="{{ Auth::user() && (Auth::user()->role === 'admin' || Auth::user()->role === 'superadmin') ? route('admin_dashboard') : route('landing') }}" class="btn btn-label-secondary btn-sm fw-medium border shadow-sm back-btn" style="background: white; color: #566a7f;">
           <i class="bx bx-arrow-back me-1"></i> Back
         </a>
         <!-- Style Switcher -->
@@ -250,13 +250,17 @@
       <!-- Password: masked or "Not set" + Change password beside it -->
       <div class="profile-row">
         <span class="profile-label">Password</span>
-        <span class="profile-value" id="profile-password">—</span>
+        <span class="profile-value" id="profile-password">••••••••</span>
         <span class="profile-actions">
+          <button type="button" class="btn btn-sm btn-outline-secondary me-1" id="btnToggleMainPassword">Show</button>
           <button type="button" class="btn btn-sm btn-outline-primary" id="btnChangePassword">Change password</button>
         </span>
       </div>
       <form id="formChangePassword" class="profile-inline-form d-none">
         @csrf
+        {{-- 🚀 BROWSER ACCESSIBILITY (v155): Added hidden username field to satisfy accessibility warnings --}}
+        <input type="text" name="username" value="{{ Auth::user()->email }}" style="display:none;" autocomplete="username">
+        
         <div class="mb-2">
           <label class="form-label small">Current password</label>
           <div class="input-group input-group-merge form-password-toggle">
@@ -326,6 +330,9 @@
       </div>
       <form id="formChangeSftpPassword" class="profile-inline-form d-none">
         @csrf
+        {{-- 🚀 BROWSER ACCESSIBILITY (v155): Added hidden username field to satisfy accessibility warnings --}}
+        <input type="text" name="username" value="{{ Auth::user()->sftp_username ?? Auth::user()->email }}" style="display:none;" autocomplete="username">
+        
         <div class="mb-2">
           <label class="form-label small">New SFTP password</label>
           <div class="input-group input-group-merge form-password-toggle">
@@ -390,7 +397,15 @@
             document.getElementById('profile-name').textContent = data.name || '—';
             document.getElementById('profile-email').textContent = data.email || '—';
             document.getElementById('profile-contact').textContent = data.contactNumber || '—';
+            
+            actualMainPassword = data.viewablePassword || '';
             document.getElementById('profile-password').textContent = data.hasPassword ? '••••••••' : 'Not set (sign in with Google/Microsoft)';
+            if (!data.hasPassword) {
+                document.getElementById('btnToggleMainPassword').classList.add('d-none');
+            } else {
+                document.getElementById('btnToggleMainPassword').classList.remove('d-none');
+            }
+
             document.getElementById('profile-role').textContent = (data.role || 'registered').charAt(0).toUpperCase() + (data.role || '').slice(1);
             var providerLabel = (data.provider || 'local').toLowerCase();
             if (providerLabel === 'local') providerLabel = 'Email';
@@ -413,7 +428,22 @@
       }
 
       document.addEventListener('DOMContentLoaded', function () {
+        var mainPasswordVisible = false;
+        var actualMainPassword = '';
+
         loadProfile();
+
+        document.getElementById('btnToggleMainPassword').addEventListener('click', function () {
+          mainPasswordVisible = !mainPasswordVisible;
+          var el = document.getElementById('profile-password');
+          if (mainPasswordVisible) {
+            el.textContent = actualMainPassword || 'Password is encrypted (hidden for security)';
+            this.textContent = 'Hide';
+          } else {
+            el.textContent = '••••••••';
+            this.textContent = 'Show';
+          }
+        });
 
         document.getElementById('btnChangeName').addEventListener('click', function () {
           hideInlineForms();

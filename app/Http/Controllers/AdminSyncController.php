@@ -42,7 +42,7 @@ class AdminSyncController extends Controller
         return response()->json(['success' => true, 'message' => "$count pins synced from locations.json."]);
     }
 
-    public function seedShowcaseFromLocations()
+    public function seedShowcasesFromLocations()
     {
         $path = public_path('data/locations.json');
         if (!File::exists($path)) {
@@ -72,10 +72,10 @@ class AdminSyncController extends Controller
             }
         }
 
-        return response()->json(['success' => true, 'message' => "$count new items added to showcase from locations.json."]);
+        return response()->json(['success' => true, 'message' => "$count new items added to showcases from locations.json."]);
     }
 
-    public function showcaseRenumber()
+    public function showcasesRenumber()
     {
         $items = Showcase::orderBy('display_order', 'asc')->orderBy('id', 'asc')->get();
         $order = 0;
@@ -89,10 +89,10 @@ class AdminSyncController extends Controller
 
     public function exportLocationsJson()
     {
-        $mapData = MapData::all();
+        $map_data = MapData::all();
         $locations = [];
 
-        foreach ($mapData as $row) {
+        foreach ($map_data as $row) {
             $tileset = $row->getAttribute('3dTiles');
             
             // Skip records that look like client uploads to keep locations.json clean

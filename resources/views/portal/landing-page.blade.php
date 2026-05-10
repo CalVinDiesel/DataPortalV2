@@ -90,13 +90,13 @@
       .nav-upload-visible {
         display: none !important;
       }
-      @media (min-width: 992px) {
-        .nav-upload-visible.d-lg-block {
+      @media (min-width: 1200px) {
+        .nav-upload-visible.d-xl-block {
           display: block !important;
         }
       }
-      @media (max-width: 991.98px) {
-        li.nav-upload-visible.d-lg-none {
+      @media (max-width: 1199.98px) {
+        li.nav-upload-visible.d-xl-none {
           display: list-item !important;
         }
       }
@@ -155,7 +155,7 @@
   <script src="{{ asset('assets') }}/vendor/js/mega-dropdown.js"></script><!-- Navbar: Start -->
 <nav class="layout-navbar shadow-none py-0">
   <div class="container">
-    <div class="navbar navbar-expand-lg landing-navbar px-3 px-md-8">
+    <div class="navbar navbar-expand-xl landing-navbar px-3 px-md-8">
       <!-- Menu logo wrapper: Start -->
       <div class="navbar-brand app-brand demo d-flex py-0 me-4 me-xl-8">
         <!-- Mobile menu toggle: Start-->
@@ -184,7 +184,7 @@
             <a class="nav-link fw-medium" href="{{ route('landing') }}#landingShowCase">ShowCase</a>
           </li>
           @auth
-          <li class="nav-item dropdown d-none d-lg-block" id="navUpload">
+          <li class="nav-item dropdown d-none d-xl-block" id="navUpload">
             <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
               Upload
             </a>
@@ -194,7 +194,7 @@
               <li><a class="dropdown-item" href="{{ route('my_uploads') }}">My Projects</a></li>
             </ul>
           </li>
-          <li class="nav-item d-lg-none navUpload-mobile">
+          <li class="nav-item d-xl-none navUpload-mobile">
             <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navUploadCollapse" aria-expanded="false" aria-controls="navUploadCollapse" id="navUploadMobileToggle">
               Upload
             </a>
@@ -222,7 +222,7 @@
             <div class="dropdown-menu p-4 p-xl-8">
               <div class="row gy-4">
                 <div class="col-12">
-                  <p class="text-body small mb-0">More pages can be added here for future enhancements.</p>
+                  <p class="text-body small mb-0">More functions will be added in future enhancements</p>
                 </div>
               </div>
             </div>
@@ -235,7 +235,7 @@
 
         </ul>
       </div>
-      <div class="landing-menu-overlay d-lg-none"></div>
+      <div class="landing-menu-overlay d-xl-none"></div>
       <!-- Menu wrapper: End -->
       <!-- Toolbar: Start -->
       <ul class="navbar-nav flex-row align-items-center ms-auto">
@@ -1300,7 +1300,7 @@
         'ppns-ys': '/assets/img/front-pages/locations/ppns_ys_pin_image.jpg'
       };
       var desiredOrder = ['KK_OSPREY', 'wisma-merdeka', 'kb-3dtiles-lite', 'kolombong-fisheye', 'ppns-ys', 'Keningau-Sabah-2026'];
-      fetch(API_BASE + '/api/showcase').then(function (r) { return r.json(); }).then(function (rows) {
+      fetch(API_BASE + '/api/showcases').then(function (r) { return r.json(); }).then(function (rows) {
         if (!Array.isArray(rows) || rows.length === 0) return;
         rows = rows.slice().sort(function (a, b) {
           var idA = a.mapDataID || a.map_data_id || a.id || '';

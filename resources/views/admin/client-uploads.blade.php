@@ -21,82 +21,124 @@
       }).catch(function() { window.location.href = '{{ route('landing') }}'; });
     })();
   </script>
+  <style>
+    /* 💎 ADMIN PREMIUM TOP NAV (v250) */
+    .admin-glass-nav {
+      position: fixed;
+      top: 1.5rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      z-index: 1050;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 1.25rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      padding: 0.5rem 1.5rem;
+      display: flex;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+    [data-bs-theme="dark"] .admin-glass-nav {
+      background: rgba(15, 23, 42, 0.7);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    .admin-nav-links {
+      display: flex;
+      gap: 0.5rem;
+      margin-left: 1.5rem;
+      align-items: center;
+    }
+    .admin-nav-link {
+      color: #566a7f;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+      font-size: 0.82rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: 0.75rem;
+      white-space: nowrap;
+    }
+    .admin-nav-link:hover {
+      color: #696cff;
+      background: rgba(105, 108, 255, 0.08);
+    }
+    .admin-nav-link.active {
+      color: #696cff;
+      background: rgba(105, 108, 255, 0.12);
+      font-weight: 700;
+    }
+    .email-hover-link { color: #8e94a3 !important; transition: color 0.2s ease; } .email-hover-link:hover {
+      color: #696cff !important;
+    }
+    .content-wrapper-premium {
+      margin-top: 7.5rem !important;
+    }
+    .layout-page {
+        padding: 0 !important;
+    }
+    @media (max-width: 1199.98px) {
+      .admin-nav-links { display: none; }
+    }
+  </style>
 </head>
 
 <body>
   <div class="layout-wrapper layout-content-navbar">
     <div class="layout-container">
-      <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
-        <div class="app-brand demo py-4">
-          <a href="{{ route('admin_dashboard') }}" class="app-brand-link d-flex align-items-center">
-            <span class="app-brand-logo demo me-2"><img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png"
-                alt="3DHub"
-                style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
-            <span class="app-brand-text demo menu-text fw-bold" style="font-size: 1.4em;">3DHub Admin</span>
-          </a>
+      
+      <!-- Premium Glass Top Nav -->
+      <nav class="admin-glass-nav">
+        <a href="{{ route('admin_dashboard') }}" class="app-brand-link d-flex align-items-center">
+          <span class="app-brand-logo demo me-2"><img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+          <span class="app-brand-text demo menu-text fw-bold text-heading" style="font-size: 1.1em;">3DHub Admin</span>
+        </a>
+        
+        <div class="admin-nav-links d-none d-xl-flex">
+          <a href="{{ route('admin_dashboard') }}" class="admin-nav-link">Dashboard</a>
+          <a href="{{ route('admin.add_3d_model') }}" class="admin-nav-link">Add 3D Model</a>
+          <a href="{{ route('admin.manage_map_pins') }}" class="admin-nav-link">Manage Map Pins</a>
+          <a href="{{ route('admin.manage_showcases') }}" class="admin-nav-link">Manage Showcase</a>
+          <a href="{{ route('admin.client_uploads') }}" class="admin-nav-link active">Client Uploads</a>
+          <a href="{{ route('admin.manage_users') }}" class="admin-nav-link">Manage Users</a>
+          <a href="{{ route('landing') }}" class="admin-nav-link" target="_blank">View Portal</a>
         </div>
-        <div class="menu-inner-shadow"></div>
-        <ul class="menu-inner py-1">
-          <li class="menu-item">
-            <a href="{{ route('admin_dashboard') }}" class="menu-link">
-              <i class="menu-icon tf-icons bx bx-home-circle"></i>
-              <div>Dashboard</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="{{ route('admin.add_3d_model') }}" class="menu-link">
-              <i class="menu-icon tf-icons bx bx-cube"></i>
-              <div>Add 3D Model</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="{{ route('admin.manage_map_pins') }}" class="menu-link">
-              <i class="menu-icon tf-icons bx bx-map-pin"></i>
-              <div>Manage Map Pins</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="{{ route('admin.manage_showcase') }}" class="menu-link">
-              <i class="menu-icon tf-icons bx bx-grid-alt"></i>
-              <div>Manage Showcase</div>
-            </a>
-          </li>
-          <li class="menu-item active">
-            <a href="{{ route('admin.client_uploads') }}" class="menu-link">
-              <i class="menu-icon tf-icons bx bx-cloud-upload"></i>
-              <div>Client Uploads</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="{{ route('admin.manage_users') }}" class="menu-link">
-              <i class="menu-icon tf-icons bx bx-user"></i>
-              <div>Manage Users</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="{{ route('landing') }}" class="menu-link" target="_blank">
-              <i class="menu-icon tf-icons bx bx-map"></i>
-              <div>View Portal</div>
-            </a>
-          </li>
-        </ul>
-      </aside>
+
+        <div class="ms-auto d-flex align-items-center gap-2">
+            <!-- Style Switcher -->
+            <div class="nav-item dropdown-style-switcher dropdown me-2">
+              <a class="nav-link dropdown-toggle hide-arrow" id="nav-theme" href="javascript:void(0);" data-bs-toggle="dropdown">
+                <i class="icon-base bx bx-sun icon-lg theme-icon-active"></i>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-theme-text">
+                <li><button type="button" class="dropdown-item align-items-center" data-bs-theme-value="light"><span><i class="icon-base bx bx-sun icon-md me-3"></i>Light</span></button></li>
+                <li><button type="button" class="dropdown-item align-items-center" data-bs-theme-value="dark"><span><i class="icon-base bx bx-moon icon-md me-3"></i>Dark</span></button></li>
+                <li><button type="button" class="dropdown-item align-items-center" data-bs-theme-value="system"><span><i class="icon-base bx bx-desktop icon-md me-3"></i>System</span></button></li>
+              </ul>
+            </div>
+
+            @auth
+            <div class="d-none d-md-flex align-items-center gap-3 border-start ps-3 ms-2">
+                <a href="{{ route('profile') }}" class="small text-muted fw-medium text-decoration-none email-hover-link">{{ Auth::user()->email }}</a>
+                <form method="POST" action="{{ route('logout') }}" id="adminLogoutForm" class="d-inline">
+                    @csrf
+                    <button type="button" id="adminLogoutBtn" class="btn btn-sm btn-outline-danger px-3 rounded-pill fw-bold">Log out</button>
+                </form>
+            </div>
+            @endauth
+
+            <button class="admin-menu-toggle btn btn-icon d-xl-none border-0 bg-transparent p-0" type="button" aria-label="Toggle menu"><i class="bx bx-menu icon-lg"></i></button>
+        </div>
+      </nav>
 
       <div class="layout-page">
-        <nav
-          class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme">
-          <div class="navbar-brand demo d-flex align-items-center py-0 me-3">
-            <button class="admin-menu-toggle btn btn-icon d-xl-none me-2 border-0 bg-transparent p-0" type="button"
-              aria-label="Toggle menu"><i class="bx bx-menu icon-lg"></i></button>
-          </div>
-          <div class="navbar-nav-right d-flex align-items-center ms-auto">
-            <a href="{{ route('admin_dashboard') }}" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
-          </div>
-        </nav>
-
-        <div class="content-wrapper">
+        <div class="content-wrapper content-wrapper-premium">
           <div class="container-xxl flex-grow-1 container-p-y">
-            <h4 class="fw-bold mb-2">Client Uploads</h4>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h4 class="fw-bold mb-0">Client Uploads</h4>
+              <a href="{{ route('admin_dashboard') }}" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
+            </div>
             <p class="text-muted mb-3">Clients submit drone-captured images via SFTP or the Data Portal for
               <strong>custom image-to-3D processing</strong>. Manage request status here. All file transfers happen
               through WinSCP / SFTPGo — use this page only to update status at each step.</p>
@@ -208,6 +250,12 @@
                       <div class="small text-muted mb-1">Client shared files via this link:</div>
                       <a href="#" id="detailGDriveLink" target="_blank" class="text-break fw-bold text-primary">Browse files on Drive <i class="bx bx-link-external small mt-n1"></i></a>
                     </div>
+                    <!-- OneDrive Link Box (Conditional) -->
+                    <div class="alert alert-primary mb-3 d-none" id="detailOneDriveBox">
+                      <div class="fw-bold mb-1"><i class="bx bx-cloud me-1"></i> OneDrive Folder Link</div>
+                      <div class="small text-muted mb-1">Client shared files via OneDrive:</div>
+                      <a href="#" id="detailOneDriveLink" target="_blank" class="text-break fw-bold text-primary">Browse files on OneDrive <i class="bx bx-link-external small mt-n1"></i></a>
+                    </div>
                     <div class="row small">
                       <div class="col-12 mb-2"><strong>Project</strong></div>
                       <div class="col-md-6 mb-2"><span class="text-muted">ID:</span> <span id="detailProjectId">–</span></div>
@@ -269,6 +317,7 @@
                           <option value="portal" id="optPortal">Web Portal (SFTP Streamed)</option>
                           <option value="sftp" id="optSftp">Direct SFTP</option>
                           <option value="google_drive" id="optGDrive">Google Drive</option>
+                          <option value="onedrive" id="optOneDrive">OneDrive</option>
                         </select>
                         <div class="form-text" id="deliverMethodHint">Choose how the client receives their processed 3D model.</div>
                       </div>
@@ -291,7 +340,7 @@
                           <div class="text-center text-muted my-2">-- OR --</div>
                         </div>
                         <div class="col-12 mb-3" id="sectionOptionC">
-                          <label class="form-label text-primary fw-bold">Google Drive Share Link <span class="text-danger">* (Required)</span></label>
+                          <label class="form-label text-primary fw-bold" id="deliverCloudLinkLabel">Google Drive Share Link <span class="text-danger">* (Required)</span></label>
                           <input type="url" id="deliverGDriveLinkInput" name="google_drive_link" class="form-control" placeholder="https://drive.google.com/file/d/..." required>
                           <div class="form-text text-primary">Paste the 'Anyone with the link can view' share link here. This link is required to complete the delivery.</div>
                         </div>
@@ -309,6 +358,28 @@
                           class="bx bx-check me-1"></i> Confirm Delivered</button>
                     </div>
                   </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Edit Notes Modal -->
+            <div class="modal fade" id="editNotesModal" tabindex="-1" aria-labelledby="editNotesModalLabel" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="editNotesModalLabel">Edit Delivery Notes</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="mb-3">
+                      <label class="form-label fw-bold">Delivery Notes</label>
+                      <textarea id="editNotesInput" class="form-control" rows="4" placeholder="Update delivery notes..."></textarea>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="editNotesSaveBtn"><i class="bx bx-save me-1"></i> Save Changes</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -415,10 +486,16 @@
       z-index: 1 !important;
     }
     
-    /* 🚀 PERFORMANCE OPTIMIZATION (v133): Fix CLS by reserving space */
-    .modal-content { min-height: 400px; }
+    /* 🚀 PERFORMANCE OPTIMIZATION (v133): Fix CLS by reserving space only for heavy modals */
+    #detailsModal .modal-content, #deliverModal .modal-content { min-height: 400px; }
+    #deleteUploadModal .modal-content, #rejectModal .modal-content, #logoutConfirmModal .modal-content { min-height: auto !important; }
     .table-responsive { min-height: 300px; }
     .card { contain: content; }
+    
+    .actions-col {
+      white-space: nowrap !important;
+      width: 1%;
+    }
   </style>
 
   <script>
@@ -447,10 +524,12 @@
       var rejectBSModal = null;
       var deliverBSModal = null;
       var deleteUploadBSModal = null;
+      var editNotesBSModal = null;
 
       var pendingRejectId = null;
       var pendingDeliverId = null;
       var pendingDeleteUploadId = null;
+      var pendingEditNotesId = null;
       var uploadRootAbsolute = '';
       var remoteBasePath = '';
       var sftpUsername = '';
@@ -533,7 +612,7 @@
           }
 
           // 🚀 SMART-PATH CLEANUP (v168): Reverted to plural 'uploads'
-          const base = (uploadRootAbsolute || '/home/tiquan/uploads/').replace(/\/+$/, '');
+          const base = (uploadRootAbsolute || '/uploads/').replace(/\/+$/, '');
           
           let displayPath = path;
           // Ensure it has a base if it's just a partial path
@@ -548,7 +627,7 @@
 
       function actionCells(r) {
         var status = (r.request_status || 'pending').toLowerCase();
-        var wrapStart = '<div class="d-flex flex-wrap align-items-center gap-2">';
+        var wrapStart = '<div class="d-flex flex-nowrap align-items-center gap-2">';
         var wrapEnd = '</div>';
         var detailsBtn = '<button type="button" class="btn btn-sm btn-outline-secondary details-btn" data-upload-id="' + r.id + '"><i class="bx bx-info-circle me-1"></i>Details</button>';
         var rejectBtn = '<button type="button" class="btn btn-sm btn-outline-danger reject-btn" data-upload-id="' + r.id + '">Reject</button>';
@@ -621,33 +700,44 @@
         // Toggle Method-Specific UI
         const sftpBox = document.getElementById('detailSftpBox');
         const gdriveBox = document.getElementById('detailGDriveBox');
+        const onedriveBox = document.getElementById('detailOneDriveBox');
         const fileCountRow = document.getElementById('detailFileCountRow');
 
-        sftpBox.classList.add('d-none');
-        gdriveBox.classList.add('d-none');
-        fileCountRow.classList.add('d-none');
-        fileCountRow.classList.add('d-none');
+        if (sftpBox) sftpBox.classList.add('d-none');
+        if (gdriveBox) gdriveBox.classList.add('d-none');
+        if (onedriveBox) onedriveBox.classList.add('d-none');
+        if (fileCountRow) fileCountRow.classList.add('d-none');
 
         if (type === 'sftp' || type === 'sftp_single' || type === 'sftp_multiple' || type === 'browser' || type === 'multiple') {
-          sftpBox.classList.remove('d-none');
-          document.getElementById('detailSftpPath').textContent = buildSftpPath(row);
-          
-          // 🚀 SYNC CONNECTION DETAILS (v188)
-          if (window.remoteBasePath) {
-              document.getElementById('detailSftpHostDisplay').innerText = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? '172.21.107.151' : window.location.hostname;
-              document.getElementById('detailSftpPortDisplay').innerText = window.sftpPort || '2222';
-              document.getElementById('detailSftpUserDisplay').innerText = window.sftpUsername || 'tiquan';
+          if (sftpBox) {
+            sftpBox.classList.remove('d-none');
+            document.getElementById('detailSftpPath').textContent = buildSftpPath(row);
+            
+            if (window.remoteBasePath) {
+                document.getElementById('detailSftpHostDisplay').innerText = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? (window.sftpHost || 'sftp.server.com') : window.location.hostname;
+                document.getElementById('detailSftpPortDisplay').innerText = window.sftpPort || '2222';
+                document.getElementById('detailSftpUserDisplay').innerText = window.sftpUsername || 'guest';
+            }
           }
         } else if (type === 'google_drive') {
-          gdriveBox.classList.remove('d-none');
-          const link = document.getElementById('detailGDriveLink');
-          link.href = row.google_drive_link || '#';
-          link.textContent = row.google_drive_link || 'Link missing';
+          if (gdriveBox) {
+            gdriveBox.classList.remove('d-none');
+            const link = document.getElementById('detailGDriveLink');
+            link.href = row.google_drive_link || '#';
+            link.textContent = row.google_drive_link || 'Link missing';
+          }
+        } else if (type === 'onedrive') {
+          if (onedriveBox) {
+            onedriveBox.classList.remove('d-none');
+            const link = document.getElementById('detailOneDriveLink');
+            link.href = row.onedrive_link || '#';
+            link.textContent = row.onedrive_link || 'Link missing';
+          }
         } else {
-          // Browser upload
-          fileCountRow.classList.remove('d-none');
-          document.getElementById('detailFileCount').textContent = text(row.file_count);
-          document.getElementById('detailFileCount').textContent = text(row.file_count);
+          if (fileCountRow) {
+            fileCountRow.classList.remove('d-none');
+            document.getElementById('detailFileCount').textContent = text(row.file_count);
+          }
         }
 
         // Shared Details
@@ -831,6 +921,7 @@
           var created = r.created_at ? new Date(r.created_at).toLocaleString() : '–';
           var typeDisplay = r.upload_type || 'browser';
           if (typeDisplay === 'google_drive') typeDisplay = '<span class="text-success"><i class="bx bxl-google-cloud me-1"></i>GDrive</span>';
+          else if (typeDisplay === 'onedrive') typeDisplay = '<span class="text-primary"><i class="bx bx-cloud me-1"></i>OneDrive</span>';
           else if (typeDisplay === 'sftp_multiple') typeDisplay = '<span class="text-info">SFTP (Multi)</span>';
           else if (typeDisplay === 'sftp') typeDisplay = '<span class="text-info">SFTP</span>';
           else if (typeDisplay === 'multiple' || typeDisplay === 'multilens') typeDisplay = 'Web (Multi)';
@@ -844,7 +935,7 @@
             '<td>' + (r.file_count || 0) + '</td>' +
             '<td><small>' + created + '</small></td>' +
             '<td>' + statusBadge(r.request_status) + '</td>' +
-            '<td>' + actionCells(r) + '</td>' +
+            '<td class="actions-col">' + actionCells(r) + '</td>' +
             '</tr>';
         }).join('');
 
@@ -1039,6 +1130,46 @@
         if (!rejectModal && rEl_init) rejectModal = new bootstrap.Modal(rEl_init);
         if (!deleteUploadModal && duEl_init) deleteUploadModal = new bootstrap.Modal(duEl_init);
 
+        var editNotesEl = document.getElementById('editNotesModal');
+        if (editNotesEl && typeof bootstrap !== 'undefined') editNotesBSModal = new bootstrap.Modal(editNotesEl);
+
+        var editNotesSaveBtn = document.getElementById('editNotesSaveBtn');
+        if (editNotesSaveBtn) {
+            editNotesSaveBtn.addEventListener('click', function() {
+                if (!pendingEditNotesId) return;
+                
+                var notes = document.getElementById('editNotesInput').value;
+                editNotesSaveBtn.disabled = true;
+                editNotesSaveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+                fetch(API_BASE + '/api/admin/processing-requests/' + pendingEditNotesId + '/update-notes', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ delivery_notes: notes })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        editNotesBSModal.hide();
+                        loadRequests();
+                        var al = document.getElementById('uploadsAlert');
+                        al.textContent = 'Delivery notes updated successfully.';
+                        al.className = 'alert alert-success';
+                    } else {
+                        alert(data.message || 'Failed to update notes.');
+                    }
+                })
+                .catch(function() { alert('Update failed.'); })
+                .finally(function() {
+                    editNotesSaveBtn.disabled = false;
+                    editNotesSaveBtn.innerHTML = '<i class="bx bx-save me-1"></i> Save Changes';
+                });
+            });
+        }
+
 
         var form = document.getElementById('deliverForm');
         var confirmBtn = document.getElementById('deliverConfirmBtn');
@@ -1197,7 +1328,7 @@
                             nitro_delivery: true,
                             upload_id: uploadId,
                             file_name: file.name,
-                            notes: notes,
+                            delivery_notes: notes,
                             delivery_method: method
                         })
                     });
@@ -1319,6 +1450,7 @@
         }
 
       window.loadRequests = function loadRequests() {
+        document.getElementById('requestsTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-muted">Loading…</td></tr>';
         fetch(API_BASE + '/api/admin/processing-requests')
           .then(function (r) { return r.json(); })
           .then(function (rows) {
@@ -1376,7 +1508,11 @@
 
           var actionBtn = '–';
           if (r.delivered_at) {
-            actionBtn = '<span class="badge bg-label-success"><i class="bx bx-check-circle me-1"></i>Delivered</span>';
+            actionBtn = 
+              '<div class="d-flex flex-column gap-1">' +
+              '<span class="badge bg-label-success mb-1"><i class="bx bx-check-circle me-1"></i>Delivered</span>' +
+              '<button type="button" class="btn btn-xs btn-outline-primary edit-notes-btn" data-request-id="' + r.id + '" data-notes="' + escapeHtml(r.delivery_notes || '') + '"><i class="bx bx-edit-alt me-1"></i>Edit Notes</button>' +
+              '</div>';
           } else if (r.status === 'processing' || r.status === 'pending') {
             actionBtn =
               '<div class="d-flex flex-column gap-2">' +
@@ -1392,7 +1528,7 @@
             '<td>' + statusBadgeHtml + '</td>' +
             '<td><small>' + requested + '</small></td>' +
             '<td><small>' + delivered + '</small></td>' +
-            '<td>' + actionBtn + '</td>' +
+            '<td class="actions-col">' + actionBtn + '</td>' +
             '</tr>';
         }).join('');
 
@@ -1414,7 +1550,7 @@
             activeMeta = uploadMetaById[uploadId] || {}; 
             var meta = activeMeta;
             
-            var base = (uploadRootAbsolute || remoteBasePath || '/home/tiquan/').replace(/\/+$/, '');
+            var base = (uploadRootAbsolute || remoteBasePath || '/').replace(/\/+$/, '');
             var clientUser = meta.client_sftp_user || 'guest';
             var targetPath = formatSftpPath(joinDisplayPath(base, 'uploads/' + clientUser + '/' + (meta.project_id || uploadId) + '/delivered/'));
             document.getElementById('deliverPathHint').textContent = targetPath;
@@ -1422,12 +1558,12 @@
             if (window.sftpHost) {
                 document.getElementById('deliverHostDisplay').innerText = window.sftpHost;
             } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                document.getElementById('deliverHostDisplay').innerText = '172.21.107.151';
+                document.getElementById('deliverHostDisplay').innerText = (window.sftpHost || 'sftp.server.com');
             } else {
                 document.getElementById('deliverHostDisplay').innerText = window.location.hostname;
             }
             document.getElementById('deliverPortDisplay').innerText = window.sftpPort || '2222';
-            document.getElementById('deliverUserDisplay').innerText = window.sftpUsername || 'tiquan';
+            document.getElementById('deliverUserDisplay').innerText = window.sftpUsername || 'guest';
 
             var pathStatusEl = document.getElementById('deliverPathStatus');
             pathStatusEl.innerHTML = '<span class="badge bg-label-warning"><i class="bx bx-loader-alt bx-spin me-1"></i>Preparing Folder...</span>';
@@ -1499,8 +1635,32 @@
                 filterDropdown('google_drive');
                 setDisplay(false, false, true, false, false, false);
             }
+            else if (type === 'onedrive') {
+                filterDropdown('onedrive');
+                setDisplay(false, false, true, false, false, false); 
+                const cloudLinkInput = document.getElementById('deliverGDriveLinkInput');
+                const cloudLinkLabel = document.getElementById('deliverCloudLinkLabel');
+                if (cloudLinkInput) cloudLinkInput.placeholder = "https://1drv.ms/u/s!...";
+                if (cloudLinkLabel) cloudLinkLabel.innerHTML = 'OneDrive Share Link <span class="text-danger">* (Required)</span>';
+            }
+            else {
+                // Reset to default GDrive labels for other types if they ever use Section C
+                const cloudLinkLabel = document.getElementById('deliverCloudLinkLabel');
+                if (cloudLinkLabel) cloudLinkLabel.innerHTML = 'Google Drive Share Link <span class="text-danger">* (Required)</span>';
+                const cloudLinkInput = document.getElementById('deliverGDriveLinkInput');
+                if (cloudLinkInput) cloudLinkInput.placeholder = "https://drive.google.com/file/d/...";
+            }
 
             if (deliverBSModal) deliverBSModal.show();
+          });
+        });
+
+        tbody.querySelectorAll('.edit-notes-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            pendingEditNotesId = btn.getAttribute('data-request-id');
+            var existingNotes = btn.getAttribute('data-notes');
+            document.getElementById('editNotesInput').value = existingNotes;
+            if (editNotesBSModal) editNotesBSModal.show();
           });
         });
       }
@@ -1513,6 +1673,37 @@
   </script>
   <script src="{{ asset('assets') }}/js/admin-responsive.js"></script>
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
+  <!-- Logout Confirmation Modal -->
+  <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="logoutConfirmLabel">Confirm Logout</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="logoutConfirmMessage">Are you sure you want to log out? You will need to sign in again to use the Admin Data Portal.</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="logoutConfirmBtn">Log out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var logoutBtn = document.getElementById('adminLogoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+          var modal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'));
+          modal.show();
+          document.getElementById('logoutConfirmBtn').onclick = function() {
+            document.getElementById('adminLogoutForm').submit();
+          };
+        });
+      }
+    });
+  </script>
 </body>
 
 </html>

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\RequestReceived;
 use App\Mail\NewRequestAlert;
 use App\Mail\ContactInquiry;
+use App\Http\Controllers\ProjectController;
 
 Route::post('/contact', function (Request $request) {
     $request->validate([
@@ -53,7 +54,7 @@ Route::post('/request-access', function (Request $request) {
         return back()->withErrors(['email' => 'An account with this email already exists. Please log in.'])->withInput();
     }
 
-    // Check if they already have any request in the AccessRequests table
+    // Check if they already have any request in the access_requests table
     $existingRequest = \App\Models\AccessRequest::where('email', $request->email)->first();
     if ($existingRequest) {
         if ($existingRequest->status === 'pending') {
@@ -134,8 +135,13 @@ Route::middleware('auth')->group(function () {
         return view('portal.upload-sftp');
     })->name('upload_sftp');
 
+    // 🚀 CLOUD HUB (v265): Unified redirect for GDrive and OneDrive
+    Route::get('/upload-cloud', function () {
+        return view('portal.upload-cloud');
+    })->name('upload_cloud');
+
     Route::get('/upload-gdrive', function () {
-        return view('portal.upload-gdrive');
+        return redirect()->route('upload_cloud');
     })->name('upload_gdrive');
 
     Route::get('/my-uploads', function () {
@@ -145,6 +151,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', function () {
         return view('portal.user-profile');
     })->name('profile');
+
+    // 🚀 SESSION-SYNC (v271): Moved from api.php to ensure stable session access for AJAX
+    Route::get('/api/user/my-uploads', [ProjectController::class, 'index']);
+    Route::post('/api/user/my-uploads/{id}/confirm-received', [ProjectController::class, 'confirmReceived']);
+    Route::post('/api/user/my-uploads/{id}/sync-metadata', [ProjectController::class, 'syncSftpMetadata']);
+    Route::post('/api/user/my-uploads/{id}/sync-gdrive', [ProjectController::class, 'syncGoogleDriveMetadata']);
+    Route::post('/api/user/my-uploads/{id}/sync-onedrive', [ProjectController::class, 'syncOneDriveMetadata']);
+    Route::get('/api/user/my-uploads/{id}/download-delivered', [ProjectController::class, 'downloadDelivered']);
+    Route::delete('/api/user/my-uploads/{id}', [ProjectController::class, 'destroy']);
 
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -163,9 +178,9 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
         return view('admin.manage-map-pins');
     })->name('admin.manage_map_pins');
 
-    Route::get('/admin/manage-showcase', function () {
-        return view('admin.manage-showcase');
-    })->name('admin.manage_showcase');
+    Route::get('/admin/manage-showcases', function () {
+        return view('admin.manage-showcases');
+    })->name('admin.manage_showcases');
 
     Route::get('/admin/client-uploads', function () {
         return view('admin.client-uploads');

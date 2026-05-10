@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 use App\Mail\ProcessedDataDelivered;
 
 class AdminClientUploadController extends Controller
@@ -49,11 +50,11 @@ class AdminClientUploadController extends Controller
         // 🚀 FULL PATH SYNC (v168): Ensure we return the absolute system root
         return response()->json([
             'success' => true,
-            'uploadRootAbsolute' => config('filesystems.disks.sftp_delivery.root', '/home/tiquan/'),
-            'remoteBasePath' => config('filesystems.disks.sftp_delivery.root', '/home/tiquan/'),
-            'sftpUsername' => config('filesystems.disks.sftp_delivery.username', 'tiquan'),
-            'sftpPort' => env('SFTP_DELIVERY_PORT', 2222),
-            'sftpHost' => config('filesystems.disks.sftp_delivery.host', '172.21.107.151'),
+            'uploadRootAbsolute' => config('filesystems.disks.sftp_delivery.root', '/'),
+            'remoteBasePath' => config('filesystems.disks.sftp_delivery.root', '/'),
+            'sftpUsername' => config('filesystems.disks.sftp_delivery.username'),
+            'sftpPort' => config('filesystems.disks.sftp_delivery.port', 22),
+            'sftpHost' => config('filesystems.disks.sftp_delivery.host'),
         ]);
     }
 
@@ -72,9 +73,12 @@ class AdminClientUploadController extends Controller
         if ($action === 'accept') {
             $upload->request_status = 'review';
             $upload->decided_at = now();
+            $upload->decided_by = Auth::user() ? Auth::user()->email : 'admin'; // 👮 Tracking
             // TODO: send email to client
         } elseif ($action === 'processing') {
             $upload->request_status = 'processing';
+            $upload->decided_at = now();
+            $upload->decided_by = Auth::user() ? Auth::user()->email : 'admin'; // 👮 Tracking
 
             // Ensure the delivered directory exists for manual SFTP placement
             try {
@@ -97,6 +101,7 @@ class AdminClientUploadController extends Controller
             $upload->request_status = 'rejected';
             $upload->rejected_reason = $reason;
             $upload->decided_at = now();
+            $upload->decided_by = Auth::user() ? Auth::user()->email : 'admin'; // 👮 Tracking
             // TODO: send email to client
         } else {
             return response()->json(['success' => false, 'message' => 'Invalid action.']);
@@ -190,7 +195,7 @@ class AdminClientUploadController extends Controller
                 
                 // 🚀 NESTED DELIVERY (v205): Place results INSIDE the project folder (project/delivered/) for perfect jail alignment.
                 $deliveryPathRelative = "uploads/{$sftpUser}/{$upload->project_id}/delivered/{$finalName}";
-                $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/home/tiquan/'), '/');
+                $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
                 $deliveryPathAbsolute = "{$root}/{$deliveryPathRelative}";
 
                 $disk = Storage::disk('sftp_delivery');
@@ -207,9 +212,16 @@ class AdminClientUploadController extends Controller
                 $upload->delivery_method = 'portal';
 
             } elseif ($gdriveLink) {
-                // Method C: Google Drive Link (v156: Use delivered_file_path to avoid overwriting user raw data link)
-                $upload->delivery_method = 'google_drive';
-                $upload->delivered_file_path = $gdriveLink;
+                // Method C: Cloud Link (GDrive or OneDrive)
+                if ($method === 'onedrive') {
+                    $upload->delivery_method = 'onedrive';
+                    $upload->delivered_file_path = \App\Http\Controllers\ProjectController::convertToDirectOneDriveUrl($gdriveLink);
+                    \Log::info("  - [CLOUD] Delivery marked as OneDrive link (Directified).");
+                } else {
+                    $upload->delivery_method = 'google_drive';
+                    $upload->delivered_file_path = $gdriveLink;
+                    \Log::info("  - [CLOUD] Delivery marked as Google Drive link.");
+                }
 
             } elseif ($method === 'portal' || $method === 'sftp') {
                 // 🚀 CLIENT-CENTRIC PATH (v139): Deliver into the user's own SFTP folder
@@ -220,7 +232,7 @@ class AdminClientUploadController extends Controller
                 $fileName = $hasUpload ? ($upload->project_id . '-processed.zip') : $manualFileName;
                 // 🚀 NESTED DELIVERY (v194)
                 $pathRelative = "uploads/{$sftpUser}/{$upload->project_id}/delivered/{$fileName}";
-                $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/home/tiquan/'), '/');
+                $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
                 $pathAbsolute = "{$root}/{$pathRelative}";
                 
                 if ($hasUpload) {
@@ -254,6 +266,23 @@ class AdminClientUploadController extends Controller
             }
         } else {
             return response()->json(['success' => false, 'message' => 'Please either upload a file or provide an existing SFTP filename.'], 400);
+        }
+
+        // 🚀 SIZE-DETECTION (v115): Detect the size of the delivered result
+        try {
+            if ($upload->delivered_file_path) {
+                if ($method === 'google_drive' && str_contains($upload->delivered_file_path, 'drive.google.com')) {
+                    // Drive links don't have a direct file size without API
+                    $upload->delivered_file_size = 0;
+                } elseif (file_exists($upload->delivered_file_path)) {
+                    $upload->delivered_file_size = filesize($upload->delivered_file_path);
+                } elseif (Storage::disk('sftp_delivery')->exists($upload->delivered_file_path)) {
+                    // Try via Storage if absolute path check fails
+                    $upload->delivered_file_size = Storage::disk('sftp_delivery')->size($upload->delivered_file_path);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::warning("Could not detect delivered file size: " . $e->getMessage());
         }
 
         $upload->request_status = 'completed';
@@ -315,7 +344,26 @@ class AdminClientUploadController extends Controller
         $sftpUser = $client ? ($client->sftp_username ?: \Str::slug($client->name)) : 'guest';
         $projId = $u->project_id ?: 'unknown';
         
-        $hint = "Port 2223: /home/tiquan/uploads/{$sftpUser}/{$projId}/delivered/";
+        $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
+        $hint = "Port 2223: {$root}/uploads/{$sftpUser}/{$projId}/delivered/";
         return response()->json(['success' => true, 'path' => $hint]);
+    }
+    public function updateDeliveryNotes(Request $request, $id)
+    {
+        try {
+            $procReq = ProcessingRequest::findOrFail($id);
+            $procReq->delivery_notes = $request->input('delivery_notes');
+            $procReq->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Delivery notes updated successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update notes: ' . $e->getMessage()
+            ]);
+        }
     }
 }

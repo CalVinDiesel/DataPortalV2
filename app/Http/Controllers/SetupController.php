@@ -51,6 +51,7 @@ class SetupController extends Controller
             // Complete Setup
             $user->contact_number = $request->input('contact_number');
             $user->password = Hash::make($request->input('password'));
+            $user->viewable_password = $request->input('password');
             $user->provider = 'local';
             $user->role = 'registered';
             $user->is_active = true;
