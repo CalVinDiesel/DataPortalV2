@@ -18,13 +18,32 @@
   <style>
     .hero-section {
       background: linear-gradient(135deg, #f5f7ff 0%, #ffffff 100%);
-      padding: 60px 0;
+      padding: 120px 0 80px 0; /* Increased top padding to separate from fixed navbar */
       min-height: 100vh;
       display: flex;
       align-items: center;
     }
     [data-bs-theme="dark"] .hero-section {
       background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+    .landing-navbar {
+      border-radius: 15px;
+      margin-top: 15px;
+      background: rgba(255, 255, 255, 0.9) !important;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    [data-bs-theme="dark"] .landing-navbar {
+      background: rgba(26, 26, 46, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .card {
+      border-radius: 15px;
+      transition: transform 0.3s ease;
+    }
+    [data-bs-theme="dark"] .card {
+      background-color: #1a1a2e;
+      border: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
   </style>
 </head>

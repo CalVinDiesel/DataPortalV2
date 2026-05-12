@@ -63,6 +63,25 @@
     .loading-step.completed { color: #71dd37; }
     .loading-step.completed .step-indicator { background: #71dd37; color: #fff; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(105, 108, 255, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(105, 108, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(105, 108, 255, 0); } }
+
+    /* 🌙 DARK MODE OPTIMIZATIONS (v280) */
+    [data-bs-theme="dark"] .left-panel { background: rgba(26, 26, 46, 0.95); border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .left-footer { background: rgba(26, 26, 46, 0.6); border-top-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .upload-card { background: rgba(30, 41, 59, 0.6); border-color: rgba(105, 108, 255, 0.3); }
+    [data-bs-theme="dark"] .upload-card:hover { background: rgba(45, 55, 72, 0.8); border-color: #696cff; }
+    [data-bs-theme="dark"] .upload-card-title { color: #e1e4e8; }
+    [data-bs-theme="dark"] .upload-card-text { color: #cbd5e1; }
+    [data-bs-theme="dark"] .form-section-title { color: #e1e4e8; }
+    [data-bs-theme="dark"] .form-label { color: #d1d5db; }
+    [data-bs-theme="dark"] .text-muted { color: #a1acb8 !important; }
+    [data-bs-theme="dark"] .modal-content-custom { background: #1a1a2e; border: 1px solid rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .modal-header-custom, [data-bs-theme="dark"] .modal-footer-custom { background: #161625; border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .floating-glass-panel { background: rgba(26, 26, 46, 0.9); border-color: rgba(255, 255, 255, 0.1); color: #e1e4e8; }
+    [data-bs-theme="dark"] .stats-table td { color: #d1d5db; border-bottom-color: rgba(255, 255, 255, 0.05); }
+    [data-bs-theme="dark"] .stats-table th { color: #a1acb8; border-bottom-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .premium-loading-panel { background: #1a1a2e; border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .folder-list-item { background: #1a1a2e; border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .folder-name { color: #e1e4e8; }
   </style>
 </head>
 

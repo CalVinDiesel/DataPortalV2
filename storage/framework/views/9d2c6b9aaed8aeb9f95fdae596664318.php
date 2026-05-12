@@ -21,7 +21,7 @@
   class=" layout-navbar-fixed layout-wide "
   dir="ltr"
   data-skin="default"
-  data-assets-path="{{ asset('assets') }}/"
+  data-assets-path="<?php echo e(asset('assets')); ?>/"
   data-template="front-pages"
   data-bs-theme="light">
   <head>
@@ -37,7 +37,7 @@
     <meta property="og:title" content="Sneat Bootstrap 5 Dashboard PRO by ThemeSelection" />
     <meta property="og:type" content="product" />
     <meta property="og:url" content="https://themeselection.com/item/sneat-dashboard-pro-bootstrap/" />
-    <meta property="og:image" content="{{ asset('assets') }}/img/front-pages/landing-page/3DHub%20logo1.png" />
+    <meta property="og:image" content="<?php echo e(asset('assets')); ?>/img/front-pages/landing-page/3DHub%20logo1.png" />
     <meta property="og:description" content="Sneat is the best bootstrap 5 dashboard for responsive web apps. Streamline your app development process with ease." />
     <meta property="og:site_name" content="ThemeSelection" />
     <link rel="canonical" href="https://themeselection.com/item/sneat-dashboard-pro-bootstrap/" />
@@ -47,10 +47,10 @@
          It was injecting OptinMonster (omappapi.com) which consumed 4,542ms
          of CPU and is the #1 cause of your map lag. -->
 
-    <script src="{{ asset('assets') }}/js/theme-init.js"></script>
+    <script src="<?php echo e(asset('assets')); ?>/js/theme-init.js"></script>
   
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
+    <link rel="icon" type="image/x-icon" href="<?php echo e(asset('favicon.ico')); ?>" />
   
     <!-- Fonts — preconnect first for faster DNS -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -58,24 +58,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
   
     <!-- Icons -->
-    <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css" />
+    <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/fonts/iconify-icons.css" />
   
     <!-- Core CSS -->
-    <link rel="stylesheet" href="{{ asset('assets') }}/vendor/libs/pickr/pickr-themes.css" />
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css" />
-  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css" />
-  <link rel="stylesheet" href="{{ asset('assets') }}/css/client-responsive.css" />
-    <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css" />
+    <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/libs/pickr/pickr-themes.css" />
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/core.css" />
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/demo.css" />
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/client-responsive.css" />
+    <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/pages/front-page.css" />
   
     <!-- Vendor CSS -->
-    <link rel="stylesheet" href="{{ asset('assets') }}/vendor/libs/nouislider/nouislider.css" />
-    <link rel="stylesheet" href="{{ asset('assets') }}/vendor/libs/swiper/swiper.css" />
+    <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/libs/nouislider/nouislider.css" />
+    <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/libs/swiper/swiper.css" />
   
     <!-- Page CSS -->
-    <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page-landing.css" />
+    <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/pages/front-page-landing.css" />
   
     <!-- Custom Cesium Map CSS -->
-    <link rel="stylesheet" href="{{ asset('assets') }}/css/cesium-map.css" />
+    <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/cesium-map.css" />
     <!-- Ensure 3DHub logo is fully visible and not clipped by navbar/footer brand box -->
     <style>
       .navbar-brand.app-brand .app-brand-link { overflow: visible; display: flex; align-items: center; }
@@ -117,28 +117,28 @@
 
     <script>
       window.AppConfig = {
-        baseUrl:    "{{ rtrim(config('app.url'), '/') }}",
-        uploadsUrl: "{{ url('uploads') }}",
-        assetUrl:   "{{ asset('') }}",
+        baseUrl:    "<?php echo e(rtrim(config('app.url'), '/')); ?>",
+        uploadsUrl: "<?php echo e(url('uploads')); ?>",
+        assetUrl:   "<?php echo e(asset('')); ?>",
       };
       window.TemaDataPortal_API_BASE = window.AppConfig.baseUrl;
     </script>
   
     <!-- Custom Cesium Map JS
          ✅ KEPT: defer maintained — loads after HTML is parsed, order preserved -->
-    <script src="{{ asset('assets') }}/js/cesium-map.js" defer></script>
-    <script src="{{ asset('assets') }}/js/cesium-map-controls.js" defer></script>
-    <script src="{{ asset('assets') }}/js/cesium-map-markers.js" defer></script>
+    <script src="<?php echo e(asset('assets')); ?>/js/cesium-map.js" defer></script>
+    <script src="<?php echo e(asset('assets')); ?>/js/cesium-map-controls.js" defer></script>
+    <script src="<?php echo e(asset('assets')); ?>/js/cesium-map-markers.js" defer></script>
   
     <!-- Helpers -->
-    <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
+    <script src="<?php echo e(asset('assets')); ?>/vendor/js/helpers.js"></script>
   
     <!-- ✅ REMOVED: template-customizer.js
          REASON: This is a theme development tool only — runs unnecessary
          background scripts on your live production portal. Safe to remove. -->
   
     <!-- Theme Config -->
-    <script src="{{ asset('assets') }}/js/front-config.js"></script>
+    <script src="<?php echo e(asset('assets')); ?>/js/front-config.js"></script>
   
   </head>
 
@@ -151,8 +151,8 @@
     
 
 
-<script src="{{ asset('assets') }}/vendor/js/dropdown-hover.js"></script>
-  <script src="{{ asset('assets') }}/vendor/js/mega-dropdown.js"></script><!-- Navbar: Start -->
+<script src="<?php echo e(asset('assets')); ?>/vendor/js/dropdown-hover.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/vendor/js/mega-dropdown.js"></script><!-- Navbar: Start -->
 <nav class="layout-navbar shadow-none py-0">
   <div class="container">
     <div class="navbar navbar-expand-xl landing-navbar px-3 px-md-8">
@@ -163,9 +163,9 @@
           <i class="icon-base bx bx-menu icon-lg align-middle text-heading fw-medium"></i>
         </button>
         <!-- Mobile menu toggle: End-->
-        <a href="{{ route('landing') }}" class="app-brand-link">
+        <a href="<?php echo e(route('landing')); ?>" class="app-brand-link">
           <span class="app-brand-logo demo">
-            <img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub Logo" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;" />
+            <img src="<?php echo e(asset('assets')); ?>/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub Logo" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;" />
           </span>
           <span class="app-brand-text demo menu-text fw-bold ms-2 ps-1">3DHub</span>
         </a>
@@ -178,20 +178,20 @@
         </button>
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
-            <a class="nav-link fw-medium" aria-current="page" href="{{ route('landing') }}#landingHero">Home</a>
+            <a class="nav-link fw-medium" aria-current="page" href="<?php echo e(route('landing')); ?>#landingHero">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link fw-medium" href="{{ route('landing') }}#landingShowCase">ShowCase</a>
+            <a class="nav-link fw-medium" href="<?php echo e(route('landing')); ?>#landingShowCase">ShowCase</a>
           </li>
-          @auth
+          <?php if(auth()->guard()->check()): ?>
           <li class="nav-item dropdown d-none d-xl-block" id="navUpload">
             <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
               Upload
             </a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{{ route('create_project') }}">New Project</a></li>
+              <li><a class="dropdown-item" href="<?php echo e(route('create_project')); ?>">New Project</a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="{{ route('my_uploads') }}">My Projects</a></li>
+              <li><a class="dropdown-item" href="<?php echo e(route('my_uploads')); ?>">My Projects</a></li>
             </ul>
           </li>
           <li class="nav-item d-xl-none navUpload-mobile">
@@ -199,21 +199,21 @@
               Upload
             </a>
             <div class="collapse nav-upload-mobile-sub" id="navUploadCollapse">
-              <a class="nav-link fw-medium" href="{{ route('create_project') }}">New Project</a>
+              <a class="nav-link fw-medium" href="<?php echo e(route('create_project')); ?>">New Project</a>
               <hr class="dropdown-divider">
-              <a class="nav-link fw-medium" href="{{ route('my_uploads') }}">My Projects</a>
+              <a class="nav-link fw-medium" href="<?php echo e(route('my_uploads')); ?>">My Projects</a>
             </div>
           </li>
-          @endauth
+          <?php endif; ?>
 
           <!--<li class="nav-item">
-            <a class="nav-link fw-medium" href="{{ route('landing') }}#landingMap">Map</a>
+            <a class="nav-link fw-medium" href="<?php echo e(route('landing')); ?>#landingMap">Map</a>
           </li>-->
           <li class="nav-item">
-            <a class="nav-link fw-medium" href="{{ route('landing') }}#landingFAQ">FAQ</a>
+            <a class="nav-link fw-medium" href="<?php echo e(route('landing')); ?>#landingFAQ">FAQ</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link fw-medium" href="{{ route('landing') }}#landingContact">Contact us</a>
+            <a class="nav-link fw-medium" href="<?php echo e(route('landing')); ?>#landingContact">Contact us</a>
           </li>
           <li class="nav-item mega-dropdown">
             <a href="#" class="nav-link dropdown-toggle navbar-ex-14-mega-dropdown mega-dropdown fw-medium" aria-expanded="false" data-bs-toggle="mega-dropdown" data-trigger="hover" onclick="return false;">
@@ -227,11 +227,11 @@
               </div>
             </div>
           </li>
-          @can('admin')
+          <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('admin')): ?>
           <li class="nav-item" id="navAdmin">
-            <a class="nav-link fw-medium" href="{{ route('admin_dashboard') }}" target="_blank">Admin</a>
+            <a class="nav-link fw-medium" href="<?php echo e(route('admin_dashboard')); ?>" target="_blank">Admin</a>
           </li>
-          @endcan
+          <?php endif; ?>
 
         </ul>
       </div>
@@ -267,21 +267,21 @@
           <!-- / Style Switcher-->
         
         <!-- navbar button: Login (when logged out) / Log out (when logged in) -->
-        @guest
+        <?php if(auth()->guard()->guest()): ?>
         <li id="navLoginWrap">
-          <a href="{{ route('login') }}" class="btn btn-primary"><span class="tf-icons icon-base bx bx-log-in-circle scaleX-n1-rtl me-md-1"></span><span class="d-none d-md-block">Login/Register</span></a>
+          <a href="<?php echo e(route('login')); ?>" class="btn btn-primary"><span class="tf-icons icon-base bx bx-log-in-circle scaleX-n1-rtl me-md-1"></span><span class="d-none d-md-block">Login/Register</span></a>
         </li>
-        @endguest
+        <?php endif; ?>
 
-        @auth
+        <?php if(auth()->guard()->check()): ?>
         <li id="navUserWrap" class="d-flex align-items-center">
-          <a href="{{ route('profile') }}" class="navbar-text text-body me-3 d-none d-md-inline text-decoration-none fw-medium">{{ Auth::user()->email }}</a>
-          <form method="POST" action="{{ route('logout') }}" class="d-inline">
-              @csrf
+          <a href="<?php echo e(route('profile')); ?>" class="navbar-text text-body me-3 d-none d-md-inline text-decoration-none fw-medium"><?php echo e(Auth::user()->email); ?></a>
+          <form method="POST" action="<?php echo e(route('logout')); ?>" class="d-inline">
+              <?php echo csrf_field(); ?>
               <button type="button" id="navLogoutBtn" class="btn btn-outline-secondary"><span class="tf-icons icon-base bx bx-log-out me-1"></span><span class="d-none d-md-inline">Log out</span></button>
           </form>
         </li>
-        @endauth
+        <?php endif; ?>
 
         <!-- navbar button: End -->
       </ul>
@@ -298,7 +298,7 @@
     <!-- Hero: Start -->
     <section id="hero-animation">
       <div id="landingHero" class="section-py landing-hero position-relative">
-        <img src="{{ asset('assets') }}/img/front-pages/backgrounds/hero-bg.png" alt="hero background" class="position-absolute top-0 start-50 translate-middle-x object-fit-cover w-100 h-100" data-speed="1"/>
+        <img src="<?php echo e(asset('assets')); ?>/img/front-pages/backgrounds/hero-bg.png" alt="hero background" class="position-absolute top-0 start-50 translate-middle-x object-fit-cover w-100 h-100" data-speed="1"/>
         <div class="container">
           <div class="hero-text-box text-center position-relative">
             <h1 class="text-primary hero-title display-6 fw-extrabold">One Dashboard to Get All Your 3D Model Data</h1>
@@ -367,7 +367,7 @@
         <h4 class="text-center mb-1">
           <span class="position-relative fw-extrabold z-1"
             >Explore 3D Models
-            <img src="{{ asset('assets') }}/img/front-pages/icons/section-title-icon.png" alt="" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
+            <img src="<?php echo e(asset('assets')); ?>/img/front-pages/icons/section-title-icon.png" alt="" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
           </span>
           for each location on the map
         </h4>
@@ -375,7 +375,7 @@
         <div class="row g-4" id="tilesShowcase">
           <!-- Fallback: static tiles when API is empty or unavailable; replaced by script when GET /api/showcase returns data -->
           <div class="col-lg-4 col-md-6" id="tile-mapdata-KK_OSPREY">
-            <a href="{{ route('loading_3d') }}?id=KK_OSPREY"
+            <a href="<?php echo e(route('loading_3d')); ?>?id=KK_OSPREY"
  class="tile-3d-card" target="_blank" rel="noopener">
               <div class="tile-3d-img"><img src="https://placehold.co/400x220/1a1a2e/696cff?text=KK+OSPREY+3D" alt="KK OSPREY" onerror="this.src='https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model'"></div>
               <div class="tile-3d-body">
@@ -386,7 +386,7 @@
             </a>
           </div>
           <div class="col-lg-4 col-md-6" id="tile-mapdata-kb-3dtiles-lite">
-            <a href="{{ route('loading_3d') }}?id=kb-3dtiles-lite"
+            <a href="<?php echo e(route('loading_3d')); ?>?id=kb-3dtiles-lite"
  class="tile-3d-card" target="_blank" rel="noopener">
               <div class="tile-3d-img"><img src="https://placehold.co/400x220/667eea/ffffff?text=KB+3DTiles+Lite" alt="KB 3DTiles Lite" onerror="this.src='https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model'"></div>
               <div class="tile-3d-body">
@@ -397,7 +397,7 @@
             </a>
           </div>
           <div class="col-lg-4 col-md-6" id="tile-mapdata-kolombong-fisheye">
-            <a href="{{ route('loading_3d') }}?id=kolombong-fisheye"
+            <a href="<?php echo e(route('loading_3d')); ?>?id=kolombong-fisheye"
  class="tile-3d-card" target="_blank" rel="noopener">
               <div class="tile-3d-img"><img src="https://placehold.co/400x220/f093fb/ffffff?text=Kolombong+Fisheye" alt="Kolombong" onerror="this.src='https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model'"></div>
               <div class="tile-3d-body">
@@ -408,7 +408,7 @@
             </a>
           </div>
           <div class="col-lg-4 col-md-6" id="tile-mapdata-wisma-merdeka">
-            <a href="{{ route('loading_3d') }}?id=wisma-merdeka"
+            <a href="<?php echo e(route('loading_3d')); ?>?id=wisma-merdeka"
  class="tile-3d-card" target="_blank" rel="noopener">
               <div class="tile-3d-img"><img src="https://placehold.co/400x220/4facfe/ffffff?text=WISMA+MERDEKA" alt="WISMA MERDEKA" onerror="this.src='https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model'"></div>
               <div class="tile-3d-body">
@@ -419,7 +419,7 @@
             </a>
           </div>
           <div class="col-lg-4 col-md-6" id="tile-mapdata-ppns-ys">
-            <a href="{{ route('loading_3d') }}?id=ppns-ys"
+            <a href="<?php echo e(route('loading_3d')); ?>?id=ppns-ys"
  class="tile-3d-card" target="_blank" rel="noopener">
               <div class="tile-3d-img"><img src="https://placehold.co/400x220/43e97b/ffffff?text=PPNS+YS" alt="PPNS YS" onerror="this.src='https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model'"></div>
               <div class="tile-3d-body">
@@ -446,7 +446,7 @@
             <h4 class="mb-1">
               <span class="position-relative fw-extrabold z-1"
                 >All About Our Partners
-                <img src="{{ asset('assets') }}/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
+                <img src="<?php echo e(asset('assets')); ?>/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
               </span>
             </h4>
             <p class="mb-5 mb-md-12">
@@ -462,7 +462,7 @@
                     <div class="card h-100">
                       <div class="card-body text-body d-flex flex-column justify-content-between h-100">
                         <div class="mb-4">
-                          <img src="{{ asset('assets') }}/img/front-pages/branding/Get-3D-edited.png" style="width: 50px; height: 50px; display: inline-block;" alt="client logo" class="client-logo img-fluid" px="500"/>
+                          <img src="<?php echo e(asset('assets')); ?>/img/front-pages/branding/Get-3D-edited.png" style="width: 50px; height: 50px; display: inline-block;" alt="client logo" class="client-logo img-fluid" px="500"/>
                         </div>
                         <p>“Get3D providing advanced 3D solutions for various industries. Their expertise in photogrammetry, mapping, and AI offer accurate and innovative tools for digitizing spaces.”</p>
                         <div class="text-warning mb-4">
@@ -474,7 +474,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                           <div class="avatar me-3 avatar-sm">
-                            <img src="{{ asset('assets') }}/img/avatars/Adam Kozubowicz Ceo of Get3D.jpg" alt="Adam Kozubowicz" class="rounded-circle" />
+                            <img src="<?php echo e(asset('assets')); ?>/img/avatars/Adam Kozubowicz Ceo of Get3D.jpg" alt="Adam Kozubowicz" class="rounded-circle" />
                           </div>
                           <div>
                             <h6 class="mb-0">Adam Kozubowicz</h6>
@@ -488,7 +488,7 @@
                     <div class="card h-100">
                       <div class="card-body text-body d-flex flex-column justify-content-between h-100">
                         <div class="mb-4">
-                          <img src="{{ asset('assets') }}/img/front-pages/branding/FMESafeSoftware.png" style="width: 60px; height: 60px; display: inline-block;" alt="client logo" class="client-logo img-fluid"/>
+                          <img src="<?php echo e(asset('assets')); ?>/img/front-pages/branding/FMESafeSoftware.png" style="width: 60px; height: 60px; display: inline-block;" alt="client logo" class="client-logo img-fluid"/>
                         </div>
                         <p>“The FME Platform serves as a no-code solution, seamlessly integrating all your data and ensuring it flows effortlessly to your desired destination, on demand.”</p>
                         <div class="text-warning mb-4">
@@ -501,10 +501,10 @@
                         <div class="d-flex align-items-center">
                           <div class="avatar-group d-flex align-items-center me-3">
                             <div class="avatar avatar-sm">
-                              <img src="{{ asset('assets') }}/img/avatars/Don Murray Co Founder of FME Safe Software.jpg" alt="Don Murray" class="rounded-circle border border-2 border-white">
+                              <img src="<?php echo e(asset('assets')); ?>/img/avatars/Don Murray Co Founder of FME Safe Software.jpg" alt="Don Murray" class="rounded-circle border border-2 border-white">
                             </div>
                             <div class="avatar avatar-sm ms-n2">
-                              <img src="{{ asset('assets') }}/img/avatars/Dale Lutz Second Founder of FME Safe Software.jpg" alt="Dale Lutz" class="rounded-circle border border-2 border-white">
+                              <img src="<?php echo e(asset('assets')); ?>/img/avatars/Dale Lutz Second Founder of FME Safe Software.jpg" alt="Dale Lutz" class="rounded-circle border border-2 border-white">
                             </div>
                           </div>
                           <div>
@@ -519,7 +519,7 @@
                     <div class="card h-100">
                       <div class="card-body text-body d-flex flex-column justify-content-between h-100">
                         <div class="mb-4">
-                          <img src="{{ asset('assets') }}/img/front-pages/branding/HexagonGeospatial.png" style="width: 75px; height: 75px; display: inline-block;" alt="client logo" class="client-logo img-fluid" />
+                          <img src="<?php echo e(asset('assets')); ?>/img/front-pages/branding/HexagonGeospatial.png" style="width: 75px; height: 75px; display: inline-block;" alt="client logo" class="client-logo img-fluid" />
                         </div>
                         <p>Hexagon Geospatial Solution leads the global market in digital reality solutions, seamlessly integrating sensor, software, and autonomous technologies.</p>
                         <div class="text-warning mb-4">
@@ -531,7 +531,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                           <div class="avatar me-3 avatar-sm">
-                            <img src="{{ asset('assets') }}/img/avatars/Anders Svensson Ceo of Hexagon Geospatial.jpg" alt="Anders Svensson" class="rounded-circle" />
+                            <img src="<?php echo e(asset('assets')); ?>/img/avatars/Anders Svensson Ceo of Hexagon Geospatial.jpg" alt="Anders Svensson" class="rounded-circle" />
                           </div>
                           <div>
                             <h6 class="mb-0">Anders Svensson</h6>
@@ -545,7 +545,7 @@
                     <div class="card h-100">
                       <div class="card-body text-body d-flex flex-column justify-content-between h-100">
                         <div class="mb-4">
-                          <img src="{{ asset('assets') }}/img/front-pages/branding/qgis-logo.png" style="width: 55px; height: 55px; display: inline-block;" alt="client logo" class="client-logo img-fluid" />
+                          <img src="<?php echo e(asset('assets')); ?>/img/front-pages/branding/qgis-logo.png" style="width: 55px; height: 55px; display: inline-block;" alt="client logo" class="client-logo img-fluid" />
                         </div>
                         <p>Free and Open Source Software for Geospatial (FOSS4G) acts as both a web-based application and a platform, streamlining the development of geospatial information systems (GIS) solutions.</p>
                         <div class="text-warning mb-4">
@@ -557,7 +557,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                           <div class="avatar me-3 avatar-sm">
-                            <img src="{{ asset('assets') }}/img/avatars/Gary Sherman Founder of QGIS.jpg" alt="Gary Sherman" class="rounded-circle" />
+                            <img src="<?php echo e(asset('assets')); ?>/img/avatars/Gary Sherman Founder of QGIS.jpg" alt="Gary Sherman" class="rounded-circle" />
                           </div>
                           <div>
                             <h6 class="mb-0">Gary Sherman</h6>
@@ -572,7 +572,7 @@
                   <div class="card h-100">
                       <div class="card-body text-body d-flex flex-column justify-content-between h-100">
                         <div class="mb-4">
-                          <img src="{{ asset('assets') }}/img/front-pages/branding/logo-5.png" alt="client logo" class="client-logo img-fluid" />
+                          <img src="<?php echo e(asset('assets')); ?>/img/front-pages/branding/logo-5.png" alt="client logo" class="client-logo img-fluid" />
                         </div>
                         <p>“I've never used a theme as versatile and flexible as Vuexy. It's my go to for building dashboard sites on almost any project.”</p>
                         <div class="text-warning mb-4">
@@ -584,7 +584,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                           <div class="avatar me-3 avatar-sm">
-                            <img src="{{ asset('assets') }}/img/avatars/5.png" alt="Avatar" class="rounded-circle" />
+                            <img src="<?php echo e(asset('assets')); ?>/img/avatars/5.png" alt="Avatar" class="rounded-circle" />
                           </div>
                           <div>
                             <h6 class="mb-0">Eugenia Moore</h6>
@@ -599,7 +599,7 @@
                     <div class="card h-100">
                       <div class="card-body text-body d-flex flex-column justify-content-between h-100">
                         <div class="mb-4">
-                          <img src="{{ asset('assets') }}/img/front-pages/branding/logo-6.png" alt="client logo" class="client-logo img-fluid" />
+                          <img src="<?php echo e(asset('assets')); ?>/img/front-pages/branding/logo-6.png" alt="client logo" class="client-logo img-fluid" />
                         </div>
                         <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Veniam nemo mollitia, ad eum officia numquam nostrum repellendus consequuntur!</p>
                         <div class="text-warning mb-4">
@@ -611,7 +611,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                           <div class="avatar me-3 avatar-sm">
-                            <img src="{{ asset('assets') }}/img/avatars/1.png" alt="Avatar" class="rounded-circle" />
+                            <img src="<?php echo e(asset('assets')); ?>/img/avatars/1.png" alt="Avatar" class="rounded-circle" />
                           </div>
                           <div>
                             <h6 class="mb-0">Sara Smith</h6>
@@ -635,19 +635,19 @@
           <div class="swiper" id="swiper-clients-logos">
             <div class="swiper-wrapper">
               <div class="swiper-slide">
-                <img src="{{ asset('assets') }}/img/front-pages/branding/logo_1-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_1-light.png" data-app-dark-img="front-pages/branding/logo_1-dark.png" />
+                <img src="<?php echo e(asset('assets')); ?>/img/front-pages/branding/logo_1-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_1-light.png" data-app-dark-img="front-pages/branding/logo_1-dark.png" />
               </div>
               <div class="swiper-slide">
-                <img src="{{ asset('assets') }}/img/front-pages/branding/logo_2-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_2-light.png" data-app-dark-img="front-pages/branding/logo_2-dark.png" />
+                <img src="<?php echo e(asset('assets')); ?>/img/front-pages/branding/logo_2-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_2-light.png" data-app-dark-img="front-pages/branding/logo_2-dark.png" />
               </div>
               <div class="swiper-slide">
-                <img src="{{ asset('assets') }}/img/front-pages/branding/logo_3-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_3-light.png" data-app-dark-img="front-pages/branding/logo_3-dark.png" />
+                <img src="<?php echo e(asset('assets')); ?>/img/front-pages/branding/logo_3-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_3-light.png" data-app-dark-img="front-pages/branding/logo_3-dark.png" />
               </div>
               <div class="swiper-slide">
-                <img src="{{ asset('assets') }}/img/front-pages/branding/logo_4-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_4-light.png" data-app-dark-img="front-pages/branding/logo_4-dark.png" />
+                <img src="<?php echo e(asset('assets')); ?>/img/front-pages/branding/logo_4-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_4-light.png" data-app-dark-img="front-pages/branding/logo_4-dark.png" />
               </div>
               <div class="swiper-slide">
-                <img src="{{ asset('assets') }}/img/front-pages/branding/logo_5-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_5-light.png" data-app-dark-img="front-pages/branding/logo_5-dark.png" />
+                <img src="<?php echo e(asset('assets')); ?>/img/front-pages/branding/logo_5-light.png" alt="client logo" class="client-logo" data-app-light-img="front-pages/branding/logo_5-light.png" data-app-dark-img="front-pages/branding/logo_5-dark.png" />
               </div>
             </div>
           </div>
@@ -694,7 +694,7 @@
         <h4 class="text-center mb-1">
           <span class="position-relative fw-extrabold z-1"
             >Tailored services
-            <img src="{{ asset('assets') }}/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
+            <img src="<?php echo e(asset('assets')); ?>/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
           </span>
           for your 3D workflow
         </h4>
@@ -704,7 +704,7 @@
             <div class="card pricing-plan-card">
               <div class="card-header">
                 <div class="text-center">
-                  <img src="{{ asset('assets') }}/img/front-pages/icons/paper-airplane.png" alt="paper airplane icon" class="mb-8 pb-2" />
+                  <img src="<?php echo e(asset('assets')); ?>/img/front-pages/icons/paper-airplane.png" alt="paper airplane icon" class="mb-8 pb-2" />
                   <h4 class="mb-0">Request Access(Free)</h4>
                   <div class="d-flex align-items-center justify-content-center">
                     <span class="price-monthly h2 text-primary fw-extrabold mb-0">0 Token Required</span>
@@ -728,7 +728,7 @@
                   </li>
                 </ul>
                 <div class="d-grid mt-8">
-                  <a href="{{ route('register') }}" class="btn btn-label-primary" id="pricingGetStartedBtn">Get Started</a>
+                  <a href="<?php echo e(route('register')); ?>" class="btn btn-label-primary" id="pricingGetStartedBtn">Get Started</a>
                 </div>
               </div>
             </div>
@@ -738,7 +738,7 @@
             <div class="card pricing-plan-card">
               <div class="card-header">
                 <div class="text-center">
-                  <img src="{{ asset('assets') }}/img/front-pages/icons/plane.png" alt="plane icon" class="mb-8 pb-2" />
+                  <img src="<?php echo e(asset('assets')); ?>/img/front-pages/icons/plane.png" alt="plane icon" class="mb-8 pb-2" />
                   <h4 class="mb-0">Upload Raw Data</h4>
                   <div class="d-flex align-items-center justify-content-center">
                     <span class="price-monthly h2 text-primary fw-extrabold mb-0">0 Token Required</span>
@@ -772,7 +772,7 @@
             <div class="card pricing-plan-card">
               <div class="card-header">
                 <div class="text-center">
-                  <img src="{{ asset('assets') }}/img/front-pages/icons/shuttle-rocket.png" alt="shuttle rocket icon" class="mb-8 pb-2" />
+                  <img src="<?php echo e(asset('assets')); ?>/img/front-pages/icons/shuttle-rocket.png" alt="shuttle rocket icon" class="mb-8 pb-2" />
                   <h4 class="mb-0">Reload Token</h4>
                   <div class="d-flex align-items-center justify-content-center">
                     <span class="price-monthly h2 text-primary fw-extrabold mb-0">RM2</span>
@@ -816,14 +816,14 @@
           Frequently asked
           <span class="position-relative fw-extrabold z-1"
             >questions
-            <img src="{{ asset('assets') }}/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
+            <img src="<?php echo e(asset('assets')); ?>/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
           </span>
         </h4>
         <p class="text-center mb-12 pb-md-4">Browse through these FAQs to find answers to commonly asked questions.</p>
         <div class="row gy-12 align-items-center">
           <div class="col-lg-5">
             <div class="text-center">
-              <img src="{{ asset('assets') }}/img/front-pages/landing-page/faq-boy-with-logos.png" alt="faq boy with logos" class="faq-image" />
+              <img src="<?php echo e(asset('assets')); ?>/img/front-pages/landing-page/faq-boy-with-logos.png" alt="faq boy with logos" class="faq-image" />
             </div>
           </div>
           <div class="col-lg-7">
@@ -896,7 +896,7 @@
         <h4 class="text-center mb-1">
           <span class="position-relative fw-extrabold z-1"
             >Let's work
-            <img src="{{ asset('assets') }}/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
+            <img src="<?php echo e(asset('assets')); ?>/img/front-pages/icons/section-title-icon.png" alt="laptop charging" class="section-title-img position-absolute object-fit-contain bottom-0 z-n1" />
           </span>
           together
         </h4>
@@ -904,8 +904,8 @@
         <div class="row g-6">
           <div class="col-lg-5">
             <div class="contact-img-box position-relative border p-2 h-100">
-              <img src="{{ asset('assets') }}/img/front-pages/icons/contact-border.png" alt="contact border" class="contact-border-img position-absolute d-none d-lg-block scaleX-n1-rtl" />
-              <img src="{{ asset('assets') }}/img/front-pages/landing-page/contact-customer-service.png" alt="contact customer service" class="contact-img w-100 scaleX-n1-rtl" />
+              <img src="<?php echo e(asset('assets')); ?>/img/front-pages/icons/contact-border.png" alt="contact border" class="contact-border-img position-absolute d-none d-lg-block scaleX-n1-rtl" />
+              <img src="<?php echo e(asset('assets')); ?>/img/front-pages/landing-page/contact-customer-service.png" alt="contact customer service" class="contact-img w-100 scaleX-n1-rtl" />
               <div class="p-4 pb-2">
                 <div class="row g-4">
                   <div class="col-md-6 col-lg-12 col-xl-6">
@@ -913,7 +913,7 @@
                       <div class="badge bg-label-primary rounded p-1_5 me-3"><i class="icon-base bx bx-envelope icon-lg"></i></div>
                       <div>
                         <p class="mb-0">Email</p>
-                        <h6 class="mb-0"><a href="mailto:{{ config('support.email') }}" class="text-heading">{{ config('support.email') }}</a></h6>
+                        <h6 class="mb-0"><a href="mailto:<?php echo e(config('support.email')); ?>" class="text-heading"><?php echo e(config('support.email')); ?></a></h6>
                       </div>
                     </div>
                   </div>
@@ -922,7 +922,7 @@
                       <div class="badge bg-label-success rounded p-1_5 me-3"><i class="icon-base bx bx-phone-call icon-lg"></i></div>
                       <div>
                         <p class="mb-0">Phone</p>
-                        <h6 class="mb-0"><a href="tel:{{ str_replace([' ', '-', '+'], '', config('support.phone')) }}" class="text-heading">{{ config('support.phone') }}</a></h6>
+                        <h6 class="mb-0"><a href="tel:<?php echo e(str_replace([' ', '-', '+'], '', config('support.phone'))); ?>" class="text-heading"><?php echo e(config('support.phone')); ?></a></h6>
                       </div>
                     </div>
                   </div>
@@ -938,20 +938,22 @@
                   If you would like to discuss anything related to 3D model processing, raw data uploads,<br class="d-none d-lg-block" />
                   custom mapping services, or account inquiries, you’re at the right place.
                 </p>
-                @if(session('success'))
+                <?php if(session('success')): ?>
                   <div class="alert alert-success alert-dismissible" role="alert">
-                    {{ session('success') }}
+                    <?php echo e(session('success')); ?>
+
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                   </div>
-                @endif
-                @if(session('error'))
+                <?php endif; ?>
+                <?php if(session('error')): ?>
                   <div class="alert alert-danger alert-dismissible" role="alert">
-                    {{ session('error') }}
+                    <?php echo e(session('error')); ?>
+
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                   </div>
-                @endif
-                <form action="{{ route('contact.submit') }}" method="POST">
-                  @csrf
+                <?php endif; ?>
+                <form action="<?php echo e(route('contact.submit')); ?>" method="POST">
+                  <?php echo csrf_field(); ?>
                   <div class="row g-4">
                     <div class="col-md-6">
                       <label class="form-label" for="contact-form-fullname">Full Name</label>
@@ -988,9 +990,9 @@
   <div class="footer-bottom py-3 py-md-5">
     <div class="container d-flex flex-wrap justify-content-between flex-md-row flex-column text-center text-md-start align-items-center">
       <div class="mb-2 mb-md-0 d-flex align-items-center flex-wrap justify-content-center justify-content-md-start gap-2">
-        <a href="{{ route('landing') }}" class="app-brand-link d-flex align-items-center">
+        <a href="<?php echo e(route('landing')); ?>" class="app-brand-link d-flex align-items-center">
           <span class="app-brand-logo demo">
-            <img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; filter: brightness(3.5) contrast(1.2) drop-shadow(0 0 2px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));" />
+            <img src="<?php echo e(asset('assets')); ?>/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; filter: brightness(3.5) contrast(1.2) drop-shadow(0 0 2px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));" />
           </span>
         </a>
         <span class="footer-bottom-text mb-0">© 3D Hub Developed by Temadigital</span>
@@ -1035,38 +1037,38 @@
     <!-- build:js assets/vendor/js/theme.js  -->
     
     
-    <script src="{{ asset('assets') }}/vendor/libs/popper/popper.js"></script>
-    <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
-    <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
-    <script src="{{ asset('assets') }}/vendor/libs/@algolia/autocomplete-js.js"></script>
+    <script src="<?php echo e(asset('assets')); ?>/vendor/libs/popper/popper.js"></script>
+    <script src="<?php echo e(asset('assets')); ?>/vendor/js/bootstrap.js"></script>
+    <script src="<?php echo e(asset('assets')); ?>/js/theme-switcher.js"></script>
+    <script src="<?php echo e(asset('assets')); ?>/vendor/libs/@algolia/autocomplete-js.js"></script>
 
     
       
-      <script src="{{ asset('assets') }}/vendor/libs/pickr/pickr.js"></script>
+      <script src="<?php echo e(asset('assets')); ?>/vendor/libs/pickr/pickr.js"></script>
     
 
     
     <!-- endbuild -->
 
     <!-- Vendors JS -->
-    <script src="{{ asset('assets') }}/vendor/libs/nouislider/nouislider.js"></script>
-  <script src="{{ asset('assets') }}/vendor/libs/swiper/swiper.js"></script>
+    <script src="<?php echo e(asset('assets')); ?>/vendor/libs/nouislider/nouislider.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/vendor/libs/swiper/swiper.js"></script>
 
     <!-- Main JS -->
     
-      <script src="{{ asset('assets') }}/js/front-main.js"></script>
+      <script src="<?php echo e(asset('assets')); ?>/js/front-main.js"></script>
     
 
     <!-- Page JS -->
-    <script src="{{ asset('assets') }}/js/front-page-landing.js"></script>
+    <script src="<?php echo e(asset('assets')); ?>/js/front-page-landing.js"></script>
 
     <!-- Auth state: Set from Laravel Blade -->
     <script>
       (function() {
-        window.__authLoggedIn = {{ Auth::check() ? 'true' : 'false' }};
-        window.__authRole = '{{ Auth::check() ? Auth::user()->role : 'guest' }}';
-        var LOGIN_URL = '{{ route('login') }}';
-        var REGISTER_URL = '{{ route('register') }}';
+        window.__authLoggedIn = <?php echo e(Auth::check() ? 'true' : 'false'); ?>;
+        window.__authRole = '<?php echo e(Auth::check() ? Auth::user()->role : 'guest'); ?>';
+        var LOGIN_URL = '<?php echo e(route('login')); ?>';
+        var REGISTER_URL = '<?php echo e(route('register')); ?>';
   
     // Check URL params first (coming from OAuth redirect)
         var params = new URLSearchParams(window.location.search);
@@ -1126,7 +1128,7 @@
               modal.show();
               return;
             }
-            window.location.href = '{{ route('payment') }}';
+            window.location.href = '<?php echo e(route('payment')); ?>';
           });
         });
       })();
@@ -1143,8 +1145,8 @@
             <p class="mb-0">To purchase 3D models, you need a Data Portal account. Create an account or log in if you already have one. Then click the button again.</p>
           </div>
           <div class="modal-footer">
-            <a href="{{ route('register') }}" class="btn btn-label-primary">Create account</a>
-            <a href="{{ route('login') }}" class="btn btn-primary">Log in</a>
+            <a href="<?php echo e(route('register')); ?>" class="btn btn-label-primary">Create account</a>
+            <a href="<?php echo e(route('login')); ?>" class="btn btn-primary">Log in</a>
           </div>
         </div>
       </div>
@@ -1240,7 +1242,7 @@
     <!-- Upload guest guard: intercept New Project / My Projects for non-logged-in users -->
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        var REGISTER_URL = '{{ route('register') }}';
+        var REGISTER_URL = '<?php echo e(route('register')); ?>';
         var uploadLinks = [
           document.querySelector('#navUpload .dropdown-menu a[href*="create-project"]'),
           document.querySelector('#navUpload .dropdown-menu a[href*="my-uploads"]'),
@@ -1339,4 +1341,4 @@
   </body>
 </html>
 
-  <!-- beautify ignore:end -->
+  <!-- beautify ignore:end --><?php /**PATH C:\Users\User\.antigravity\Projects\DataPortalV2\resources\views/portal/landing-page.blade.php ENDPATH**/ ?>

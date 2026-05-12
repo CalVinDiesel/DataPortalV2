@@ -1,24 +1,24 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-assets-path="{{ asset('assets') }}/" data-template="admin-data-portal" data-bs-theme="light">
+<html lang="en" dir="ltr" data-assets-path="<?php echo e(asset('assets')); ?>/" data-template="admin-data-portal" data-bs-theme="light">
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Client Uploads - Admin | 3DHub</title>
-  <script src="{{ asset('assets') }}/js/theme-init.js"></script>
-  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css" />
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css" />
-  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css" />
-  <link rel="stylesheet" href="{{ asset('assets') }}/css/admin-responsive.css" />
-  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
-  <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/js/theme-init.js"></script>
+  <link rel="icon" type="image/x-icon" href="<?php echo e(asset('favicon.ico')); ?>" />
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/fonts/iconify-icons.css" />
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/core.css" />
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/demo.css" />
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/admin-responsive.css" />
+  <script src="<?php echo e(asset('assets')); ?>/vendor/js/helpers.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/vendor/js/bootstrap.js"></script>
   <script>
     (function() {
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
       fetch(AUTH_API + '/api/auth/me', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(d) {
-        if (!d.loggedIn || (d.role !== 'admin' && d.role !== 'superadmin')) window.location.href = '{{ route('landing') }}?error=admin_only';
-      }).catch(function() { window.location.href = '{{ route('landing') }}'; });
+        if (!d.loggedIn || (d.role !== 'admin' && d.role !== 'superadmin')) window.location.href = '<?php echo e(route('landing')); ?>?error=admin_only';
+      }).catch(function() { window.location.href = '<?php echo e(route('landing')); ?>'; });
     })();
   </script>
   <style>
@@ -90,19 +90,19 @@
       
       <!-- Premium Glass Top Nav -->
       <nav class="admin-glass-nav">
-        <a href="{{ route('admin_dashboard') }}" class="app-brand-link d-flex align-items-center">
-          <span class="app-brand-logo demo me-2"><img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+        <a href="<?php echo e(route('admin_dashboard')); ?>" class="app-brand-link d-flex align-items-center">
+          <span class="app-brand-logo demo me-2"><img src="<?php echo e(asset('assets')); ?>/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
           <span class="app-brand-text demo menu-text fw-bold text-heading" style="font-size: 1.1em;">3DHub Admin</span>
         </a>
         
         <div class="admin-nav-links d-none d-xl-flex">
-          <a href="{{ route('admin_dashboard') }}" class="admin-nav-link">Dashboard</a>
-          <a href="{{ route('admin.add_3d_model') }}" class="admin-nav-link">Add 3D Model</a>
-          <a href="{{ route('admin.manage_map_pins') }}" class="admin-nav-link">Manage Map Pins</a>
-          <a href="{{ route('admin.manage_showcases') }}" class="admin-nav-link">Manage Showcase</a>
-          <a href="{{ route('admin.client_uploads') }}" class="admin-nav-link active">Client Uploads</a>
-          <a href="{{ route('admin.manage_users') }}" class="admin-nav-link">Manage Users</a>
-          <a href="{{ route('landing') }}" class="admin-nav-link" target="_blank">View Portal</a>
+          <a href="<?php echo e(route('admin_dashboard')); ?>" class="admin-nav-link">Dashboard</a>
+          <a href="<?php echo e(route('admin.add_3d_model')); ?>" class="admin-nav-link">Add 3D Model</a>
+          <a href="<?php echo e(route('admin.manage_map_pins')); ?>" class="admin-nav-link">Manage Map Pins</a>
+          <a href="<?php echo e(route('admin.manage_showcases')); ?>" class="admin-nav-link">Manage Showcase</a>
+          <a href="<?php echo e(route('admin.client_uploads')); ?>" class="admin-nav-link active">Client Uploads</a>
+          <a href="<?php echo e(route('admin.manage_users')); ?>" class="admin-nav-link">Manage Users</a>
+          <a href="<?php echo e(route('landing')); ?>" class="admin-nav-link" target="_blank">View Portal</a>
         </div>
 
         <div class="ms-auto d-flex align-items-center gap-2">
@@ -118,15 +118,15 @@
               </ul>
             </div>
 
-            @auth
+            <?php if(auth()->guard()->check()): ?>
             <div class="d-none d-md-flex align-items-center gap-3 border-start ps-3 ms-2">
-                <a href="{{ route('profile') }}" class="small text-muted fw-medium text-decoration-none email-hover-link">{{ Auth::user()->email }}</a>
-                <form method="POST" action="{{ route('logout') }}" id="adminLogoutForm" class="d-inline">
-                    @csrf
+                <a href="<?php echo e(route('profile')); ?>" class="small text-muted fw-medium text-decoration-none email-hover-link"><?php echo e(Auth::user()->email); ?></a>
+                <form method="POST" action="<?php echo e(route('logout')); ?>" id="adminLogoutForm" class="d-inline">
+                    <?php echo csrf_field(); ?>
                     <button type="button" id="adminLogoutBtn" class="btn btn-sm btn-outline-danger px-3 rounded-pill fw-bold">Log out</button>
                 </form>
             </div>
-            @endauth
+            <?php endif; ?>
 
             <button class="admin-menu-toggle btn btn-icon d-xl-none border-0 bg-transparent p-0" type="button" aria-label="Toggle menu"><i class="bx bx-menu icon-lg"></i></button>
         </div>
@@ -137,7 +137,7 @@
           <div class="container-xxl flex-grow-1 container-p-y">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <h4 class="fw-bold mb-0">Client Uploads</h4>
-              <a href="{{ route('admin_dashboard') }}" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
+              <a href="<?php echo e(route('admin_dashboard')); ?>" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
             </div>
             <p class="text-muted mb-3">Clients submit drone-captured images via SFTP or the Data Portal for
               <strong>custom image-to-3D processing</strong>. Manage request status here. All file transfers happen
@@ -216,7 +216,7 @@
                       <div class="fw-bold mb-1"><i class="bx bx-server me-1"></i> SFTP File Location</div>
                       <div class="small text-muted mb-2">
                         <i class="bx bx-info-circle me-1"></i> Connect via WinSCP: 
-                        <strong><span id="detailSftpHostDisplay">{{ config('filesystems.disks.sftp_delivery.host', '172.21.107.151') }}</span></strong> | Port: <strong><span id="detailSftpPortDisplay">{{ env('SFTP_USER_PORT', 2223) }}</span></strong> | User: <strong><span id="detailSftpUserDisplay">{{ config('filesystems.disks.sftp_delivery.username', 'tiquan') }}</span></strong>
+                        <strong><span id="detailSftpHostDisplay"><?php echo e(config('filesystems.disks.sftp_delivery.host', '172.21.107.151')); ?></span></strong> | Port: <strong><span id="detailSftpPortDisplay"><?php echo e(env('SFTP_USER_PORT', 2223)); ?></span></strong> | User: <strong><span id="detailSftpUserDisplay"><?php echo e(config('filesystems.disks.sftp_delivery.username', 'tiquan')); ?></span></strong>
                       </div>
                       <div class="d-flex align-items-center gap-2">
                         <code id="detailSftpPath" class="d-block p-2 bg-white border rounded flex-grow-1"
@@ -297,7 +297,7 @@
                       <div class="alert alert-info mb-3" id="deliverPathHintBox">
                         <div class="fw-bold mb-1"><i class="bx bx-info-circle me-1"></i> Manual Delivery Path</div>
                         <div class="small mb-2">
-                          Connect to: <strong><span id="deliverHostDisplay">{{ config('filesystems.disks.sftp_delivery.host', '172.21.107.151') }}</span></strong> | Port: <strong><span id="deliverPortDisplay">{{ env('SFTP_DELIVERY_PORT', 2222) }}</span></strong> | User: <strong><span id="deliverUserDisplay">{{ config('filesystems.disks.sftp_delivery.username', 'tiquan') }}</span></strong>
+                          Connect to: <strong><span id="deliverHostDisplay"><?php echo e(config('filesystems.disks.sftp_delivery.host', '172.21.107.151')); ?></span></strong> | Port: <strong><span id="deliverPortDisplay"><?php echo e(env('SFTP_DELIVERY_PORT', 2222)); ?></span></strong> | User: <strong><span id="deliverUserDisplay"><?php echo e(config('filesystems.disks.sftp_delivery.username', 'tiquan')); ?></span></strong>
                         </div>
                         <div class="small d-flex align-items-center justify-content-between">
                           <span>Place your file in:</span>
@@ -811,7 +811,7 @@
               method: 'POST',
               headers: { 
                   'Content-Type': 'application/json',
-                  'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                  'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
               },
               body: JSON.stringify({ projectID: projectId })
           })
@@ -847,7 +847,7 @@
               method: 'POST',
               headers: { 
                   'Content-Type': 'application/json',
-                  'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                  'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
               },
               body: JSON.stringify({ projectID: projectId })
           })
@@ -1146,7 +1146,7 @@
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
                     },
                     body: JSON.stringify({ delivery_notes: notes })
                 })
@@ -1257,7 +1257,7 @@
                             const xhr = new XMLHttpRequest();
                             activeNitroXHRs.push(xhr);
                             xhr.open('POST', '/api/upload/direct', true);
-                            xhr.setRequestHeader('X-CSRF-TOKEN', '{{ csrf_token() }}');
+                            xhr.setRequestHeader('X-CSRF-TOKEN', '<?php echo e(csrf_token()); ?>');
                             
                             xhr.upload.onprogress = (e) => {
                                 if (e.lengthComputable) {
@@ -1321,7 +1321,7 @@
                         headers: { 
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
                         },
                         signal: signal, // 🚀 CANCEL-AWARE (v169)
                         body: JSON.stringify({
@@ -1574,7 +1574,7 @@
 
             fetch('/api/admin/client-uploads/' + uploadId + '/ensure-delivery-folder', {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                headers: { 'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>' }
             })
             .then(r => r.json())
             .then(data => {
@@ -1687,8 +1687,8 @@
       });
     })();
   </script>
-  <script src="{{ asset('assets') }}/js/admin-responsive.js"></script>
-  <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/js/admin-responsive.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/js/theme-switcher.js"></script>
   <!-- Logout Confirmation Modal -->
   <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -1722,4 +1722,4 @@
   </script>
 </body>
 
-</html>
+</html><?php /**PATH C:\Users\User\.antigravity\Projects\DataPortalV2\resources\views/admin/client-uploads.blade.php ENDPATH**/ ?>

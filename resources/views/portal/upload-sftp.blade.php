@@ -205,6 +205,21 @@
       border: 1px dashed #d9dee3;
       margin-top: 1rem;
     }
+
+    /* 🌙 DARK MODE OPTIMIZATIONS (v280) */
+    [data-bs-theme="dark"] .left-panel { background: rgba(26, 26, 46, 0.95); border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .left-header, [data-bs-theme="dark"] .left-footer { background: rgba(26, 26, 46, 0.6); border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .form-section-title { color: #e1e4e8; }
+    [data-bs-theme="dark"] .form-section-title::after { background: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .form-label { color: #d1d5db; }
+    [data-bs-theme="dark"] .text-muted { color: #a1acb8 !important; }
+    [data-bs-theme="dark"] .sftp-fields-card { background: rgba(30, 41, 59, 0.5); border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .premium-credential-card { background: #1a1a2e; border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .cred-label { color: #8a94a6; }
+    [data-bs-theme="dark"] .cred-value { color: #e1e4e8; }
+    [data-bs-theme="dark"] .target-path-wrapper { background: rgba(0, 0, 0, 0.2); border-color: rgba(255, 255, 255, 0.2); }
+    [data-bs-theme="dark"] #map { border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] h3, [data-bs-theme="dark"] h4 { color: #e1e4e8 !important; }
   </style>
 </head>
 

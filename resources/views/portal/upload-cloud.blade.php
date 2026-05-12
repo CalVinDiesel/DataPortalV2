@@ -87,6 +87,20 @@
       box-shadow: 0 10px 20px -5px rgba(46, 213, 115, 0.5); animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
     @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+    /* 🌙 DARK MODE OPTIMIZATIONS (v280) */
+    [data-bs-theme="dark"] .left-panel { background: rgba(26, 26, 46, 0.95); border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .left-header, [data-bs-theme="dark"] .left-footer { background: rgba(26, 26, 46, 0.6); border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .provider-btn { background: rgba(30, 41, 59, 0.5); border-color: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .provider-btn.active { background: rgba(105, 108, 255, 0.1); border-color: #696cff; }
+    [data-bs-theme="dark"] .provider-btn:hover:not(.active) { border-color: rgba(255, 255, 255, 0.3); background: rgba(45, 55, 72, 0.6); }
+    [data-bs-theme="dark"] .provider-btn span { color: #e1e4e8; }
+    [data-bs-theme="dark"] .form-section-title { color: #e1e4e8; }
+    [data-bs-theme="dark"] .form-section-title::after { background: rgba(255, 255, 255, 0.1); }
+    [data-bs-theme="dark"] .form-label { color: #d1d5db; }
+    [data-bs-theme="dark"] .text-muted { color: #a1acb8 !important; }
+    [data-bs-theme="dark"] h3, [data-bs-theme="dark"] h4 { color: #e1e4e8 !important; }
+    [data-bs-theme="dark"] #map { border-color: rgba(255, 255, 255, 0.1); }
   </style>
 </head>
 
