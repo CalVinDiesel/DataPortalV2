@@ -1,22 +1,22 @@
 <!DOCTYPE html>
-<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets') }}/"
+<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="<?php echo e(asset('assets')); ?>/"
   data-template="front-pages" data-bs-theme="light">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Create Project via SFTP | 3DHub Data Portal</title>
-  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+  <link rel="icon" type="image/x-icon" href="<?php echo e(asset('favicon.ico')); ?>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&amp;display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css">
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css">
-  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css">
-  <link rel="stylesheet" href="{{ asset('assets') }}/css/client-responsive.css">
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/fonts/iconify-icons.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/core.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/demo.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/client-responsive.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/pages/front-page.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -31,11 +31,11 @@
     }
   </style>
 
-  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
-  <script src="{{ asset('assets') }}/js/front-config.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/vendor/js/helpers.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/js/front-config.js"></script>
   <script>
     (function () {
-      window.userRole = '{{ Auth::user()->role }}';
+      window.userRole = '<?php echo e(Auth::user()->role); ?>';
     })();
   </script>
   <style>
@@ -368,12 +368,12 @@
         </form>
       </div>
       <div class="left-footer" id="formFooter">
-        <button type="button" class="btn btn-secondary text-white fw-medium border-0 px-4" style="background:#8b9eb0;" onclick="window.location.href='{{ route('create_project') }}'">Cancel</button>
+        <button type="button" class="btn btn-secondary text-white fw-medium border-0 px-4" style="background:#8b9eb0;" onclick="window.location.href='<?php echo e(route('create_project')); ?>'">Cancel</button>
         <button type="submit" form="sftpForm" id="btnSubmitForm" class="btn btn-primary px-5">Submit Project</button>
       </div>
       <div class="left-footer" id="successFooter" style="display: none;">
         <div class="w-100 text-center">
-          <button type="button" class="btn btn-primary w-100" onclick="window.location.href='{{ route('my_uploads') }}'">Done Workspace</button>
+          <button type="button" class="btn btn-primary w-100" onclick="window.location.href='<?php echo e(route('my_uploads')); ?>'">Done Workspace</button>
         </div>
       </div>
     </div>
@@ -382,9 +382,9 @@
     </div>
   </div>
 
-  <script src="{{ asset('assets/vendor/js/bootstrap.js') }}"></script>
+  <script src="<?php echo e(asset('assets/vendor/js/bootstrap.js')); ?>"></script>
   <script>
-    const userRole = '{{ Auth::user()->role }}';
+    const userRole = '<?php echo e(Auth::user()->role); ?>';
     const isAdmin = (userRole === 'admin' || userRole === 'superadmin');
 
     // 🌍 BACKGROUND MAP (v128)
@@ -446,7 +446,7 @@
       }
       
       // Prefix with slugified user name
-      const userPrefix = '{{ Str::slug(Auth::user()->name) }}';
+      const userPrefix = '<?php echo e(Str::slug(Auth::user()->name)); ?>';
       let slug = title.toLowerCase()
         .trim()
         .replace(/[^\w\s-]/g, '')
@@ -510,7 +510,7 @@
           headers: { 
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
           },
           body: JSON.stringify(payload)
         });
@@ -524,8 +524,8 @@
           document.getElementById('successFooter').style.display = 'flex';
           
           // Show basic connection info
-          document.getElementById('resHost').innerText = data.sftpDetails.host || '{{ config('filesystems.disks.sftp_delivery.host', '172.21.107.151') }}';
-          document.getElementById('resPort').innerText = data.sftpDetails.port || '{{ env('SFTP_USER_PORT', 2223) }}';
+          document.getElementById('resHost').innerText = data.sftpDetails.host || '<?php echo e(config('filesystems.disks.sftp_delivery.host', '172.21.107.151')); ?>';
+          document.getElementById('resPort').innerText = data.sftpDetails.port || '<?php echo e(env('SFTP_USER_PORT', 2223)); ?>';
           
           // 🚀 SMART-PATH SYNC (v118)
           document.getElementById('resClientPath').innerText = data.sftpDetails.clientPath || data.sftpDetails.remotePath;
@@ -586,3 +586,4 @@
 </body>
 
 </html>
+<?php /**PATH C:\Users\User\.antigravity\Projects\DataPortalV2\resources\views/portal/upload-sftp.blade.php ENDPATH**/ ?>

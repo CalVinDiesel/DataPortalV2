@@ -611,10 +611,12 @@
               configHtml += `<a href="${item.onedrive_link}" target="_blank" class="small text-primary text-truncate d-block" style="max-width: 150px;" title="${item.onedrive_link}">View Shared Link</a>`;
             } else if (item.upload_type === 'sftp' || (item.upload_type && item.upload_type.startsWith('sftp_'))) {
               configHtml = `<span class="badge bg-label-info mb-1"><i class="bx bx-server me-1"></i> SFTP Source</span><br>`;
-              const isMulti = (item.upload_type === 'sftp_multiple');
+              const isMulti = (item.upload_type && item.upload_type.includes('multiple')) || 
+                            (item.camera_models && (item.camera_models.toLowerCase().includes('multi-lens') || item.camera_models.toLowerCase().includes('multiple')));
               configHtml += `<span class="badge bg-label-secondary mb-1">${isMulti ? 'Multi-Lens' : 'Single-Lens'}</span>`;
             } else {
-              const isMultiLens = (item.camera_models && item.camera_models.startsWith('Multi-Lens')) || (item.upload_type === 'multilens' || item.upload_type === 'multiple');
+              const isMultiLens = (item.upload_type && item.upload_type.includes('multiple')) || 
+                               (item.camera_models && (item.camera_models.toLowerCase().includes('multi-lens') || item.camera_models.toLowerCase().includes('multiple')));
               const hasPos = item.drone_pos_file_path ? true : false;
               configHtml = `<span class="badge bg-label-secondary mb-1">${isMultiLens ? 'Multi-Lens' : 'Single-Lens'}</span><br>`;
               if (hasPos) configHtml += `<span class="badge bg-label-dark"><i class="bx bx-target-lock me-1"></i> POS Attached</span>`;
@@ -1071,7 +1073,8 @@
         : 'Pending (SFTP Scan)';
       document.getElementById('detailCoordinates').textContent = coords;
       
-      const isMulti = (project.camera_models && project.camera_models.startsWith('Multi-Lens')) || (project.upload_type === 'multilens' || project.upload_type === 'multiple' || project.upload_type === 'sftp_multiple');
+      const isMulti = (project.upload_type && project.upload_type.includes('multiple')) || 
+                    (project.camera_models && (project.camera_models.toLowerCase().includes('multi-lens') || project.camera_models.toLowerCase().includes('multiple')));
       document.getElementById('detailConfig').textContent = isMulti ? 'Multi-Lens' : 'Single-Lens';
       
       // 🚀 CLEAN-DISPLAY (v283): Strip redundant prefixes for a professional look

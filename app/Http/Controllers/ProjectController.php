@@ -115,7 +115,7 @@ class ProjectController extends Controller
             'project_id' => $request->projectID,
             'project_title' => $request->projectTitle,
             'project_description' => $request->projectDescription,
-            'upload_type' => 'sftp',
+            'upload_type' => ($finalCam === 'Multi-Lens' || str_starts_with($finalCam, 'Multi-Lens')) ? 'sftp_multiple' : 'sftp',
             'created_by_email' => Auth::user()->email,
             'request_status' => 'pending',
             'camera_models' => $finalCam,
@@ -822,7 +822,23 @@ class ProjectController extends Controller
                 return true;
             }
 
-            \Log::warning("OneDrive Sync: Could not determine file size or count. Setting to 0 to clear false landing page sizes.");
+            // 🚀 METADATA PROTECTION (v290): Instead of blindly setting to 0, check if we have 
+            // accurate data in the DB or image_metadata JSON from a previous Nitro/SFTP upload.
+            if ($upload->total_size_bytes > 1024 && $upload->file_count > 0) {
+                \Log::info("OneDrive Sync Protection [{$upload->project_id}]: Preserving existing metrics over failed sync.");
+                return true;
+            }
+
+            // 🚀 RETROACTIVE RECOVERY (v290): Check image_metadata JSON
+            $meta = is_string($upload->image_metadata) ? json_decode($upload->image_metadata, true) : $upload->image_metadata;
+            if (isset($meta['count']) && (int)$meta['count'] > 0) {
+                \Log::info("OneDrive Sync Recovery [{$upload->project_id}]: Restoring count from metadata JSON.");
+                $upload->file_count = (int)$meta['count'];
+                $upload->save();
+                return true;
+            }
+
+            \Log::warning("OneDrive Sync: Could not determine file size or count. Setting to 0 as absolute fallback.");
             $upload->total_size_bytes = 0;
             $upload->file_count = 0;
             $upload->save();
@@ -841,8 +857,19 @@ class ProjectController extends Controller
             $client = new \Google\Client();
             $client->setClientId($config['clientId']);
             $client->setClientSecret($config['clientSecret']);
-            $client->fetchAccessTokenWithRefreshToken($config['refreshToken']);
+            // 🚀 SCOPE-FIRST (v291): Add scopes BEFORE fetching the token to ensure the request is authorized correctly
+            $client->addScope(\Google\Service\Drive::DRIVE_READONLY);
             $client->addScope(\Google\Service\Drive::DRIVE);
+            
+            $refreshToken = trim($config['refreshToken'] ?? '');
+            // 🚀 TOKEN REPAIR (v294): Handle multi-line tokens that might have been mangled in .env
+            $refreshToken = str_replace(["\r", "\n", " "], '', $refreshToken);
+            
+            $token = $client->fetchAccessTokenWithRefreshToken($refreshToken);
+            if (isset($token['error'])) {
+                \Log::error("GDrive Token Error [{$upload->project_id}]: " . ($token['error_description'] ?? $token['error']));
+                throw new \Exception("Google Drive authentication failed. Please check the refresh token.");
+            }
 
             $service = new \Google\Service\Drive($client);
 
@@ -857,7 +884,9 @@ class ProjectController extends Controller
                         'q' => "'$parentId' in parents and trashed = false",
                         'fields' => 'nextPageToken, files(id, name, size, mimeType)',
                         'pageToken' => $pageToken,
-                        'pageSize' => 100
+                        'pageSize' => 100,
+                        'supportsAllDrives' => true, // 🚀 SHARED DRIVE SUPPORT (v292)
+                        'includeItemsFromAllDrives' => true
                     ];
                     $results = $service->files->listFiles($optParams);
 
@@ -884,7 +913,10 @@ class ProjectController extends Controller
             };
 
             // 🚀 SMART DETECTION (v155): Check if the ID is a single file or a folder
-            $itemInfo = $service->files->get($folderId, ['fields' => 'id, name, size, mimeType']);
+            $itemInfo = $service->files->get($folderId, [
+                'fields' => 'id, name, size, mimeType',
+                'supportsAllDrives' => true // 🚀 SHARED DRIVE SUPPORT (v292)
+            ]);
             
             if ($itemInfo->getMimeType() !== 'application/vnd.google-apps.folder') {
                 // It's a single file (e.g., a ZIP file)
@@ -983,10 +1015,17 @@ class ProjectController extends Controller
 
         $data = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
         curl_close($ch);
 
         if ($status !== 206 && $status !== 200) {
-            \Log::warning("Zip Peeker HTTP Error: {$status}");
+            \Log::warning("GDrive Zip Peeker HTTP Error: {$status}");
+            return 0;
+        }
+
+        // 🚀 LANDING PAGE DETECTION (v293): If we got HTML, it's a sign-in or error page, not ZIP data
+        if (str_contains(strtolower($contentType), 'text/html')) {
+            \Log::warning("GDrive Zip Peeker: Received HTML instead of file media. Skipping count.");
             return 0;
         }
 

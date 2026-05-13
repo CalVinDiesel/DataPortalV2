@@ -300,7 +300,7 @@ class UploadController extends Controller
                     'total_size_bytes'    => $totalSizeBytes,
                     'file_count'          => $fileCount,
                     'request_status'      => 'pending',
-                    'upload_type'         => 'browser',
+                    'upload_type'         => ($finalCam === 'Multi-Lens' || str_starts_with($finalCam, 'Multi-Lens')) ? 'browser_multiple' : 'browser',
                     'delivery_method'     => 'portal',
                     'file_paths'          => [$absoluteSftpPath],
                     'delivered_file_path' => $absoluteSftpPath
