@@ -1193,10 +1193,21 @@
                 return;
             }
 
-            const notes = notesEl ? notesEl.value : '';
+            const notes = notesEl ? notesEl.value.trim() : '';
             const method = methodEl.value;
-            const manualPath = manualPathEl ? manualPathEl.value : '';
-            const gdriveLink = gdriveLinkEl ? gdriveLinkEl.value : '';
+            const manualPath = manualPathEl ? manualPathEl.value.trim() : '';
+            const gdriveLink = gdriveLinkEl ? gdriveLinkEl.value.trim() : '';
+
+            // 🛡️ STRICT COLUMN VALIDATION (v305)
+            let missing = [];
+            if (!notes) missing.push("Delivery Notes");
+            if (method === 'portal' && !file && !manualPath) missing.push("Uploaded File or SFTP Filename");
+            if (method === 'sftp' && !manualPath) missing.push("SFTP Filename");
+            if ((method === 'google_drive' || method === 'onedrive') && !gdriveLink) missing.push((method === 'google_drive' ? 'Google Drive' : 'OneDrive') + " Shared Link");
+
+            if (missing.length > 0) {
+                return alert("Delivery Incomplete! Please provide the following mandatory data:\n\n• " + missing.join("\n• "));
+            }
 
             confirmBtn.disabled = true;
             

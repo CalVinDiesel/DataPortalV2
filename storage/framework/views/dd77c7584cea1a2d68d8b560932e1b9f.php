@@ -1,30 +1,30 @@
 <!DOCTYPE html>
-<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets') }}/"
+<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="<?php echo e(asset('assets')); ?>/"
   data-template="front-pages" data-bs-theme="light">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Create Project Via Data Portal | 3DHub Data Portal</title>
-  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+  <link rel="icon" type="image/x-icon" href="<?php echo e(asset('favicon.ico')); ?>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&amp;display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css">
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css">
-  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css">
-  <link rel="stylesheet" href="{{ asset('assets') }}/css/client-responsive.css">
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/fonts/iconify-icons.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/core.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/demo.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/client-responsive.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/pages/front-page.css">
 
-  <link rel="stylesheet" href="{{ asset('assets/vendor/leaflet/leaflet.css') }}" />
-  <script src="{{ asset('assets/vendor/leaflet/leaflet.js') }}"></script>
-  <script src="{{ asset('assets/vendor/js/exif.js') }}"></script>
-  <script src="{{ asset('assets/vendor/js/jszip.min.js') }}"></script>
+  <link rel="stylesheet" href="<?php echo e(asset('assets/vendor/leaflet/leaflet.css')); ?>" />
+  <script src="<?php echo e(asset('assets/vendor/leaflet/leaflet.js')); ?>"></script>
+  <script src="<?php echo e(asset('assets/vendor/js/exif.js')); ?>"></script>
+  <script src="<?php echo e(asset('assets/vendor/js/jszip.min.js')); ?>"></script>
 
-  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
-  <script src="{{ asset('assets') }}/js/front-config.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/vendor/js/helpers.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/js/front-config.js"></script>
   <style>
     body { margin: 0; padding: 0; overflow: hidden; }
     .split-layout { display: block; height: 100vh; width: 100vw; position: relative; }
@@ -213,7 +213,7 @@
 
       <div class="left-footer border-top px-4">
         <div>
-            <button type="button" class="btn fw-medium border-0 px-4 me-2" style="background:#8b9eb0; color:#fff;" onclick="window.location.href='{{ route('create_project') }}'">Cancel</button>
+            <button type="button" class="btn fw-medium border-0 px-4 me-2" style="background:#8b9eb0; color:#fff;" onclick="window.location.href='<?php echo e(route('create_project')); ?>'">Cancel</button>
             <button type="button" class="btn btn-label-secondary" onclick="window.location.reload()">Reset</button>
         </div>
         <div class="d-flex align-items-center">
@@ -553,22 +553,19 @@
         const date = document.getElementById('captureDate').value;
         const lat = document.getElementById('latitude').value;
         const lng = document.getElementById('longitude').value;
-        const camModels = document.getElementById('cameraModels').value.trim();
-        const isMulti = document.getElementById('multipleCamera').checked;
         
-        // 🛡️ STRICT COLUMN VALIDATION (v307)
-        // Everything without an '(Optional)' label is mandatory.
+        // 🛡️ STRICT COLUMN VALIDATION (v305)
+        // Checks all mandatory fields except those explicitly marked as optional
         let missing = [];
         if (!title) missing.push("Project Title");
         if (!desc) missing.push("Description");
         if (cat === 'Other' && !otherCat) missing.push("Specific Category Name");
         if (!date) missing.push("Capture Date");
-        if (!lat || !lng) missing.push("Map Location (Use 'Auto pick' or click map)");
-        if (isMulti && !camModels) missing.push("Camera Models");
+        if (!lat || !lng) missing.push("Map Location (Set pin on map)");
         if (pendingUploadFiles.length === 0) missing.push("Folder/Files to Upload");
 
         if (missing.length > 0) {
-            return alert("Form Incomplete! The following mandatory fields must be filled:\n\n• " + missing.join("\n• "));
+            return alert("Form Incomplete! Please fill in all mandatory fields before proceeding:\n\n• " + missing.join("\n• "));
         }
 
         isUploading = true;
@@ -583,7 +580,7 @@
         const totalSizeBytes = pendingUploadFiles.reduce((acc, f) => acc + f.size, 0);
         const projectID = document.getElementById('projectID').value;
         const uploadId = 'up_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
-        const csrfToken = '{{ csrf_token() }}';
+        const csrfToken = '<?php echo e(csrf_token()); ?>';
 
         st.textContent = "Preparing Nitro Stream...";
 
@@ -620,8 +617,8 @@
         // ── Environment detection (injected by Laravel/Blade) ────────────────
         // Dev:  chunks go to separate ports (9001-9016) via php -S workers
         // Prod: chunks go to the same origin — Nginx+PHP-FPM handles concurrency
-        const NITRO_IS_DEV  = {{ app()->isLocal() ? 'true' : 'false' }};
-        const NITRO_BASE    = '{{ rtrim(config("app.url"), "/") }}';
+        const NITRO_IS_DEV  = <?php echo e(app()->isLocal() ? 'true' : 'false'); ?>;
+        const NITRO_BASE    = '<?php echo e(rtrim(config("app.url"), "/")); ?>';
         // ─────────────────────────────────────────────────────────────────────
 
         function getNitroUrl(port, projectID, isFirst, slotId) {
@@ -861,7 +858,7 @@
             const customCam = document.getElementById('cameraModels')?.value;
             fd.append('cameraConfig', isMulti ? 'multiple' : 'single');
             fd.append('cameraModels', customCam || (isMulti ? 'Multiple' : 'Standard'));
-            fd.append('userEmail', '{{ Auth::user()?->email ?? "" }}'); // 🔑 Backup identity
+            fd.append('userEmail', '<?php echo e(Auth::user()?->email ?? ""); ?>'); // 🔑 Backup identity
             // 🚀 Output Categories Sync
             const outputs = ['3D Tiles', 'OSGB']; // OSGB is now 1:1 synchronized
             if (document.getElementById('outDSM').checked) outputs.push('DSM');
@@ -872,7 +869,7 @@
             // This prevents the "100% Limbo" by allowing the server 5+ minutes to stitch 3GB data.
             const res = await fetch('/api/upload/finalize', {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                headers: { 'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>' },
                 body: fd,
                 // The browser will now wait patiently for the heavy 3D assembly
                 keepalive: true 
@@ -894,4 +891,4 @@
     }
   </script>
 </body>
-</html>
+</html><?php /**PATH C:\Users\User\.antigravity\Projects\DataPortalV2\resources\views/portal/upload-data.blade.php ENDPATH**/ ?>

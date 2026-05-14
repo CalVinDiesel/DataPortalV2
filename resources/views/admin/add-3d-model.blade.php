@@ -211,25 +211,42 @@
 
       form.addEventListener('submit', function (e) {
         e.preventDefault();
+        
+        // 🛡️ STRICT COLUMN VALIDATION (v305)
+        var mapDataID = document.getElementById('mapDataID').value.trim().replace(/[^a-zA-Z0-9_-]/g, '-');
+        var title = document.getElementById('title').value.trim();
+        var yAxis = document.getElementById('yAxis').value.trim();
+        var xAxis = document.getElementById('xAxis').value.trim();
+        var tilesetUrl = document.getElementById('tilesetUrl').value.trim();
+
+        var missing = [];
+        if (!mapDataID) missing.push("Model ID");
+        if (!title) missing.push("Title");
+        if (!document.getElementById('description').value.trim()) missing.push("Description");
+        if (!yAxis) missing.push("Latitude");
+        if (!xAxis) missing.push("Longitude");
+        if (!tilesetUrl) missing.push("3D Tiles URL");
+
+        if (missing.length > 0) {
+            return alert("Form Incomplete! The following mandatory fields are required:\n\n• " + missing.join("\n• "));
+        }
+
         formMessage.textContent = '';
         formMessage.className = 'ms-3';
-        var mapDataID = document.getElementById('mapDataID').value.trim().replace(/[^a-zA-Z0-9_-]/g, '-');
-        if (!mapDataID) {
-          formMessage.textContent = 'Model ID is required.';
-          formMessage.classList.add('text-danger');
-          return;
-        }
+        
         var thumbNailUrl = document.getElementById('thumbNailUrl').value.trim();
         var file = thumbnailFile && thumbnailFile.files && thumbnailFile.files[0];
+        
         var payload = {
           mapDataID: mapDataID,
-          title: document.getElementById('title').value.trim() || mapDataID,
+          title: title || mapDataID,
           description: document.getElementById('description').value.trim(),
-          yAxis: parseFloat(document.getElementById('yAxis').value),
-          xAxis: parseFloat(document.getElementById('xAxis').value),
-          '3dTiles': document.getElementById('tilesetUrl').value.trim(),
-          thumbNailUrl: document.getElementById('thumbNailUrl').value.trim()
+          yAxis: parseFloat(yAxis),
+          xAxis: parseFloat(xAxis),
+          '3dTiles': tilesetUrl,
+          thumbNailUrl: thumbNailUrl
         };
+
         if (isNaN(payload.yAxis) || isNaN(payload.xAxis)) {
           formMessage.textContent = 'Valid latitude and longitude are required.';
           formMessage.classList.add('text-danger');

@@ -469,9 +469,31 @@
     document.getElementById('sftpForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
-      if (!projectTitleInput.value) {
-        alert("Please enter a project title.");
-        return;
+      // 🛡️ STRICT COLUMN VALIDATION (v306)
+      // Ensures ALL columns are filled as requested by the user
+      const title = projectTitleInput.value.trim();
+      const desc = document.getElementById('projectDescription').value.trim();
+      const lens = document.getElementById('lensType').value;
+      const cam = document.getElementById('cameraModels').value.trim();
+      const meta = document.getElementById('imageMetadata').value;
+      const date = document.getElementById('captureDate').value;
+      const cat = document.getElementById('category').value;
+      const otherCat = document.getElementById('categoryOther').value.trim();
+      const lat = document.getElementById('latitude').value;
+      const lng = document.getElementById('longitude').value;
+
+      let missing = [];
+      if (!title) missing.push("Project Title");
+      if (!desc) missing.push("Project Description");
+      if (!lens) missing.push("Lens Type");
+      if (lens === 'multiple' && !cam) missing.push("Camera Models");
+      if (!meta) missing.push("Metadata Format");
+      if (!date) missing.push("Capture Date");
+      if (!cat) missing.push("Category");
+      if (cat === 'Other' && !otherCat) missing.push("Custom Category Specification");
+
+      if (missing.length > 0) {
+          return alert("Form Incomplete! The following mandatory fields must be filled:\n\n• " + missing.join("\n• "));
       }
 
       const btn = document.getElementById('btnSubmitForm');

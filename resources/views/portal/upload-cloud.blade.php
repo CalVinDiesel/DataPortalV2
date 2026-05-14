@@ -377,7 +377,37 @@
 
     document.getElementById('cloudForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      if (!this.checkValidity()) { this.reportValidity(); return; }
+      
+      // 🛡️ STRICT COLUMN VALIDATION (v305)
+      const title = document.getElementById('projectTitle').value.trim();
+      const desc = document.getElementById('projectDescription').value.trim();
+      const cat = document.getElementById('category').value;
+      const otherCat = document.getElementById('categoryOther').value.trim();
+      const date = document.getElementById('captureDate').value;
+      
+      let missing = [];
+      if (!title) missing.push("Project Title");
+      if (!desc) missing.push("Project Description");
+      if (!cat) missing.push("Category");
+      if (cat === 'Other' && !otherCat) missing.push("Custom Category Specification");
+      if (!date) missing.push("Capture Date");
+      
+      const isMulti = document.getElementById('cameraConfiguration').value === 'multiple';
+      if (isMulti && !document.getElementById('cameraModels').value.trim()) {
+          missing.push("Camera Models");
+      }
+
+      if (currentProvider === 'google_drive') {
+          if (!document.getElementById('googleDriveLink').value.trim()) missing.push("Google Drive Shared Link");
+      } else if (currentProvider === 'onedrive') {
+          if (!document.getElementById('onedriveLink').value.trim()) missing.push("OneDrive Shared Link");
+          if (!document.getElementById('onedriveSize').value) missing.push("Total Size (Bytes)");
+          if (!document.getElementById('onedriveCount').value) missing.push("Photo Count");
+      }
+
+      if (missing.length > 0) {
+          return alert("Form Incomplete! The following required fields are missing:\n\n• " + missing.join("\n• "));
+      }
 
       const btn = document.getElementById('btnSubmitForm');
       const originalHtml = btn.innerHTML;
@@ -399,24 +429,24 @@
       const cameraLine = isMulti ? ("Multi-Lens" + (customCam ? (": " + customCam) : "")) : "Single-Lens";
 
       const payload = {
-        projectTitle: document.getElementById('projectTitle').value,
-        projectDescription: document.getElementById('projectDescription').value,
+        projectTitle: title,
+        projectDescription: desc,
         cameraConfiguration: cameraLine,
         category: categoryVal,
         outputCategory: outputs,
         imageMetadata: document.getElementById('imageMetadata').value,
-        captureDate: document.getElementById('captureDate').value,
+        captureDate: date,
         latitude: document.getElementById('latitude').value || null,
         longitude: document.getElementById('longitude').value || null,
         provider: currentProvider
       };
 
       if (currentProvider === 'google_drive') {
-        payload.googleDriveLink = document.getElementById('googleDriveLink').value;
+        payload.googleDriveLink = gLink;
       } else {
-        payload.onedriveLink = document.getElementById('onedriveLink').value;
-        payload.onedriveSize = document.getElementById('onedriveSize').value;
-        payload.onedriveCount = document.getElementById('onedriveCount').value;
+        payload.onedriveLink = oLink;
+        payload.onedriveSize = oSize;
+        payload.onedriveCount = oCount;
         payload.onedriveItemId = null; // Backend will resolve this from the link
         payload.onedriveDriveId = null;
       }

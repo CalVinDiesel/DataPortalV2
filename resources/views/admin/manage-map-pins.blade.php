@@ -404,8 +404,21 @@
       if (editSaveBtn) editSaveBtn.addEventListener('click', function () {
         var mapDataID = document.getElementById('editMapDataID').value.trim();
         if (!mapDataID) return;
-        if (isNaN(parseFloat(document.getElementById('editYAxis').value)) || isNaN(parseFloat(document.getElementById('editXAxis').value)) || !document.getElementById('editTilesetUrl').value.trim()) {
-          alert('Please fill in valid latitude, longitude, and 3D Tiles URL.');
+        const titleVal = document.getElementById('editTitle').value.trim();
+        const latVal = parseFloat(document.getElementById('editYAxis').value);
+        const lonVal = parseFloat(document.getElementById('editXAxis').value);
+        const tilesetVal = document.getElementById('editTilesetUrl').value.trim();
+
+        if (!titleVal) {
+          alert('Please enter a Title for the map pin.');
+          return;
+        }
+        if (isNaN(latVal) || isNaN(lonVal)) {
+          alert('Please enter valid numerical Latitude and Longitude coordinates.');
+          return;
+        }
+        if (!tilesetVal) {
+          alert('Please enter a valid 3D Tileset URL (tileset.json).');
           return;
         }
         var btn = this;
