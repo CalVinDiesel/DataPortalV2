@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-assets-path="{{ asset('assets') }}/" data-template="admin-data-portal" data-bs-theme="light">
+<html lang="en" dir="ltr" data-assets-path="<?php echo e(asset('assets')); ?>/" data-template="admin-data-portal" data-bs-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Manage Map Pins - Admin | 3DHub</title>
-  <script src="{{ asset('assets') }}/js/theme-init.js"></script>
-  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css" />
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css" />
-  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css" />
-  <link rel="stylesheet" href="{{ asset('assets') }}/css/admin-responsive.css" />
-  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/js/theme-init.js"></script>
+  <link rel="icon" type="image/x-icon" href="<?php echo e(asset('favicon.ico')); ?>" />
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/fonts/iconify-icons.css" />
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/core.css" />
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/demo.css" />
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/admin-responsive.css" />
+  <script src="<?php echo e(asset('assets')); ?>/vendor/js/helpers.js"></script>
   <!-- jQuery and Bootstrap from CDN when local vendor/libs are missing (avoids 404 / MIME type errors) -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
@@ -94,19 +94,19 @@
       
       <!-- Premium Glass Top Nav -->
       <nav class="admin-glass-nav">
-        <a href="{{ route('admin_dashboard') }}" class="app-brand-link d-flex align-items-center">
-          <span class="app-brand-logo demo me-2"><img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
+        <a href="<?php echo e(route('admin_dashboard')); ?>" class="app-brand-link d-flex align-items-center">
+          <span class="app-brand-logo demo me-2"><img src="<?php echo e(asset('assets')); ?>/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 56px; width: auto; max-height: 56px; object-fit: contain; display: block;" /></span>
           <span class="app-brand-text demo menu-text fw-bold text-heading" style="font-size: 1.1em;">3DHub Admin</span>
         </a>
         
         <div class="admin-nav-links d-none d-xl-flex">
-          <a href="{{ route('admin_dashboard') }}" class="admin-nav-link">Dashboard</a>
-          <a href="{{ route('admin.add_3d_model') }}" class="admin-nav-link">Add 3D Model</a>
-          <a href="{{ route('admin.manage_map_pins') }}" class="admin-nav-link active">Manage Map Pins</a>
-          <a href="{{ route('admin.manage_showcases') }}" class="admin-nav-link">Manage Showcase</a>
-          <a href="{{ route('admin.client_uploads') }}" class="admin-nav-link">Client Uploads</a>
-          <a href="{{ route('admin.manage_users') }}" class="admin-nav-link">Manage Users</a>
-          <a href="{{ route('landing') }}" class="admin-nav-link" target="_blank">View Portal</a>
+          <a href="<?php echo e(route('admin_dashboard')); ?>" class="admin-nav-link">Dashboard</a>
+          <a href="<?php echo e(route('admin.add_3d_model')); ?>" class="admin-nav-link">Add 3D Model</a>
+          <a href="<?php echo e(route('admin.manage_map_pins')); ?>" class="admin-nav-link active">Manage Map Pins</a>
+          <a href="<?php echo e(route('admin.manage_showcases')); ?>" class="admin-nav-link">Manage Showcase</a>
+          <a href="<?php echo e(route('admin.client_uploads')); ?>" class="admin-nav-link">Client Uploads</a>
+          <a href="<?php echo e(route('admin.manage_users')); ?>" class="admin-nav-link">Manage Users</a>
+          <a href="<?php echo e(route('landing')); ?>" class="admin-nav-link" target="_blank">View Portal</a>
         </div>
 
         <div class="ms-auto d-flex align-items-center gap-2">
@@ -122,15 +122,15 @@
               </ul>
             </div>
 
-            @auth
+            <?php if(auth()->guard()->check()): ?>
             <div class="d-none d-md-flex align-items-center gap-3 border-start ps-3 ms-2">
-                <a href="{{ route('profile') }}" class="small text-muted fw-medium text-decoration-none email-hover-link">{{ Auth::user()->email }}</a>
-                <form method="POST" action="{{ route('logout') }}" id="adminLogoutForm" class="d-inline">
-                    @csrf
+                <a href="<?php echo e(route('profile')); ?>" class="small text-muted fw-medium text-decoration-none email-hover-link"><?php echo e(Auth::user()->email); ?></a>
+                <form method="POST" action="<?php echo e(route('logout')); ?>" id="adminLogoutForm" class="d-inline">
+                    <?php echo csrf_field(); ?>
                     <button type="button" id="adminLogoutBtn" class="btn btn-sm btn-outline-danger px-3 rounded-pill fw-bold">Log out</button>
                 </form>
             </div>
-            @endauth
+            <?php endif; ?>
 
             <button class="admin-menu-toggle btn btn-icon d-xl-none border-0 bg-transparent p-0" type="button" aria-label="Toggle menu"><i class="bx bx-menu icon-lg"></i></button>
         </div>
@@ -144,7 +144,7 @@
               <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="syncFromJsonBtn">Sync from locations.json</button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="exportToJsonBtn" title="Backfill data/locations.json from current database map pins">Export to locations.json</button>
-                <a href="{{ route('admin.add_3d_model') }}" class="btn btn-sm btn-primary">Add new pin</a>
+                <a href="<?php echo e(route('admin.add_3d_model')); ?>" class="btn btn-sm btn-primary">Add new pin</a>
               </div>
             </div>
             <p class="text-muted mb-4">View and manage the 3D models appearing on the overview map. These pins are loaded into the Cesium viewer on the landing page.</p>
@@ -270,7 +270,7 @@
               return;
             }
             if (rows.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No map pins yet. Click <strong>Sync from locations.json</strong> above to copy pins from the map data file, or <a href="{{ route('admin.add_3d_model') }}">add a 3D model</a>.</td></tr>';
+              tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No map pins yet. Click <strong>Sync from locations.json</strong> above to copy pins from the map data file, or <a href="<?php echo e(route('admin.add_3d_model')); ?>">add a 3D model</a>.</td></tr>';
               return;
             }
             tbody.innerHTML = rows.map(function (r) {
@@ -468,11 +468,11 @@
           fd.append('mapDataID', mapDataID);
           fd.append('pin_image', fileToUpload); // Form field must match Laravel UploadController validation
           
-          fetch('{{ route('upload.pin-image') }}', { 
+          fetch('<?php echo e(route('upload.pin-image')); ?>', { 
             method: 'POST', 
             body: fd, 
             headers: { 
-              'X-CSRF-TOKEN': '{{ csrf_token() }}',
+              'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>',
               'Accept': 'application/json'
             },
             credentials: 'same-origin' 
@@ -551,8 +551,8 @@
       loadPins();
     })();
   </script>
-  <script src="{{ asset('assets') }}/js/admin-responsive.js"></script>
-  <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/js/admin-responsive.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/js/theme-switcher.js"></script>
   <!-- Logout Confirmation Modal -->
   <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -586,3 +586,4 @@
   </script>
 </body>
 </html>
+<?php /**PATH C:\Users\User\.antigravity\Projects\DataPortalV2\resources\views/admin/manage-map-pins.blade.php ENDPATH**/ ?>

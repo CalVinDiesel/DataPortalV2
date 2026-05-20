@@ -53,25 +53,31 @@ class MapDataController extends Controller
             ], 422);
         }
 
-        // 🛡️ DUPLICATE CHECK (v176): CASE-INSENSITIVE (Postgres requires double quotes for CamelCase columns)
-        $existing = MapData::whereRaw('LOWER("mapDataID") = ?', [strtolower($request->mapDataID)])->first();
-        if ($existing) {
-            return response()->json([
-                'success' => false,
-                'message' => "A 3D model with the ID '{$request->mapDataID}' already exists. Please use a unique Model ID."
-            ], 422);
+        $isUpdate = $request->input('is_update', false);
+
+        if (!$isUpdate) {
+            // 🛡️ DUPLICATE CHECK (v176): CASE-INSENSITIVE (Postgres requires double quotes for CamelCase columns)
+            $existing = MapData::whereRaw('LOWER("mapDataID") = ?', [strtolower($request->mapDataID)])->first();
+            if ($existing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "A 3D model with the ID '{$request->mapDataID}' already exists. Please use a unique Model ID."
+                ], 422);
+            }
         }
 
-        $data = MapData::create([
-            'mapDataID' => $request->mapDataID,
-            'title' => $request->title,
-            'description' => $request->description,
-            'xAxis' => $request->xAxis,
-            'yAxis' => $request->yAxis,
-            '3dTiles' => $request->input('3dTiles'),
-            'thumbNailUrl' => $request->thumbNailUrl,
-            'updateDateTime' => now(),
-        ]);
+        $data = MapData::updateOrCreate(
+            ['mapDataID' => $request->mapDataID],
+            [
+                'title' => $request->title,
+                'description' => $request->description,
+                'xAxis' => $request->xAxis,
+                'yAxis' => $request->yAxis,
+                '3dTiles' => $request->input('3dTiles'),
+                'thumbNailUrl' => $request->thumbNailUrl,
+                'updateDateTime' => now(),
+            ]
+        );
 
         return response()->json(['success' => true, 'message' => 'Map pin updated successfully', 'data' => $data]);
     }

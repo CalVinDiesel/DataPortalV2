@@ -58,6 +58,11 @@ class AdminSyncController extends Controller
             }
 
             // Update the official record
+            $incomingThumb = $loc['previewImage'] ?? $loc['thumbnailUrl'] ?? null;
+            $finalThumb = (!is_null($incomingThumb) && trim($incomingThumb) !== '') 
+                ? $incomingThumb 
+                : ($official ? $official->thumbNailUrl : null);
+
             MapData::updateOrCreate(
                 ['mapDataID' => $targetId],
                 [
@@ -66,7 +71,7 @@ class AdminSyncController extends Controller
                     'xAxis' => $loc['coordinates']['longitude'] ?? 0,
                     'yAxis' => $loc['coordinates']['latitude'] ?? 0,
                     '3dTiles' => $loc['dataPaths']['tileset'] ?? null,
-                    'thumbNailUrl' => $loc['previewImage'] ?? $loc['thumbnailUrl'] ?? null,
+                    'thumbNailUrl' => $finalThumb,
                     'updateDateTime' => now(),
                 ]
             );

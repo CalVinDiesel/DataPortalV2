@@ -388,8 +388,8 @@
     dataSource.clustering.minimumClusterSize = 2;
     var clusterToLocationIds = new Map();
 
-    var INITIAL_PIXEL_RANGE = 35; // Surgical default
-    var MIN_CLUSTER_PX = 1; // v191: Minimum possible range to allow splitting even for very close pins.
+    var INITIAL_PIXEL_RANGE = 80; // High-quality default for zoomed out map view
+    var MIN_CLUSTER_PX = 60; // Complete overlap elimination cushion (48px pin + 42px cluster radius + safe margin)
     var isZoomingToCluster = false; 
     var ZOOMED_OUT_HEIGHT_DEG = 0.06;
 
@@ -403,8 +403,18 @@
       if (!rect) return Math.max(INITIAL_PIXEL_RANGE, minDim * 0.9);
       var heightRad = rect.north - rect.south;
       var heightDeg = heightRad * (180 / Math.PI);
-      if (heightDeg >= ZOOMED_OUT_HEIGHT_DEG) return Math.max(INITIAL_PIXEL_RANGE, minDim * 0.9);
-      return Math.max(MIN_CLUSTER_PX, Math.min(INITIAL_PIXEL_RANGE, heightDeg * (INITIAL_PIXEL_RANGE / ZOOMED_OUT_HEIGHT_DEG)));
+      
+      // v259: Smoothly interpolate the 3D pixel range between 80px and 50px,
+      // clamping the minimum range to 50px (slightly larger than a single pin's 48px width)
+      // to guarantee that single map pins never visually overlap at medium/zoomed-out views.
+      var zoomedInHeight = 0.05;  // ~5.5 km
+      var zoomedOutHeight = 3.0;  // ~330 km (Sabah overview level)
+      
+      if (heightDeg >= zoomedOutHeight) return INITIAL_PIXEL_RANGE;
+      if (heightDeg <= zoomedInHeight) return 50;
+      
+      var t = (heightDeg - zoomedInHeight) / (zoomedOutHeight - zoomedInHeight);
+      return Math.max(50, Math.round(50 + t * (INITIAL_PIXEL_RANGE - 50)));
     }
 
     function getClusterPixelRange2DFallback() {
@@ -412,12 +422,15 @@
         var f = viewer.camera.frustum;
         if (f && typeof f.right === 'number' && typeof f.left === 'number') {
           var width = Math.abs(f.right - f.left);
-          var zoomedOutWidth = 2e6;
-          var zoomedInWidth = 4e5;
+          var zoomedOutWidth = 4e5; // 400 km (viewing whole Sabah)
+          var zoomedInWidth = 1e4;  // 10 km (viewing KK city block)
           if (width >= zoomedOutWidth) return INITIAL_PIXEL_RANGE;
-          if (width <= zoomedInWidth) return MIN_CLUSTER_PX;
+          
+          // v259: Clamped to 50px to prevent visual overlaps of close markers
+          if (width <= zoomedInWidth) return 50;
+          
           var t = (width - zoomedInWidth) / (zoomedOutWidth - zoomedInWidth);
-          return Math.max(MIN_CLUSTER_PX, Math.min(INITIAL_PIXEL_RANGE, Math.round(MIN_CLUSTER_PX + t * (INITIAL_PIXEL_RANGE - MIN_CLUSTER_PX))));
+          return Math.max(50, Math.round(50 + t * (INITIAL_PIXEL_RANGE - 50)));
         }
       } catch (e) { /* ignore */ }
       return INITIAL_PIXEL_RANGE;
@@ -429,7 +442,13 @@
       var pr = getClusterPixelRange();
       if (dataSource.clustering.pixelRange === pr) return;
       dataSource.clustering.pixelRange = pr;
-      viewer.scene.requestRender();
+      setTimeout(function() {
+        viewer._activeClusters = [];
+        viewer._clusteredLocationIds = {};
+        dataSource.clustering.enabled = false;
+        dataSource.clustering.enabled = true;
+        viewer.scene.requestRender();
+      }, 50);
     }
 
     dataSource.clustering.pixelRange = INITIAL_PIXEL_RANGE;
@@ -512,6 +531,7 @@
     };
 
     viewer._activeClusters = [];
+    viewer._clusteredLocationIds = {};
 
     dataSource.clustering.clusterEvent.addEventListener(function (entities, cluster) {
 
@@ -550,6 +570,7 @@
       cluster.billboard.show = true;
       cluster.billboard.verticalOrigin = C.VerticalOrigin.CENTER;
       cluster.billboard.horizontalOrigin = C.HorizontalOrigin.CENTER;
+      cluster.billboard.disableDepthTestDistance = Number.POSITIVE_INFINITY;
 
       if (cluster.point) cluster.point.show = false;
       var ids = entities.map(function (e) { return e.id; }).filter(Boolean);
@@ -581,6 +602,10 @@
       }
 
       if (ids.length) {
+        ids.forEach(function (id) {
+          if (!viewer._clusteredLocationIds) viewer._clusteredLocationIds = {};
+          viewer._clusteredLocationIds[String(id).toLowerCase()] = true;
+        });
         // Stable key: sorted location IDs joined
         var clusterKey = ids.slice().sort().join(',');
         cluster._clusterKey = clusterKey;
@@ -601,12 +626,6 @@
         // Stable active cluster registration with duplicate-prevention
         if (!viewer._activeClusters) {
           viewer._activeClusters = [];
-        }
-        // Frame-based calculation pass reset: clear the list ONLY when starting a new calculation pass in a new frame
-        var frame = viewer.scene.frameState.frameNumber;
-        if (typeof viewer._lastClusterFrame !== 'number' || frame > viewer._lastClusterFrame) {
-          viewer._activeClusters = [];
-          viewer._lastClusterFrame = frame;
         }
         var exists = false;
         for (var k = 0; k < viewer._activeClusters.length; k++) {
@@ -805,16 +824,43 @@
       attemptLoad(url);
     }
 
-    locations.forEach(function (loc) {
-      var position = C.Cartesian3.fromDegrees(loc.longitude, loc.latitude, 0);
-      var labelText = loc.name + (loc.description ? '\n' + shortDesc(loc.description, labelMaxDesc) : '');
-      var thumbUrl = getThumbnailUrl(loc);
-      var resolvedThumb = (thumbUrl && thumbUrl.indexOf('data:') !== 0) ? resolveLocationImageUrl(thumbUrl) : (thumbUrl || null);
+    var pendingCount = locations.length;
+    var loadedPins = [];
 
-      preloadPinImage(resolvedThumb, pinImageSize, borderPx, loc.id, function (dataUrl, w, h) {
-        addPinEntity(loc, position, labelText, w, h, dataUrl);
+    if (pendingCount === 0) {
+      viewer.scene.requestRender();
+    } else {
+      locations.forEach(function (loc) {
+        var position = C.Cartesian3.fromDegrees(loc.longitude, loc.latitude, 0);
+        var labelText = loc.name + (loc.description ? '\n' + shortDesc(loc.description, labelMaxDesc) : '');
+        var thumbUrl = getThumbnailUrl(loc);
+        var resolvedThumb = (thumbUrl && thumbUrl.indexOf('data:') !== 0) ? resolveLocationImageUrl(thumbUrl) : (thumbUrl || null);
+
+        preloadPinImage(resolvedThumb, pinImageSize, borderPx, loc.id, function (dataUrl, w, h) {
+          loadedPins.push({
+            loc: loc,
+            position: position,
+            labelText: labelText,
+            w: w,
+            h: h,
+            dataUrl: dataUrl
+          });
+          pendingCount--;
+          if (pendingCount === 0) {
+            // All images are successfully preloaded! Add all entities synchronously to the data source
+            loadedPins.forEach(function (p) {
+              addPinEntity(p.loc, p.position, p.labelText, p.w, p.h, p.dataUrl);
+            });
+            viewer._activeClusters = [];
+            viewer._clusteredLocationIds = {};
+            dataSource.clustering.enabled = false;
+            dataSource.clustering.enabled = true;
+            updateClusterPixelRange();
+            viewer.scene.requestRender();
+          }
+        });
       });
-    });
+    }
 
     var locationIds = {};
     locations.forEach(function (loc) { locationIds[loc.id] = true; });
@@ -824,21 +870,10 @@
       if (!locId) return false;
       var ds = viewer._mapDataSource;
       if (ds && ds.clustering && ds.clustering.enabled) {
-        var col = ds.clustering._clusterBillboardCollection;
-        if (col && col._billboards && Array.isArray(col._billboards)) {
-          var billboards = col._billboards;
-          var searchId = String(locId).toLowerCase();
-          for (var i = 0; i < billboards.length; i++) {
-            var bb = billboards[i];
-            if (bb && bb.show === true && Array.isArray(bb.locationIds)) {
-              for (var j = 0; j < bb.locationIds.length; j++) {
-                var lid = bb.locationIds[j];
-                if (lid && String(lid).toLowerCase() === searchId) {
-                  return true;
-                }
-              }
-            }
-          }
+        if (ds.clustering.pixelRange === 1) return false;
+        var searchId = String(locId).toLowerCase();
+        if (viewer._clusteredLocationIds && viewer._clusteredLocationIds[searchId]) {
+          return true;
         }
       }
       return false;
@@ -1040,8 +1075,12 @@
               // v190: Lock the auto-updater for 1.2 seconds to ensure pins STAY split.
               isZoomingToCluster = true;
               dataSource.clustering.pixelRange = 1;
+              viewer._activeClusters = [];
+              viewer._clusteredLocationIds = {};
+              dataSource.clustering.enabled = false;
+              dataSource.clustering.enabled = true;
               scene.requestRender(); 
-              setTimeout(function() { isZoomingToCluster = false; }, 1200);
+              setTimeout(function() { isZoomingToCluster = false; updateClusterPixelRange(); }, 1200);
             } 
           });
         } else {
@@ -1056,8 +1095,12 @@
               // v190: Lock the auto-updater for 1.2 seconds to ensure pins STAY split.
               isZoomingToCluster = true;
               dataSource.clustering.pixelRange = 1;
+              viewer._activeClusters = [];
+              viewer._clusteredLocationIds = {};
+              dataSource.clustering.enabled = false;
+              dataSource.clustering.enabled = true;
               scene.requestRender(); 
-              setTimeout(function() { isZoomingToCluster = false; }, 1200);
+              setTimeout(function() { isZoomingToCluster = false; updateClusterPixelRange(); }, 1200);
             } 
           });
         }
@@ -1073,11 +1116,27 @@
     function tryZoomToCluster(entity) {
       var bounds = null;
       var clusterPos = entity._wgs84Position || (entity.position && (typeof entity.position.getValue === 'function' ? entity.position.getValue(viewer.clock.currentTime) : entity.position));
-      if (clusterPos) {
+      
+      // v259: Retrieve precise locations inside the cluster using entity.locationIds
+      // to avoid using the wide 0.12 degree city-wide proximity scanner which causes
+      // the camera to zoom out too far, resulting in overlapping single pins on medium zoom levels.
+      var clusterLocs = [];
+      if (entity && entity.locationIds && entity.locationIds.length > 0) {
+        entity.locationIds.forEach(function (id) {
+          var loc = locationByIdForZoom[id];
+          if (loc) clusterLocs.push(loc);
+        });
+      }
+      
+      if (clusterLocs.length > 0) {
+        bounds = getBoundsRectForLocations(clusterLocs);
+      } else if (clusterPos) {
+        // Proximity Fallback
         var carto = C.Cartographic.fromCartesian(clusterPos);
         var locsNear = getLocationsNearPoint(carto.longitude * (180 / Math.PI), carto.latitude * (180 / Math.PI), 0.12);
         if (locsNear.length > 0) bounds = getBoundsRectForLocations(locsNear);
       }
+      
       if (!bounds) return null;
       
       try {
@@ -1090,7 +1149,7 @@
           var currentWidth = rect.east - rect.west;
           var boundsWidth = bounds.east - bounds.west;
           if (currentWidth <= boundsWidth * 1.5) {
-             return false; // Camera is already here. Trigger progressive dive!
+             return false; // Camera is already here.
           }
         }
 
@@ -1101,8 +1160,12 @@
             // v190: Lock the auto-updater for 1.2 seconds to ensure pins STAY split.
             isZoomingToCluster = true;
             dataSource.clustering.pixelRange = 1;
+            viewer._activeClusters = [];
+            viewer._clusteredLocationIds = {};
+            dataSource.clustering.enabled = false;
+            dataSource.clustering.enabled = true;
             viewer.scene.requestRender(); 
-            setTimeout(function() { isZoomingToCluster = false; }, 1200);
+            setTimeout(function() { isZoomingToCluster = false; updateClusterPixelRange(); }, 1200);
           } 
         });
         return true;
@@ -1112,7 +1175,7 @@
         return false;
       }
     }
-
+ 
     var handler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
     handler.setInputAction(function (click) {
       try {
@@ -1128,7 +1191,7 @@
            var clusterPos = cluster._wgs84Position;
            if (clusterPos) { zoomInOneStepTowardCluster(clusterPos); return; }
         }
-
+ 
         // 2. Prioritize Math-based Single Pin Search (Immune to WebGL picking bugs in 2D)
         var locsInRadius = typeof window.getLocationsInRadius === 'function' ? window.getLocationsInRadius(screenX, screenY, 30) : [];
         if (locsInRadius.length === 1) {
@@ -1149,8 +1212,12 @@
                   complete: function () { 
                     isZoomingToCluster = true;
                     dataSource.clustering.pixelRange = 1;
+                    viewer._activeClusters = [];
+                    viewer._clusteredLocationIds = {};
+                    dataSource.clustering.enabled = false;
+                    dataSource.clustering.enabled = true;
                     viewer.scene.requestRender(); 
-                    setTimeout(function() { isZoomingToCluster = false; }, 1200);
+                    setTimeout(function() { isZoomingToCluster = false; updateClusterPixelRange(); }, 1200);
                   } 
                 });
               } catch(e) {}
@@ -1174,26 +1241,26 @@
           }
         }
 
-        // 4. Debugging & Logging overlay
-        var scene = viewer.scene;
-        var debugInfo = "CLICK at " + Math.round(screenX) + "," + Math.round(screenY) + " | Mode: " + scene.mode;
-        var debugDiv = document.getElementById('debug-cesium-overlay');
-        if (!debugDiv) {
-            debugDiv = document.createElement('div');
-            debugDiv.id = 'debug-cesium-overlay';
-            debugDiv.style.position = 'absolute';
-            debugDiv.style.top = '10px';
-            debugDiv.style.left = '50%';
-            debugDiv.style.transform = 'translateX(-50%)';
-            debugDiv.style.background = 'rgba(0,0,0,0.8)';
-            debugDiv.style.color = '#fff';
-            debugDiv.style.padding = '10px 20px';
-            debugDiv.style.zIndex = '999999';
-            debugDiv.style.fontFamily = 'monospace';
-            debugDiv.style.pointerEvents = 'none';
-            document.body.appendChild(debugDiv);
-        }
-        debugDiv.innerText = debugInfo;
+        // 4. Debugging & Logging overlay (disabled for production)
+        // var scene = viewer.scene;
+        // var debugInfo = "CLICK at " + Math.round(screenX) + "," + Math.round(screenY) + " | Mode: " + scene.mode;
+        // var debugDiv = document.getElementById('debug-cesium-overlay');
+        // if (!debugDiv) {
+        //     debugDiv = document.createElement('div');
+        //     debugDiv.id = 'debug-cesium-overlay';
+        //     debugDiv.style.position = 'absolute';
+        //     debugDiv.style.top = '10px';
+        //     debugDiv.style.left = '50%';
+        //     debugDiv.style.transform = 'translateX(-50%)';
+        //     debugDiv.style.background = 'rgba(0,0,0,0.8)';
+        //     debugDiv.style.color = '#fff';
+        //     debugDiv.style.padding = '10px 20px';
+        //     debugDiv.style.zIndex = '999999';
+        //     debugDiv.style.fontFamily = 'monospace';
+        //     debugDiv.style.pointerEvents = 'none';
+        //     document.body.appendChild(debugDiv);
+        // }
+        // debugDiv.innerText = debugInfo;
       } catch (clickErr) {
         if (typeof console !== 'undefined' && console.warn) console.warn("Click handler crash: " + clickErr.message);
       }
@@ -1211,11 +1278,45 @@
 
     setupLocationChoiceBar(viewer, locations, null, getLocationsForClusterEntity, getClusterAtScreenPosition, PIN_SEARCH_HALF_H, pinImageSize);
 
-    viewer.camera.moveEnd.addEventListener(function() {
-      // v162: Removed map clearing to prevent "dead" periods after resize/fullscreen
+    var cameraChangeDebounceTimer = null;
+
+    function handleCameraChangeEnd() {
+      if (isZoomingToCluster) return;
       updateClusterPixelRange();
+      viewer._activeClusters = [];
+      viewer._clusteredLocationIds = {};
+      dataSource.clustering.enabled = false;
+      dataSource.clustering.enabled = true;
+      viewer.scene.requestRender();
+      if (typeof window.pruneActiveClusters === 'function') {
+        window.pruneActiveClusters();
+      }
+    }
+
+    viewer.camera.moveStart.addEventListener(function() {
+      viewer._activeClusters = [];
+      viewer._clusteredLocationIds = {};
     });
-    viewer.camera.changed.addEventListener(throttledUpdateClusterPixelRange);
+
+    viewer.camera.moveEnd.addEventListener(function() {
+      if (cameraChangeDebounceTimer) {
+        clearTimeout(cameraChangeDebounceTimer);
+        cameraChangeDebounceTimer = null;
+      }
+      handleCameraChangeEnd();
+    });
+
+    viewer.camera.changed.addEventListener(function() {
+      throttledUpdateClusterPixelRange();
+      if (cameraChangeDebounceTimer) {
+        clearTimeout(cameraChangeDebounceTimer);
+      }
+      cameraChangeDebounceTimer = setTimeout(function () {
+        cameraChangeDebounceTimer = null;
+        handleCameraChangeEnd();
+      }, 150);
+    });
+
     viewer.scene.requestRender();
     dataSource.clustering.pixelRange = INITIAL_PIXEL_RANGE;
     
@@ -1394,8 +1495,18 @@
         var picked = scene.pick(pickCoords);
         if (picked && picked.primitive) {
           // A. Is it a cluster billboard?
-          if (picked.primitive.locationIds && picked.primitive.locationIds.length >= 2) {
-            var ids = picked.primitive.locationIds;
+          var ids = picked.primitive.locationIds;
+          if (!ids || ids.length < 2) {
+            // Fallback: look up by primitive reference in active clusters if Cesium wiped locationIds
+            var activeClusters = viewer._activeClusters || [];
+            for (var c = 0; c < activeClusters.length; c++) {
+              if (activeClusters[c].billboard === picked.primitive) {
+                ids = activeClusters[c].locationIds;
+                break;
+              }
+            }
+          }
+          if (ids && ids.length >= 2) {
             var list = ids.map(function (id) { return locationById[id]; }).filter(Boolean);
             if (list.length >= 2) {
               return ensureExactlyNLocs(list, ids.length);

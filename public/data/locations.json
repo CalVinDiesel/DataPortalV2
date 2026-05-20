@@ -1,6 +1,20 @@
 {
     "locations": [
         {
+            "id": "KK_OSPREY",
+            "name": "KK OSPREY",
+            "description": "3D model of Kota Kinabalu area.",
+            "coordinates": {
+                "longitude": 116.070466,
+                "latitude": 5.957839,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://3dhub.geosabah.my/3dmodel/KK_OSPREY/tileset.json"
+            },
+            "thumbnailUrl": "/assets/img/front-pages/locations/kkOsprey_pin_image.jpg"
+        },
+        {
             "id": "KB_3DTiles_Lite",
             "name": "KB 3DTiles Lite",
             "description": "3D model of buildings in Kota Kinabalu.",
@@ -11,33 +25,8 @@
             },
             "dataPaths": {
                 "tileset": "https://3dhub.geosabah.my/3dmodel/Building_Planning/KB_3DTiles_Lite/tileset.json"
-            }
-        },
-        {
-            "id": "wismamerdeka",
-            "name": "WISMA MERDEKA",
-            "description": "3D model of Wisma Merdeka complex.",
-            "coordinates": {
-                "longitude": 116.074466,
-                "latitude": 5.984839,
-                "height": 50
             },
-            "dataPaths": {
-                "tileset": "https://3dhub.geosabah.my/3dmodel/wismamerdeka/tileset.json"
-            }
-        },
-        {
-            "id": "ppns_ys",
-            "name": "PPNS YS",
-            "description": "3D model of PPNS area.",
-            "coordinates": {
-                "longitude": 116.082466,
-                "latitude": 5.992839,
-                "height": 50
-            },
-            "dataPaths": {
-                "tileset": "https://3dhub.geosabah.my/3dmodel/ppns_ys/tileset.json"
-            }
+            "thumbnailUrl": "/assets/img/front-pages/locations/kb_3dtiles_lite_pin_image.jpg"
         },
         {
             "id": "fisheye_test_kolombong_18mac2025",
@@ -50,7 +39,36 @@
             },
             "dataPaths": {
                 "tileset": "https://3dhub.geosabah.my/3dmodel/Building_Planning/fisheye_test_kolombong_18mac2025/tileset.json"
-            }
+            },
+            "thumbnailUrl": "/assets/img/front-pages/locations/kolombong_pin_image.jpg"
+        },
+        {
+            "id": "wismamerdeka",
+            "name": "WISMA MERDEKA",
+            "description": "3D model of Wisma Merdeka complex.",
+            "coordinates": {
+                "longitude": 116.074466,
+                "latitude": 5.984839,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://3dhub.geosabah.my/3dmodel/wismamerdeka/tileset.json"
+            },
+            "thumbnailUrl": "/assets/img/front-pages/locations/wisma_merdeka_pin_image.jpg"
+        },
+        {
+            "id": "ppns_ys",
+            "name": "PPNS YS",
+            "description": "3D model of PPNS area.",
+            "coordinates": {
+                "longitude": 116.082466,
+                "latitude": 5.992839,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://3dhub.geosabah.my/3dmodel/ppns_ys/tileset.json"
+            },
+            "thumbnailUrl": "/assets/img/front-pages/locations/ppns_ys_pin_image.jpg"
         },
         {
             "id": "Keningau_Sabah_2026",
@@ -63,20 +81,22 @@
             },
             "dataPaths": {
                 "tileset": "https://3dhub.geosabah.my/3dmodel/keningau_sabah_2026/tileset.json"
-            }
+            },
+            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1773823752/3dhub-map-thumbnails/Keningau-Sabah-2026_1773823748759.png"
         },
         {
-            "id": "KK_OSPREY",
-            "name": "KK OSPREY",
-            "description": "3D model of Kota Kinabalu area.",
+            "id": "Damai-Point",
+            "name": "Damai Point",
+            "description": "3D Model of Damai Point",
             "coordinates": {
-                "longitude": 116.070466,
-                "latitude": 5.957839,
+                "longitude": 116.0825,
+                "latitude": 5.9825,
                 "height": 50
             },
             "dataPaths": {
-                "tileset": "https://3dhub.geosabah.my/3dmodel/KK_OSPREY/tileset.json"
-            }
+                "tileset": "https://example.com/tileset.json"
+            },
+            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1779249952/Damai_Point_ukv1jl.jpg"
         },
         {
             "id": "Sepanggar-Point",
@@ -89,7 +109,22 @@
             },
             "dataPaths": {
                 "tileset": "https://example.com/tileset.json"
-            }
+            },
+            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1778826277/Sepanggar_Island_wvuy8b.jpg"
+        },
+        {
+            "id": "Bukit-Botak",
+            "name": "Bukit Botak",
+            "description": "3D model of Bukit Botak",
+            "coordinates": {
+                "longitude": 116.1558,
+                "latitude": 6.0881,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://example.com/tileset.json"
+            },
+            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1779249953/Bukit_Botak_focstq.jpg"
         }
     ]
 }

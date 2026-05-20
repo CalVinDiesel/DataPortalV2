@@ -153,10 +153,9 @@ export default function DiscoveryPageWrapper() {
     // Check if loading or error
     if (loadingData) {
         return (
-            <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
-                <div style={{ color: 'white', fontSize: '1.2rem', fontFamily: 'monospace' }}>
-                    Loading 3D Model Data...
-                </div>
+            <div className="loader-wrapper">
+                <div className="loader-spinner"></div>
+                <span>Loading 3D Data...</span>
             </div>
         );
     }
