@@ -412,8 +412,7 @@
             <div class="col-12 d-none" id="detailDeliverySection">
               <div class="detail-label text-success"><i class="bx bx-check-shield me-1"></i> Processed Data Path (SFTP)</div>
               <div class="alert alert-success d-flex align-items-center p-2 mt-1" style="font-size: 0.8rem;">
-                 <code id="detailDeliveryPath" class="flex-grow-1 bg-transparent border-0 text-dark" style="word-break: break-all;"></code>
-                 <button type="button" class="btn btn-sm btn-link p-0 ms-2 text-success" onclick="copyTextFromElement('detailDeliveryPath', this)"><i class="bx bx-copy"></i></button>
+                 <div id="detailDeliveryPath" class="flex-grow-1 bg-transparent border-0 text-dark" style="word-break: break-all;"></div>
               </div>
             </div>
           </div>
@@ -467,6 +466,59 @@
             <button type="button" class="btn btn-danger w-100 fw-medium" id="confirmDeleteBtn" onclick="executeDeleteProject()">Yes, Delete Project</button>
             <button type="button" class="btn btn-label-secondary w-100 fw-medium" data-bs-dismiss="modal">Cancel</button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🚀 3D Data Download Disclaimer Modal (v176) -->
+  <div class="modal fade" id="disclaimerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header py-3 bg-light">
+          <h5 class="modal-title fw-bold text-dark"><i class="bx bx-shield-quarter me-2 text-primary"></i> 3D Data Download & Usage Disclaimer</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4 p-md-5">
+          <div class="disclaimer-content mb-4 p-3 border rounded bg-lighter" style="max-height: 400px; overflow-y: auto; font-size: 0.9rem; line-height: 1.6;">
+            <p class="fw-bold text-danger">IMPORTANT: PLEASE READ CAREFULLY BEFORE DOWNLOADING.</p>
+            <p>By clicking "<strong>I AGREE</strong>" or downloading the 3D processed model (the "Data"), you acknowledge that you have read, understood, and agreed to be bound by the following terms:</p>
+            
+            <h6 class="fw-bold mt-4">1. For Reference Purposes Only</h6>
+            <p>This 3D processed model is provided solely for <strong>self-referencing and informational purposes</strong>. It is a digital representation generated through automated processing techniques and may not reflect the actual, physical dimensions, specifications, or conditions of the subject with absolute precision.</p>
+
+            <h6 class="fw-bold mt-4">2. No Warranty of Accuracy</h6>
+            <p>The Data is provided on an <strong>"AS IS"</strong> and <strong>"AS AVAILABLE"</strong> basis. <strong>3D Hub</strong> makes no representations or warranties of any kind, express or implied, regarding the accuracy, completeness, reliability, or suitability of the 3D model. Users are warned that digital artifacts, interpolation errors, or processing limitations may exist.</p>
+
+            <h6 class="fw-bold mt-4">3. Limitation of Liability</h6>
+            <p>In no event shall <strong>3D Hub</strong> or its parent company be held liable for any direct, indirect, incidental, special, or consequential <strong>losses or damages</strong> (including, but not limited to, financial loss, personal injury, or property damage) arising out of the use, inability to use, or reliance upon this 3D model.</p>
+
+            <h6 class="fw-bold mt-4">4. User Responsibility</h6>
+            <p>The user assumes <strong>full responsibility</strong> for verifying the accuracy of any measurements, designs, or calculations derived from this Data. If the Data is to be used for construction, manufacturing, or professional engineering, the user is advised to perform independent field verification.</p>
+
+            <h6 class="fw-bold mt-4">5. No Modification or Redistribution</h6>
+            <p>Unless otherwise stated, this Data is intended for the recipient’s personal or internal use only. Unauthorized redistribution, modification, or commercial resale of the processed model is strictly prohibited.</p>
+            
+            <hr>
+            <p class="small text-muted italic">Note: This record of agreement will be logged with your User ID and IP address for compliance purposes.</p>
+          </div>
+
+          <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" id="disclaimerCheckbox" onchange="toggleDisclaimerBtn()">
+            <label class="form-check-label fw-bold text-dark" for="disclaimerCheckbox">
+              I have read and agree to the 3D Data Disclaimer
+            </label>
+          </div>
+          
+          <input type="hidden" id="disclaimerProjectId">
+          <input type="hidden" id="disclaimerTargetUrl">
+          <input type="hidden" id="disclaimerIsCloud" value="0">
+        </div>
+        <div class="modal-footer border-top-0 pt-0">
+          <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary px-5 fw-bold" id="agreeDownloadBtn" disabled onclick="handleDisclaimerAgreement()">
+            <i class="bx bx-download me-1"></i> I Agree & Download
+          </button>
         </div>
       </div>
     </div>
@@ -653,6 +705,7 @@
             const isCloudDelivery = (item.delivery_method === 'google_drive' || item.delivery_method === 'onedrive');
 
             // 🚀 ROBUST DROPDOWN (v246): Always show status in dropdown if expired, even if path is missing
+            // 🚀 DISCLAIMER GATE (v176): Use initiateDownloadWithDisclaimer for all methods
             if (isExpired) {
                 let icon = 'bx-download';
                 let label = 'Link Expired';
@@ -668,14 +721,13 @@
                     <li><hr class="dropdown-divider"></li>`;
             } else if (isCloudDelivery && deliveryPath && (statusVal === 'sent' || statusVal === 'completed')) {
                 const icon = item.delivery_method === 'google_drive' ? 'bxl-google-cloud' : 'bx-cloud';
-                const color = item.delivery_method === 'google_drive' ? 'text-primary' : 'text-primary';
                 const label = item.delivery_method === 'google_drive' ? 'Download (Google Drive)' : 'Download (OneDrive)';
                 
                 downloadHtml = `
                     <li>
-                        <a class="dropdown-item btn-dropdown-link ${color} fw-bold" 
-                           href="${deliveryPath}" 
-                           target="_blank">
+                        <a class="dropdown-item btn-dropdown-link text-primary fw-bold" 
+                           href="javascript:void(0);" 
+                           onclick="initiateDownloadWithDisclaimer(${item.id}, '${deliveryPath}', true)">
                             <i class="bx ${icon} me-2"></i> ${label}
                         </a>
                     </li>
@@ -685,7 +737,7 @@
                     <li>
                         <a class="dropdown-item btn-dropdown-link text-success fw-bold" 
                            href="javascript:void(0);" 
-                           onclick="downloadDeliveredFile(${item.id})">
+                           onclick="initiateDownloadWithDisclaimer(${item.id}, '', false)">
                            <i class="bx bx-download me-2"></i> Download 3D Model
                         </a>
                     </li>
@@ -800,6 +852,81 @@
       // Navigate to the API route which streams the file from the SFTP disk
       // ProjectController@downloadDelivered handles auth + file existence checks
       window.location.href = '/api/user/my-uploads/' + uploadId + '/download-delivered';
+    }
+
+    // 🚀 DISCLAIMER LOGIC (v176)
+    function initiateDownloadWithDisclaimer(projectId, targetUrl, isCloud) {
+      document.getElementById('disclaimerProjectId').value = projectId;
+      document.getElementById('disclaimerTargetUrl').value = targetUrl;
+      document.getElementById('disclaimerIsCloud').value = isCloud ? "1" : "0";
+      
+      // Reset modal state
+      document.getElementById('disclaimerCheckbox').checked = false;
+      document.getElementById('agreeDownloadBtn').disabled = true;
+      
+      const modal = new bootstrap.Modal(document.getElementById('disclaimerModal'));
+      modal.show();
+    }
+
+    function toggleDisclaimerBtn() {
+      const checkbox = document.getElementById('disclaimerCheckbox');
+      document.getElementById('agreeDownloadBtn').disabled = !checkbox.checked;
+    }
+
+    function handleDisclaimerAgreement() {
+      const projectId = document.getElementById('disclaimerProjectId').value;
+      const targetUrl = document.getElementById('disclaimerTargetUrl').value;
+      const isCloud = document.getElementById('disclaimerIsCloud').value === "1";
+      const btn = document.getElementById('agreeDownloadBtn');
+      
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Logging Agreement...';
+
+      // 1. Log agreement to database for legal proof
+      fetch('/api/user/my-uploads/' + projectId + '/accept-disclaimer', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ agreed: true })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // 2. Hide modal
+          const modalEl = document.getElementById('disclaimerModal');
+          const modalInstance = bootstrap.Modal.getInstance(modalEl);
+          if (modalInstance) modalInstance.hide();
+          
+          // 3. Trigger Download or Reveal Path
+          if (targetUrl === 'REVEAL_SFTP') {
+            // Reveal the path in the Details modal
+            const unlockContainer = document.getElementById('sftpUnlockContainer');
+            const actualPath = document.getElementById('sftpActualPath');
+            if (unlockContainer) unlockContainer.classList.add('d-none');
+            if (actualPath) {
+                actualPath.classList.remove('d-none');
+                actualPath.classList.add('d-flex');
+                actualPath.classList.add('align-items-center');
+            }
+          } else if (isCloud && targetUrl) {
+            window.open(targetUrl, '_blank');
+          } else {
+            downloadDeliveredFile(projectId);
+          }
+        } else {
+          alert('Could not log your agreement. Please try again.');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('An error occurred. Please refresh the page.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
+      });
     }
 
     function deleteProject(projectId) {
@@ -1122,7 +1249,27 @@
           // Step 5: Final cleanup (prevent double slashes)
           displayPath = displayPath.replace(/\/+/g, '/');
 
-          document.getElementById('detailDeliveryPath').textContent = displayPath;
+          // 🚀 SFTP PATH PROTECTION (v176): Hide path behind disclaimer
+          const detailPathEl = document.getElementById('detailDeliveryPath');
+          const statusVal = (project.request_status || 'pending').toLowerCase();
+          
+          if (statusVal === 'completed' || statusVal === 'sent') {
+              // Create an "Unlock" button if they haven't seen it yet
+              detailPathEl.innerHTML = `
+                  <div class="d-flex align-items-center justify-content-between w-100" id="sftpUnlockContainer">
+                      <span class="text-muted italic">Path is locked for your protection</span>
+                      <button type="button" class="btn btn-xs btn-primary fw-bold" onclick="initiateDownloadWithDisclaimer(${project.id}, 'REVEAL_SFTP', false)">
+                          <i class="bx bx-lock-open-alt me-1"></i> Unlock Path
+                      </button>
+                  </div>
+                  <div id="sftpActualPath" class="d-none flex-grow-1">
+                      <code class="text-dark" id="sftpPathText">${displayPath}</code>
+                      <button type="button" class="btn btn-sm btn-link p-0 ms-2 text-success" onclick="copyTextFromElement('sftpPathText', this)"><i class="bx bx-copy"></i></button>
+                  </div>
+              `;
+          } else {
+              detailPathEl.textContent = "Processing not complete";
+          }
       } else {
           delSection.classList.add('d-none');
       }

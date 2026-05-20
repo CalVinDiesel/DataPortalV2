@@ -9,6 +9,16 @@ use Illuminate\Support\Facades\File;
 
 class AdminSyncController extends Controller
 {
+    /**
+     * Normalize an ID for comparison (lowercase and remove all non-alphanumeric chars).
+     * Prevents duplication like "wisma-merdeka" vs "wismamerdeka".
+     */
+    private function normalizeId($id)
+    {
+        if (!$id) return '';
+        return strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $id));
+    }
+
     public function seedMapDataFromLocations()
     {
         $path = public_path('data/locations.json');
@@ -25,54 +35,96 @@ class AdminSyncController extends Controller
 
         $count = 0;
         foreach ($data['locations'] as $loc) {
+            $incomingId = $loc['id'] ?? '';
+            $normIncoming = $this->normalizeId($incomingId);
+            
+            // v176: Find ALL existing pins that logically match this ID
+            $allMatches = MapData::all()->filter(function($p) use ($normIncoming) {
+                return $this->normalizeId($p->mapDataID) === $normIncoming;
+            });
+
+            // Identify the "Official" one (prefer exact ID match, or just the first one)
+            $official = $allMatches->first(function($p) use ($incomingId) {
+                return $p->mapDataID === $incomingId;
+            }) ?: $allMatches->first();
+
+            $targetId = $official ? $official->mapDataID : $incomingId;
+
+            // Search and Destroy: Delete all OTHER duplicates found in the DB
+            foreach ($allMatches as $match) {
+                if ($match->mapDataID !== $targetId) {
+                    $match->delete();
+                }
+            }
+
+            // Update the official record
             MapData::updateOrCreate(
-                ['mapDataID' => $loc['id']],
+                ['mapDataID' => $targetId],
                 [
                     'title' => $loc['name'] ?? null,
                     'description' => $loc['description'] ?? null,
                     'xAxis' => $loc['coordinates']['longitude'] ?? 0,
                     'yAxis' => $loc['coordinates']['latitude'] ?? 0,
                     '3dTiles' => $loc['dataPaths']['tileset'] ?? null,
+                    'thumbNailUrl' => $loc['previewImage'] ?? $loc['thumbnailUrl'] ?? null,
                     'updateDateTime' => now(),
                 ]
             );
             $count++;
         }
 
-        return response()->json(['success' => true, 'message' => "$count pins synced from locations.json."]);
+        return response()->json(['success' => true, 'message' => "$count pins synced. All duplicates were identified and removed."]);
     }
 
     public function seedShowcasesFromLocations()
     {
-        $path = public_path('data/locations.json');
-        if (!File::exists($path)) {
-            return response()->json(['success' => false, 'message' => 'locations.json not found']);
-        }
+        // v176: Ensure MapData is updated first
+        $this->seedMapDataFromLocations();
 
-        $json = File::get($path);
-        $data = json_decode($json, true);
+        $allPins = MapData::all();
+        $allShowcases = Showcase::all();
+        
+        $countRemoved = 0;
+        $countUpdated = 0;
 
-        if (!isset($data['locations']) || !is_array($data['locations'])) {
-            return response()->json(['success' => false, 'message' => 'Invalid locations.json format']);
-        }
+        foreach ($allShowcases as $s) {
+            $sId = $s->map_data_id;
+            $normId = $this->normalizeId($sId);
 
-        $maxOrder = Showcase::max('display_order') ?? -1;
+            // 1. Find if this showcase entry logically matches ANY official Map Pin
+            $officialPin = $allPins->first(function($p) use ($normId) {
+                return $this->normalizeId($p->mapDataID) === $normId;
+            });
 
-        $count = 0;
-        foreach ($data['locations'] as $loc) {
-            $exists = Showcase::where('map_data_id', $loc['id'])->exists();
-            if (!$exists) {
-                $maxOrder++;
-                Showcase::create([
-                    'map_data_id' => $loc['id'],
-                    'display_order' => $maxOrder,
-                    'created_at' => now(),
-                ]);
-                $count++;
+            if (!$officialPin) {
+                // ORPHAN: This showcase entry points to a location that doesn't exist in Map Pins. Delete it.
+                $s->delete();
+                $countRemoved++;
+                continue;
+            }
+
+            // 2. DUPLICATE CHECK: Are there other showcase entries for this same pin?
+            $duplicates = Showcase::all()->filter(function($other) use ($normId, $s) {
+                return $other->id !== $s->id && $this->normalizeId($other->map_data_id) === $normId;
+            });
+
+            foreach ($duplicates as $dup) {
+                $dup->delete();
+                $countRemoved++;
+            }
+
+            // 3. ID ALIGNMENT: Ensure this showcase uses the EXACT ID from MapData
+            if ($s->map_data_id !== $officialPin->mapDataID) {
+                $s->map_data_id = $officialPin->mapDataID;
+                $s->save();
+                $countUpdated++;
             }
         }
 
-        return response()->json(['success' => true, 'message' => "$count new items added to showcases from locations.json."]);
+        return response()->json([
+            'success' => true, 
+            'message' => "Showcase cleaned. Removed $countRemoved orphans/duplicates and updated $countUpdated IDs to match Map Pins."
+        ]);
     }
 
     public function showcasesRenumber()
@@ -111,7 +163,8 @@ class AdminSyncController extends Controller
                 ],
                 'dataPaths' => [
                     'tileset' => $tileset
-                ]
+                ],
+                'thumbnailUrl' => $row->thumbNailUrl
             ];
         }
 

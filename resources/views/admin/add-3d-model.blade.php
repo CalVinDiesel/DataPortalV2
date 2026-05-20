@@ -219,16 +219,25 @@
         var xAxis = document.getElementById('xAxis').value.trim();
         var tilesetUrl = document.getElementById('tilesetUrl').value.trim();
 
+        var description = document.getElementById('description').value.trim();
+        var thumbNailUrl = document.getElementById('thumbNailUrl').value.trim();
+        var hasFile = thumbnailFile && thumbnailFile.files && thumbnailFile.files.length > 0;
+
         var missing = [];
         if (!mapDataID) missing.push("Model ID");
         if (!title) missing.push("Title");
-        if (!document.getElementById('description').value.trim()) missing.push("Description");
+        if (!description) missing.push("Description");
         if (!yAxis) missing.push("Latitude");
         if (!xAxis) missing.push("Longitude");
         if (!tilesetUrl) missing.push("3D Tiles URL");
+        
+        // 🚀 STRICT THUMBNAIL VALIDATION: Must either upload or provide URL
+        if (!hasFile && !thumbNailUrl) {
+            missing.push("Thumbnail (Please either upload a file OR provide an image URL)");
+        }
 
         if (missing.length > 0) {
-            return alert("Form Incomplete! The following mandatory fields are required:\n\n• " + missing.join("\n• "));
+            return alert("⚠️ FORM INCOMPLETE\n\nPlease complete every field before continuing:\n\n• " + missing.join("\n• "));
         }
 
         formMessage.textContent = '';
@@ -254,38 +263,86 @@
         }
         submitBtn.disabled = true;
         function normalizeStr(s) { return (s || '').toString().trim(); }
-        function normalizeLower(s) { return normalizeStr(s).toLowerCase(); }
+        function normalizeLower(s) { return (s || '').toString().trim().toLowerCase(); }
+        function normalizePure(s) { return (s || '').toString().toLowerCase().replace(/[^a-z0-9]/g, ''); }
         function checkDuplicates() {
-          // Check against existing pins; if ANY of the 5 fields match, block creation.
+          console.log("🔍 STARTING DUPLICATION CHECK for:", mapDataID);
           return fetch(API_BASE + '/api/map-data')
-            .then(function (r) { return r.json(); })
+            .then(function (r) { 
+                if (!r.ok) throw new Error("API responded with status " + r.status);
+                return r.json(); 
+            })
             .then(function (rows) {
+              console.log("📊 ROWS RECEIVED FROM API:", rows.length, rows);
               rows = Array.isArray(rows) ? rows : [];
               var newId = normalizeStr(mapDataID);
+              var pureNewId = normalizePure(newId);
               var newTitle = normalizeLower(document.getElementById('title').value.trim() || mapDataID);
               var newLat = String(parseFloat(document.getElementById('yAxis').value));
               var newLon = String(parseFloat(document.getElementById('xAxis').value));
               var newTiles = normalizeStr(document.getElementById('tilesetUrl').value.trim());
 
-              var dup = { id: false, title: false, lat: false, lon: false, tiles: false };
+              var dup = { id: false, partial: false, partialName: '', title: false, lat: false, lon: false, tiles: false };
+              
               for (var i = 0; i < rows.length; i++) {
                 var r0 = rows[i] || {};
-                var rid = normalizeStr(r0.mapDataID || r0.id || '');
+                var rawId = '';
+                var rid = '';
+                
+                // 🕵️ Find ID key case-insensitively
+                for (var k in r0) {
+                    if (k.toLowerCase() === 'mapdataid' || k.toLowerCase() === 'id') {
+                        rawId = r0[k];
+                        rid = normalizeStr(rawId).toLowerCase();
+                        break;
+                    }
+                }
+                
+                var currentNewId = newId.toLowerCase();
+                if (!rid) {
+                    console.log("Row " + i + ": No ID key found. Keys are:", Object.keys(r0));
+                    continue;
+                }
+
+                var pureRid = normalizePure(rawId);
+
                 var rtitle = normalizeLower(r0.title || '');
                 var rlat = (r0.yAxis != null && r0.yAxis !== '') ? String(Number(r0.yAxis)) : '';
                 var rlon = (r0.xAxis != null && r0.xAxis !== '') ? String(Number(r0.xAxis)) : '';
                 var rtiles = normalizeStr(r0['3dTiles'] || r0.tilesetUrl || r0.tileset || '');
-                if (rid && rid === newId) dup.id = true;
+                
+                console.log("Row " + i + ": Comparing '" + currentNewId + "' with '" + rid + "' (Pure: '" + pureNewId + "' vs '" + pureRid + "')");
+
+                // 🛑 EXACT MATCH
+                if (rid === currentNewId) {
+                    console.warn("❗ EXACT MATCH FOUND at Row " + i + ":", rawId);
+                    dup.id = true;
+                } 
+                // ⚠️ PARTIAL MATCH (Bidirectional: checks if New is in Old OR Old is in New)
+                // This prioritizes alphabets/numbers by ignoring symbols like hyphens and underscores.
+                else if (pureRid.length > 3 && (pureNewId.indexOf(pureRid) !== -1 || pureRid.indexOf(pureNewId) !== -1)) {
+                    console.warn("⚠️ PARTIAL MATCH FOUND at Row " + i + ":", rawId);
+                    dup.partial = true;
+                    dup.partialName = rawId;
+                }
+
                 if (rtitle && rtitle === newTitle) dup.title = true;
                 if (rlat && rlat === newLat) dup.lat = true;
                 if (rlon && rlon === newLon) dup.lon = true;
                 if (rtiles && rtiles === newTiles) dup.tiles = true;
-                if (dup.id || dup.title || dup.lat || dup.lon || dup.tiles) break;
+                
+                if (dup.id) break; 
               }
+              console.log("✅ CHECK FINISHED. Result:", dup);
               return dup;
+            })
+            .catch(function(err) {
+                console.error("❌ DUPLICATION CHECK FAILED:", err);
+                return { id: false, partial: false }; // Allow proceed on error but log it
             });
         }
         function saveMapData(finalThumbUrl) {
+          console.log("💾 INITIATING SAVE for:", mapDataID, "with thumb:", finalThumbUrl);
           var payload = {
             mapDataID: mapDataID,
             title: document.getElementById('title').value.trim() || mapDataID,
@@ -317,8 +374,20 @@
           fd.append('thumbnail', file);
           fd.append('mapDataID', mapDataID);
           checkDuplicates().then(function (dup) {
-            if (dup && (dup.id || dup.title || dup.lat || dup.lon || dup.tiles)) {
-              alert('This to be created new 3D model has the same model ID and/or title and/or latitude and/or logitude and/or 3D tiles url with the existing 3D model in the data portal.');
+            if (dup && dup.id) {
+              alert('⚠️ DUPLICATE MODEL ID: This Model ID already exists in the portal. Please use a unique ID.');
+              submitBtn.disabled = false;
+              return;
+            }
+            if (dup && dup.partial) {
+              var proceed = confirm('📝 SIMILAR MODEL DETECTED\n\nYou already have a model created with a similar ID: "' + dup.partialName + '".\n\nMake sure you are not creating a duplicate model. If this is a different area or distinct 3D model, click OK to continue.');
+              if (!proceed) {
+                submitBtn.disabled = false;
+                return;
+              }
+            }
+            if (dup && (dup.title || dup.lat || dup.lon || dup.tiles)) {
+              alert('⚠️ DUPLICATE DATA DETECTED: This model shares the same Title, Coordinates, or 3D Tiles URL with an existing entry. Please review your data.');
               submitBtn.disabled = false;
               return;
             }
@@ -340,8 +409,20 @@
           }).catch(function () { submitBtn.disabled = false; });
         } else {
           checkDuplicates().then(function (dup) {
-            if (dup && (dup.id || dup.title || dup.lat || dup.lon || dup.tiles)) {
-              alert('This to be created new 3D model has the same model ID and/or title and/or latitude and/or logitude and/or 3D tiles url with the existing 3D model in the data portal.');
+            if (dup && dup.id) {
+              alert('⚠️ DUPLICATE MODEL ID: This Model ID already exists in the portal. Please use a unique ID.');
+              submitBtn.disabled = false;
+              return;
+            }
+            if (dup && dup.partial) {
+              var proceed = confirm('📝 SIMILAR MODEL DETECTED\n\nYou already have a model created with a similar ID: "' + dup.partialName + '".\n\nMake sure you are not creating a duplicate model. If this is a different area or distinct 3D model, click OK to continue.');
+              if (!proceed) {
+                submitBtn.disabled = false;
+                return;
+              }
+            }
+            if (dup && (dup.title || dup.lat || dup.lon || dup.tiles)) {
+              alert('⚠️ DUPLICATE DATA DETECTED: This model shares the same Title, Coordinates, or 3D Tiles URL with an existing entry. Please review your data.');
               submitBtn.disabled = false;
               return;
             }

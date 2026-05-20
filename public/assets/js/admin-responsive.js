@@ -6,9 +6,53 @@
   function init() {
     var wrapper = document.querySelector('.layout-wrapper.layout-content-navbar');
     var menu = document.getElementById('layout-menu');
-    if (!wrapper || !menu) return;
     var toggle = document.querySelector('.admin-menu-toggle');
-    if (!toggle) return;
+    if (!wrapper || !toggle) return;
+
+    // v176: If menu is missing, create it dynamically from existing nav links
+    if (!menu) {
+      menu = document.createElement('aside');
+      menu.id = 'layout-menu';
+      menu.className = 'layout-menu menu-vertical menu bg-menu-theme';
+      
+      // Create Brand/Logo section for mobile menu
+      var brand = document.createElement('div');
+      brand.className = 'app-brand demo border-bottom';
+      brand.innerHTML = `
+        <a href="/" class="app-brand-link">
+          <span class="app-brand-text demo menu-text fw-bold ms-2">3DHub Admin</span>
+        </a>
+      `;
+      menu.appendChild(brand);
+
+      // Clone existing navigation links
+      var navLinks = document.querySelector('.admin-nav-links');
+      if (navLinks) {
+        var menuInner = document.createElement('ul');
+        menuInner.className = 'menu-inner py-1 mt-3 list-unstyled px-3';
+        
+        navLinks.querySelectorAll('a').forEach(function(link) {
+          var li = document.createElement('li');
+          li.className = 'menu-item mb-1';
+          var newLink = link.cloneNode(true);
+          newLink.className = 'menu-link d-flex align-items-center py-2 px-3 rounded text-decoration-none';
+          // Match active state
+          if (link.classList.contains('active')) {
+             newLink.style.backgroundColor = 'rgba(105, 108, 255, 0.1)';
+             newLink.style.color = '#696cff';
+             newLink.style.fontWeight = 'bold';
+          } else {
+             newLink.style.color = 'inherit';
+          }
+          li.appendChild(newLink);
+          menuInner.appendChild(li);
+        });
+        menu.appendChild(menuInner);
+      }
+      
+      wrapper.appendChild(menu);
+    }
+
     var overlay = wrapper.querySelector('.layout-menu-overlay');
     if (!overlay) {
       overlay = document.createElement('div');

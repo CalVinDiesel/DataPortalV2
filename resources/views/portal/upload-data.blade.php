@@ -632,7 +632,7 @@
                 return `http://${host}:${port}/nitro_upload.php?${qs}`;
             }
             // Production: same origin, web server handles concurrency natively
-            return `/nitro_upload.php?${qs}`;
+            return '{{ route('api.upload.direct') }}?' + qs;
         }
 
         let activeSlotSent = {}; 
@@ -870,7 +870,7 @@
             fd.append('outputCategories', JSON.stringify(outputs));
             // 🚀 PROJECT-INFINITY (v153): Extended Timeout & Heartbeat Pulse
             // This prevents the "100% Limbo" by allowing the server 5+ minutes to stitch 3GB data.
-            const res = await fetch('/api/upload/finalize', {
+            const res = await fetch('{{ route('api.upload.finalize') }}', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 body: fd,

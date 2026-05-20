@@ -12,7 +12,6 @@ class MapDataSeeder extends Seeder
      */
     public function run(): void
     {
-        // MapData::query()->delete(); // Removed to prevent 'Relation does not exist' errors during restoration
         $locations = [
             [
                 'mapDataID' => 'KK_OSPREY',
@@ -21,7 +20,7 @@ class MapDataSeeder extends Seeder
                 'xAxis' => 116.070466,
                 'yAxis' => 5.957839,
                 '3dTiles' => 'https://3dhub.geosabah.my/3dmodel/KK_OSPREY/tileset.json',
-                'thumbNailUrl' => '/assets/img/front-pages/locations/kkOsprey_pin_image.jpg',
+                'thumbNailUrl' => 'https://res.cloudinary.com/dssf0n6zc/image/upload/v1/3dhub/kkOsprey_pin_image.jpg',
                 'purchase_price_tokens' => 10,
                 'updateDateTime' => now(),
             ],
@@ -32,7 +31,7 @@ class MapDataSeeder extends Seeder
                 'xAxis' => 116.073466,
                 'yAxis' => 5.960839,
                 '3dTiles' => 'https://3dhub.geosabah.my/3dmodel/Building_Planning/KB_3DTiles_Lite/tileset.json',
-                'thumbNailUrl' => '/assets/img/front-pages/locations/kb_3dtiles_lite_pin_image.jpg',
+                'thumbNailUrl' => 'https://res.cloudinary.com/dssf0n6zc/image/upload/v1/3dhub/kb_3dtiles_lite_pin_image.jpg',
                 'purchase_price_tokens' => 20,
                 'updateDateTime' => now(),
             ],
@@ -43,7 +42,7 @@ class MapDataSeeder extends Seeder
                 'xAxis' => 116.110466,
                 'yAxis' => 5.977839,
                 '3dTiles' => 'https://3dhub.geosabah.my/3dmodel/Building_Planning/fisheye_test_kolombong_18mac2025/tileset.json',
-                'thumbNailUrl' => '/assets/img/front-pages/locations/kolombong_pin_image.jpg',
+                'thumbNailUrl' => 'https://res.cloudinary.com/dssf0n6zc/image/upload/v1/3dhub/kolombong_pin_image.jpg',
                 'purchase_price_tokens' => 15,
                 'updateDateTime' => now(),
             ],
@@ -54,7 +53,7 @@ class MapDataSeeder extends Seeder
                 'xAxis' => 116.074466,
                 'yAxis' => 5.984839,
                 '3dTiles' => 'https://3dhub.geosabah.my/3dmodel/wismamerdeka/tileset.json',
-                'thumbNailUrl' => '/assets/img/front-pages/locations/wisma_merdeka_pin_image.jpg',
+                'thumbNailUrl' => 'https://res.cloudinary.com/dssf0n6zc/image/upload/v1/3dhub/wisma_merdeka_pin_image.jpg',
                 'purchase_price_tokens' => 25,
                 'updateDateTime' => now(),
             ],
@@ -65,14 +64,26 @@ class MapDataSeeder extends Seeder
                 'xAxis' => 116.082466,
                 'yAxis' => 5.992839,
                 '3dTiles' => 'https://3dhub.geosabah.my/3dmodel/ppns_ys/tileset.json',
-                'thumbNailUrl' => '/assets/img/front-pages/locations/ppns_ys_pin_image.jpg',
+                'thumbNailUrl' => 'https://res.cloudinary.com/dssf0n6zc/image/upload/v1/3dhub/ppns_ys_pin_image.jpg',
                 'purchase_price_tokens' => 30,
+                'updateDateTime' => now(),
+            ],
+            [
+                'mapDataID' => 'Keningau_Sabah_2026',
+                'title' => 'KENINGAU SABAH',
+                'description' => 'the city of Keningau Sabah',
+                'xAxis' => 116.1649,
+                'yAxis' => 5.3555,
+                '3dTiles' => 'https://3dhub.geosabah.my/3dmodel/keningau_sabah_2026/tileset.json',
+                'thumbNailUrl' => 'https://res.cloudinary.com/dssf0n6zc/image/upload/v1778685160/keningau_sabah_2026_pin_image_pvew6e.jpg',
+                'purchase_price_tokens' => 25,
                 'updateDateTime' => now(),
             ],
         ];
 
         foreach ($locations as $loc) {
-            MapData::updateOrCreate(['mapDataID' => $loc['mapDataID']], $loc);
+            // v176: Use firstOrCreate so manual updates (Cloudinary links) are NOT overwritten by the seeder.
+            MapData::firstOrCreate(['mapDataID' => $loc['mapDataID']], $loc);
         }
     }
 }

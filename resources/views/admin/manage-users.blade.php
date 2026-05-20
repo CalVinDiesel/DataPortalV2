@@ -68,7 +68,7 @@
       color: #696cff !important;
     }
     .content-wrapper-premium {
-      margin-top: 7.5rem !important;
+      margin-top: 8.5rem !important;
     }
     .layout-page {
         padding: 0 !important;

@@ -15,17 +15,17 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // 🚀 Unlimited Direct Upload Hub (Stateless/No-Session for high-speed stability)
-Route::post('/upload/init', [\App\Http\Controllers\UploadController::class, 'init']);
-Route::post('/upload/direct', [\App\Http\Controllers\UploadController::class, 'direct']);
+Route::post('/upload/init', [\App\Http\Controllers\UploadController::class, 'init'])->name('api.upload.init');
+Route::post('/upload/direct', [\App\Http\Controllers\UploadController::class, 'direct'])->name('api.upload.direct');
 // NOTE: finalize needs 'web' middleware to access auth()->user() via session
 
 Route::middleware('web')->group(function () {
     // 🔑 Finalize needs session auth to identify the uploading user
-    Route::post('/upload/finalize', [\App\Http\Controllers\UploadController::class, 'finalize']);
+    Route::post('/upload/finalize', [\App\Http\Controllers\UploadController::class, 'finalize'])->name('api.upload.finalize');
 
-    Route::post('/upload/sftp-project', [ProjectController::class, 'storeSftp']);
-    Route::post('/upload/google-drive-project', [ProjectController::class, 'storeGoogleDrive']);
-    Route::post('/upload/onedrive-project', [ProjectController::class, 'storeOneDrive']);
+    Route::post('/upload/sftp-project', [ProjectController::class, 'storeSftp'])->name('api.upload.sftp_project');
+    Route::post('/upload/google-drive-project', [ProjectController::class, 'storeGoogleDrive'])->name('api.upload.google_drive_project');
+    Route::post('/upload/onedrive-project', [ProjectController::class, 'storeOneDrive'])->name('api.upload.onedrive_project');
 
     Route::prefix('auth')->group(function () {
         Route::get('/me', [\App\Http\Controllers\AuthController::class, 'me']);
@@ -56,14 +56,14 @@ Route::middleware('web')->group(function () {
     Route::post('/admin/export-locations-json', [AdminSyncController::class, 'exportLocationsJson']);
 
     // Admin Client Uploads Routes
-    Route::get('/admin/client-uploads', [AdminClientUploadController::class, 'getUploads']);
-    Route::get('/admin/processing-requests', [AdminClientUploadController::class, 'getProcessingRequests']);
-    Route::get('/admin/client-uploads/path-config', [AdminClientUploadController::class, 'getPathConfig']);
-    Route::post('/admin/client-uploads/{id}/decision', [AdminClientUploadController::class, 'submitDecision']);
-    Route::delete('/admin/client-uploads/{id}', [AdminClientUploadController::class, 'deleteUpload']);
-    Route::post('/admin/processing-requests/{id}/delivery', [AdminClientUploadController::class, 'markDelivered']);
-    Route::post('/admin/processing-requests/{id}/update-notes', [AdminClientUploadController::class, 'updateDeliveryNotes']);
-    Route::post('/admin/client-uploads/{id}/ensure-delivery-folder', [AdminClientUploadController::class, 'ensureDeliveryFolder']);
+    Route::get('/admin/client-uploads', [AdminClientUploadController::class, 'getUploads'])->name('api.admin.uploads');
+    Route::get('/admin/processing-requests', [AdminClientUploadController::class, 'getProcessingRequests'])->name('api.admin.processing_requests');
+    Route::get('/admin/client-uploads/path-config', [AdminClientUploadController::class, 'getPathConfig'])->name('api.admin.path_config');
+    Route::post('/admin/client-uploads/{id}/decision', [AdminClientUploadController::class, 'submitDecision'])->name('api.admin.decision');
+    Route::delete('/admin/client-uploads/{id}', [AdminClientUploadController::class, 'deleteUpload'])->name('api.admin.delete_upload');
+    Route::post('/admin/processing-requests/{id}/delivery', [AdminClientUploadController::class, 'markDelivered'])->name('api.admin.delivery');
+    Route::post('/admin/processing-requests/{id}/update-notes', [AdminClientUploadController::class, 'updateDeliveryNotes'])->name('api.admin.update_notes');
+    Route::post('/admin/client-uploads/{id}/ensure-delivery-folder', [AdminClientUploadController::class, 'ensureDeliveryFolder'])->name('api.admin.ensure_folder');
 
     // Admin Users Routes
     Route::get('/admin/users', [AdminUserController::class, 'index']);

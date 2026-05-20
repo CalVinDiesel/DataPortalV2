@@ -70,7 +70,7 @@
       color: #696cff !important;
     }
     .content-wrapper-premium {
-      margin-top: 7.5rem !important;
+      margin-top: 8.5rem !important;
     }
     .layout-page {
         padding: 0 !important;
@@ -137,7 +137,7 @@
       </nav>
 
       <div class="layout-page">
-        <div class="content-wrapper">
+        <div class="content-wrapper content-wrapper-premium">
           <div class="container-xxl flex-grow-1 container-p-y">
             <div class="d-flex justify-content-between align-items-center mb-4">
               <h4 class="fw-bold mb-0">Manage Map Pins</h4>
@@ -356,7 +356,7 @@
       if (syncBtn) syncBtn.addEventListener('click', function () {
         var btn = this;
         btn.disabled = true;
-        fetch(API_BASE + '/api/admin/seed-mapdata-from-locations', { method: 'POST' })
+        fetch(API_BASE + '/api/admin/seed-map_data-from-locations', { method: 'POST' })
           .then(function (r) { return r.json(); })
           .then(function (data) {
             if (data.success) {

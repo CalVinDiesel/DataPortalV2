@@ -7,9 +7,37 @@ use Illuminate\Http\Request;
 
 class ShowcaseController extends Controller
 {
+    /**
+     * Normalize an ID for comparison (lowercase and remove all non-alphanumeric chars).
+     */
+    private function normalizeId($id)
+    {
+        if (!$id) return '';
+        return strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $id));
+    }
+
     public function index()
     {
-        $showcases = Showcase::select('showcases.*', 'map_data.title', 'map_data.thumbNailUrl', 'map_data.description')
+        // v176: Fetch all to perform logical cleanup
+        $all = Showcase::orderBy('display_order', 'asc')->get();
+        
+        $seenNormalized = [];
+        $uniqueIds = [];
+        
+        foreach ($all as $s) {
+            $norm = $this->normalizeId($s->map_data_id);
+            if (isset($seenNormalized[$norm])) {
+                // Already have this logical ID — delete the duplicate row!
+                $s->delete();
+            } else {
+                $seenNormalized[$norm] = true;
+                $uniqueIds[] = $s->id;
+            }
+        }
+
+        // Return only the unique ones with their joined map data
+        $showcases = Showcase::whereIn('showcases.id', $uniqueIds)
+            ->select('showcases.*', 'map_data.title', 'map_data.thumbNailUrl', 'map_data.description')
             ->leftJoin('map_data', 'showcases.map_data_id', '=', 'map_data.mapDataID')
             ->orderBy('showcases.display_order', 'asc')
             ->get();
@@ -24,9 +52,16 @@ class ShowcaseController extends Controller
             'display_order' => 'required|integer',
         ]);
 
-        $exists = Showcase::where('map_data_id', $request->map_data_id)->first();
+        $normIncoming = $this->normalizeId($request->map_data_id);
+        
+        // v176: Robust check against normalized existing IDs
+        $all = Showcase::all();
+        $exists = $all->first(function($s) use ($normIncoming) {
+            return $this->normalizeId($s->map_data_id) === $normIncoming;
+        });
+
         if ($exists) {
-            return response()->json(['success' => false, 'message' => 'This specific 3D model showcases has been added into the showcases already.']);
+            return response()->json(['success' => false, 'message' => 'This specific 3D model showcase has been added into the showcase already.']);
         }
 
         $showcases = Showcase::create([

@@ -527,7 +527,7 @@
       };
 
       try {
-        const res = await fetch('/api/upload/sftp-project', {
+        const res = await fetch('{{ route('api.upload.sftp_project') }}', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',

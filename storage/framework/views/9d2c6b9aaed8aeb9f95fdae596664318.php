@@ -56,6 +56,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Graduate&display=swap" rel="stylesheet" />
   
     <!-- Icons -->
     <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/fonts/iconify-icons.css" />
@@ -112,9 +113,6 @@
     <!-- CesiumJS 1.138
          ✅ CHANGED: Added defer so Cesium no longer blocks page rendering.
          The page will load visually first, then Cesium initializes after. -->
-    <link href="https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
-    <script src="https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/Cesium.js" defer></script>
-
     <script>
       window.AppConfig = {
         baseUrl:    "<?php echo e(rtrim(config('app.url'), '/')); ?>",
@@ -123,12 +121,28 @@
       };
       window.TemaDataPortal_API_BASE = window.AppConfig.baseUrl;
     </script>
-  
-    <!-- Custom Cesium Map JS
-         ✅ KEPT: defer maintained — loads after HTML is parsed, order preserved -->
-    <script src="<?php echo e(asset('assets')); ?>/js/cesium-map.js" defer></script>
-    <script src="<?php echo e(asset('assets')); ?>/js/cesium-map-controls.js" defer></script>
-    <script src="<?php echo e(asset('assets')); ?>/js/cesium-map-markers.js" defer></script>
+
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/Cesium.js"></script>
+    <script>
+      (function() {
+        var scripts = [
+          "<?php echo e(asset('assets')); ?>/js/cesium-map.js",
+          "<?php echo e(asset('assets')); ?>/js/cesium-map-controls.js",
+          "<?php echo e(asset('assets')); ?>/js/cesium-map-markers.js"
+        ];
+        var cacheBust = "?v=" + new Date().getTime() + "_" + Math.random();
+        
+        function loadScript(index) {
+          if (index >= scripts.length) return;
+          var s = document.createElement('script');
+          s.src = scripts[index] + cacheBust;
+          s.onload = function() { loadScript(index + 1); };
+          document.head.appendChild(s);
+        }
+        loadScript(0);
+      })();
+    </script>
   
     <!-- Helpers -->
     <script src="<?php echo e(asset('assets')); ?>/vendor/js/helpers.js"></script>
@@ -425,6 +439,17 @@
               <div class="tile-3d-body">
                 <h6 class="tile-3d-title">PPNS YS</h6>
                 <div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Kota Kinabalu</span></div>
+                <div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div>
+              </div>
+            </a>
+          </div>
+          <div class="col-lg-4 col-md-6" id="tile-mapdata-Keningau-Sabah-2026">
+            <a href="<?php echo e(route('loading_3d')); ?>?id=Keningau-Sabah-2026"
+ class="tile-3d-card" target="_blank" rel="noopener">
+              <div class="tile-3d-img"><img src="https://placehold.co/400x220/6a11cb/ffffff?text=KENINGAU+SABAH" alt="Keningau Sabah" onerror="this.src='https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model'"></div>
+              <div class="tile-3d-body">
+                <h6 class="tile-3d-title">KENINGAU SABAH</h6>
+                <div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Regional Planning</span></div>
                 <div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div>
               </div>
             </a>
@@ -1296,17 +1321,28 @@
       var API_BASE = (typeof window !== 'undefined' && window.TemaDataPortal_API_BASE) || (window.location && window.location.origin) || '';
       var container = document.getElementById('tilesShowcase');
       if (!container) return;
+
+      // v176: Dynamic color generator for future locations
+      function getPremiumColor(id) {
+        var colors = [
+          '1a1a2e/696cff', // Navy/Blue
+          '667eea/ffffff', // Indigo
+          'f093fb/ffffff', // Pink
+          '4facfe/ffffff', // Sky Blue
+          '43e97b/ffffff', // Green
+          '6a11cb/ffffff', // Purple
+          'ff0844/ffffff', // Red
+          'f09819/ffffff'  // Orange
+        ];
+        var hash = 0;
+        for (var i = 0; i < id.length; i++) { hash = id.charCodeAt(i) + ((hash << 5) - hash); }
+        return colors[Math.abs(hash) % colors.length];
+      }
+
       function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
       function toImgSrc(url) { if (!url) return ''; var u = (url + '').trim(); return u ? u.replace(/ /g, '%20') : ''; }
-      /* Thumbnail images that match the overview map pins (fallback when API has no thumb) */
-      var showcaseImages = {
-        'KK_OSPREY': '/assets/img/front-pages/locations/kkOsprey_pin_image.jpg',
-        'kb-3dtiles-lite': '/assets/img/front-pages/locations/kb_3dtiles_lite_pin_image.jpg',
-        'kolombong-fisheye': '/assets/img/front-pages/locations/kolombong_pin_image.jpg',
-        'wisma-merdeka': '/assets/img/front-pages/locations/wisma_merdeka_pin_image.jpg',
-        'ppns-ys': '/assets/img/front-pages/locations/ppns_ys_pin_image.jpg'
-      };
-      var desiredOrder = ['KK_OSPREY', 'wisma-merdeka', 'kb-3dtiles-lite', 'kolombong-fisheye', 'ppns-ys', 'Keningau-Sabah-2026'];
+      
+      var desiredOrder = ['KK_OSPREY', 'wismamerdeka', 'KB_3DTiles_Lite', 'fisheye_test_kolombong_18mac2025', 'ppns_ys', 'Keningau-Sabah-2026'];
       fetch(API_BASE + '/api/showcases').then(function (r) { return r.json(); }).then(function (rows) {
         if (!Array.isArray(rows) || rows.length === 0) return;
         rows = rows.slice().sort(function (a, b) {
@@ -1321,15 +1357,15 @@
         var html = rows.map(function (r) {
           var id = r.mapDataID || r.map_data_id || r.id || '';
           var title = r.title || id;
-          var rawImg = (r.thumbNailUrl || '').trim() || showcaseImages[id];
+          var rawImg = (r.thumbNailUrl || '').trim();
           var finalSrc;
           if (rawImg) {
             var encoded = toImgSrc(rawImg);
             finalSrc = (rawImg.indexOf('http') === 0 ? encoded : (API_BASE + (rawImg.indexOf('/') === 0 ? encoded : '/' + encoded)));
           } else {
-            finalSrc = 'https://placehold.co/400x220/1a1a2e/696cff?text=' + encodeURIComponent((title || '3D').substring(0, 20));
+            finalSrc = 'https://placehold.co/400x220/' + getPremiumColor(id) + '?text=' + encodeURIComponent((title || '3D').substring(0, 20));
           }
-          return '<div class="col-lg-4 col-md-6" id="tile-showcase-' + esc(id) + '"><a href="/viewer/' + esc(id) + '" class="tile-3d-card" target="_blank" rel="noopener"><div class="tile-3d-img"><img src="' + finalSrc + '" alt="' + esc(title) + '" onerror="this.src=\'https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model\'"></div><div class="tile-3d-body"><h6 class="tile-3d-title">' + esc(title) + '</h6><div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Kota Kinabalu</span></div><div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div></div></a></div>';
+          return '<div class="col-lg-4 col-md-6" id="tile-showcase-' + esc(id) + '"><a href="/loading-3d?id=' + esc(id) + '" class="tile-3d-card" target="_blank" rel="noopener"><div class="tile-3d-img"><img src="' + finalSrc + '" alt="' + esc(title) + '" onerror="this.src=\'https://placehold.co/400x220/' + getPremiumColor(id) + '?text=3D+Model\'"></div><div class="tile-3d-body"><h6 class="tile-3d-title">' + esc(title) + '</h6><div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Kota Kinabalu</span></div><div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div></div></a></div>';
         }).join('');
         container.innerHTML = html;
       }).catch(function () {});

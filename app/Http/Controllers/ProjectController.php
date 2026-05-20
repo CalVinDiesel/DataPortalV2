@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClientUpload;
+use App\Models\DisclaimerAcceptance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -431,58 +432,66 @@ class ProjectController extends Controller
         }
 
         if ($upload->delivery_method === 'portal' || $upload->delivery_method === 'sftp') {
-            // UNLIMITED Memory Boost for this request
+            // 🚀 SESSION UNLOCK (v176): Release the session lock immediately.
+            session_write_close();
+            ignore_user_abort(true);
+
             if (function_exists('ini_set')) {
                 ini_set('memory_limit', '-1'); 
             }
             set_time_limit(0);
 
-            // Clear all output buffers to prevent memory bloat
-            // 🚀 STABLE STREAM (v219): Let Laravel handle headers
+            $filePath = $upload->delivered_file_path;
+            $fileName = basename($filePath);
+            if (!Str::endsWith(strtolower($fileName), '.zip')) $fileName .= '.zip';
+            $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $fileName);
+
+            // 🚀 LOCAL-FIRST OPTIMIZATION (v176): If both servers are on the same machine, 
+            // streaming directly from the disk is INSTANT and bypasses SFTP handshake delays.
+            if (file_exists($filePath) && is_readable($filePath)) {
+                $size = filesize($filePath);
+                return response()->stream(function() use ($filePath) {
+                    while (ob_get_level() > 0) ob_end_clean();
+                    $file = fopen($filePath, 'rb');
+                    if ($file) {
+                        fpassthru($file);
+                        fclose($file);
+                    }
+                }, 200, [
+                    'Content-Type' => 'application/zip',
+                    'Content-Disposition' => 'attachment; filename="' . $fileName . '"; filename*=UTF-8\'\'' . rawurlencode($fileName),
+                    'Content-Length' => $size,
+                    'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                    'Pragma' => 'no-cache',
+                    'Expires' => '0',
+                    'X-Accel-Buffering' => 'no',
+                ]);
+            }
+
+            // Fallback to SFTP if local path is not accessible
             $disk = Storage::disk('sftp_delivery');
             
-            // 🚀 ROOT STRIPPING (v218): The disk root is already defined in config.
-            // We must remove it from the absolute path stored in the DB to avoid double-pathing.
-            $filePath = $upload->delivered_file_path;
+            // 🚀 ROOT STRIPPING (v218)
             $root = config('filesystems.disks.sftp_delivery.root', '/');
             if (Str::startsWith($filePath, $root)) {
                 $filePath = Str::after($filePath, $root);
             }
-            // Ensure no leading slash if root ended with one, or vice versa
             $filePath = ltrim($filePath, '/');
 
-            if (!$disk->exists($filePath)) {
-                // Fallback: check original path just in case
-                if (!$disk->exists($upload->delivered_file_path)) {
-                    return response()->json(['error' => 'File not found on storage server.'], 404);
-                } else {
-                    $filePath = $upload->delivered_file_path;
+            // 🚀 INSTANT START (v176): Use size from DB if available
+            $size = $upload->total_size_bytes;
+            if (!$size) {
+                try {
+                    $size = $disk->size($filePath);
+                } catch (\Exception $e) { 
+                    $size = null;
                 }
             }
-
-            $fileName = basename($filePath);
             
-            // 🚀 EXTENSION INSURANCE (v177): Ensure filename always ends with .zip
-            if (!Str::endsWith(strtolower($fileName), '.zip')) {
-                $fileName .= '.zip';
-            }
-            
-            // 🚀 FILENAME SANITIZATION: Remove any characters that could break headers
-            $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $fileName);
-            
-            // 🚀 INSTANT START (v146): Skip slow SFTP metadata calls (size/mime) before the stream.
-            // This ensures the browser shows the download bar "the next second" instead of waiting.
-            $mimeType = 'application/octet-stream'; 
-            $size = null;
-
-            try {
-                // 🚀 PRE-EMPTIVE SIZE (v176): Use corrected path
-                $size = $disk->size($filePath);
-            } catch (\Exception $e) { 
-                $size = null;
-            }
-
             return response()->stream(function() use ($disk, $filePath) {
+                // 🚀 BUFFER KILLER: Ensure no server-side buffering delays the first byte
+                while (ob_get_level() > 0) ob_end_clean();
+                
                 $stream = $disk->readStream($filePath);
                 if ($stream) {
                     // 🚀 HIGH-VELOCITY STREAM (v146): Use 4MB chunks for balanced throughput
@@ -499,6 +508,7 @@ class ProjectController extends Controller
                 'Cache-Control' => 'no-cache, no-store, must-revalidate',
                 'Pragma' => 'no-cache',
                 'Expires' => '0',
+                'X-Accel-Buffering' => 'no', // 🚀 NGINX INSTANT STREAM
             ]);
         }
 
@@ -1185,6 +1195,24 @@ class ProjectController extends Controller
             \Log::error("OneDrive ZIP Peek Error: " . $e->getMessage());
             return ['count' => 0, 'size' => 0];
         }
+    }
+    public function acceptDisclaimer(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // v176: Log the acceptance for legal proof
+        DisclaimerAcceptance::create([
+            'user_id' => $user->id,
+            'project_id' => $id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'accepted_at' => now(),
+        ]);
+
+        return response()->json(['success' => true]);
     }
 }
 

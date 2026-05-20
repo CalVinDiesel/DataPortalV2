@@ -1,33 +1,7 @@
 {
     "locations": [
         {
-            "id": "Keningau-Sabah-2026",
-            "name": "Keningau Sabah",
-            "description": "the city of Keningau Sabah",
-            "coordinates": {
-                "longitude": 116.1649,
-                "latitude": 5.3555,
-                "height": 50
-            },
-            "dataPaths": {
-                "tileset": "https://example.com/tileset.json"
-            }
-        },
-        {
-            "id": "KK_OSPREY",
-            "name": "KK OSPREY",
-            "description": "3D model from GeoSabah 3D Hub (Kota Kinabalu area).",
-            "coordinates": {
-                "longitude": 116.070466,
-                "latitude": 5.957839,
-                "height": 50
-            },
-            "dataPaths": {
-                "tileset": "https://3dhub.geosabah.my/3dmodel/KK_OSPREY/tileset.json"
-            }
-        },
-        {
-            "id": "kb-3dtiles-lite",
+            "id": "KB_3DTiles_Lite",
             "name": "KB 3DTiles Lite",
             "description": "3D model of buildings in Kota Kinabalu.",
             "coordinates": {
@@ -40,20 +14,7 @@
             }
         },
         {
-            "id": "kolombong-fisheye",
-            "name": "Kolombong Fisheye Test",
-            "description": "Fisheye test model in Kolombong area.",
-            "coordinates": {
-                "longitude": 116.110466,
-                "latitude": 5.977839,
-                "height": 50
-            },
-            "dataPaths": {
-                "tileset": "https://3dhub.geosabah.my/3dmodel/Building_Planning/fisheye_test_kolombong_18mac2025/tileset.json"
-            }
-        },
-        {
-            "id": "wisma-merdeka",
+            "id": "wismamerdeka",
             "name": "WISMA MERDEKA",
             "description": "3D model of Wisma Merdeka complex.",
             "coordinates": {
@@ -66,7 +27,7 @@
             }
         },
         {
-            "id": "ppns-ys",
+            "id": "ppns_ys",
             "name": "PPNS YS",
             "description": "3D model of PPNS area.",
             "coordinates": {
@@ -76,6 +37,58 @@
             },
             "dataPaths": {
                 "tileset": "https://3dhub.geosabah.my/3dmodel/ppns_ys/tileset.json"
+            }
+        },
+        {
+            "id": "fisheye_test_kolombong_18mac2025",
+            "name": "Kolombong Fisheye Test",
+            "description": "Fisheye test model in Kolombong area.",
+            "coordinates": {
+                "longitude": 116.110466,
+                "latitude": 5.977839,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://3dhub.geosabah.my/3dmodel/Building_Planning/fisheye_test_kolombong_18mac2025/tileset.json"
+            }
+        },
+        {
+            "id": "Keningau_Sabah_2026",
+            "name": "KENINGAU SABAH",
+            "description": "the city of Keningau Sabah",
+            "coordinates": {
+                "longitude": 116.1649,
+                "latitude": 5.3555,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://3dhub.geosabah.my/3dmodel/keningau_sabah_2026/tileset.json"
+            }
+        },
+        {
+            "id": "KK_OSPREY",
+            "name": "KK OSPREY",
+            "description": "3D model of Kota Kinabalu area.",
+            "coordinates": {
+                "longitude": 116.070466,
+                "latitude": 5.957839,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://3dhub.geosabah.my/3dmodel/KK_OSPREY/tileset.json"
+            }
+        },
+        {
+            "id": "Sepanggar-Point",
+            "name": "Sepanggar Point",
+            "description": "3D model of Sepanggar",
+            "coordinates": {
+                "longitude": 116.1667,
+                "latitude": 6.09086,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://example.com/tileset.json"
             }
         }
     ]

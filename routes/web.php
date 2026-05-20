@@ -110,6 +110,11 @@ Route::get('/loading-3d', function (Request $request) {
     return view('portal.loading-3d', ['id' => $request->query('id')]);
 })->name('loading_3d');
 
+// Fallback for legacy underscored URL format used in some JS components
+Route::get('/loading_3d/{id}', function ($id) {
+    return view('portal.loading-3d', ['id' => $id]);
+});
+
 Route::get('/pricing', function () {
     return view('portal.pricing-page');
 })->name('pricing');
@@ -159,6 +164,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/api/user/my-uploads/{id}/sync-gdrive', [ProjectController::class, 'syncGoogleDriveMetadata']);
     Route::post('/api/user/my-uploads/{id}/sync-onedrive', [ProjectController::class, 'syncOneDriveMetadata']);
     Route::get('/api/user/my-uploads/{id}/download-delivered', [ProjectController::class, 'downloadDelivered']);
+    Route::post('/api/user/my-uploads/{id}/accept-disclaimer', [ProjectController::class, 'acceptDisclaimer']);
     Route::delete('/api/user/my-uploads/{id}', [ProjectController::class, 'destroy']);
 
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

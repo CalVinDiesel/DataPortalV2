@@ -53,18 +53,25 @@ class MapDataController extends Controller
             ], 422);
         }
 
-        $data = MapData::updateOrCreate(
-            ['mapDataID' => $request->mapDataID],
-            [
-                'title' => $request->title,
-                'description' => $request->description,
-                'xAxis' => $request->xAxis,
-                'yAxis' => $request->yAxis,
-                '3dTiles' => $request->input('3dTiles'),
-                'thumbNailUrl' => $request->thumbNailUrl,
-                'updateDateTime' => now(),
-            ]
-        );
+        // 🛡️ DUPLICATE CHECK (v176): CASE-INSENSITIVE (Postgres requires double quotes for CamelCase columns)
+        $existing = MapData::whereRaw('LOWER("mapDataID") = ?', [strtolower($request->mapDataID)])->first();
+        if ($existing) {
+            return response()->json([
+                'success' => false,
+                'message' => "A 3D model with the ID '{$request->mapDataID}' already exists. Please use a unique Model ID."
+            ], 422);
+        }
+
+        $data = MapData::create([
+            'mapDataID' => $request->mapDataID,
+            'title' => $request->title,
+            'description' => $request->description,
+            'xAxis' => $request->xAxis,
+            'yAxis' => $request->yAxis,
+            '3dTiles' => $request->input('3dTiles'),
+            'thumbNailUrl' => $request->thumbNailUrl,
+            'updateDateTime' => now(),
+        ]);
 
         return response()->json(['success' => true, 'message' => 'Map pin updated successfully', 'data' => $data]);
     }
@@ -87,14 +94,20 @@ class MapDataController extends Controller
     {
         // 1. Check explicitly provided URL
         if (!empty($url)) {
-            // If it's an external URL (e.g. Cloudinary) that isn't pointing to our own host, 
-            // we should trust it and return it directly.
+            // v176: Robust external URL detection. 
+            // If it's a Cloudinary URL or starts with http and isn't our own domain, trust it.
             if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
-                $appHost = parse_url(url('/'), PHP_URL_HOST);
+                $appUrl = url('/');
+                $appHost = parse_url($appUrl, PHP_URL_HOST);
                 $urlHost = parse_url($url, PHP_URL_HOST);
                 
-                // If the host is different and not localhost, it's external (like Cloudinary).
-                if ($urlHost !== $appHost && !in_array($urlHost, ['localhost', '127.0.0.1'])) {
+                // Always trust Cloudinary
+                if ($urlHost && str_contains($urlHost, 'cloudinary.com')) {
+                    return $url;
+                }
+                
+                // If it's a different host and not a local dev address, trust it
+                if ($urlHost && $urlHost !== $appHost && !in_array($urlHost, ['localhost', '127.0.0.1'])) {
                     return $url;
                 }
                 

@@ -13,14 +13,7 @@
   <link rel="stylesheet" href="{{ asset('assets') }}/css/admin-responsive.css" />
   <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
   <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
-  <script>
-    (function() {
-      var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
-      fetch(AUTH_API + '/api/auth/me', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(d) {
-        if (!d.loggedIn || (d.role !== 'admin' && d.role !== 'superadmin')) window.location.href = '{{ route('landing') }}?error=admin_only';
-      }).catch(function() { window.location.href = '{{ route('landing') }}'; });
-    })();
-  </script>
+
   <style>
     /* 💎 ADMIN PREMIUM TOP NAV (v250) */
     .admin-glass-nav {
@@ -73,7 +66,7 @@
       color: #696cff !important;
     }
     .content-wrapper-premium {
-      margin-top: 7.5rem !important;
+      margin-top: 8.5rem !important;
     }
     .layout-page {
         padding: 0 !important;
@@ -708,7 +701,7 @@
         if (onedriveBox) onedriveBox.classList.add('d-none');
         if (fileCountRow) fileCountRow.classList.add('d-none');
 
-        if (type === 'sftp' || type === 'sftp_single' || type === 'sftp_multiple' || type === 'browser' || type === 'multiple') {
+        if (type === 'browser' || type.includes('sftp') || type === 'multiple') {
           if (sftpBox) {
             sftpBox.classList.remove('d-none');
             document.getElementById('detailSftpPath').textContent = buildSftpPath(row);
@@ -781,12 +774,13 @@
           }
         }
 
+        var isMulti = (row.camera_models || '').toLowerCase().includes('multi-lens');
         var typeDisplay = type;
-        if (type === 'sftp_single') typeDisplay = 'SFTP (Single-Lens)';
-        else if (type === 'sftp_multiple') typeDisplay = 'SFTP (Multi-Lens)';
-        else if (type === 'sftp') typeDisplay = 'SFTP (Provisioned)';
-        else if (type === 'google_drive') typeDisplay = 'Google Drive Link';
-        else if (type === 'browser') typeDisplay = 'Nitro Browser Upload';
+        if (type === 'sftp') typeDisplay = 'SFTP' + (isMulti ? ' (Multi-Lens)' : '');
+        else if (type === 'browser') typeDisplay = 'Web' + (isMulti ? ' (Multi-Lens)' : ' (Single-Lens)');
+        else if (type === 'google_drive') typeDisplay = 'Google Drive';
+        else if (type === 'onedrive') typeDisplay = 'OneDrive';
+        
         document.getElementById('detailUploadType').textContent = typeDisplay;
 
         document.getElementById('detailCreatedAt').textContent = row.created_at ? new Date(row.created_at).toLocaleString() : '–';
@@ -873,7 +867,7 @@
 
       window.loadUploads = function loadUploads() {
         document.getElementById('uploadsTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-muted">Loading…</td></tr>';
-        fetch(API_BASE + '/api/admin/client-uploads')
+        fetch('{{ route('api.admin.uploads') }}')
           .then(function (r) { return r.json(); })
           .then(function (rows) {
             allUploads = rows || [];
@@ -919,13 +913,14 @@
           uploadMetaById[r.id] = r;
 
           var created = r.created_at ? new Date(r.created_at).toLocaleString() : '–';
-          var typeDisplay = r.upload_type || 'browser';
-          if (typeDisplay === 'google_drive') typeDisplay = '<span class="text-success"><i class="bx bxl-google-cloud me-1"></i>GDrive</span>';
-          else if (typeDisplay === 'onedrive') typeDisplay = '<span class="text-primary"><i class="bx bx-cloud me-1"></i>OneDrive</span>';
-          else if (typeDisplay === 'sftp_multiple') typeDisplay = '<span class="text-info">SFTP (Multi)</span>';
-          else if (typeDisplay === 'sftp') typeDisplay = '<span class="text-info">SFTP</span>';
-          else if (typeDisplay === 'multiple' || typeDisplay === 'multilens') typeDisplay = 'Web (Multi)';
-          else if (typeDisplay === 'single') typeDisplay = 'Web (Single)';
+          var type = r.upload_type || 'browser';
+          var isMulti = (r.camera_models || '').toLowerCase().includes('multi-lens');
+          var typeDisplay = '';
+          
+          if (type === 'google_drive') typeDisplay = '<span class="text-success"><i class="bx bxl-google-cloud me-1"></i>GDrive</span>';
+          else if (type === 'onedrive') typeDisplay = '<span class="text-primary"><i class="bx bx-cloud me-1"></i>OneDrive</span>';
+          else if (type === 'sftp' || type.includes('sftp')) typeDisplay = '<span class="text-info">SFTP' + (isMulti ? ' (Multi)' : '') + '</span>';
+          else typeDisplay = 'Web' + (isMulti ? ' (Multi)' : ' (Single)');
 
           return '<tr>' +
             '<td>' + r.id + '</td>' +
@@ -1032,7 +1027,7 @@
       });
 
       function loadPathConfig() {
-        return fetch(API_BASE + '/api/admin/client-uploads/path-config')
+        return fetch('{{ route('api.admin.path_config') }}')
           .then(function (r) { return r.json(); })
           .then(function (cfg) {
             if (!cfg || !cfg.success) return;
@@ -1050,7 +1045,7 @@
       }
 
       function submitDecision(id, action, reason) {
-        fetch(API_BASE + '/api/admin/client-uploads/' + id + '/decision', {
+        fetch('{{ route('api.admin.decision', ['id' => ':id']) }}'.replace(':id', id), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: action, reason: reason })
@@ -1099,7 +1094,7 @@
             delConfirmBtn.disabled = true;
             delConfirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting...';
 
-            fetch(API_BASE + '/api/admin/client-uploads/' + id, { method: 'DELETE' })
+            fetch('{{ route('api.admin.delete_upload', ['id' => ':id']) }}'.replace(':id', id), { method: 'DELETE', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } })
               .then(function (r) { return r.json(); })
               .then(function (data) {
                 if (data && data.success) {
@@ -1142,7 +1137,7 @@
                 editNotesSaveBtn.disabled = true;
                 editNotesSaveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
 
-                fetch(API_BASE + '/api/admin/processing-requests/' + pendingEditNotesId + '/update-notes', {
+                fetch('{{ route('api.admin.update_notes', ['id' => ':id']) }}'.replace(':id', pendingEditNotesId), {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -1327,7 +1322,7 @@
                     }
                     
                     // 2. Finalize on Server
-                    const finalRes = await fetch(API_BASE + '/api/admin/processing-requests/' + pendingDeliverId + '/delivery', {
+                    const finalRes = await fetch('{{ route('api.admin.delivery', ['id' => ':id']) }}'.replace(':id', pendingDeliverId), {
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json',
@@ -1392,7 +1387,7 @@
                 // Standard delivery for SFTP/GDrive (no file upload needed usually)
                 confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Delivering…';
                 var formData = new FormData(form);
-                fetch(API_BASE + '/api/admin/processing-requests/' + pendingDeliverId + '/delivery', {
+                fetch('{{ route('api.admin.delivery', ['id' => ':id']) }}'.replace(':id', pendingDeliverId), {
                   method: 'POST',
                   body: formData
                 })
@@ -1466,7 +1461,7 @@
 
       window.loadRequests = function loadRequests() {
         document.getElementById('requestsTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-muted">Loading…</td></tr>';
-        fetch(API_BASE + '/api/admin/processing-requests')
+        fetch('{{ route('api.admin.processing_requests') }}')
           .then(function (r) { return r.json(); })
           .then(function (rows) {
             allRequests = rows || [];
@@ -1583,7 +1578,7 @@
             var pathStatusEl = document.getElementById('deliverPathStatus');
             pathStatusEl.innerHTML = '<span class="badge bg-label-warning"><i class="bx bx-loader-alt bx-spin me-1"></i>Preparing Folder...</span>';
 
-            fetch('/api/admin/client-uploads/' + uploadId + '/ensure-delivery-folder', {
+            fetch('{{ route('api.admin.ensure_folder', ['id' => ':id']) }}'.replace(':id', uploadId), {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
             })

@@ -87,7 +87,10 @@
   .layout-wrapper.layout-content-navbar .admin-menu-toggle {
     display: none !important;
   }
-  /* Hide close (X) button when sidebar is always visible – it's only for overlay mode on small screens */
+  /* Hide sidebar and close (X) button when sidebar is always visible – it's only for overlay mode on small screens */
+  .layout-wrapper.layout-content-navbar #layout-menu {
+    display: none !important;
+  }
   .layout-wrapper.layout-content-navbar #layout-menu .admin-menu-close {
     display: none !important;
   }

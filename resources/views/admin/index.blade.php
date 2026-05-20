@@ -12,14 +12,7 @@
   <link rel="stylesheet" href="{{ asset('assets') }}/css/admin-responsive.css" />
   <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
   <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
-  <script>
-    (function() {
-      var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
-      fetch(AUTH_API + '/api/auth/me', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(d) {
-        if (!d.loggedIn || (d.role !== 'admin' && d.role !== 'superadmin')) window.location.href = '{{ route('landing') }}?error=admin_only';
-      }).catch(function() { window.location.href = '{{ route('landing') }}'; });
-    })();
-  </script>
+
 </head>
 <body>
   <div class="layout-wrapper layout-content-navbar">

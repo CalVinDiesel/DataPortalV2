@@ -397,12 +397,17 @@
           missing.push("Camera Models");
       }
 
+      const gLink = document.getElementById('googleDriveLink').value.trim();
+      const oLink = document.getElementById('onedriveLink').value.trim();
+      const oSize = document.getElementById('onedriveSize').value;
+      const oCount = document.getElementById('onedriveCount').value;
+
       if (currentProvider === 'google_drive') {
-          if (!document.getElementById('googleDriveLink').value.trim()) missing.push("Google Drive Shared Link");
+          if (!gLink) missing.push("Google Drive Shared Link");
       } else if (currentProvider === 'onedrive') {
-          if (!document.getElementById('onedriveLink').value.trim()) missing.push("OneDrive Shared Link");
-          if (!document.getElementById('onedriveSize').value) missing.push("Total Size (Bytes)");
-          if (!document.getElementById('onedriveCount').value) missing.push("Photo Count");
+          if (!oLink) missing.push("OneDrive Shared Link");
+          if (!oSize) missing.push("Total Size (Bytes)");
+          if (!oCount) missing.push("Photo Count");
       }
 
       if (missing.length > 0) {
@@ -424,7 +429,7 @@
         }
       });
 
-      const isMulti = document.getElementById('cameraConfiguration').value === 'multiple';
+      // Reuse isMulti defined in validation section above
       const customCam = document.getElementById('cameraModels').value;
       const cameraLine = isMulti ? ("Multi-Lens" + (customCam ? (": " + customCam) : "")) : "Single-Lens";
 
@@ -452,10 +457,14 @@
       }
 
       try {
-        const endpoint = currentProvider === 'google_drive' ? '/api/upload/google-drive-project' : '/api/upload/onedrive-project';
+        const endpoint = (currentProvider === 'google_drive') ? '{{ route('api.upload.google_drive_project') }}' : '{{ route('api.upload.onedrive_project') }}';
         const res = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+          },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
