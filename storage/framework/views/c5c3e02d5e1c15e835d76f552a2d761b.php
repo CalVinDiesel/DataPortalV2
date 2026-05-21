@@ -220,7 +220,7 @@
         var thumbNailUrl = document.getElementById('thumbNailUrl').value.trim();
         var hasFile = thumbnailFile && thumbnailFile.files && thumbnailFile.files.length > 0;
 
-        // 1. Strict Missing Field Check (alert if any single field is omitted)
+        // 1. Strict Missing Field Check (alert if any single field is omitted, Scenario 3)
         var missing = [];
         if (!mapDataID) missing.push("Model ID");
         if (!title) missing.push("Title");
@@ -237,7 +237,7 @@
             return;
         }
 
-        // 2. Strict Format Validations
+        // 2. Strict Format Validations (Scenario 4)
         // Model ID Format Check
         var idRegex = /^[a-zA-Z0-9_-]+$/;
         if (!idRegex.test(mapDataID)) {
@@ -259,15 +259,6 @@
             return;
         }
 
-        // 3. Sabah Region Boundary Check (Warn if coordinates are outside Sabah)
-        // Sabah lies roughly between Latitude: 4.0 to 7.5 and Longitude: 114.0 to 120.0
-        if (latNum < 4.0 || latNum > 7.5 || lonNum < 114.0 || lonNum > 120.0) {
-            var confirmBoundary = confirm("⚠️ COORDINATES DETECTED OUTSIDE SABAH\n\nThe coordinates entered (Lat: " + yAxis + ", Lon: " + xAxis + ") appear to be outside the boundaries of the Sabah, Malaysia region (typically Lat: 4.0 to 7.5, Lon: 114.0 to 120.0).\n\nIf you proceed, this pin may be placed off-screen or in the middle of the ocean on the overview map.\n\nDo you want to continue anyway?");
-            if (!confirmBoundary) {
-                return;
-            }
-        }
-
         // URL format validation regex
         var urlRegex = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 
@@ -283,12 +274,6 @@
             return;
         }
 
-        // 3. Save Warning Reminder Confirmation
-        var confirmSave = confirm("⚠️ WARNING REMINDER\n\nPlease ensure all entered details are verified and correct before saving.\n\nAre you sure you want to save this 3D model?");
-        if (!confirmSave) {
-            return;
-        }
-
         formMessage.textContent = '';
         formMessage.className = 'ms-3';
         
@@ -297,7 +282,7 @@
         var payload = {
           mapDataID: mapDataID,
           title: title || mapDataID,
-          description: document.getElementById('description').value.trim(),
+          description: description,
           yAxis: parseFloat(yAxis),
           xAxis: parseFloat(xAxis),
           '3dTiles': tilesetUrl,
@@ -309,10 +294,13 @@
           formMessage.classList.add('text-danger');
           return;
         }
+
         submitBtn.disabled = true;
+
         function normalizeStr(s) { return (s || '').toString().trim(); }
         function normalizeLower(s) { return (s || '').toString().trim().toLowerCase(); }
         function normalizePure(s) { return (s || '').toString().toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
         function checkDuplicates() {
           console.log("🔍 STARTING DUPLICATION CHECK for:", mapDataID);
           return fetch(API_BASE + '/api/map-data')
@@ -325,12 +313,12 @@
               rows = Array.isArray(rows) ? rows : [];
               var newId = normalizeStr(mapDataID);
               var pureNewId = normalizePure(newId);
-              var newTitle = normalizeLower(document.getElementById('title').value.trim() || mapDataID);
-              var newLat = String(parseFloat(document.getElementById('yAxis').value));
-              var newLon = String(parseFloat(document.getElementById('xAxis').value));
-              var newTiles = normalizeStr(document.getElementById('tilesetUrl').value.trim());
+              var newTitle = normalizeLower(title || mapDataID);
+              var newLat = String(parseFloat(yAxis));
+              var newLon = String(parseFloat(xAxis));
+              var newTiles = normalizeStr(tilesetUrl);
 
-              var dup = { id: false, partial: false, partialName: '', title: false, lat: false, lon: false, tiles: false };
+              var dup = { id: false, duplicateName: '', partial: false, partialName: '', title: false, lat: false, lon: false, tiles: false };
               
               for (var i = 0; i < rows.length; i++) {
                 var r0 = rows[i] || {};
@@ -346,7 +334,6 @@
                     }
                 }
                 
-                var currentNewId = newId.toLowerCase();
                 if (!rid) {
                     console.log("Row " + i + ": No ID key found. Keys are:", Object.keys(r0));
                     continue;
@@ -359,15 +346,18 @@
                 var rlon = (r0.xAxis != null && r0.xAxis !== '') ? String(Number(r0.xAxis)) : '';
                 var rtiles = normalizeStr(r0['3dTiles'] || r0.tilesetUrl || r0.tileset || '');
                 
-                console.log("Row " + i + ": Comparing '" + currentNewId + "' with '" + rid + "' (Pure: '" + pureNewId + "' vs '" + pureRid + "')");
+                console.log("Row " + i + ": Comparing '" + newId.toLowerCase() + "' with '" + rid + "' (Pure: '" + pureNewId + "' vs '" + pureRid + "')");
 
-                // 🛑 EXACT MATCH
-                if (rid === currentNewId) {
-                    console.warn("❗ EXACT MATCH FOUND at Row " + i + ":", rawId);
+                // 🛑 EXACT DUPLICATION CHECK (Scenario 1)
+                // Case-insensitive, symbol-ignoring (letters, numbers, and their order must be exactly identical)
+                if (pureRid === pureNewId) {
+                    console.warn("❗ EXACT DUPLICATE FOUND at Row " + i + ":", rawId);
                     dup.id = true;
+                    dup.duplicateName = rawId;
+                    break; // Critical duplicate, stop further checking
                 } 
-                // ⚠️ PARTIAL MATCH (Bidirectional: checks if New is in Old OR Old is in New)
-                // This prioritizes alphabets/numbers by ignoring symbols like hyphens and underscores.
+                // ⚠️ SIMILAR ID CHECK (Scenario 2)
+                // Only part of the name matches, e.g. there is an extra character/number
                 else if (pureRid.length > 3 && (pureNewId.indexOf(pureRid) !== -1 || pureRid.indexOf(pureNewId) !== -1)) {
                     console.warn("⚠️ PARTIAL MATCH FOUND at Row " + i + ":", rawId);
                     dup.partial = true;
@@ -378,79 +368,107 @@
                 if (rlat && rlat === newLat) dup.lat = true;
                 if (rlon && rlon === newLon) dup.lon = true;
                 if (rtiles && rtiles === newTiles) dup.tiles = true;
-                
-                if (dup.id) break; 
               }
               console.log("✅ CHECK FINISHED. Result:", dup);
               return dup;
             })
             .catch(function(err) {
                 console.error("❌ DUPLICATION CHECK FAILED:", err);
-                return { id: false, partial: false }; // Allow proceed on error but log it
+                return { id: false, duplicateName: '', partial: false, partialName: '' }; // Allow proceed on error but log it
             });
         }
+
         function saveMapData(finalThumbUrl) {
           console.log("💾 INITIATING SAVE for:", mapDataID, "with thumb:", finalThumbUrl);
-          var payload = {
+          var savePayload = {
             mapDataID: mapDataID,
-            title: document.getElementById('title').value.trim() || mapDataID,
-            description: document.getElementById('description').value.trim(),
-            yAxis: parseFloat(document.getElementById('yAxis').value),
-            xAxis: parseFloat(document.getElementById('xAxis').value),
-            '3dTiles': document.getElementById('tilesetUrl').value.trim(),
+            title: title || mapDataID,
+            description: description,
+            yAxis: parseFloat(yAxis),
+            xAxis: parseFloat(xAxis),
+            '3dTiles': tilesetUrl,
             thumbNailUrl: finalThumbUrl || ''
           };
           return fetch(API_BASE + '/api/map-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(savePayload)
           }).then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); });
         }
+
         function done(x) {
           if (x.status === 200 && x.body.success) {
             formMessage.textContent = 'Saved. The model will appear on the overview map and can be added to the showcase.';
-            formMessage.classList.add('text-success');
+            formMessage.className = 'ms-3 text-success';
             form.reset();
             if (thumbnailFile) thumbnailFile.value = '';
           } else {
             formMessage.textContent = x.body.message || 'Save failed.';
-            formMessage.classList.add('text-danger');
+            formMessage.className = 'ms-3 text-danger';
           }
         }
-        if (file) {
-          var fd = new FormData();
-          fd.append('thumbnail', file);
-          fd.append('mapDataID', mapDataID);
-          checkDuplicates().then(function (dup) {
-            if (dup && dup.id) {
-              alert('⚠️ DUPLICATE MODEL ID: This Model ID already exists in the portal. Please use a unique ID.');
+
+        // Execute async validation checks, followed by manual confirmations, followed by final save
+        checkDuplicates().then(function (dup) {
+          // A. Duplication Check (Scenario 1)
+          if (dup && dup.id) {
+            alert("❌ DUPLICATION DETECTED\n\nUnable to add 3D model. A 3D model with an identical ID '" + dup.duplicateName + "' already exists in the system (ignoring casing and symbol differences).\n\nPlease choose a completely unique Model ID to continue.");
+            submitBtn.disabled = false;
+            return;
+          }
+
+          // B. Similar ID Warning (Scenario 2)
+          if (dup && dup.partial) {
+            var proceedSimilar = confirm("⚠️ SIMILAR MODEL ID DETECTED\n\nAn existing model shares a very similar ID: '" + dup.partialName + "'.\n\nPlease verify and ensure that the new 3D model you are adding is not a duplication of this existing entry.\n\nDo you want to proceed with adding this new 3D model anyway?");
+            if (!proceedSimilar) {
               submitBtn.disabled = false;
               return;
             }
-            if (dup && dup.partial) {
-              var proceed = confirm('📝 SIMILAR MODEL DETECTED\n\nYou already have a model created with a similar ID: "' + dup.partialName + '".\n\nMake sure you are not creating a duplicate model. If this is a different area or distinct 3D model, click OK to continue.');
-              if (!proceed) {
-                submitBtn.disabled = false;
-                return;
-              }
-            }
-            if (dup && (dup.title || (dup.lat && dup.lon) || dup.tiles)) {
-              var isPlaceholderTiles = tilesetUrl.indexOf('example.com') !== -1 || tilesetUrl.indexOf('localhost') !== -1;
-              if (dup.title || (dup.lat && dup.lon) || (dup.tiles && !isPlaceholderTiles)) {
-                var dupReasons = [];
-                if (dup.title) dupReasons.push("Title ('" + title + "')");
-                if (dup.lat && dup.lon) dupReasons.push("Coordinates (" + yAxis + ", " + xAxis + ")");
-                if (dup.tiles && !isPlaceholderTiles) dupReasons.push("3D Tiles URL ('" + tilesetUrl + "')");
-                
-                if (dupReasons.length > 0) {
-                  var proceed = confirm('⚠️ POTENTIAL DUPLICATE DETECTED\n\nThis model shares the same ' + dupReasons.join(" and ") + ' with an existing entry.\n\nMake sure you are not creating a duplicate. Click OK to continue saving anyway, or Cancel to review.');
-                  if (!proceed) {
-                    submitBtn.disabled = false;
-                    return;
-                  }
+          }
+
+          // C. Potential Duplicate Check (Title, Coordinates, 3D Tiles URL)
+          if (dup && (dup.title || (dup.lat && dup.lon) || dup.tiles)) {
+            var isPlaceholderTiles = tilesetUrl.indexOf('example.com') !== -1 || tilesetUrl.indexOf('localhost') !== -1;
+            if (dup.title || (dup.lat && dup.lon) || (dup.tiles && !isPlaceholderTiles)) {
+              var dupReasons = [];
+              if (dup.title) dupReasons.push("Title ('" + title + "')");
+              if (dup.lat && dup.lon) dupReasons.push("Coordinates (" + yAxis + ", " + xAxis + ")");
+              if (dup.tiles && !isPlaceholderTiles) dupReasons.push("3D Tiles URL ('" + tilesetUrl + "')");
+              
+              if (dupReasons.length > 0) {
+                var proceedPotential = confirm("⚠️ POTENTIAL DUPLICATE DETECTED\n\nThis 3D model shares matching details with an existing entry:\n• " + dupReasons.join("\n• ") + "\n\nPlease ensure this is not a duplicate. Do you want to proceed with saving anyway?");
+                if (!proceedPotential) {
+                  submitBtn.disabled = false;
+                  return;
                 }
               }
             }
+          }
+
+          // D. Sabah Region Boundary Check (Soft warning)
+          // Sabah lies roughly between Latitude: 4.0 to 7.5 and Longitude: 114.0 to 120.0
+          if (latNum < 4.0 || latNum > 7.5 || lonNum < 114.0 || lonNum > 120.0) {
+            var proceedBoundary = confirm("⚠️ REGIONAL BOUNDARY WARNING\n\nThe coordinates entered (Lat: " + yAxis + ", Lon: " + xAxis + ") lie outside the typical boundaries of Sabah, Malaysia (Lat: 4.0 to 7.5, Lon: 114.0 to 120.0).\n\nThis may cause the pin to display off-map or in an incorrect geographical area.\n\nDo you want to proceed with these coordinates?");
+            if (!proceedBoundary) {
+              submitBtn.disabled = false;
+              return;
+            }
+          }
+
+          // E. Save Warning Reminder Confirmation (Absolute final check)
+          // "this message that shows here is for when every details are correct and no duplication at all before admin click save 3D model button"
+          var confirmSave = confirm("⚠️ WARNING REMINDER\n\nPlease ensure all entered details are verified and correct before saving.\n\nAre you sure you want to save this 3D model?");
+          if (!confirmSave) {
+            submitBtn.disabled = false;
+            return;
+          }
+
+          // F. Save Execution
+          if (file) {
+            var fd = new FormData();
+            fd.append('thumbnail', file);
+            fd.append('mapDataID', mapDataID);
+
             fetch(API_BASE + '/api/admin/upload-map-thumbnail', { method: 'POST', body: fd })
               .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
               .then(function (up) {
@@ -459,51 +477,26 @@
                   return saveMapData(fullUrl).then(done);
                 }
                 formMessage.textContent = up.body.message || 'Thumbnail upload failed.';
-                formMessage.classList.add('text-danger');
+                formMessage.className = 'ms-3 text-danger';
               })
               .catch(function (err) {
                 formMessage.textContent = 'Thumbnail upload failed: ' + (err.message || 'check server');
-                formMessage.classList.add('text-danger');
+                formMessage.className = 'ms-3 text-danger';
               })
               .finally(function () { submitBtn.disabled = false; });
-          }).catch(function () { submitBtn.disabled = false; });
-        } else {
-          checkDuplicates().then(function (dup) {
-            if (dup && dup.id) {
-              alert('⚠️ DUPLICATE MODEL ID: This Model ID already exists in the portal. Please use a unique ID.');
-              submitBtn.disabled = false;
-              return;
-            }
-            if (dup && dup.partial) {
-              var proceed = confirm('📝 SIMILAR MODEL DETECTED\n\nYou already have a model created with a similar ID: "' + dup.partialName + '".\n\nMake sure you are not creating a duplicate model. If this is a different area or distinct 3D model, click OK to continue.');
-              if (!proceed) {
-                submitBtn.disabled = false;
-                return;
-              }
-            }
-            if (dup && (dup.title || (dup.lat && dup.lon) || dup.tiles)) {
-              var isPlaceholderTiles = tilesetUrl.indexOf('example.com') !== -1 || tilesetUrl.indexOf('localhost') !== -1;
-              if (dup.title || (dup.lat && dup.lon) || (dup.tiles && !isPlaceholderTiles)) {
-                var dupReasons = [];
-                if (dup.title) dupReasons.push("Title ('" + title + "')");
-                if (dup.lat && dup.lon) dupReasons.push("Coordinates (" + yAxis + ", " + xAxis + ")");
-                if (dup.tiles && !isPlaceholderTiles) dupReasons.push("3D Tiles URL ('" + tilesetUrl + "')");
-                
-                if (dupReasons.length > 0) {
-                  var proceed = confirm('⚠️ POTENTIAL DUPLICATE DETECTED\n\nThis model shares the same ' + dupReasons.join(" and ") + ' with an existing entry.\n\nMake sure you are not creating a duplicate. Click OK to continue saving anyway, or Cancel to review.');
-                  if (!proceed) {
-                    submitBtn.disabled = false;
-                    return;
-                  }
-                }
-              }
-            }
-            saveMapData(thumbNailUrl).then(done).catch(function (err) {
-              formMessage.textContent = 'Request failed: ' + (err.message || 'check server');
-              formMessage.classList.add('text-danger');
-            }).finally(function () { submitBtn.disabled = false; });
-          }).catch(function () { submitBtn.disabled = false; });
-        }
+          } else {
+            saveMapData(thumbNailUrl)
+              .then(done)
+              .catch(function (err) {
+                formMessage.textContent = 'Request failed: ' + (err.message || 'check server');
+                formMessage.className = 'ms-3 text-danger';
+              })
+              .finally(function () { submitBtn.disabled = false; });
+          }
+        }).catch(function (err) {
+          console.error("❌ Pre-save flow failed:", err);
+          submitBtn.disabled = false;
+        });
       });
     })();
   </script>
