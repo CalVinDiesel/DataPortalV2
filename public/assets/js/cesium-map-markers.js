@@ -1371,6 +1371,7 @@
     var hoverHandler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
     hoverHandler.setInputAction(function (movement) {
       try {
+        if (cameraIsMoving) return;
         var screenX = movement.endPosition.x;
         var screenY = movement.endPosition.y;
 

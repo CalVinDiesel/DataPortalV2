@@ -61,6 +61,7 @@ Route::middleware('web')->group(function () {
     Route::get('/admin/client-uploads/path-config', [AdminClientUploadController::class, 'getPathConfig'])->name('api.admin.path_config');
     Route::post('/admin/client-uploads/{id}/decision', [AdminClientUploadController::class, 'submitDecision'])->name('api.admin.decision');
     Route::delete('/admin/client-uploads/{id}', [AdminClientUploadController::class, 'deleteUpload'])->name('api.admin.delete_upload');
+    Route::post('/admin/client-uploads/delete-multiple', [AdminClientUploadController::class, 'deleteMultipleUploads'])->name('api.admin.delete_multiple_uploads');
     Route::post('/admin/processing-requests/{id}/delivery', [AdminClientUploadController::class, 'markDelivered'])->name('api.admin.delivery');
     Route::post('/admin/processing-requests/{id}/update-notes', [AdminClientUploadController::class, 'updateDeliveryNotes'])->name('api.admin.update_notes');
     Route::post('/admin/client-uploads/{id}/ensure-delivery-folder', [AdminClientUploadController::class, 'ensureDeliveryFolder'])->name('api.admin.ensure_folder');

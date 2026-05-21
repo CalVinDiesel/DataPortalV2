@@ -126,6 +126,32 @@ class AdminClientUploadController extends Controller
         return response()->json(['success' => true, 'message' => 'Deleted.']);
     }
 
+    public function deleteMultipleUploads(Request $request)
+    {
+        $ids = $request->input('ids');
+        if (!is_array($ids) || empty($ids)) {
+            return response()->json(['success' => false, 'message' => 'No projects selected for deletion.']);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Delete connected processing requests first
+            ProcessingRequest::whereIn('upload_id', $ids)->delete();
+
+            // 2. Delete the client uploads
+            ClientUpload::whereIn('id', $ids)->delete();
+
+            DB::commit();
+
+            return response()->json(['success' => true, 'message' => 'Successfully deleted ' . count($ids) . ' client upload requests.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error("Batch delete failed: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to delete selected projects: ' . $e->getMessage()]);
+        }
+    }
+
     public function markDelivered(Request $request, $id)
     {
         $procReq = ProcessingRequest::findOrFail($id);
