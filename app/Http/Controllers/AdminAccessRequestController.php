@@ -33,15 +33,13 @@ class AdminAccessRequestController extends Controller
 
         // Map to user table
         $namePrefix = Str::replace(' ', '', $accessRequest->name);
-        $sftpUsername = $namePrefix . '_' . Str::lower(Str::random(8));
-        $sftpPassword = Str::random(12);
         
         $user = User::create([
             'name' => $accessRequest->name,
             'email' => $accessRequest->email,
             'username' => $namePrefix . '_' . Str::random(8), // Internal username
-            'sftp_username' => $sftpUsername,
-            'sftp_password' => $sftpPassword,
+            'sftp_username' => null,
+            'sftp_password' => null,
             'role' => 'pending', 
             'provider' => 'pending',
             'is_active' => false,

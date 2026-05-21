@@ -306,7 +306,7 @@
       <!-- SFTP Connection Details -->
       <div class="profile-row">
         <span class="profile-label">SFTP Host</span>
-        <span class="profile-value" id="profile-sftp-host"><?php echo e(config('filesystems.disks.sftp_delivery.host', '172.21.107.151')); ?></span>
+        <span class="profile-value" id="profile-sftp-host"><?php echo e(config('filesystems.disks.sftp_delivery.host') ?: request()->getHost()); ?></span>
       </div>
       <div class="profile-row">
         <span class="profile-label">SFTP Port</span>
@@ -423,11 +423,15 @@
             document.getElementById('profile-provider').textContent = providerLabel;
 
             // Update SFTP display if loaded together or separately
-            if (data.sftpUsername) {
+            if (data.sftpUsername && data.sftpUsername !== 'Not set') {
               document.getElementById('profile-sftp-username').textContent = data.sftpUsername;
               actualSftpPassword = data.sftpPassword || '';
               document.getElementById('profile-sftp-password').textContent = '••••••••';
               document.getElementById('sftpNotSetAlert').classList.add('d-none');
+            } else {
+              document.getElementById('profile-sftp-username').textContent = 'Not set';
+              document.getElementById('profile-sftp-password').textContent = 'Not set';
+              document.getElementById('sftpNotSetAlert').classList.remove('d-none');
             }
           })
           .catch(function () {
@@ -634,7 +638,7 @@ var sftpPasswordVisible = false;
           .then(function(r) { return r.json(); })
           .then(function(data) {
             if (data.success) {
-              if (data.sftpUsername) {
+              if (data.sftpUsername && data.sftpUsername !== 'Not set') {
                 document.getElementById('profile-sftp-username').textContent = data.sftpUsername;
                 actualSftpPassword = data.sftpPassword || '';
                 document.getElementById('profile-sftp-password').textContent = '••••••••';
@@ -645,8 +649,11 @@ var sftpPasswordVisible = false;
                   document.getElementById('profile-sftp-port').textContent = data.sftpPort || '<?php echo e(env('SFTP_USER_PORT', 2223)); ?>';
                 }
                 if (document.getElementById('profile-sftp-host')) {
-                  document.getElementById('profile-sftp-host').textContent = data.sftpHost || '<?php echo e(config('filesystems.disks.sftp_delivery.host', '172.21.107.151')); ?>';
+                  document.getElementById('profile-sftp-host').textContent = data.sftpHost || '<?php echo e(config('filesystems.disks.sftp_delivery.host') ?: request()->getHost()); ?>';
                 }
+                
+                document.getElementById('btnChangeSftpPassword').disabled = false;
+                document.getElementById('btnToggleSftpPassword').disabled = false;
               } else {
                 document.getElementById('profile-sftp-username').textContent = 'Not set';
                 document.getElementById('profile-sftp-password').textContent = 'Not set';

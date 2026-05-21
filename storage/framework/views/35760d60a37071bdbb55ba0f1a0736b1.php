@@ -232,7 +232,7 @@
                       <div class="fw-bold mb-1"><i class="bx bx-server me-1"></i> SFTP File Location</div>
                       <div class="small text-muted mb-2">
                         <i class="bx bx-info-circle me-1"></i> Connect via WinSCP: 
-                        <strong><span id="detailSftpHostDisplay"><?php echo e(config('filesystems.disks.sftp_delivery.host', '172.21.107.151')); ?></span></strong> | Port: <strong><span id="detailSftpPortDisplay"><?php echo e(env('SFTP_USER_PORT', 2223)); ?></span></strong> | User: <strong><span id="detailSftpUserDisplay"><?php echo e(config('filesystems.disks.sftp_delivery.username', 'tiquan')); ?></span></strong>
+                        <strong><span id="detailSftpHostDisplay"><?php echo e(config('filesystems.disks.sftp_delivery.host') ?: request()->getHost()); ?></span></strong> | Port: <strong><span id="detailSftpPortDisplay"><?php echo e(env('SFTP_USER_PORT', 2223)); ?></span></strong> | User: <strong><span id="detailSftpUserDisplay"><?php echo e(config('filesystems.disks.sftp_delivery.username', 'tiquan')); ?></span></strong>
                       </div>
                       <div class="d-flex align-items-center gap-2">
                         <code id="detailSftpPath" class="d-block p-2 bg-white border rounded flex-grow-1"
@@ -313,7 +313,7 @@
                       <div class="alert alert-info mb-3" id="deliverPathHintBox">
                         <div class="fw-bold mb-1"><i class="bx bx-info-circle me-1"></i> Manual Delivery Path</div>
                         <div class="small mb-2">
-                          Connect to: <strong><span id="deliverHostDisplay"><?php echo e(config('filesystems.disks.sftp_delivery.host', '172.21.107.151')); ?></span></strong> | Port: <strong><span id="deliverPortDisplay"><?php echo e(env('SFTP_DELIVERY_PORT', 2222)); ?></span></strong> | User: <strong><span id="deliverUserDisplay"><?php echo e(config('filesystems.disks.sftp_delivery.username', 'tiquan')); ?></span></strong>
+                          Connect to: <strong><span id="deliverHostDisplay"><?php echo e(config('filesystems.disks.sftp_delivery.host') ?: request()->getHost()); ?></span></strong> | Port: <strong><span id="deliverPortDisplay"><?php echo e(env('SFTP_DELIVERY_PORT', 2222)); ?></span></strong> | User: <strong><span id="deliverUserDisplay"><?php echo e(config('filesystems.disks.sftp_delivery.username', 'tiquan')); ?></span></strong>
                         </div>
                         <div class="small d-flex align-items-center justify-content-between">
                           <span>Place your file in:</span>

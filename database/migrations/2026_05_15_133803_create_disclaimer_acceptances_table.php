@@ -21,7 +21,7 @@ return new class extends Migration
             $table->timestamps();
 
             // v176: Foreign keys for data integrity
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('portal_users')->onDelete('cascade');
         });
     }
 

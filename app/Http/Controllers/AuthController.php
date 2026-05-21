@@ -12,6 +12,7 @@ class AuthController extends Controller
     public function profile(Request $request)
     {
         $user = $request->user();
+        $hasSftpAccess = in_array($user->role, ['trusted', 'admin', 'superadmin']);
 
         return response()->json([
             'success' => true,
@@ -23,10 +24,10 @@ class AuthController extends Controller
             'provider' => $user->provider ?? 'local',
             'account_removed' => !empty($user->removed_at),
             'removal_reason' => $user->removal_reason,
-            'sftpUsername' => $user->sftp_username ?? 'Not set',
-            'sftpPassword' => $user->sftp_password ?? '',
+            'sftpUsername' => $hasSftpAccess ? ($user->sftp_username ?? 'Not set') : 'Not set',
+            'sftpPassword' => $hasSftpAccess ? ($user->sftp_password ?? '') : '',
             'viewablePassword' => $user->viewable_password ?? '',
-            'sftpHost' => config('filesystems.disks.sftp_delivery.host', '172.21.107.151'),
+            'sftpHost' => config('filesystems.disks.sftp_delivery.host') ?: $request->getHost(),
             'sftpPort' => env('SFTP_USER_PORT', 2223),
         ]);
     }
@@ -92,20 +93,26 @@ class AuthController extends Controller
     public function sftp(Request $request)
     {
         $user = $request->user();
+        $hasSftpAccess = in_array($user->role, ['trusted', 'admin', 'superadmin']);
+
         return response()->json([
             'success' => true,
-            'sftpUsername' => $user->sftp_username ?? 'Not set',
-            'sftpPassword' => $user->sftp_password ?? '',
-            'sftpHost' => config('filesystems.disks.sftp_delivery.host', '172.21.107.151'),
+            'sftpUsername' => $hasSftpAccess ? ($user->sftp_username ?? 'Not set') : 'Not set',
+            'sftpPassword' => $hasSftpAccess ? ($user->sftp_password ?? '') : '',
+            'sftpHost' => config('filesystems.disks.sftp_delivery.host') ?: $request->getHost(),
             'sftpPort' => env('SFTP_USER_PORT', 2223),
         ]);
     }
 
     public function updateSftpPassword(Request $request)
     {
+        $user = $request->user();
+        if (!in_array($user->role, ['trusted', 'admin', 'superadmin'])) {
+            return response()->json(['success' => false, 'message' => 'SFTP access is not allowed for your role.'], 403);
+        }
+
         $request->validate(['newPassword' => 'required|string|min:8']);
         
-        $user = $request->user();
         $user->sftp_password = $request->newPassword;
         $user->save();
 

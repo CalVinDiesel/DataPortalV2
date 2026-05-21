@@ -546,7 +546,7 @@
           document.getElementById('successFooter').style.display = 'flex';
           
           // Show basic connection info
-          document.getElementById('resHost').innerText = data.sftpDetails.host || '{{ config('filesystems.disks.sftp_delivery.host', '172.21.107.151') }}';
+          document.getElementById('resHost').innerText = data.sftpDetails.host || '{{ config('filesystems.disks.sftp_delivery.host') ?: request()->getHost() }}';
           document.getElementById('resPort').innerText = data.sftpDetails.port || '{{ env('SFTP_USER_PORT', 2223) }}';
           
           // 🚀 SMART-PATH SYNC (v118)

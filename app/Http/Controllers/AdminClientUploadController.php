@@ -54,7 +54,7 @@ class AdminClientUploadController extends Controller
             'remoteBasePath' => config('filesystems.disks.sftp_delivery.root', '/'),
             'sftpUsername' => config('filesystems.disks.sftp_delivery.username'),
             'sftpPort' => config('filesystems.disks.sftp_delivery.port', 22),
-            'sftpHost' => config('filesystems.disks.sftp_delivery.host'),
+            'sftpHost' => config('filesystems.disks.sftp_delivery.host') ?: request()->getHost(),
         ]);
     }
 
