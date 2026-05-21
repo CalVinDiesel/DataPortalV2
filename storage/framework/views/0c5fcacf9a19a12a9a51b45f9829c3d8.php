@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets') }}"
+<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="<?php echo e(asset('assets')); ?>"
   data-template="front-pages" data-bs-theme="light">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <title>Account Profile | 3DHub Data Portal</title>
-  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
 
-  <script src="{{ asset('assets') }}/js/theme-init.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/js/theme-init.js"></script>
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+  <link rel="icon" type="image/x-icon" href="<?php echo e(asset('favicon.ico')); ?>">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,21 +21,21 @@
     rel="stylesheet">
 
   <!-- Icons -->
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/fonts/iconify-icons.css">
 
   <!-- Core CSS -->
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css">
-  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css">
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/core.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/demo.css">
+  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/pages/front-page.css">
 
-  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
-  <script src="{{ asset('assets') }}/js/front-config.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/vendor/js/helpers.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/js/front-config.js"></script>
 
   <!-- Auth: require any logged-in user (registered, trusted, admin) -->
   <script>
     (function () {
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
-      var LANDING_URL = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/{{ route('landing') }}';
+      var LANDING_URL = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/<?php echo e(route('landing')); ?>';
       var removalHandled = false;
 
       function checkAccountRemoved() {
@@ -47,7 +47,7 @@
                 removalHandled = true;
                 alert(d.message || ('Your account has been removed.' + (d.removal_reason ? (' Reason: ' + d.removal_reason) : '')));
               }
-              window.location.href = '/html/front-pages/{{ route('login') }}';
+              window.location.href = '/html/front-pages/<?php echo e(route('login')); ?>';
               return null;
             }
             return d;
@@ -57,7 +57,7 @@
       checkAccountRemoved().then(function (d) {
         if (!d) return;
         if (!d.loggedIn) {
-          window.location.href = '/html/front-pages/{{ route('login') }}?redirect=' + encodeURIComponent(window.location.pathname);
+          window.location.href = '/html/front-pages/<?php echo e(route('login')); ?>?redirect=' + encodeURIComponent(window.location.pathname);
           return;
         }
       }).catch(function () { });
@@ -157,7 +157,7 @@
   <div class="hero-bg">
     <div class="container">
       <div class="d-flex align-items-center justify-content-between mb-4">
-        <a href="{{ Auth::user() && (Auth::user()->role === 'admin' || Auth::user()->role === 'superadmin') ? route('admin_dashboard') : route('landing') }}" class="btn btn-label-secondary btn-sm fw-medium border shadow-sm back-btn" style="background: white; color: #566a7f;">
+        <a href="<?php echo e(Auth::user() && (Auth::user()->role === 'admin' || Auth::user()->role === 'superadmin') ? route('admin_dashboard') : route('landing')); ?>" class="btn btn-label-secondary btn-sm fw-medium border shadow-sm back-btn" style="background: white; color: #566a7f;">
           <i class="bx bx-arrow-back me-1"></i> Back
         </a>
         <!-- Style Switcher -->
@@ -241,7 +241,7 @@
       </div>
       <div id="inlineFormContact" class="profile-inline-form d-none">
         <label class="form-label small">New contact number</label>
-        <input type="tel" class="form-control form-control-sm" id="contactNumber" placeholder="e.g. {{ config('support.phone') }}">
+        <input type="tel" class="form-control form-control-sm" id="contactNumber" placeholder="e.g. <?php echo e(config('support.phone')); ?>">
         <button type="button" class="btn btn-sm btn-primary" id="btnContactSubmit">Update contact</button>
         <button type="button" class="btn btn-sm btn-outline-secondary" id="btnContactCancel">Cancel</button>
         <span id="contactMessage" class="small ms-2"></span>
@@ -257,9 +257,9 @@
         </span>
       </div>
       <form id="formChangePassword" class="profile-inline-form d-none">
-        @csrf
-        {{-- 🚀 BROWSER ACCESSIBILITY (v155): Added hidden username field to satisfy accessibility warnings --}}
-        <input type="text" name="username" value="{{ Auth::user()->email }}" style="display:none;" autocomplete="username">
+        <?php echo csrf_field(); ?>
+        
+        <input type="text" name="username" value="<?php echo e(Auth::user()->email); ?>" style="display:none;" autocomplete="username">
         
         <div class="mb-2">
           <label class="form-label small">Current password</label>
@@ -306,11 +306,11 @@
       <!-- SFTP Connection Details -->
       <div class="profile-row">
         <span class="profile-label">SFTP Host</span>
-        <span class="profile-value" id="profile-sftp-host">{{ config('filesystems.disks.sftp_delivery.host', '172.21.107.151') }}</span>
+        <span class="profile-value" id="profile-sftp-host"><?php echo e(config('filesystems.disks.sftp_delivery.host', '172.21.107.151')); ?></span>
       </div>
       <div class="profile-row">
         <span class="profile-label">SFTP Port</span>
-        <span class="profile-value text-primary fw-bold" id="profile-sftp-port">{{ env('SFTP_USER_PORT', 2223) }}</span>
+        <span class="profile-value text-primary fw-bold" id="profile-sftp-port"><?php echo e(env('SFTP_USER_PORT', 2223)); ?></span>
       </div>
 
       <!-- SFTP Username (read-only) -->
@@ -329,9 +329,9 @@
         </span>
       </div>
       <form id="formChangeSftpPassword" class="profile-inline-form d-none">
-        @csrf
-        {{-- 🚀 BROWSER ACCESSIBILITY (v155): Added hidden username field to satisfy accessibility warnings --}}
-        <input type="text" name="username" value="{{ Auth::user()->sftp_username ?? Auth::user()->email }}" style="display:none;" autocomplete="username">
+        <?php echo csrf_field(); ?>
+        
+        <input type="text" name="username" value="<?php echo e(Auth::user()->sftp_username ?? Auth::user()->email); ?>" style="display:none;" autocomplete="username">
         
         <div class="mb-2">
           <label class="form-label small">New SFTP password</label>
@@ -362,13 +362,13 @@
     </div>
   </div>
 
-  <script src="{{ asset('assets') }}/vendor/libs/popper/popper.js"></script>
-  <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
-  <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/vendor/libs/popper/popper.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/vendor/js/bootstrap.js"></script>
+  <script src="<?php echo e(asset('assets')); ?>/js/theme-switcher.js"></script>
   <script>
     (function () {
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
-      var LOGIN_URL = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/{{ route('login') }}';
+      var LOGIN_URL = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/<?php echo e(route('login')); ?>';
 
       function showMessage(elId, text, isError) {
         var el = document.getElementById(elId);
@@ -642,10 +642,10 @@ var sftpPasswordVisible = false;
                 
                 // 🚀 PORT SYNC (v142): Ensure port 2223 is shown for clients
                 if (document.getElementById('profile-sftp-port')) {
-                  document.getElementById('profile-sftp-port').textContent = data.sftpPort || '{{ env('SFTP_USER_PORT', 2223) }}';
+                  document.getElementById('profile-sftp-port').textContent = data.sftpPort || '<?php echo e(env('SFTP_USER_PORT', 2223)); ?>';
                 }
                 if (document.getElementById('profile-sftp-host')) {
-                  document.getElementById('profile-sftp-host').textContent = data.sftpHost || '{{ config('filesystems.disks.sftp_delivery.host', '172.21.107.151') }}';
+                  document.getElementById('profile-sftp-host').textContent = data.sftpHost || '<?php echo e(config('filesystems.disks.sftp_delivery.host', '172.21.107.151')); ?>';
                 }
               } else {
                 document.getElementById('profile-sftp-username').textContent = 'Not set';
@@ -743,3 +743,4 @@ var sftpPasswordVisible = false;
   </script>
 </body>
 </html>
+<?php /**PATH C:\Users\User\.antigravity\Projects\DataPortalV2\resources\views/portal/user-profile.blade.php ENDPATH**/ ?>

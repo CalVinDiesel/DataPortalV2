@@ -396,8 +396,8 @@ class ProjectController extends Controller
             'created_by_email' => Auth::user()->email,
             'request_status' => 'pending',
             'delivered_file_path' => $request->onedriveLink, // Fallback view path
-            'total_size_bytes' => $request->onedriveSize ?? 0,
-            'file_count' => $request->onedriveCount ?? 0,
+            'total_size_bytes' => intval($request->onedriveSize ?? 0),
+            'file_count' => intval($request->onedriveCount ?? 0),
         ]);
 
         // 🚀 AUTO-DETECTION (v265): Attempt immediate sync for OneDrive if size is not provided manually
@@ -442,9 +442,12 @@ class ProjectController extends Controller
             set_time_limit(0);
 
             $filePath = $upload->delivered_file_path;
-            $fileName = basename($filePath);
-            if (!Str::endsWith(strtolower($fileName), '.zip')) $fileName .= '.zip';
-            $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $fileName);
+
+            // 🔑 Preserve the ORIGINAL filename (with spaces) for SFTP path lookups.
+            // The sanitized copy is only for the browser Content-Disposition header.
+            $originalFileName = basename($filePath);
+            if (!Str::endsWith(strtolower($originalFileName), '.zip')) $originalFileName .= '.zip';
+            $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalFileName); // safe for header
 
             // 🚀 LOCAL-FIRST OPTIMIZATION (v176): If both servers are on the same machine, 
             // streaming directly from the disk is INSTANT and bypasses SFTP handshake delays.
@@ -471,20 +474,25 @@ class ProjectController extends Controller
             // Fallback to SFTP if local path is not accessible
             $disk = Storage::disk('sftp_delivery');
             
-            // 🚀 ROOT STRIPPING (v218)
+            // 🚀 ROOT STRIPPING (v218): Strip the absolute root prefix to get a relative SFTP path.
+            // Use $filePath (original path) so spaces in the filename are preserved for the SFTP lookup.
             $root = config('filesystems.disks.sftp_delivery.root', '/');
             if (Str::startsWith($filePath, $root)) {
                 $filePath = Str::after($filePath, $root);
             }
             $filePath = ltrim($filePath, '/');
 
-            // 🚀 INSTANT START (v176): Use size from DB if available
-            $size = $upload->total_size_bytes;
+            // 🛠️ SIZE FIX (v262): Use delivered_file_size (the actual processed ZIP size) for Content-Length.
+            // total_size_bytes stores the size of the RAW CLIENT UPLOAD, not the delivered result —
+            // using it here caused browsers to truncate large deliveries, producing a corrupt ZIP.
+            $size = $upload->delivered_file_size ?: null;
             if (!$size) {
+                // Live-stat the file from SFTP as the authoritative fallback
                 try {
                     $size = $disk->size($filePath);
-                } catch (\Exception $e) { 
-                    $size = null;
+                } catch (\Exception $e) {
+                    \Log::warning("downloadDelivered: Could not stat SFTP size for [{$filePath}]: " . $e->getMessage());
+                    $size = null; // Send without Content-Length rather than a wrong value
                 }
             }
             

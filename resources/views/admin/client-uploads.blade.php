@@ -1032,7 +1032,15 @@
         });
         tbody.querySelectorAll('.start-processing-btn').forEach(function (btn) {
           btn.addEventListener('click', function () {
-            submitDecision(this.getAttribute('data-upload-id'), 'processing', '');
+            // 🛡️ DOUBLE-CLICK GUARD: Disable and visually lock the button immediately
+            if (btn.disabled) return;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Starting...';
+            submitDecision(this.getAttribute('data-upload-id'), 'processing', '', function() {
+              // Re-enable button if submission fails (success will re-render the whole table anyway)
+              btn.disabled = false;
+              btn.innerHTML = '<i class="bx bx-cog me-1"></i>Start Processing';
+            });
           });
         });
         tbody.querySelectorAll('.reject-btn').forEach(function (btn) {
@@ -1118,7 +1126,7 @@
           .catch(function () { /* keep fallback behavior */ });
       }
 
-      function submitDecision(id, action, reason) {
+      function submitDecision(id, action, reason, onError) {
         fetch('{{ route('api.admin.decision', ['id' => ':id']) }}'.replace(':id', id), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1139,10 +1147,14 @@
               al.textContent = msg;
               al.className = 'alert ' + (action === 'reject' ? 'alert-warning' : 'alert-success');
             } else {
+              if (typeof onError === 'function') onError();
               alert(data.message || 'Failed.');
             }
           })
-          .catch(function () { alert('Request failed.'); });
+          .catch(function () {
+            if (typeof onError === 'function') onError();
+            alert('Request failed.');
+          });
       }
 
       // 🚀 MODAL INITIALIZATION (v186)

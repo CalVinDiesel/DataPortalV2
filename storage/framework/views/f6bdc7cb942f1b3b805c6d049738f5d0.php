@@ -860,9 +860,11 @@
       document.getElementById('disclaimerTargetUrl').value = targetUrl;
       document.getElementById('disclaimerIsCloud').value = isCloud ? "1" : "0";
       
-      // Reset modal state
+      // Reset modal state fully — including button label, in case a previous session left it in a loading state
+      const agreeBtn = document.getElementById('agreeDownloadBtn');
       document.getElementById('disclaimerCheckbox').checked = false;
-      document.getElementById('agreeDownloadBtn').disabled = true;
+      agreeBtn.disabled = true;
+      agreeBtn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
       
       const modal = new bootstrap.Modal(document.getElementById('disclaimerModal'));
       modal.show();
@@ -894,12 +896,16 @@
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          // 2. Hide modal
+          // 2. Restore button state before hiding modal so next open is always clean
+          btn.disabled = true;
+          btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
+
+          // 3. Hide modal
           const modalEl = document.getElementById('disclaimerModal');
           const modalInstance = bootstrap.Modal.getInstance(modalEl);
           if (modalInstance) modalInstance.hide();
           
-          // 3. Trigger Download or Reveal Path
+          // 4. Trigger Download or Reveal Path
           if (targetUrl === 'REVEAL_SFTP') {
             // Reveal the path in the Details modal
             const unlockContainer = document.getElementById('sftpUnlockContainer');

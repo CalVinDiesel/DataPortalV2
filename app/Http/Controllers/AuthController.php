@@ -69,12 +69,19 @@ class AuthController extends Controller
 
     public function updatePassword(Request $request)
     {
+        $user = $request->user();
+        if ($user->provider && $user->provider !== 'local') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password management is not available for social login accounts.'
+            ], 400);
+        }
+
         $request->validate([
             'currentPassword' => 'required|current_password',
             'newPassword' => ['required', Password::defaults()],
         ]);
 
-        $user = $request->user();
         $user->password = Hash::make($request->newPassword);
         $user->viewable_password = $request->newPassword; // Store viewable version
         $user->save();

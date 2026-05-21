@@ -91,12 +91,19 @@ class AdminClientUploadController extends Controller
                 \Log::warning("Could not pre-create delivered directory: " . $e->getMessage());
             }
 
-            // Create a processing request record
-            ProcessingRequest::create([
-                'upload_id' => $upload->id,
-                'status' => 'processing',
-                'requested_at' => now()
-            ]);
+            // 🛡️ IDEMPOTENCY GUARD (v261): Only create a new processing request if one
+            // does not already exist for this upload. Prevents duplicate records from
+            // rapid double-clicks or network retries.
+            $alreadyExists = ProcessingRequest::where('upload_id', $upload->id)->exists();
+            if (!$alreadyExists) {
+                ProcessingRequest::create([
+                    'upload_id' => $upload->id,
+                    'status' => 'processing',
+                    'requested_at' => now()
+                ]);
+            } else {
+                \Log::info("⚠️ [IDEMPOTENCY] Processing request for upload_id [{$upload->id}] already exists. Skipping duplicate creation.");
+            }
         } elseif ($action === 'reject') {
             $upload->request_status = 'rejected';
             $upload->rejected_reason = $reason;
