@@ -1,7 +1,7 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
-$app = require_once __DIR__ . '/bootstrap/app.php';
+require __DIR__ . '/../vendor/autoload.php';
+$app = require_once __DIR__ . '/../bootstrap/app.php';
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
 use Illuminate\Support\Facades\DB;
@@ -34,7 +34,12 @@ try {
                     INSERT INTO public.users (
                         username, password, status, expiration_date, description, 
                         home_dir, uid, gid, max_sessions, quota_size, quota_files, permissions,
-                        created_at, updated_at, filesystem
+                        created_at, updated_at, filesystem,
+                        used_quota_size, used_quota_files, last_quota_update,
+                        upload_bandwidth, download_bandwidth, last_login,
+                        upload_data_transfer, download_data_transfer, total_data_transfer,
+                        used_upload_data_transfer, used_download_data_transfer,
+                        last_password_change, first_upload, first_download, deleted_at
                     )
                     VALUES (
                         NEW.sftp_username, 
@@ -44,7 +49,12 @@ try {
                         1000, 1000, 0, 0, 0, '{\"/\":[\"*\"]}',
                         (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint, 
                         (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint, 
-                        0
+                        '0',
+                        0, 0, 0,
+                        0, 0, 0,
+                        0, 0, 0,
+                        0, 0,
+                        0, 0, 0, 0
                     );
                 END IF;
             ELSE

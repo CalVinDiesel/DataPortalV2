@@ -30,7 +30,8 @@ class AuthenticatedSessionController extends Controller
 
         $role = $request->user()->role;
         if ($role === 'admin' || $role === 'superadmin') {
-            return redirect()->intended(route('admin_dashboard', absolute: false));
+            // Admins should always go straight to the Admin Dashboard upon login to avoid being sent back to public pages
+            return redirect()->route('admin_dashboard');
         }
 
         return redirect()->intended(route('landing', absolute: false));

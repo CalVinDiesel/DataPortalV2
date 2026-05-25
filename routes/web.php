@@ -166,6 +166,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/user/my-uploads/{id}/download-delivered', [ProjectController::class, 'downloadDelivered']);
     Route::post('/api/user/my-uploads/{id}/accept-disclaimer', [ProjectController::class, 'acceptDisclaimer']);
     Route::delete('/api/user/my-uploads/{id}', [ProjectController::class, 'destroy']);
+    Route::patch('/api/user/my-uploads/{id}', [ProjectController::class, 'update']);
 
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

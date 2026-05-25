@@ -566,7 +566,14 @@
     function formatDate(dateString) {
       if (!dateString) return 'Unknown';
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: 'Asia/Kuala_Lumpur'
+      });
     }
 
     function fetchUploadsList() {
@@ -1317,7 +1324,10 @@
       try {
         const response = await fetch(`${AUTH_API}/api/user/my-uploads/${id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
+          },
           body: JSON.stringify({ project_title: title, project_description: description }),
           credentials: 'include'
         });

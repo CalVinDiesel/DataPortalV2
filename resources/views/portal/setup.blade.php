@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css">
-  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/boxicons.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css">
   <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css">
   <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css">
   <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
@@ -26,6 +26,35 @@
       background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     }
     .auth-btn { border-radius: 8px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px; }
+    
+    /* 🚀 BORDER ALIGNMENT FIX (v150): Ensure merged input groups have seamless borders */
+    .input-group-merge.form-password-toggle {
+      border: 1px solid var(--bs-border-color);
+      border-radius: 0.375rem;
+      overflow: hidden;
+      background-color: var(--bs-body-bg);
+      display: flex;
+    }
+    .input-group-merge.form-password-toggle .form-control,
+    .input-group-merge.form-password-toggle .input-group-text {
+      border: none !important;
+      box-shadow: none !important;
+      background-color: transparent !important;
+    }
+    .input-group-merge.form-password-toggle:focus-within {
+      border-color: #696cff;
+      box-shadow: 0 0 0.25rem 0.05rem rgba(105, 108, 255, 0.1);
+    }
+    .cursor-pointer {
+      cursor: pointer;
+    }
+    /* Hide native browser password reveal buttons to prevent duplicates */
+    input::-ms-reveal,
+    input::-ms-clear,
+    input::-webkit-contacts-auto-fill-button,
+    input::-webkit-credentials-auto-fill-button {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -54,11 +83,11 @@
               <form method="POST" action="{{ url('/setup') }}" id="setupForm">
                 @csrf
                 <input type="hidden" name="token" value="{{ $token }}">
-                <input type="hidden" name="action" id="authAction" value="password">
+                <input type="hidden" name="action" id="authAction" value="{{ old('action', 'password') }}">
 
                 <div class="mb-4">
                   <label for="contact_number" class="form-label fw-bold text-dark">Contact Number <span class="text-danger">*</span></label>
-                  <input type="tel" class="form-control form-control-lg" id="contact_number" name="contact_number" placeholder="e.g. +1 234 567 890" required>
+                  <input type="tel" class="form-control form-control-lg" id="contact_number" name="contact_number" placeholder="e.g. +1 234 567 890" value="{{ old('contact_number', $user->contact_number) }}" autocomplete="tel" required>
                   <div class="form-text mt-2"><i class="bx bx-info-circle me-1"></i> A contact number is required before proceeding.</div>
                 </div>
 
@@ -81,19 +110,25 @@
                 <div class="text-center my-3 text-muted">OR</div>
 
                 <!-- Password Auth Toggle -->
-                <button type="button" class="btn btn-primary w-100 auth-btn" id="togglePasswordBtn">
+                <button type="button" class="btn {{ old('action') === 'password' || $errors->has('password') ? 'btn-outline-primary' : 'btn-primary' }} w-100 auth-btn" id="togglePasswordBtn">
                   <i class="bx bx-lock-alt"></i> Create a Password
                 </button>
 
                 <!-- Password Block -->
-                <div id="passwordBlock" class="d-none mt-4 p-3 bg-light rounded border">
+                <div id="passwordBlock" class="{{ old('action') === 'password' || $errors->has('password') ? '' : 'd-none' }} mt-4 p-3 bg-light rounded border">
                   <div class="mb-3">
-                    <label class="form-label">Password</label>
-                    <input type="password" name="password" class="form-control" placeholder="Create a secure password">
+                    <label class="form-label text-dark fw-bold">Password</label>
+                    <div class="input-group input-group-merge form-password-toggle">
+                      <input type="password" name="password" class="form-control" placeholder="Create a secure password" autocomplete="new-password">
+                      <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+                    </div>
                   </div>
                   <div class="mb-3">
-                    <label class="form-label">Confirm Password</label>
-                    <input type="password" name="password_confirmation" class="form-control" placeholder="Re-type password">
+                    <label class="form-label text-dark fw-bold">Confirm Password</label>
+                    <div class="input-group input-group-merge form-password-toggle">
+                      <input type="password" name="password_confirmation" class="form-control" placeholder="Re-type password" autocomplete="new-password">
+                      <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+                    </div>
                   </div>
                   <button type="button" class="btn btn-success w-100 fw-bold" onclick="submitAuth('password')">Complete Setup</button>
                 </div>
@@ -112,12 +147,19 @@
   <script>
     document.getElementById('togglePasswordBtn').addEventListener('click', function() {
       var pb = document.getElementById('passwordBlock');
+      var actionInput = document.getElementById('authAction');
       if (pb.classList.contains('d-none')) {
         pb.classList.remove('d-none');
-        this.classList.replace('btn-primary', 'btn-outline-primary');
+        if (this.classList.contains('btn-primary')) {
+          this.classList.replace('btn-primary', 'btn-outline-primary');
+        }
+        actionInput.value = 'password';
       } else {
         pb.classList.add('d-none');
-        this.classList.replace('btn-outline-primary', 'btn-primary');
+        if (this.classList.contains('btn-outline-primary')) {
+          this.classList.replace('btn-outline-primary', 'btn-primary');
+        }
+        actionInput.value = '';
       }
     });
 
@@ -127,9 +169,48 @@
         document.getElementById('contact_number').focus();
         return;
       }
+      
+      if (provider === 'password') {
+        var passwordInput = document.getElementsByName('password')[0];
+        var confirmInput = document.getElementsByName('password_confirmation')[0];
+        var password = passwordInput.value;
+        var confirmPassword = confirmInput.value;
+        
+        if (!password) {
+          alert('Please enter a password.');
+          passwordInput.focus();
+          return;
+        }
+        if (password.length < 8) {
+          alert('Password must be at least 8 characters long.');
+          passwordInput.focus();
+          return;
+        }
+        if (password !== confirmPassword) {
+          alert('The password confirmation does not match.');
+          confirmInput.focus();
+          return;
+        }
+      }
+      
       document.getElementById('authAction').value = provider;
       document.getElementById('setupForm').submit();
     }
+
+    // Toggle password visibility
+    document.querySelectorAll('.form-password-toggle .input-group-text').forEach(function(toggle) {
+      toggle.addEventListener('click', function() {
+        var input = this.previousElementSibling;
+        var icon = this.querySelector('i');
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.classList.replace('bx-hide', 'bx-show');
+        } else {
+          input.type = 'password';
+          icon.classList.replace('bx-show', 'bx-hide');
+        }
+      });
+    });
   </script>
 </body>
 </html>

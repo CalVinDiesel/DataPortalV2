@@ -20,4 +20,17 @@ class ProcessingRequest extends Model
         'delivered_at',
         'delivery_notes'
     ];
+
+    protected $casts = [
+        'requested_at' => 'datetime',
+        'delivered_at' => 'datetime',
+    ];
+
+    /**
+     * Prepare a date for array / JSON serialization.
+     */
+    protected function serializeDate(\DateTimeInterface $date): string
+    {
+        return $date->format('Y-m-d\TH:i:s.uP');
+    }
 }

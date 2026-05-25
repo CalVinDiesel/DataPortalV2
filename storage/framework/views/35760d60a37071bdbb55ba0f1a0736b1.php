@@ -847,7 +847,7 @@
         
         document.getElementById('detailUploadType').textContent = typeDisplay;
 
-        document.getElementById('detailCreatedAt').textContent = row.created_at ? new Date(row.created_at).toLocaleString() : '–';
+        document.getElementById('detailCreatedAt').textContent = row.created_at ? new Date(row.created_at).toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }) : '–';
         document.getElementById('detailCreatedBy').textContent = text(row.created_by_email);
         document.getElementById('detailStatus').innerHTML = statusBadge(row.request_status);
 
@@ -979,7 +979,7 @@
           uploadsRowsById[r.id] = r;
           uploadMetaById[r.id] = r;
 
-          var created = r.created_at ? new Date(r.created_at).toLocaleString() : '–';
+          var created = r.created_at ? new Date(r.created_at).toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }) : '–';
           var type = r.upload_type || 'browser';
           var isMulti = (r.camera_models || '').toLowerCase().includes('multi-lens');
           var typeDisplay = '';
@@ -1590,8 +1590,8 @@
 
         // 3. Render
         tbody.innerHTML = paginated.map(function (r) {
-          var requested = r.requested_at ? new Date(r.requested_at).toLocaleString() : '–';
-          var delivered = r.delivered_at ? new Date(r.delivered_at).toLocaleString() + (r.delivery_notes ? '<br><small class="text-muted">' + escapeHtml(r.delivery_notes) + '</small>' : '') : '–';
+          var requested = r.requested_at ? new Date(r.requested_at).toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }) : '–';
+          var delivered = r.delivered_at ? new Date(r.delivered_at).toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }) + (r.delivery_notes ? '<br><small class="text-muted">' + escapeHtml(r.delivery_notes) + '</small>' : '') : '–';
 
           // Enrich with upload metadata
           var meta = uploadMetaById[r.upload_id] || {};

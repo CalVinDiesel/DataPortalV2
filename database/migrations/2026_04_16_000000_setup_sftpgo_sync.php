@@ -13,49 +13,54 @@ return new class extends Migration
         DB::unprepared("
             CREATE OR REPLACE FUNCTION sync_to_sftpgo()
             RETURNS TRIGGER AS $$
+            DECLARE
+                v_home_dir TEXT;
+                v_role_label TEXT;
             BEGIN
                 IF (NEW.role IN ('trusted', 'admin', 'superadmin') AND NEW.is_active = true) THEN
-                    DECLARE
-                        v_role_label TEXT;
-                    BEGIN
-                        v_role_label := CASE 
-                            WHEN NEW.role IN ('admin', 'superadmin') THEN 'Role: Admin' 
-                            ELSE 'Role: Client' 
-                        END;
-                        
-                        INSERT INTO users (
-                            username, password, status, expiration_date, description, 
-                            home_dir, uid, gid, max_sessions, quota_size, quota_files, permissions,
-                            used_quota_size, used_quota_files, last_quota_update, 
-                            upload_bandwidth, download_bandwidth, last_login,
-                            upload_data_transfer, download_data_transfer, total_data_transfer,
-                            used_upload_data_transfer, used_download_data_transfer,
-                            created_at, updated_at, last_password_change, 
-                            first_upload, first_download, filesystem,
-                            deleted_at, role_id
-                        )
-                        VALUES (
-                            NEW.sftp_username, 
-                            NEW.sftp_password, 
-                            1, 0, 'Data Portal Sync: ' || NEW.name || ' | ' || v_role_label,
-                            '{$sftpRoot}/' || NEW.sftp_username,
-                            1000, 1000, 0, 0, 0, '{\"/\": [\"*\"]}',
-                            0, 0, 0, 
-                            0, 0, 0,
-                            0, 0, 0,
-                            0, 0,
-                            (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint, 
-                            (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint, 
-                            0, 0, 0, 0,
-                            0, NULL -- set role_id to NULL
-                        )
-                        ON CONFLICT (username) DO UPDATE SET
-                            password = EXCLUDED.password,
-                            home_dir = EXCLUDED.home_dir,
-                            description = EXCLUDED.description,
-                            status = 1,
-                            updated_at = (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint;
+                    v_role_label := CASE 
+                        WHEN NEW.role IN ('admin', 'superadmin') THEN 'Role: Admin' 
+                        ELSE 'Role: Client' 
                     END;
+                    
+                    IF (NEW.role IN ('admin', 'superadmin')) THEN
+                        v_home_dir := '{$sftpRoot}/delivered/' || NEW.sftp_username;
+                    ELSE
+                        v_home_dir := '{$sftpRoot}/uploads/' || NEW.sftp_username;
+                    END IF;
+                    
+                    INSERT INTO users (
+                        username, password, status, expiration_date, description, 
+                        home_dir, uid, gid, max_sessions, quota_size, quota_files, permissions,
+                        used_quota_size, used_quota_files, last_quota_update, 
+                        upload_bandwidth, download_bandwidth, last_login,
+                        upload_data_transfer, download_data_transfer, total_data_transfer,
+                        used_upload_data_transfer, used_download_data_transfer,
+                        created_at, updated_at, last_password_change, 
+                        first_upload, first_download, filesystem,
+                        deleted_at, role_id
+                    )
+                    VALUES (
+                        NEW.sftp_username, 
+                        NEW.sftp_password, 
+                        1, 0, 'Data Portal Sync: ' || NEW.name || ' | ' || v_role_label,
+                        v_home_dir,
+                        1000, 1000, 0, 0, 0, '{\"/\": [\"*\"]}',
+                        0, 0, 0, 
+                        0, 0, 0,
+                        0, 0, 0,
+                        0, 0,
+                        (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint, 
+                        (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint, 
+                        0, 0, 0, 0,
+                        0, NULL -- set role_id to NULL
+                    )
+                    ON CONFLICT (username) DO UPDATE SET
+                        password = EXCLUDED.password,
+                        home_dir = EXCLUDED.home_dir,
+                        description = EXCLUDED.description,
+                        status = 1,
+                        updated_at = (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint;
                 ELSE
                     DELETE FROM users WHERE username = NEW.sftp_username;
                 END IF;
@@ -89,7 +94,7 @@ return new class extends Migration
             SELECT 
                 sftp_username, sftp_password, 1, 0, 
                 'Initial Sync: ' || name || ' | ' || (CASE WHEN role IN ('admin', 'superadmin') THEN 'Role: Admin' ELSE 'Role: Client' END),
-                '{$sftpRoot}/' || sftp_username,
+                CASE WHEN role IN ('admin', 'superadmin') THEN '{$sftpRoot}/delivered/' || sftp_username ELSE '{$sftpRoot}/uploads/' || sftp_username END,
                 1000, 1000, 0, 0, 0, '{\"/\": [\"*\"]}',
                 0, 0, 0, 
                 0, 0, 0,

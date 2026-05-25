@@ -51,4 +51,12 @@ class ClientUpload extends Model
         'delivered_at' => 'datetime',
         'delivered_expires_at' => 'datetime',
     ];
+
+    /**
+     * Prepare a date for array / JSON serialization.
+     */
+    protected function serializeDate(\DateTimeInterface $date): string
+    {
+        return $date->format('Y-m-d\TH:i:s.uP');
+    }
 }

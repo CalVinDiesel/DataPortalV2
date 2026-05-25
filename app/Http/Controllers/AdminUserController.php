@@ -95,6 +95,31 @@ class AdminUserController extends Controller
             }
         }
 
+        // AUTO-CREATE PHYSICAL SFTP HOME DIRECTORY
+        try {
+            $sftpDisk = \Illuminate\Support\Facades\Storage::disk('sftp_delivery');
+            $userBaseDir = 'uploads/' . $user->sftp_username;
+            if (!$sftpDisk->exists($userBaseDir)) {
+                $sftpDisk->makeDirectory($userBaseDir);
+                $sftpDisk->setVisibility($userBaseDir, 'public');
+            }
+            
+            // Force 777 permissions using SSH if possible
+            try {
+                $sshPort = (int)config('filesystems.disks.sftp_delivery.port', 2222);
+                $ssh = new \phpseclib3\Net\SSH2(config('filesystems.disks.sftp_delivery.host'), $sshPort);
+                if ($ssh->login(config('filesystems.disks.sftp_delivery.username'), config('filesystems.disks.sftp_delivery.password'))) {
+                    $baseUploadRoot = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
+                    $userDir = $baseUploadRoot . '/uploads/' . $user->sftp_username;
+                    $ssh->exec("chmod -R 777 " . escapeshellarg($userDir));
+                }
+            } catch (\Exception $sshEx) {
+                \Illuminate\Support\Facades\Log::error("SSH Chmod failed on upgradeTrusted: " . $sshEx->getMessage());
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Could not auto-create SFTP directory on upgrade: ' . $e->getMessage());
+        }
+
         return response()->json(['success' => true, 'message' => 'User upgraded to Trusted.']);
     }
 
