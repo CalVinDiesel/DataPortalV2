@@ -31,11 +31,9 @@ class ProjectController extends Controller
             ->map(function($u) use ($user) {
                 $u->client_sftp_user = $user->sftp_username ?: \Illuminate\Support\Str::slug($user->name);
                 
-                // 🚀 SPEED BOOST (v301): Auto-convert OneDrive and Google Drive preview links to direct download links
+                // 🚀 SPEED BOOST (v271): Auto-convert OneDrive preview links to direct download links
                 if ($u->delivery_method === 'onedrive' && $u->delivered_file_path) {
                     $u->delivered_file_path = self::convertToDirectOneDriveUrl($u->delivered_file_path);
-                } elseif ($u->delivery_method === 'google_drive' && $u->delivered_file_path) {
-                    $u->delivered_file_path = self::convertToDirectGoogleDriveUrl($u->delivered_file_path);
                 }
                 
                 return $u;
@@ -1113,49 +1111,10 @@ class ProjectController extends Controller
     {
         if (!$url) return $url;
         
-        // 🚀 HIGH-SPEED GRAPH CDN (v301): Convert standard OneDrive URLs to direct API stream links
         if (str_contains($url, 'onedrive.live.com') || str_contains($url, '1drv.ms') || str_contains($url, 'sharepoint.com')) {
-            try {
-                $expandedUrl = self::expandOneDriveUrl($url);
-                if ($expandedUrl) {
-                    $base64 = base64_encode($expandedUrl);
-                    $shareId = 'u!' . str_replace(['+', '/', '='], ['-', '_', ''], $base64);
-                    \Log::info("OneDrive Directification: u! ShareID generated successfully.");
-                    return "https://api.onedrive.com/v1.0/shares/{$shareId}/root/content";
-                }
-            } catch (\Exception $e) {
-                \Log::warning("convertToDirectOneDriveUrl API generation failed, falling back to download=1: " . $e->getMessage());
-            }
-
-            // Fallback: Safe and reliable 'download=1' URL modifier
             if (!str_contains($url, 'download=1')) {
                 $separator = str_contains($url, '?') ? '&' : '?';
                 return $url . $separator . 'download=1';
-            }
-        }
-        
-        return $url;
-    }
-
-    public static function convertToDirectGoogleDriveUrl($url)
-    {
-        if (!$url) return $url;
-        
-        // 🚀 INSTANT DIRECT DOWNLOAD (v301): Skip the heavy document viewer and virus interstitials
-        if (str_contains($url, 'drive.google.com')) {
-            // Already directified check
-            if (str_contains($url, 'drive.google.com/uc')) {
-                return $url;
-            }
-            
-            // Extract the unique File ID using robust regex patterns
-            if (preg_match('/\/d\/([a-zA-Z0-9-_]+)/', $url, $matches)) {
-                $fileId = $matches[1];
-                return "https://drive.google.com/uc?export=download&id={$fileId}&confirm=t";
-            }
-            if (preg_match('/id=([a-zA-Z0-9-_]+)/', $url, $matches)) {
-                $fileId = $matches[1];
-                return "https://drive.google.com/uc?export=download&id={$fileId}&confirm=t";
             }
         }
         

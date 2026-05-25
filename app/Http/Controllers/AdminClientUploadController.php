@@ -252,8 +252,8 @@ class AdminClientUploadController extends Controller
                     \Log::info("  - [CLOUD] Delivery marked as OneDrive link (Directified).");
                 } else {
                     $upload->delivery_method = 'google_drive';
-                    $upload->delivered_file_path = \App\Http\Controllers\ProjectController::convertToDirectGoogleDriveUrl($gdriveLink);
-                    \Log::info("  - [CLOUD] Delivery marked as Google Drive link (Directified).");
+                    $upload->delivered_file_path = $gdriveLink;
+                    \Log::info("  - [CLOUD] Delivery marked as Google Drive link.");
                 }
 
             } elseif ($method === 'portal' || $method === 'sftp') {
