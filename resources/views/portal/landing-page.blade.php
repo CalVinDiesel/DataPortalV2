@@ -460,8 +460,9 @@
     <!-- 3D Model Tiles Showcase: End -->
 
     <!-- Real customers reviews: Start -->
+    {{-- Our Partners: Start Here
     <section id="landingReviews" class="section-py bg-body landing-reviews pb-0">
-      <!-- Our Partners: Start Here -->
+      <!-- Our Partners: Start Here
       <div class="container">
         <div class="row align-items-center gx-0 gy-4 g-lg-5 mb-5 pb-md-5">
           <div class="col-md-6 col-lg-5 col-xl-3">
@@ -645,14 +646,14 @@
                         </div>
                       </div>
                     </div>
-                  </div> -->
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
       </div>
-      <!-- Our Partners: End Here -->
+    </section>
+    <!-- Our Partners: End Here -->
       <hr class="m-0 mt-6 mt-md-12" />
       <!-- Logo slider: Start -->
       <!--<div class="container">
@@ -680,6 +681,7 @@
       </div>-->
       <!-- Logo slider: End -->
     </section>
+    --}}
     <!-- Real customers reviews: End -->
 
     <!-- Pricing plans: Start -->
