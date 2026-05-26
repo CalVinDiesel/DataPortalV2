@@ -546,6 +546,18 @@
     async function startFinalUpload() {
         if (typeof isUploading !== 'undefined' && isUploading) return;
 
+        function backgroundSafeDelay(ms) {
+            return new Promise(resolve => {
+                if (document.hidden && ms <= 100) {
+                    const channel = new MessageChannel();
+                    channel.port1.onmessage = () => resolve();
+                    channel.port2.postMessage(null);
+                } else {
+                    setTimeout(resolve, ms);
+                }
+            });
+        }
+
         const title = document.getElementById('projectTitle').value.trim();
         const desc = document.getElementById('projectDescription').value.trim();
         const cat = document.getElementById('categorySelection').value;
@@ -601,7 +613,8 @@
                 if (p > 100) p = 100;
 
                 if (p !== lastVisualPercent || now - lastPaintTime > 100 || statusText === "Finalizing") { 
-                    requestAnimationFrame(() => {
+                    if (document.hidden) {
+                        // Background tab bypass for requestAnimationFrame to prevent finalization hang
                         if (p > maxVisualPercent) maxVisualPercent = p;
                         pb.style.width = maxVisualPercent + '%'; 
                         pt.textContent = maxVisualPercent + '%';
@@ -609,7 +622,17 @@
                         lastVisualPercent = p;
                         lastPaintTime = Date.now();
                         resolve();
-                    });
+                    } else {
+                        requestAnimationFrame(() => {
+                            if (p > maxVisualPercent) maxVisualPercent = p;
+                            pb.style.width = maxVisualPercent + '%'; 
+                            pt.textContent = maxVisualPercent + '%';
+                            st.textContent = statusText;
+                            lastVisualPercent = p;
+                            lastPaintTime = Date.now();
+                            resolve();
+                        });
+                    }
                 } else {
                     resolve();
                 }
@@ -727,7 +750,7 @@
                         if (isUploadPaused) await uploadPausePromise;
                         
                         // 🚀 STAGGERED IGNITION
-                        await new Promise(r => setTimeout(r, 50));
+                        await backgroundSafeDelay(50);
                         
                         let start = x * shardSize;
                         let end = (x === specs.shards - 1) ? file.size : (start + shardSize);

@@ -1,30 +1,30 @@
-<!DOCTYPE html>
-<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="<?php echo e(asset('assets')); ?>/"
+﻿<!DOCTYPE html>
+<html lang="en" class="layout-navbar-fixed layout-wide" dir="ltr" data-assets-path="{{ asset('assets') }}/"
   data-template="front-pages" data-bs-theme="light">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Create Project Via Data Portal | 3DHub Data Portal</title>
-  <link rel="icon" type="image/x-icon" href="<?php echo e(asset('favicon.ico')); ?>">
+  <title>Upload Geospatial Data | 3DHub Data Portal</title>
+  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&amp;display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/fonts/iconify-icons.css">
-  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/core.css">
-  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/demo.css">
-  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/css/client-responsive.css">
-  <link rel="stylesheet" href="<?php echo e(asset('assets')); ?>/vendor/css/pages/front-page.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/client-responsive.css">
+  <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
 
-  <link rel="stylesheet" href="<?php echo e(asset('assets/vendor/leaflet/leaflet.css')); ?>" />
-  <script src="<?php echo e(asset('assets/vendor/leaflet/leaflet.js')); ?>"></script>
-  <script src="<?php echo e(asset('assets/vendor/js/exif.js')); ?>"></script>
-  <script src="<?php echo e(asset('assets/vendor/js/jszip.min.js')); ?>"></script>
+  <link rel="stylesheet" href="{{ asset('assets/vendor/leaflet/leaflet.css') }}" />
+  <script src="{{ asset('assets/vendor/leaflet/leaflet.js') }}"></script>
+  <script src="{{ asset('assets/vendor/js/exif.js') }}"></script>
+  <script src="{{ asset('assets/vendor/js/jszip.min.js') }}"></script>
 
-  <script src="<?php echo e(asset('assets')); ?>/vendor/js/helpers.js"></script>
-  <script src="<?php echo e(asset('assets')); ?>/js/front-config.js"></script>
+  <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
+  <script src="{{ asset('assets') }}/js/front-config.js"></script>
   <style>
     body { margin: 0; padding: 0; overflow: hidden; }
     .split-layout { display: block; height: 100vh; width: 100vw; position: relative; }
@@ -63,25 +63,6 @@
     .loading-step.completed { color: #71dd37; }
     .loading-step.completed .step-indicator { background: #71dd37; color: #fff; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(105, 108, 255, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(105, 108, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(105, 108, 255, 0); } }
-
-    /* 🌙 DARK MODE OPTIMIZATIONS (v280) */
-    [data-bs-theme="dark"] .left-panel { background: rgba(26, 26, 46, 0.95); border-color: rgba(255, 255, 255, 0.1); }
-    [data-bs-theme="dark"] .left-footer { background: rgba(26, 26, 46, 0.6); border-top-color: rgba(255, 255, 255, 0.1); }
-    [data-bs-theme="dark"] .upload-card { background: rgba(30, 41, 59, 0.6); border-color: rgba(105, 108, 255, 0.3); }
-    [data-bs-theme="dark"] .upload-card:hover { background: rgba(45, 55, 72, 0.8); border-color: #696cff; }
-    [data-bs-theme="dark"] .upload-card-title { color: #e1e4e8; }
-    [data-bs-theme="dark"] .upload-card-text { color: #cbd5e1; }
-    [data-bs-theme="dark"] .form-section-title { color: #e1e4e8; }
-    [data-bs-theme="dark"] .form-label { color: #d1d5db; }
-    [data-bs-theme="dark"] .text-muted { color: #a1acb8 !important; }
-    [data-bs-theme="dark"] .modal-content-custom { background: #1a1a2e; border: 1px solid rgba(255, 255, 255, 0.1); }
-    [data-bs-theme="dark"] .modal-header-custom, [data-bs-theme="dark"] .modal-footer-custom { background: #161625; border-color: rgba(255, 255, 255, 0.1); }
-    [data-bs-theme="dark"] .floating-glass-panel { background: rgba(26, 26, 46, 0.9); border-color: rgba(255, 255, 255, 0.1); color: #e1e4e8; }
-    [data-bs-theme="dark"] .stats-table td { color: #d1d5db; border-bottom-color: rgba(255, 255, 255, 0.05); }
-    [data-bs-theme="dark"] .stats-table th { color: #a1acb8; border-bottom-color: rgba(255, 255, 255, 0.1); }
-    [data-bs-theme="dark"] .premium-loading-panel { background: #1a1a2e; border-color: rgba(255, 255, 255, 0.1); }
-    [data-bs-theme="dark"] .folder-list-item { background: #1a1a2e; border-color: rgba(255, 255, 255, 0.1); }
-    [data-bs-theme="dark"] .folder-name { color: #e1e4e8; }
   </style>
 </head>
 
@@ -213,7 +194,7 @@
 
       <div class="left-footer border-top px-4">
         <div>
-            <button type="button" class="btn fw-medium border-0 px-4 me-2" style="background:#8b9eb0; color:#fff;" onclick="window.location.href='<?php echo e(route('create_project')); ?>'">Cancel</button>
+            <button type="button" class="btn fw-medium border-0 px-4 me-2" style="background:#8b9eb0; color:#fff;" onclick="window.location.href='{{ route('create_project') }}'">Cancel</button>
             <button type="button" class="btn btn-label-secondary" onclick="window.location.reload()">Reset</button>
         </div>
         <div class="d-flex align-items-center">
@@ -292,10 +273,7 @@
             btn.innerHTML = 'Pause';
             btn.style.backgroundColor = '#ffcc00';
             btn.style.color = '#000';
-            
-            // 🚀 INSTANT RESUME UI: Change status immediately to feel responsive
-            document.getElementById('uploadStatusText').innerText = 'Streaming Nitro Data... 🚀';
-            
+            document.getElementById('uploadStatusText').innerText = 'Resuming...';
             if (uploadPauseResolve) {
                 uploadPauseResolve();
                 uploadPauseResolve = null;
@@ -544,32 +522,12 @@
     }
 
     async function startFinalUpload() {
-        if (typeof isUploading !== 'undefined' && isUploading) return;
-
-        const title = document.getElementById('projectTitle').value.trim();
-        const desc = document.getElementById('projectDescription').value.trim();
-        const cat = document.getElementById('categorySelection').value;
-        const otherCat = document.getElementById('otherCategoryName').value.trim();
-        const date = document.getElementById('captureDate').value;
-        const lat = document.getElementById('latitude').value;
-        const lng = document.getElementById('longitude').value;
-        const camModels = document.getElementById('cameraModels').value.trim();
-        const isMulti = document.getElementById('multipleCamera').checked;
-        
-        // 🛡️ STRICT COLUMN VALIDATION (v307)
-        // Everything without an '(Optional)' label is mandatory.
-        let missing = [];
-        if (!title) missing.push("Project Title");
-        if (!desc) missing.push("Description");
-        if (cat === 'Other' && !otherCat) missing.push("Specific Category Name");
-        if (!date) missing.push("Capture Date");
-        if (!lat || !lng) missing.push("Map Location (Use 'Auto pick' or click map)");
-        if (isMulti && !camModels) missing.push("Camera Models");
-        if (pendingUploadFiles.length === 0) missing.push("Folder/Files to Upload");
-
-        if (missing.length > 0) {
-            return alert("Form Incomplete! The following mandatory fields must be filled:\n\n• " + missing.join("\n• "));
-        }
+        const lat = document.getElementById('latitude').value, 
+              lng = document.getElementById('longitude').value,
+              title = document.getElementById('projectTitle').value;
+              
+        if (!lat || !title) return alert("Please set location and title.");
+        if (pendingUploadFiles.length === 0) return alert("Nothing selected.");
 
         isUploading = true;
         document.getElementById('pauseBtn').style.display = 'inline-block';
@@ -583,7 +541,7 @@
         const totalSizeBytes = pendingUploadFiles.reduce((acc, f) => acc + f.size, 0);
         const projectID = document.getElementById('projectID').value;
         const uploadId = 'up_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
-        const csrfToken = '<?php echo e(csrf_token()); ?>';
+        const csrfToken = '{{ csrf_token() }}';
 
         st.textContent = "Preparing Nitro Stream...";
 
@@ -600,7 +558,7 @@
                 let p = Math.round(((overallSent + inFlightSum) / totalSizeBytes) * 100);
                 if (p > 100) p = 100;
 
-                if (p !== lastVisualPercent || now - lastPaintTime > 100 || statusText === "Finalizing") { 
+                if (p !== lastVisualPercent || now - lastPaintTime > 500 || statusText === "Finalizing") { 
                     requestAnimationFrame(() => {
                         if (p > maxVisualPercent) maxVisualPercent = p;
                         pb.style.width = maxVisualPercent + '%'; 
@@ -620,8 +578,8 @@
         // ── Environment detection (injected by Laravel/Blade) ────────────────
         // Dev:  chunks go to separate ports (9001-9016) via php -S workers
         // Prod: chunks go to the same origin — Nginx+PHP-FPM handles concurrency
-        const NITRO_IS_DEV  = <?php echo e(app()->isLocal() ? 'true' : 'false'); ?>;
-        const NITRO_BASE    = '<?php echo e(rtrim(config("app.url"), "/")); ?>';
+        const NITRO_IS_DEV  = {{ app()->isLocal() ? 'true' : 'false' }};
+        const NITRO_BASE    = '{{ rtrim(config("app.url"), "/") }}';
         // ─────────────────────────────────────────────────────────────────────
 
         function getNitroUrl(port, projectID, isFirst, slotId) {
@@ -632,7 +590,7 @@
                 return `http://${host}:${port}/nitro_upload.php?${qs}`;
             }
             // Production: same origin, web server handles concurrency natively
-            return '<?php echo e(route('api.upload.direct')); ?>?' + qs;
+            return `/nitro_upload.php?${qs}`;
         }
 
         let activeSlotSent = {}; 
@@ -694,8 +652,8 @@
         };
 
         try {
-            // 🚀 SMART-SCALE (v154): Anything over 2MB now gets the Nitro-Sharding treatment
-            const MAX_CHUNK_SIZE = 2 * 1024 * 1024; 
+            // 🚀 SMART-SCALE (v154): Anything over 5MB now gets the Nitro-Sharding treatment
+            const MAX_CHUNK_SIZE = 5 * 1024 * 1024; 
             const MAX_BATCH_COUNT = 30;
 
             for (let i = 0; i < pendingUploadFiles.length; i++) {
@@ -705,13 +663,13 @@
                 if (pendingUploadFiles.length === 1 && file.size > MAX_CHUNK_SIZE) {
                     // 🚀 ADAPTIVE-NITRO (v249): Dynamically calculate shards to ensure 10MB chunks for weak-internet stability
                     const getNitroSpecs = (bytes) => {
-                        const targetChunkSize = 2 * 1024 * 1024; // 🚀 INSTANT RESUME (v278): Smaller chunks (2MB) ensure faster resume recovery
+                        const targetChunkSize = 10 * 1024 * 1024; // Aim for 10MB chunks
                         let shards = Math.ceil(bytes / targetChunkSize);
                         if (shards < 1) shards = 1;
                         if (shards > 500) shards = 500; // Cap to prevent request overhead
                         
                         let lanes = 3;
-                        if (bytes < 5 * 1024 * 1024) lanes = 1;
+                        if (bytes < 10 * 1024 * 1024) lanes = 1;
                         
                         return { shards, lanes };
                     };
@@ -723,9 +681,6 @@
                     const shardPromises = [];
                     
                     for (let x = 0; x < specs.shards; x++) {
-                        // 🚀 PAUSE-RESPECT (v281): Stop spawning new shards if paused
-                        if (isUploadPaused) await uploadPausePromise;
-                        
                         // 🚀 STAGGERED IGNITION
                         await new Promise(r => setTimeout(r, 50));
                         
@@ -853,15 +808,14 @@
             fd.append('latitude', document.getElementById('latitude')?.value || 0);
             fd.append('longitude', document.getElementById('longitude')?.value || 0);
             fd.append('captureDate', document.getElementById('captureDate')?.value || '');
-            fd.append('imageMetadata', document.getElementById('imageMetadata')?.value || 'EXIF (embedded)'); 
-            fd.append('smartScanSummary', JSON.stringify(nitroMetadataSummary));
+            fd.append('imageMetadata', JSON.stringify(nitroMetadataSummary)); 
             
             // 💎 PREMIUM METADATA SYNC (v112)
             const isMulti = document.getElementById('multipleCamera')?.checked;
             const customCam = document.getElementById('cameraModels')?.value;
             fd.append('cameraConfig', isMulti ? 'multiple' : 'single');
             fd.append('cameraModels', customCam || (isMulti ? 'Multiple' : 'Standard'));
-            fd.append('userEmail', '<?php echo e(Auth::user()?->email ?? ""); ?>'); // 🔑 Backup identity
+            fd.append('userEmail', '{{ Auth::user()?->email ?? "" }}'); // 🔑 Backup identity
             // 🚀 Output Categories Sync
             const outputs = ['3D Tiles', 'OSGB']; // OSGB is now 1:1 synchronized
             if (document.getElementById('outDSM').checked) outputs.push('DSM');
@@ -870,9 +824,9 @@
             fd.append('outputCategories', JSON.stringify(outputs));
             // 🚀 PROJECT-INFINITY (v153): Extended Timeout & Heartbeat Pulse
             // This prevents the "100% Limbo" by allowing the server 5+ minutes to stitch 3GB data.
-            const res = await fetch('<?php echo e(route('api.upload.finalize')); ?>', {
+            const res = await fetch('/api/upload/finalize', {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>' },
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 body: fd,
                 // The browser will now wait patiently for the heavy 3D assembly
                 keepalive: true 
@@ -894,4 +848,4 @@
     }
   </script>
 </body>
-</html><?php /**PATH C:\Users\User\.antigravity\Projects\DataPortalV2\resources\views/portal/upload-data.blade.php ENDPATH**/ ?>
+</html>

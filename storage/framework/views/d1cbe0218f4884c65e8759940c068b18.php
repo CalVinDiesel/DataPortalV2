@@ -19,6 +19,14 @@
     .btn-google { background-color: #fff; color: #3c4043; border: 1px solid #dadce0; }
     .btn-google:hover { background-color: #f8f9fa; border-color: #dadce0; color: #3c4043; }
     .btn-social { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.625rem 1.25rem; font-weight: 500; }
+
+    /* 🚀 BROWSER OVERRIDE: Hide native browser password reveal buttons to prevent duplicates */
+    input::-ms-reveal,
+    input::-ms-clear,
+    input::-webkit-contacts-auto-fill-button,
+    input::-webkit-credentials-auto-fill-button {
+      display: none !important;
+    }
   </style>
 </head>
 <body class="min-vh-100 d-flex flex-column">

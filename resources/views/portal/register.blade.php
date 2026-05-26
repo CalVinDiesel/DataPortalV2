@@ -30,6 +30,14 @@
     /* Verified badge shown above form */
     .verified-badge { display: flex; align-items: center; gap: 0.5rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 1rem; font-size: 0.85rem; color: #166534; }
     .verified-badge img { width: 16px; height: 16px; }
+
+    /* 🚀 BROWSER OVERRIDE: Hide native browser password reveal buttons to prevent duplicates */
+    input::-ms-reveal,
+    input::-ms-clear,
+    input::-webkit-contacts-auto-fill-button,
+    input::-webkit-credentials-auto-fill-button {
+      display: none !important;
+    }
   </style>
 </head>
 <body class="min-vh-100 d-flex flex-column">
