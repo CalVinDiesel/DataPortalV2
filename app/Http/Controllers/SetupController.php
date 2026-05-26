@@ -41,6 +41,19 @@ class SetupController extends Controller
             return redirect('/login')->withErrors(['email' => 'Your setup link is invalid or has expired.']);
         }
 
+        $contactNumber = $request->input('contact_number');
+        $cleanNumber = preg_replace('/[^0-9]/', '', $contactNumber);
+
+        if (!empty($cleanNumber)) {
+            $exists = User::whereRaw("regexp_replace(contact_number, '[^0-9]', '', 'g') = ?", [$cleanNumber])
+                ->where('id', '!=', $user->id)
+                ->exists();
+
+            if ($exists) {
+                return back()->withErrors(['contact_number' => 'This contact number has already been used by other users in this data portal.'])->withInput();
+            }
+        }
+
         $action = $request->input('action');
 
         if ($action === 'password') {

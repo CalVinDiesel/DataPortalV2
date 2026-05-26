@@ -61,8 +61,27 @@ class AuthController extends Controller
     public function updateContact(Request $request)
     {
         $request->validate(['contactNumber' => 'nullable|string|max:64']);
+        
+        $contactNumber = $request->contactNumber;
+        if ($contactNumber) {
+            $cleanNumber = preg_replace('/[^0-9]/', '', $contactNumber);
+            if (!empty($cleanNumber)) {
+                $user = $request->user();
+                $exists = \App\Models\User::whereRaw("regexp_replace(contact_number, '[^0-9]', '', 'g') = ?", [$cleanNumber])
+                    ->where('id', '!=', $user->id)
+                    ->exists();
+                
+                if ($exists) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This contact number has already been used by other users in this data portal.'
+                    ], 422);
+                }
+            }
+        }
+
         $user = $request->user();
-        $user->contact_number = $request->contactNumber;
+        $user->contact_number = $contactNumber;
         $user->save();
 
         return response()->json(['success' => true, 'message' => 'Contact number updated.']);
