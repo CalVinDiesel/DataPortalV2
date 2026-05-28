@@ -1,0 +1,57 @@
+##############################################################################
+# DataPortalV2 — Docker Compose (Production)
+# Usage: docker compose up -d --build
+#
+# Services:
+#   app  — PHP 8.3 FPM + Nginx bundled together via Supervisor (port 80)
+#
+# The app container runs both Nginx (web gateway) and PHP-FPM (worker pool)
+# managed by Supervisord. This is the simplest single-container production
+# setup, perfect for a DigitalOcean Droplet or any single VPS server.
+##############################################################################
+
+services:
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dataportal_app
+    restart: unless-stopped
+
+    ports:
+      # Expose container port 80 on host port 80
+      # If you run Nginx on the host as a reverse proxy, change to "127.0.0.1:8080:80"
+      - "80:80"
+
+    volumes:
+      # ── Nitro Storage: Persist large file chunks between container restarts ──
+      # Maps the host directory to the container path set in NITRO_STORAGE_ROOT
+      - nitro_storage:/var/www/nitro_storage
+
+      # ── Laravel Storage: Persist uploaded files, logs, sessions ─────────────
+      - laravel_storage:/var/www/html/storage
+
+    environment:
+      # These override .env values at runtime. The .env file is loaded as the
+      # base, but these Docker-specific paths take precedence.
+      - NITRO_STORAGE_ROOT=/var/www/nitro_storage
+
+    env_file:
+      # Loads all other variables (DB credentials, SFTP, OAuth, etc.) from .env
+      - .env
+
+    networks:
+      - dataportal_net
+
+# ── Named Volumes (managed by Docker, persisted on the host) ─────────────────
+volumes:
+  nitro_storage:
+    driver: local
+  laravel_storage:
+    driver: local
+
+# ── Internal network ──────────────────────────────────────────────────────────
+networks:
+  dataportal_net:
+    driver: bridge

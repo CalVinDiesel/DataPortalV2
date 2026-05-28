@@ -1,0 +1,52 @@
+# Docker Build Context Exclusions
+# These files/folders are NOT sent to Docker during the build.
+# This keeps the build fast and the image lean.
+
+# Node modules (reinstalled inside the container during build)
+node_modules/
+
+# Local development files
+.env
+.env.local
+.env.*.local
+
+# Git history (not needed in production image)
+.git/
+.gitignore
+.gitattributes
+
+# Windows development scripts
+NITRO_START.bat
+NITRO_STOP.bat
+nitro_start.ps1
+
+# Tests (not needed in production)
+tests/
+phpunit.xml
+.phpunit.result.cache
+
+# IDE and editor configuration
+.vscode/
+.idea/
+.claude/
+*.code-workspace
+
+# Documentation (not needed in image)
+docs/
+*.md
+!README.md
+
+# Compiled local assets (rebuilt inside container from source)
+public/hot
+public/build/
+
+# Backup files
+*.backup
+*.bak
+original_upload_backup.*
+
+# Scratch files
+scratch/
+
+# Vendor (reinstalled via composer inside container)
+vendor/
