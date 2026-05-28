@@ -362,7 +362,8 @@ class AdminClientUploadController extends Controller
                 $disk->makeDirectory($dir);
             }
 
-            $hint = "Port 2223: /home/tiquan/uploads/{$sftpUser}/{$projId}/delivered/";
+            $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
+            $hint = "Port 2223: {$root}/uploads/{$sftpUser}/{$projId}/delivered/";
             return response()->json(['success' => true, 'path' => $hint]);
         } catch (\Exception $e) {
             \Log::error("Folder Provision Failed: " . $e->getMessage());

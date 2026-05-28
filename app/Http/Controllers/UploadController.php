@@ -166,7 +166,7 @@ class UploadController extends Controller
             // 🚀 ROLE-BASED PATHING (v164): Separate uploads/ and deliveries/
             $isAdmin = ($user && ($user->role === 'admin' || $user->role === 'superadmin'));
             
-            $diskRoot = rtrim(config('filesystems.disks.sftp_delivery.root', '/home/tiquan'), '/');
+            $diskRoot = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
             
             // 🚀 NESTED-PROJECT SYNC (v206): Ensure Nitro (browser) uploads use the exact same paths as SFTP.
             if ($isAdmin) {
@@ -467,7 +467,7 @@ class UploadController extends Controller
             $sftpUser = $user ? ($user->sftp_username ?: Str::slug($user->name)) : 'unknown-user';
             
             $isAdmin = ($user && ($user->role === 'admin' || $user->role === 'superadmin'));
-            $diskRoot = rtrim(config('filesystems.disks.sftp_delivery.root', '/home/tiquan'), '/');
+            $diskRoot = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
             
             if ($isAdmin) {
                 $relativeSftpPath = "uploads/{$sftpUser}/{$projectId}/delivered";
