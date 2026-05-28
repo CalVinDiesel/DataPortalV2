@@ -39,6 +39,11 @@ class ProxyController extends Controller
                 'glb'  => 'model/gltf-binary',
                 'gltf' => 'model/gltf+json',
                 'wasm' => 'application/wasm',
+                'png'  => 'image/png',
+                'jpg'  => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'gif'  => 'image/gif',
+                'webp' => 'image/webp',
             ];
 
             $contentType = $contentTypes[$ext] ?? 'application/octet-stream';

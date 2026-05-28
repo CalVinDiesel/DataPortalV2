@@ -9,7 +9,7 @@ class MapDataController extends Controller
 {
     public function index()
     {
-        $items = MapData::orderBy('updateDateTime', 'desc')->get();
+        $items = MapData::orderBy('title', 'asc')->get();
 
         // Rewrite any stored thumbnail URLs to always point to current server
         $items->transform(function ($item) {

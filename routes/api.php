@@ -26,6 +26,7 @@ Route::middleware('web')->group(function () {
     Route::post('/upload/sftp-project', [ProjectController::class, 'storeSftp'])->name('api.upload.sftp_project');
     Route::post('/upload/google-drive-project', [ProjectController::class, 'storeGoogleDrive'])->name('api.upload.google_drive_project');
     Route::post('/upload/onedrive-project', [ProjectController::class, 'storeOneDrive'])->name('api.upload.onedrive_project');
+    Route::get('/user/storage-quota', [ProjectController::class, 'getStorageQuota'])->name('api.user.storage_quota');
 
     Route::prefix('auth')->group(function () {
         Route::get('/me', [\App\Http\Controllers\AuthController::class, 'me']);
@@ -54,6 +55,7 @@ Route::middleware('web')->group(function () {
     Route::post('/admin/seed-showcases-from-locations', [AdminSyncController::class, 'seedShowcasesFromLocations']);
     Route::post('/admin/showcases-renumber', [AdminSyncController::class, 'showcasesRenumber']);
     Route::post('/admin/export-locations-json', [AdminSyncController::class, 'exportLocationsJson']);
+    Route::post('/admin/upload-map-thumbnail', [\App\Http\Controllers\UploadController::class, 'uploadMapThumbnail']);
 
     // Admin Client Uploads Routes
     Route::get('/admin/client-uploads', [AdminClientUploadController::class, 'getUploads'])->name('api.admin.uploads');

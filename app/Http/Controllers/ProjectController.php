@@ -80,7 +80,16 @@ class ProjectController extends Controller
     public function storeSftp(Request $request)
     {
         // Enforce role permission: Only trusted users and admins can use SFTP.
+        // 🚀 STORAGE QUOTA CHECK (v310)
+        if (ClientUpload::hasExceededStorageLimit(Auth::user()->email)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Storage Quota Exceeded. You have already used 100% of your 100 GB limit. Please delete old projects to free up space.'
+            ], 422);
+        }
+
         $role = Auth::user()->role;
+
         if (!in_array($role, ['trusted', 'admin', 'superadmin'])) {
             return response()->json(['success' => false, 'message' => 'SFTP upload is only available for trusted users.'], 403);
         }
@@ -266,6 +275,14 @@ class ProjectController extends Controller
 
     public function storeGoogleDrive(Request $request)
     {
+        // 🚀 STORAGE QUOTA CHECK (v310)
+        if (ClientUpload::hasExceededStorageLimit(Auth::user()->email)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Storage Quota Exceeded. You have already used 100% of your 100 GB limit. Please delete old projects to free up space.'
+            ], 422);
+        }
+
         $request->validate([
             'projectTitle' => 'required|string',
             'projectDescription' => 'required|string',
@@ -348,6 +365,15 @@ class ProjectController extends Controller
 
     public function storeOneDrive(Request $request)
     {
+        $onedriveSize = intval($request->onedriveSize ?? 0);
+        // 🚀 STORAGE QUOTA CHECK (v310)
+        if (ClientUpload::hasExceededStorageLimit(Auth::user()->email, $onedriveSize)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Storage Quota Exceeded. Registering this project would exceed your 100 GB limit. Please delete old projects to free up space.'
+            ], 422);
+        }
+
         $request->validate([
             'projectTitle' => 'required|string',
             'projectDescription' => 'required|string',
@@ -1253,6 +1279,24 @@ class ProjectController extends Controller
             'project' => $upload
         ]);
     }
+
+    public function getStorageQuota()
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $used = ClientUpload::calculateUserStorageUsed($user->email);
+        $limit = ClientUpload::getStorageLimitBytes();
+
+        return response()->json([
+            'success' => true,
+            'used_bytes' => $used,
+            'limit_bytes' => $limit,
+            'remaining_bytes' => max(0, $limit - $used),
+            'percent_used' => $limit > 0 ? round(($used / $limit) * 100, 2) : 0,
+            'has_exceeded' => $used >= $limit
+        ]);
+    }
 }
-
-

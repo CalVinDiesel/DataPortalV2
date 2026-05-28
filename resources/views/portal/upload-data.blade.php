@@ -599,6 +599,32 @@
         btn.disabled = true;
 
         const totalSizeBytes = pendingUploadFiles.reduce((acc, f) => acc + f.size, 0);
+
+        // 🚀 STORAGE QUOTA CHECK (v310)
+        try {
+            const quotaRes = await fetch('/api/user/storage-quota');
+            const quotaData = await quotaRes.json();
+            if (quotaData.success) {
+                const used = Number(quotaData.used_bytes) || 0;
+                const limit = Number(quotaData.limit_bytes) || 0;
+                if (used + totalSizeBytes > limit) {
+                    const usedGB = (used / (1024 * 1024 * 1024)).toFixed(2);
+                    const limitGB = (limit / (1024 * 1024 * 1024)).toFixed(0);
+                    const uploadGB = (totalSizeBytes / (1024 * 1024 * 1024)).toFixed(2);
+                    const remainingGB = Math.max(0, (limit - used) / (1024 * 1024 * 1024)).toFixed(2);
+                    
+                    alert(`Storage Quota Exceeded!\n\nThis upload is ${uploadGB} GB, but you only have ${remainingGB} GB remaining (used ${usedGB} GB of ${limitGB} GB limit).\n\nPlease delete some old projects in your dashboard to free up space.`);
+                    btn.disabled = false;
+                    isUploading = false;
+                    document.getElementById('uploadProgressContainer').style.display = 'none';
+                    document.getElementById('pauseBtn').style.display = 'none';
+                    return;
+                }
+            }
+        } catch (err) {
+            console.error("Quota preflight check failed:", err);
+        }
+
         const projectID = document.getElementById('projectID').value;
         const uploadId = 'up_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
         const csrfToken = '{{ csrf_token() }}';

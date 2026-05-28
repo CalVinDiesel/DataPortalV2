@@ -35,9 +35,11 @@ class ShowcaseController extends Controller
             }
         }
 
+        // Auto-heal display order gaps or duplicates on every page load / hard refresh
+        $this->renumber();
+
         // Return only the unique ones with their joined map data
-        $showcases = Showcase::whereIn('showcases.id', $uniqueIds)
-            ->select('showcases.*', 'map_data.title', 'map_data.thumbNailUrl', 'map_data.description')
+        $showcases = Showcase::select('showcases.*', 'map_data.title', 'map_data.thumbNailUrl', 'map_data.description')
             ->leftJoin('map_data', 'showcases.map_data_id', '=', 'map_data.mapDataID')
             ->orderBy('showcases.display_order', 'asc')
             ->get();
@@ -64,11 +66,23 @@ class ShowcaseController extends Controller
             return response()->json(['success' => false, 'message' => 'This specific 3D model showcase has been added into the showcase already.']);
         }
 
+        $targetOrder = intval($request->display_order);
+
+        // Shift all showcases with display_order >= targetOrder by 1
+        Showcase::where('display_order', '>=', $targetOrder)
+            ->increment('display_order');
+
         $showcases = Showcase::create([
             'map_data_id' => $request->map_data_id,
-            'display_order' => $request->display_order,
+            'display_order' => $targetOrder,
             'created_at' => now(),
         ]);
+
+        // Renumber all sequentially
+        $this->renumber();
+
+        // Refresh the model to get the updated renumbered order
+        $showcases->refresh();
 
         return response()->json(['success' => true, 'data' => $showcases]);
     }
@@ -81,8 +95,18 @@ class ShowcaseController extends Controller
         }
 
         if ($request->has('display_order')) {
-            $showcases->display_order = $request->display_order;
+            $targetOrder = intval($request->display_order);
+
+            // Shift all showcases with display_order >= targetOrder (excluding current showcase) by 1
+            Showcase::where('display_order', '>=', $targetOrder)
+                ->where('id', '!=', $showcases->id)
+                ->increment('display_order');
+
+            $showcases->display_order = $targetOrder;
             $showcases->save();
+
+            // Renumber all sequentially
+            $this->renumber();
         }
 
         return response()->json(['success' => true, 'data' => $showcases]);
@@ -98,10 +122,26 @@ class ShowcaseController extends Controller
         $map_dataId = $showcases->map_data_id;
         $showcases->delete();
 
+        // Renumber remaining ones to fill the gap
+        $this->renumber();
+
         if ($request->query('from') === 'both') {
             \App\Models\MapData::where('mapDataID', $map_dataId)->delete();
         }
 
         return response()->json(['success' => true, 'message' => 'Removed successfully.']);
+    }
+
+    /**
+     * Sequentially renumbers all showcases to heal gaps and duplicates.
+     */
+    private function renumber()
+    {
+        $items = Showcase::orderBy('display_order', 'asc')->orderBy('id', 'asc')->get();
+        $order = 0;
+        foreach ($items as $item) {
+            $item->display_order = $order++;
+            $item->save();
+        }
     }
 }

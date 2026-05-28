@@ -1114,18 +1114,20 @@
       function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
       function toImgSrc(url) { if (!url) return ''; var u = (url + '').trim(); return u ? u.replace(/ /g, '%20') : ''; }
       
-      var desiredOrder = ['KK_OSPREY', 'wismamerdeka', 'KB_3DTiles_Lite', 'fisheye_test_kolombong_18mac2025', 'ppns_ys', 'Keningau-Sabah-2026'];
+      function getDynamicCategory(item) {
+        var tileset = (item['3dTiles'] || '').toLowerCase();
+        var id = (item.mapDataID || item.map_data_id || item.id || '').toLowerCase();
+        if (tileset.indexOf('building_planning') !== -1 || tileset.indexOf('building') !== -1) {
+          return 'Building Planning';
+        }
+        if (id.indexOf('keningau') !== -1 || tileset.indexOf('keningau') !== -1) {
+          return 'Regional Planning';
+        }
+        return 'Kota Kinabalu';
+      }
+
       fetch(API_BASE + '/api/showcases').then(function (r) { return r.json(); }).then(function (rows) {
         if (!Array.isArray(rows) || rows.length === 0) return;
-        rows = rows.slice().sort(function (a, b) {
-          var idA = a.mapDataID || a.map_data_id || a.id || '';
-          var idB = b.mapDataID || b.map_data_id || b.id || '';
-          var posA = desiredOrder.indexOf(idA);
-          var posB = desiredOrder.indexOf(idB);
-          if (posA === -1) posA = 999;
-          if (posB === -1) posB = 999;
-          return posA - posB;
-        });
         var html = rows.map(function (r) {
           var id = r.mapDataID || r.map_data_id || r.id || '';
           var title = r.title || id;
@@ -1137,7 +1139,8 @@
           } else {
             finalSrc = 'https://placehold.co/400x220/' + getPremiumColor(id) + '?text=' + encodeURIComponent((title || '3D').substring(0, 20));
           }
-          return '<div class="col-lg-4 col-md-6" id="tile-showcase-' + esc(id) + '"><a href="/loading-3d?id=' + esc(id) + '" class="tile-3d-card" target="_blank" rel="noopener"><div class="tile-3d-img"><img src="' + finalSrc + '" alt="' + esc(title) + '" onerror="this.src=\'https://placehold.co/400x220/' + getPremiumColor(id) + '?text=3D+Model\'"></div><div class="tile-3d-body"><h6 class="tile-3d-title">' + esc(title) + '</h6><div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Kota Kinabalu</span></div><div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div></div></a></div>';
+          var category = getDynamicCategory(r);
+          return '<div class="col-lg-4 col-md-6" id="tile-showcase-' + esc(id) + '"><a href="/loading-3d?id=' + esc(id) + '" class="tile-3d-card" target="_blank" rel="noopener"><div class="tile-3d-img"><img src="' + finalSrc + '" alt="' + esc(title) + '" onerror="this.src=\'https://placehold.co/400x220/' + getPremiumColor(id) + '?text=3D+Model\'"></div><div class="tile-3d-body"><h6 class="tile-3d-title">' + esc(title) + '</h6><div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>' + esc(category) + '</span></div><div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div></div></a></div>';
         }).join('');
         container.innerHTML = html;
       }).catch(function () {});

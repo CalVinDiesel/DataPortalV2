@@ -496,6 +496,20 @@
           return alert("Form Incomplete! The following mandatory fields must be filled:\n\n• " + missing.join("\n• "));
       }
 
+      // 🚀 STORAGE QUOTA CHECK (v310)
+      try {
+        const quotaRes = await fetch('/api/user/storage-quota');
+        const quotaData = await quotaRes.json();
+        if (quotaData.success && quotaData.has_exceeded) {
+          const usedGB = (quotaData.used_bytes / (1024 * 1024 * 1024)).toFixed(2);
+          const limitGB = (quotaData.limit_bytes / (1024 * 1024 * 1024)).toFixed(0);
+          alert(`Storage Quota Exceeded!\n\nYou have already used ${usedGB} GB of your ${limitGB} GB available storage.\n\nPlease delete some old projects in your dashboard to free up space before registering new SFTP workspaces.`);
+          return;
+        }
+      } catch (err) {
+        console.error("Quota check failed:", err);
+      }
+
       const btn = document.getElementById('btnSubmitForm');
       const originalHtml = btn.innerHTML;
       btn.disabled = true;

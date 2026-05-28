@@ -261,6 +261,20 @@ class UploadController extends Controller
                 }
             }
 
+            // 🚀 STORAGE QUOTA CHECK (v310)
+            if (\App\Models\ClientUpload::hasExceededStorageLimit($email, $totalSizeBytes)) {
+                try {
+                    $this->recursiveDelete($targetDir);
+                } catch (\Exception $delEx) {
+                    Log::error("Failed to delete quota-exceeded directory: " . $delEx->getMessage());
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Storage Quota Exceeded. Finalizing this upload (' . round($totalSizeBytes / (1024 * 1024 * 1024), 2) . ' GB) would exceed your 100 GB limit. Please delete old projects to free up space.'
+                ], 422);
+            }
+
             // ── STEP 4: Save to DB first (always succeeds) ────────────────
             // 🚀 CAMERA STANDARDIZATION (v251): Map 'Standard'/'Multiple' and enforce format
             $camConfig = $request->cameraConfig; // 'single' or 'multiple'
@@ -494,13 +508,86 @@ class UploadController extends Controller
     }
 
     public function uploadPinImage(Request $request)
-
     {
         $request->validate(['pin_image' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048']);
-        $cloudinary = new \App\Helpers\CloudinaryHelper();
-        return response()->json([
-            'success' => true,
-            'url'     => $cloudinary->uploadPinImage($request->file('pin_image'))
+        
+        try {
+            $file = $request->file('pin_image');
+            $cloudName = config('services.cloudinary.cloud_name');
+            $apiKey    = config('services.cloudinary.api_key');
+            $apiSecret = config('services.cloudinary.api_secret');
+            
+            if (!empty($cloudName) && !empty($apiKey) && !empty($apiSecret)) {
+                $cloudinary = new \App\Helpers\CloudinaryHelper();
+                $url = $cloudinary->uploadPinImage($file);
+            } else {
+                $fileName = 'pin_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('uploads/pins'), $fileName);
+                $url = asset('uploads/pins/' . $fileName);
+                Log::info("ℹ️ Cloudinary credentials missing. Falling back to local pin image storage: {$url}");
+            }
+            
+            return response()->json([
+                'success' => true,
+                'url'     => $url
+            ]);
+        } catch (\Exception $e) {
+            Log::error("🚨 Pin image upload failed: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function uploadMapThumbnail(Request $request)
+    {
+        $request->validate([
+            'thumbnail' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
+        
+        try {
+            $file = $request->file('thumbnail');
+            
+            $cloudName = config('services.cloudinary.cloud_name');
+            $apiKey    = config('services.cloudinary.api_key');
+            $apiSecret = config('services.cloudinary.api_secret');
+            
+            if (!empty($cloudName) && !empty($apiKey) && !empty($apiSecret)) {
+                $cloudinary = new \App\Helpers\CloudinaryHelper();
+                $url = $cloudinary->uploadPinImage($file);
+            } else {
+                // Graceful local fallback for easier offline development or simple deployments
+                $fileName = 'thumbnail_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('uploads/thumbnails'), $fileName);
+                $url = asset('uploads/thumbnails/' . $fileName);
+                Log::info("ℹ️ Cloudinary credentials missing. Falling back to local thumbnail storage: {$url}");
+            }
+            
+            return response()->json([
+                'success' => true,
+                'url'     => $url
+            ]);
+        } catch (\Exception $e) {
+            Log::error("🚨 Map thumbnail upload failed: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function recursiveDelete($dir)
+    {
+        if (!file_exists($dir)) return;
+        if (is_file($dir)) {
+            @unlink($dir);
+            return;
+        }
+        $files = array_diff(scandir($dir), ['.', '..']);
+        foreach ($files as $file) {
+            $this->recursiveDelete("$dir/$file");
+        }
+        @rmdir($dir);
     }
 }

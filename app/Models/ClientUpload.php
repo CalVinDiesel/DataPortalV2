@@ -59,4 +59,32 @@ class ClientUpload extends Model
     {
         return $date->format('Y-m-d\TH:i:s.uP');
     }
+
+    /**
+     * Calculate total storage size in bytes used by the user (excluding hidden).
+     */
+    public static function calculateUserStorageUsed($email)
+    {
+        return (int) self::where('created_by_email', $email)
+            ->where('request_status', '!=', 'user_hidden')
+            ->sum('total_size_bytes');
+    }
+
+    /**
+     * Get the maximum storage limit in bytes (100 GB).
+     */
+    public static function getStorageLimitBytes()
+    {
+        return 107374182400; // 100 GB
+    }
+
+    /**
+     * Check if the user has exceeded their storage limit, optionally with an additional size.
+     */
+    public static function hasExceededStorageLimit($email, $additionalBytes = 0)
+    {
+        $used = self::calculateUserStorageUsed($email);
+        return ($used + $additionalBytes) > self::getStorageLimitBytes();
+    }
 }
+

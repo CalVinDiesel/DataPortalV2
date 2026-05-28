@@ -180,11 +180,15 @@
       var parsed = new URL(absoluteUrl);
       var pageOrigin = window.location.origin;
 
-      // If it's a known external host (like Cloudinary), or NOT localhost/127.0.0.1 and completely different origin,
-      // we should not overwrite it or normalize it.
-      if (parsed.hostname.indexOf('cloudinary.com') !== -1 || 
-          (parsed.origin !== pageOrigin && parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1' && (!API_BASE || parsed.origin !== new URL(API_BASE).origin))) {
+      // Always trust Cloudinary since it natively supports CORS
+      if (parsed.hostname.indexOf('cloudinary.com') !== -1) {
         return absoluteUrl;
+      }
+
+      // If it's a third-party different origin (e.g. sabahtourism.com, downbelowadventures.com),
+      // we MUST route it through our built-in high-speed /proxy endpoint so it bypasses CORS and loads on the map pin canvas!
+      if (parsed.origin !== pageOrigin && parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1' && (!API_BASE || parsed.origin !== new URL(API_BASE).origin)) {
+        return '/proxy?url=' + encodeURIComponent(absoluteUrl);
       }
 
       // Same origin as the current page — no rewrite needed
