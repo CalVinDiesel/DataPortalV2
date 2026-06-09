@@ -232,7 +232,7 @@
                       <div class="fw-bold mb-1"><i class="bx bx-server me-1"></i> SFTP File Location</div>
                       <div class="small text-muted mb-2">
                         <i class="bx bx-info-circle me-1"></i> Connect via WinSCP: 
-                        <strong><span id="detailSftpHostDisplay">{{ config('filesystems.disks.sftp_delivery.host') ?: request()->getHost() }}</span></strong> | Port: <strong><span id="detailSftpPortDisplay">{{ env('SFTP_USER_PORT', 2223) }}</span></strong> | User: <strong><span id="detailSftpUserDisplay">{{ config('filesystems.disks.sftp_delivery.username', 'tiquan') }}</span></strong>
+                        <strong><span id="detailSftpHostDisplay">{{ config('filesystems.disks.sftp_delivery.host') ?: request()->getHost() }}</span></strong> | Port: <strong><span id="detailSftpPortDisplay">{{ env('SFTP_USER_PORT', 2222) }}</span></strong> | User: <strong><span id="detailSftpUserDisplay">{{ config('filesystems.disks.sftp_delivery.username', 'tiquan') }}</span></strong>
                       </div>
                       <div class="d-flex align-items-center gap-2">
                         <code id="detailSftpPath" class="d-block p-2 bg-white border rounded flex-grow-1"

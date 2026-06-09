@@ -232,7 +232,7 @@ class ProjectController extends Controller
             'absolutePath' => rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/') . '/uploads/' . $sftpUser . '/' . $upload->project_id . '/',
             'clientPath'   => '/' . $upload->project_id . '/', 
             'host'         => config('filesystems.disks.sftp_delivery.host'),
-            'port'         => $isAdmin ? (int)env('SFTP_DELIVERY_PORT', 2222) : (int)env('SFTP_USER_PORT', 2223),
+            'port'         => $isAdmin ? (int)env('SFTP_DELIVERY_PORT', 2222) : (int)env('SFTP_USER_PORT', 2222),
         ];
 
         if ($isAdmin) {
@@ -583,7 +583,7 @@ class ProjectController extends Controller
             
             $portsToTry = [
                 (int)env('SFTP_DELIVERY_PORT', 2222),
-                (int)env('SFTP_USER_PORT', 2223)
+                (int)env('SFTP_USER_PORT', 2222)
             ];
 
             foreach ($portsToTry as $port) {

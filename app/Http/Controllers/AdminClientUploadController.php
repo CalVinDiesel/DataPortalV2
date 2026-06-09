@@ -363,7 +363,8 @@ class AdminClientUploadController extends Controller
             }
 
             $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
-            $hint = "Port 2223: {$root}/uploads/{$sftpUser}/{$projId}/delivered/";
+            $port = env('SFTP_USER_PORT', 2222);
+            $hint = "Port {$port}: {$root}/uploads/{$sftpUser}/{$projId}/delivered/";
             return response()->json(['success' => true, 'path' => $hint]);
         } catch (\Exception $e) {
             \Log::error("Folder Provision Failed: " . $e->getMessage());
@@ -379,7 +380,8 @@ class AdminClientUploadController extends Controller
         $projId = $u->project_id ?: 'unknown';
         
         $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
-        $hint = "Port 2223: {$root}/uploads/{$sftpUser}/{$projId}/delivered/";
+        $port = env('SFTP_USER_PORT', 2222);
+        $hint = "Port {$port}: {$root}/uploads/{$sftpUser}/{$projId}/delivered/";
         return response()->json(['success' => true, 'path' => $hint]);
     }
     public function updateDeliveryNotes(Request $request, $id)

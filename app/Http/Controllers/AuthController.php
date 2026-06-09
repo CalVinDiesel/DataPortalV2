@@ -28,7 +28,7 @@ class AuthController extends Controller
             'sftpPassword' => $hasSftpAccess ? ($user->sftp_password ?? '') : '',
             'viewablePassword' => $user->viewable_password ?? '',
             'sftpHost' => config('filesystems.disks.sftp_delivery.host') ?: $request->getHost(),
-            'sftpPort' => env('SFTP_USER_PORT', 2223),
+            'sftpPort' => env('SFTP_USER_PORT', 2222),
         ]);
     }
 
@@ -119,7 +119,7 @@ class AuthController extends Controller
             'sftpUsername' => $hasSftpAccess ? ($user->sftp_username ?? 'Not set') : 'Not set',
             'sftpPassword' => $hasSftpAccess ? ($user->sftp_password ?? '') : '',
             'sftpHost' => config('filesystems.disks.sftp_delivery.host') ?: $request->getHost(),
-            'sftpPort' => env('SFTP_USER_PORT', 2223),
+            'sftpPort' => env('SFTP_USER_PORT', 2222),
         ]);
     }
 

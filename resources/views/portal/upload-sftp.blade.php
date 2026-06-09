@@ -561,7 +561,7 @@
           
           // Show basic connection info
           document.getElementById('resHost').innerText = data.sftpDetails.host || '{{ config('filesystems.disks.sftp_delivery.host') ?: request()->getHost() }}';
-          document.getElementById('resPort').innerText = data.sftpDetails.port || '{{ env('SFTP_USER_PORT', 2223) }}';
+          document.getElementById('resPort').innerText = data.sftpDetails.port || '{{ env('SFTP_USER_PORT', 2222) }}';
           
           // 🚀 SMART-PATH SYNC (v118)
           document.getElementById('resClientPath').innerText = data.sftpDetails.clientPath || data.sftpDetails.remotePath;

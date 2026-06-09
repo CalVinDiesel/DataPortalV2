@@ -34,7 +34,7 @@ class UploadController extends Controller
             $pId   = $request->input('project_id') ?: $request->query('projectID');
             $file  = $request->file('file_chunk');
 
-            $nitroRoot = env('NITRO_STORAGE_ROOT', 'C:/DataPortal_Nitro_Storage');
+            $nitroRoot = config('filesystems.disks.nitro.root');
             
             // 🚀 NAMESPACE SEPARATION (v182): Prevent User vs Admin data mixing
             $subFolder = (strpos($uId, 'admin-del-') === 0) ? 'delivery_shards' : 'user_uploads';
@@ -140,7 +140,7 @@ class UploadController extends Controller
             ini_set('memory_limit', '-1');
 
             $projectId = $request->projectID;
-            $nitroRoot = env('NITRO_STORAGE_ROOT', 'C:/DataPortal_Nitro_Storage');
+            $nitroRoot = config('filesystems.disks.nitro.root');
             $targetDir = $nitroRoot . '/' . $projectId;
 
             if (!file_exists($targetDir)) mkdir($targetDir, 0777, true);
@@ -457,7 +457,7 @@ class UploadController extends Controller
             $upload = \App\Models\ClientUpload::where('project_id', $projectId)->first();
             if (!$upload) throw new \Exception("Upload record not found.");
 
-            $nitroRoot = env('NITRO_STORAGE_ROOT', 'C:/DataPortal_Nitro_Storage');
+            $nitroRoot = config('filesystems.disks.nitro.root');
             $targetDir = $nitroRoot . '/' . $projectId;
 
             if (!file_exists($targetDir)) throw new \Exception("Local source directory not found: {$targetDir}");

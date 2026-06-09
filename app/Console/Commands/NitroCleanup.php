@@ -28,7 +28,7 @@ class NitroCleanup extends Command
     public function handle()
     {
         $hours = $this->option('hours');
-        $nitroRoot = env('NITRO_STORAGE_ROOT', 'C:/DataPortal_Nitro_Storage');
+        $nitroRoot = config('filesystems.disks.nitro.root');
         
         $this->info("🚀 Starting Nitro Cleanup (Older than {$hours} hours)...");
         
