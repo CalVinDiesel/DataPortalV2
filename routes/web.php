@@ -11,6 +11,10 @@ use App\Mail\NewRequestAlert;
 use App\Mail\ContactInquiry;
 use App\Http\Controllers\ProjectController;
 
+Route::get('/health', function () {
+    return response('OK', 200);
+});
+
 Route::post('/contact', function (Request $request) {
     $request->validate([
         'name' => 'required|string|max:255',
