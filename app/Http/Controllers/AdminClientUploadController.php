@@ -363,7 +363,7 @@ class AdminClientUploadController extends Controller
             }
 
             $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
-            $port = env('SFTP_USER_PORT', 2222);
+            $port = env('SFTP_PORT', 2222);
             $hint = "Port {$port}: {$root}/uploads/{$sftpUser}/{$projId}/delivered/";
             return response()->json(['success' => true, 'path' => $hint]);
         } catch (\Exception $e) {
@@ -380,7 +380,7 @@ class AdminClientUploadController extends Controller
         $projId = $u->project_id ?: 'unknown';
         
         $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
-        $port = env('SFTP_USER_PORT', 2222);
+        $port = env('SFTP_PORT', 2222);
         $hint = "Port {$port}: {$root}/uploads/{$sftpUser}/{$projId}/delivered/";
         return response()->json(['success' => true, 'path' => $hint]);
     }

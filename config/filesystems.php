@@ -65,7 +65,7 @@ return [
             'host'            => env('SFTP_DELIVERY_HOST'),
             'username'        => env('SFTP_DELIVERY_USERNAME'),
             'password'        => env('SFTP_DELIVERY_PASSWORD'),
-            'port'            => (int) env('SFTP_DELIVERY_PORT', 22),
+            'port'            => (int) env('SFTP_PORT', 22),
             'root'            => env('SFTP_DELIVERY_ROOT', '/'),
             'visibility'      => 'public',
             'directory_visibility' => 'public',

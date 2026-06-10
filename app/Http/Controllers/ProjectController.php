@@ -232,7 +232,7 @@ class ProjectController extends Controller
             'absolutePath' => rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/') . '/uploads/' . $sftpUser . '/' . $upload->project_id . '/',
             'clientPath'   => '/' . $upload->project_id . '/', 
             'host'         => config('filesystems.disks.sftp_delivery.host'),
-            'port'         => $isAdmin ? (int)env('SFTP_DELIVERY_PORT', 2222) : (int)env('SFTP_USER_PORT', 2222),
+            'port'         => (int)env('SFTP_PORT', 2222),
         ];
 
         if ($isAdmin) {
@@ -577,22 +577,10 @@ class ProjectController extends Controller
         $remotePath = "{$baseUploadRoot}/uploads/{$sftpUser}/{$upload->project_id}";
 
         try {
-            // 🚀 SMART-PORT-AWARE SCAN (v207): Try Admin port first, fallback to Client port
-            $ssh = null;
-            $finalRemotePath = $remotePath; // Default to absolute for Admin
-            
-            $portsToTry = [
-                (int)env('SFTP_DELIVERY_PORT', 2222),
-                (int)env('SFTP_USER_PORT', 2222)
-            ];
-
-            foreach ($portsToTry as $port) {
-                $tempSsh = new \phpseclib3\Net\SSH2(config('filesystems.disks.sftp_delivery.host'), $port);
-                if ($tempSsh->login(config('filesystems.disks.sftp_delivery.username'), config('filesystems.disks.sftp_delivery.password'))) {
-                    $ssh = $tempSsh;
-                    // Note: We use absolute paths for both ports because the master user is not jailed.
-                    break;
-                }
+            $port = (int)env('SFTP_PORT', 2222);
+            $tempSsh = new \phpseclib3\Net\SSH2(config('filesystems.disks.sftp_delivery.host'), $port);
+            if ($tempSsh->login(config('filesystems.disks.sftp_delivery.username'), config('filesystems.disks.sftp_delivery.password'))) {
+                $ssh = $tempSsh;
             }
 
             if (!$ssh) {
