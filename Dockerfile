@@ -32,7 +32,7 @@ RUN npm run build
 
 
 # ── Stage 2: PHP 8.3 FPM Production Image ────────────────────────────────────
-FROM php:8.3-fpm-bookworm
+FROM php:8.4-fpm-bookworm
 
 # Install system dependencies required by PHP extensions and SFTP/SSH libraries
 RUN apt-get update && apt-get install -y \
