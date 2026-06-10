@@ -93,7 +93,7 @@ RUN chown -R www-data:www-data /var/www/html/storage \
 # ── Copy production configuration files ──────────────────────────────────────
 COPY docker/nginx.conf /etc/nginx/sites-available/default
 RUN rm -f /usr/local/etc/php-fpm.d/www.conf /usr/local/etc/php-fpm.d/zz-docker.conf
-COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/dataportal.conf
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/zz-dataportal.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/php.ini /usr/local/etc/php/conf.d/dataportal.ini
 COPY docker/entrypoint.sh /entrypoint.sh
