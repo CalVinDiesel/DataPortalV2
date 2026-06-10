@@ -486,7 +486,7 @@
             })
             .then(function (up) {
               if (up.status === 200 && up.body.success && up.body.url) {
-                // Let the Cloudinary URL be saved directly into MapData via backend
+                // Let the uploaded image URL be saved directly into MapData via backend
                 return saveMapData(buildPayload(up.body.url)).then(onSaved);
               }
               var msg = up.body && up.body.message ? up.body.message : ('Upload failed (HTTP ' + up.status + '). ' + (up.text && up.text.length < 200 ? up.text : ''));

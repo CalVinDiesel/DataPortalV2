@@ -513,19 +513,9 @@ class UploadController extends Controller
         
         try {
             $file = $request->file('pin_image');
-            $cloudName = config('services.cloudinary.cloud_name');
-            $apiKey    = config('services.cloudinary.api_key');
-            $apiSecret = config('services.cloudinary.api_secret');
-            
-            if (!empty($cloudName) && !empty($apiKey) && !empty($apiSecret)) {
-                $cloudinary = new \App\Helpers\CloudinaryHelper();
-                $url = $cloudinary->uploadPinImage($file);
-            } else {
-                $fileName = 'pin_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-                $file->move(public_path('uploads/pins'), $fileName);
-                $url = asset('uploads/pins/' . $fileName);
-                Log::info("ℹ️ Cloudinary credentials missing. Falling back to local pin image storage: {$url}");
-            }
+            $fileName = 'pin_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('uploads/pins'), $fileName);
+            $url = asset('uploads/pins/' . $fileName);
             
             return response()->json([
                 'success' => true,
@@ -549,20 +539,9 @@ class UploadController extends Controller
         try {
             $file = $request->file('thumbnail');
             
-            $cloudName = config('services.cloudinary.cloud_name');
-            $apiKey    = config('services.cloudinary.api_key');
-            $apiSecret = config('services.cloudinary.api_secret');
-            
-            if (!empty($cloudName) && !empty($apiKey) && !empty($apiSecret)) {
-                $cloudinary = new \App\Helpers\CloudinaryHelper();
-                $url = $cloudinary->uploadPinImage($file);
-            } else {
-                // Graceful local fallback for easier offline development or simple deployments
-                $fileName = 'thumbnail_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-                $file->move(public_path('uploads/thumbnails'), $fileName);
-                $url = asset('uploads/thumbnails/' . $fileName);
-                Log::info("ℹ️ Cloudinary credentials missing. Falling back to local thumbnail storage: {$url}");
-            }
+            $fileName = 'thumbnail_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('uploads/thumbnails'), $fileName);
+            $url = asset('uploads/thumbnails/' . $fileName);
             
             return response()->json([
                 'success' => true,

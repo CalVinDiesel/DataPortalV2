@@ -100,17 +100,10 @@ class MapDataController extends Controller
     {
         // 1. Check explicitly provided URL
         if (!empty($url)) {
-            // v176: Robust external URL detection. 
-            // If it's a Cloudinary URL or starts with http and isn't our own domain, trust it.
             if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
                 $appUrl = url('/');
                 $appHost = parse_url($appUrl, PHP_URL_HOST);
                 $urlHost = parse_url($url, PHP_URL_HOST);
-                
-                // Always trust Cloudinary
-                if ($urlHost && str_contains($urlHost, 'cloudinary.com')) {
-                    return $url;
-                }
                 
                 // If it's a different host and not a local dev address, trust it
                 if ($urlHost && $urlHost !== $appHost && !in_array($urlHost, ['localhost', '127.0.0.1'])) {

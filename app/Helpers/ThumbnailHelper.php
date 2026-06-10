@@ -34,17 +34,12 @@ class ThumbnailHelper
 
         $url = trim($rawUrl);
 
-        // 🛡️ External URL Protection (v176): If it's a Cloudinary, Google Drive, Dropbox, etc. external host,
+        // 🛡️ External URL Protection (v176): If it's an external host,
         // bypass filename lowercasing/normalization to preserve case-sensitive query parameters and IDs.
         if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
             $appUrl = url('/');
             $appHost = parse_url($appUrl, PHP_URL_HOST);
             $urlHost = parse_url($url, PHP_URL_HOST);
-
-            // Always trust Cloudinary
-            if ($urlHost && str_contains($urlHost, 'cloudinary.com')) {
-                return $url;
-            }
 
             // If it's a different host and not a local dev address, trust it completely and return as-is
             if ($urlHost && $urlHost !== $appHost && !in_array($urlHost, ['localhost', '127.0.0.1'])) {
