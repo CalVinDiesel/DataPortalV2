@@ -86,7 +86,7 @@ class AdminUserController extends Controller
             
             // Force 777 permissions using SSH if possible
             try {
-                $sshPort = (int)config('filesystems.disks.sftp_delivery.port', 2222);
+                $sshPort = (int)config('filesystems.disks.sftp_delivery.port', 22);
                 $ssh = new \phpseclib3\Net\SSH2(config('filesystems.disks.sftp_delivery.host'), $sshPort);
                 if ($ssh->login(config('filesystems.disks.sftp_delivery.username'), config('filesystems.disks.sftp_delivery.password'))) {
                     $baseUploadRoot = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');

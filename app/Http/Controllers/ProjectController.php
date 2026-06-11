@@ -198,7 +198,7 @@ class ProjectController extends Controller
 
             // 🚀 MASTER-FORCE (v123): Use SSH to create folder with 777 immediately
             try {
-                $sshPort = (int)config('filesystems.disks.sftp_delivery.port', 2222);
+                $sshPort = (int)config('filesystems.disks.sftp_delivery.port', 22);
                 $ssh = new \phpseclib3\Net\SSH2(config('filesystems.disks.sftp_delivery.host'), $sshPort);
                 if ($ssh->login(config('filesystems.disks.sftp_delivery.username'), config('filesystems.disks.sftp_delivery.password'))) {
                     $baseUploadRoot = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
@@ -567,7 +567,7 @@ class ProjectController extends Controller
         $remotePath = "{$baseUploadRoot}/uploads/{$sftpUser}/{$upload->project_id}";
 
         try {
-            $port = (int)env('SFTP_PORT', 2222);
+            $port = (int)config('filesystems.disks.sftp_delivery.port', 22);
             $tempSsh = new \phpseclib3\Net\SSH2(config('filesystems.disks.sftp_delivery.host'), $port);
             if ($tempSsh->login(config('filesystems.disks.sftp_delivery.username'), config('filesystems.disks.sftp_delivery.password'))) {
                 $ssh = $tempSsh;
