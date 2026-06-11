@@ -37,6 +37,10 @@ return [
 
     'mailers' => [
 
+        'temadigital_api' => [
+            'transport' => 'temadigital_api',
+        ],
+
         'smtp' => [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),

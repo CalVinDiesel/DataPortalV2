@@ -1,6 +1,90 @@
 {
     "locations": [
         {
+            "id": "Bukit-Botak",
+            "name": "Bukit Botak",
+            "description": "3D model of Bukit Botak",
+            "coordinates": {
+                "longitude": 116.1558,
+                "latitude": 6.0881,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://example.com/tileset.json"
+            },
+            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1779249953/Bukit_Botak_focstq.jpg"
+        },
+        {
+            "id": "Kokol-Hill",
+            "name": "Kokol Hill Menggatal",
+            "description": "3D Model of Kokol Hill",
+            "coordinates": {
+                "longitude": 116.2048,
+                "latitude": 6.0042,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://example.com/tileset.json"
+            },
+            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1779249951/Kokol_Hill_Viewpoint_jq5lz9.jpg"
+        },
+        {
+            "id": "Kudat-Point",
+            "name": "Kudat Point",
+            "description": "3D model of Kudat",
+            "coordinates": {
+                "longitude": 116.82531,
+                "latitude": 6.88684,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://example.com/tileset.json"
+            },
+            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1779249951/Kudat_Point_tjxv37.jpg"
+        },
+        {
+            "id": "Mount-Kinabalu",
+            "name": "Mount Kinabalu",
+            "description": "3D model of Mount Kinabalu",
+            "coordinates": {
+                "longitude": 116.5587,
+                "latitude": 6.0751,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://example.com/tileset.json"
+            },
+            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1779249951/Mount_Kinabalu_myz4nu.jpg"
+        },
+        {
+            "id": "Papar-Town",
+            "name": "Papar Town",
+            "description": "3d model of Papar Town",
+            "coordinates": {
+                "longitude": 115.93333,
+                "latitude": 5.73333,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://example.com/tileset.json"
+            },
+            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1779249952/Papar_Town_nxqsnh.jpg"
+        },
+        {
+            "id": "Rasaria-Resort",
+            "name": "Rasaria Resort",
+            "description": "3d map pin of rasaria",
+            "coordinates": {
+                "longitude": 116.1482,
+                "latitude": 6.1535,
+                "height": 50
+            },
+            "dataPaths": {
+                "tileset": "https://example.com/tileset.json"
+            },
+            "thumbnailUrl": "https://www.downbelowadventures.com/wp-content/uploads/2016/05/swimming-pool.jpg"
+        },
+        {
             "id": "KK_OSPREY",
             "name": "KK OSPREY",
             "description": "3D model of Kota Kinabalu area.",
@@ -111,90 +195,6 @@
                 "tileset": "https://example.com/tileset.json"
             },
             "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1778826277/Sepanggar_Island_wvuy8b.jpg"
-        },
-        {
-            "id": "Bukit-Botak",
-            "name": "Bukit Botak",
-            "description": "3D model of Bukit Botak",
-            "coordinates": {
-                "longitude": 116.1558,
-                "latitude": 6.0881,
-                "height": 50
-            },
-            "dataPaths": {
-                "tileset": "https://example.com/tileset.json"
-            },
-            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1779249953/Bukit_Botak_focstq.jpg"
-        },
-        {
-            "id": "Kokol-Hill",
-            "name": "Kokol Hill Menggatal",
-            "description": "3D Model of Kokol Hill",
-            "coordinates": {
-                "longitude": 116.2048,
-                "latitude": 6.0042,
-                "height": 50
-            },
-            "dataPaths": {
-                "tileset": "https://example.com/tileset.json"
-            },
-            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1779249951/Kokol_Hill_Viewpoint_jq5lz9.jpg"
-        },
-        {
-            "id": "Kudat-Point",
-            "name": "Kudat Point",
-            "description": "3D model of Kudat",
-            "coordinates": {
-                "longitude": 116.82531,
-                "latitude": 6.88684,
-                "height": 50
-            },
-            "dataPaths": {
-                "tileset": "https://example.com/tileset.json"
-            },
-            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1779249951/Kudat_Point_tjxv37.jpg"
-        },
-        {
-            "id": "Mount-Kinabalu",
-            "name": "Mount Kinabalu",
-            "description": "3D model of Mount Kinabalu",
-            "coordinates": {
-                "longitude": 116.5587,
-                "latitude": 6.0751,
-                "height": 50
-            },
-            "dataPaths": {
-                "tileset": "https://example.com/tileset.json"
-            },
-            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1779249951/Mount_Kinabalu_myz4nu.jpg"
-        },
-        {
-            "id": "Papar-Town",
-            "name": "Papar Town",
-            "description": "3d model of Papar Town",
-            "coordinates": {
-                "longitude": 115.93333,
-                "latitude": 5.73333,
-                "height": 50
-            },
-            "dataPaths": {
-                "tileset": "https://example.com/tileset.json"
-            },
-            "thumbnailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1779249952/Papar_Town_nxqsnh.jpg"
-        },
-        {
-            "id": "Rasaria-Resort",
-            "name": "Rasaria Resort",
-            "description": "3d map pin of rasaria",
-            "coordinates": {
-                "longitude": 116.1482,
-                "latitude": 6.1535,
-                "height": 50
-            },
-            "dataPaths": {
-                "tileset": "https://example.com/tileset.json"
-            },
-            "thumbnailUrl": "https://www.downbelowadventures.com/wp-content/uploads/2016/05/swimming-pool.jpg"
         },
         {
             "id": "Tamparuli-Point",

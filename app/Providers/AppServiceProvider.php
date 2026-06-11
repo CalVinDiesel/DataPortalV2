@@ -22,6 +22,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \Illuminate\Support\Facades\Mail::extend('temadigital_api', function (array $config) {
+            return new \App\Mail\Transport\TemaDigitalApiTransport();
+        });
+
         Gate::define('admin', function (User $user) {
             return in_array($user->role, ['admin', 'superadmin']);
         });
