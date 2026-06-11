@@ -71,28 +71,8 @@ class AdminUserController extends Controller
             $user->sftp_username = \Illuminate\Support\Str::slug($user->name) . '_' . strtolower(\Illuminate\Support\Str::random(6));
             $user->sftp_password = $rawPassword;
             $user->save();
-
-            // 🚀 SFTPGO SYNC (v153): Must use a Hash (Argon2id) for SFTPGo to accept the password
-            try {
-                \Illuminate\Support\Facades\DB::table('users')->where('username', $user->sftp_username)->update([
-                    'password' => password_hash($rawPassword, PASSWORD_ARGON2ID),
-                    'updated_at' => (int)(microtime(true) * 1000)
-                ]);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning("SFTPGo Sync failed during upgradeTrusted generation: " . $e->getMessage());
-            }
         } else {
             $user->save();
-
-            // If the user already has credentials, ensure their password is in SFTPGo database as an Argon2id hash.
-            try {
-                \Illuminate\Support\Facades\DB::table('users')->where('username', $user->sftp_username)->update([
-                    'password' => password_hash($user->sftp_password, PASSWORD_ARGON2ID),
-                    'updated_at' => (int)(microtime(true) * 1000)
-                ]);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning("SFTPGo Sync failed during upgradeTrusted sync: " . $e->getMessage());
-            }
         }
 
         // AUTO-CREATE PHYSICAL SFTP HOME DIRECTORY

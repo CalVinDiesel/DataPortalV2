@@ -247,16 +247,6 @@ class ProjectController extends Controller
                 $user->sftp_password = $rawPassword; // This will be ENCRYPTED in the DB because of the cast in User model
                 $user->save();
                 
-                // 🚀 SFTPGO SYNC (v153): Must use a Hash (Argon2id) for SFTPGo to accept the password
-                try {
-                    DB::table('users')->where('username', $user->sftp_username)->update([
-                        'password' => password_hash($rawPassword, PASSWORD_ARGON2ID),
-                        'updated_at' => (int)(microtime(true) * 1000)
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::warning("SFTPGo Sync failed during generation: " . $e->getMessage());
-                }
-                
                 $sftpDetails['username'] = $user->sftp_username;
                 $sftpDetails['password'] = $rawPassword; // Give the raw password ONCE
             } else {

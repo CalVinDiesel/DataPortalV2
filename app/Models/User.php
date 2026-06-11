@@ -13,6 +13,21 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    protected static function booted()
+    {
+        static::saved(function ($user) {
+            if ($user->wasRecentlyCreated || $user->wasChanged(['role', 'is_active', 'sftp_username', 'sftp_password'])) {
+                \App\Services\SFTPGoService::syncUser($user);
+            }
+        });
+
+        static::deleted(function ($user) {
+            if ($user->sftp_username) {
+                \App\Services\SFTPGoService::deleteUser($user->sftp_username);
+            }
+        });
+    }
+
     protected $fillable = [
         'name', 'email', 'password', 'username', 'contact_number', 'role', 
         'provider', 'stripe_customer_id', 'is_active', 'invitation_token', 

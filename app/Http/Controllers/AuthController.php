@@ -135,16 +135,6 @@ class AuthController extends Controller
         $user->sftp_password = $request->newPassword;
         $user->save();
 
-        // 🚀 SFTPGO SYNC (v153): Must use a Hash (Argon2id) for SFTPGo to accept the password
-        try {
-            \Illuminate\Support\Facades\DB::table('users')->where('username', $user->sftp_username)->update([
-                'password' => password_hash($request->newPassword, PASSWORD_ARGON2ID),
-                'updated_at' => (int)(microtime(true) * 1000)
-            ]);
-        } catch (\Exception $e) {
-            \Log::warning("SFTPGo Sync failed during manual update: " . $e->getMessage());
-        }
-
         return response()->json(['success' => true, 'message' => 'SFTP password updated.']);
     }
 }
