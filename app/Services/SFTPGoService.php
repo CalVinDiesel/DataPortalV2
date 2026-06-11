@@ -9,25 +9,62 @@ use Illuminate\Support\Facades\Log;
 class SFTPGoService
 {
     /**
+     * Get the JWT access token from SFTPGo.
+     * Caches the token for 15 minutes to optimize performance.
+     */
+    protected static function getToken()
+    {
+        $apiUrl = env('SFTPGO_API_URL');
+        $username = env('SFTPGO_ADMIN_USERNAME');
+        $password = env('SFTPGO_ADMIN_PASSWORD');
+
+        if (empty($apiUrl) || empty($username) || empty($password)) {
+            return null;
+        }
+
+        $apiUrl = rtrim($apiUrl, '/');
+
+        try {
+            return cache()->remember('sftpgo_api_token', 900, function () use ($apiUrl, $username, $password) {
+                Log::info("SFTPGo API: Requesting new JWT token.");
+                $response = Http::withBasicAuth($username, $password)
+                    ->get($apiUrl . '/api/v2/token');
+
+                if ($response->successful()) {
+                    return $response->json('access_token');
+                }
+
+                Log::error("SFTPGo API: Failed to fetch JWT token. Status: " . $response->status() . " Body: " . $response->body());
+                return null;
+            });
+        } catch (\Exception $e) {
+            Log::error("SFTPGo API: Exception fetching token: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Get a configured HTTP client for the SFTPGo REST API.
      * Returns null if the required configuration is missing.
      */
     protected static function getClient()
     {
         $apiUrl = env('SFTPGO_API_URL');
-        $username = env('SFTPGO_ADMIN_USERNAME');
-        $password = env('SFTPGO_ADMIN_PASSWORD');
+        if (empty($apiUrl)) {
+            Log::info("SFTPGo API: Sync skipped because SFTPGO_API_URL is not configured yet in the .env file.");
+            return null;
+        }
 
-        // Graceful fallback: skip if configuration is not yet defined
-        if (empty($apiUrl) || empty($username) || empty($password)) {
-            Log::info("SFTPGo API: Sync skipped because API keys are not configured yet in the .env file.");
+        $token = self::getToken();
+        if (empty($token)) {
+            Log::warning("SFTPGo API: Sync skipped because API token could not be obtained.");
             return null;
         }
 
         $apiUrl = rtrim($apiUrl, '/');
 
         return Http::baseUrl($apiUrl . '/api/v2')
-            ->withBasicAuth($username, $password)
+            ->withToken($token)
             ->acceptJson();
     }
 
