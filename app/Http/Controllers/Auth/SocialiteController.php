@@ -12,8 +12,13 @@ class SocialiteController extends Controller
 {
     private function getDriver($provider)
     {
+        $options = [];
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' && file_exists('C:/php85/cacert.pem')) {
+            $options['verify'] = 'C:/php85/cacert.pem';
+        }
+
         return Socialite::driver($provider)->setHttpClient(
-            new \GuzzleHttp\Client(['verify' => 'C:/php85/cacert.pem'])
+            new \GuzzleHttp\Client($options)
         );
     }
 
