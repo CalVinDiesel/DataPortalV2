@@ -88,10 +88,19 @@ class ProjectController extends Controller
             ], 422);
         }
 
-        $role = Auth::user()->role;
+        $user = Auth::user();
+        $role = $user->role;
 
         if (!in_array($role, ['trusted', 'admin', 'superadmin'])) {
             return response()->json(['success' => false, 'message' => 'SFTP upload is only available for trusted users.'], 403);
+        }
+
+        // Generate credentials early so the folder paths match the SFTP user home directory
+        if (!$user->sftp_username) {
+            $rawPassword = \Illuminate\Support\Str::random(12);
+            $user->sftp_username = \Illuminate\Support\Str::slug($user->name) . '_' . strtolower(\Illuminate\Support\Str::random(6));
+            $user->sftp_password = $rawPassword;
+            $user->save();
         }
 
         $request->validate([
@@ -142,7 +151,7 @@ class ProjectController extends Controller
         try {
             $sftpDisk = Storage::disk('sftp_delivery');
             $user = Auth::user();
-            $sftpUser = $user->sftp_username ?: Str::slug($user->name);
+            $sftpUser = $user->sftp_username;
 
             // 1. User Upload Folder (Locker-aware) - 🚀 PATH-SYNC (v163)
             $diskRoot = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
@@ -226,7 +235,7 @@ class ProjectController extends Controller
         // Return connection details for the UI. (Personalized for the user)
         $user = Auth::user();
         $isAdmin = ($user->role === 'admin' || $user->role === 'superadmin');
-        $sftpUser = $user->sftp_username ?: Str::slug($user->name);
+        $sftpUser = $user->sftp_username;
         
         $sftpDetails = [
             'absolutePath' => rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/') . '/uploads/' . $sftpUser . '/' . $upload->project_id . '/',
@@ -240,25 +249,14 @@ class ProjectController extends Controller
             $sftpDetails['username'] = config('filesystems.disks.sftp_delivery.username');
             $sftpDetails['password'] = config('filesystems.disks.sftp_delivery.password');
         } else {
-            // Generate credentials if missing
-            if (!$user->sftp_username) {
-                $rawPassword = Str::random(12);
-                $user->sftp_username = Str::slug($user->name) . '_' . strtolower(Str::random(6));
-                $user->sftp_password = $rawPassword; // This will be ENCRYPTED in the DB because of the cast in User model
-                $user->save();
-                
-                $sftpDetails['username'] = $user->sftp_username;
-                $sftpDetails['password'] = $rawPassword; // Give the raw password ONCE
-            } else {
-                // Ensure they are synced to SFTPGo just in case they were missing
-                try {
-                    \App\Services\SFTPGoService::syncUser($user);
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to sync user on storeSftp: " . $e->getMessage());
-                }
-                $sftpDetails['username'] = $user->sftp_username;
-                $sftpDetails['password'] = $user->sftp_password; // 🚀 Show plain text
+            // Ensure they are synced to SFTPGo just in case they were missing
+            try {
+                \App\Services\SFTPGoService::syncUser($user);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to sync user on storeSftp: " . $e->getMessage());
             }
+            $sftpDetails['username'] = $user->sftp_username;
+            $sftpDetails['password'] = $user->sftp_password; // 🚀 Show plain text
         }
 
         return response()->json([
