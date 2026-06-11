@@ -583,7 +583,6 @@ class ProjectController extends Controller
                 return response()->json(['success' => false, 'message' => 'Cloud connection failed on all ports.']);
             }
 
-            $remotePath = $finalRemotePath;
             \Log::info("Smart Scan Active. Path: " . $remotePath);
 
             // 1. Total Size (du -sb)

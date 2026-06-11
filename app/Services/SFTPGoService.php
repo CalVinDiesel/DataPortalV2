@@ -128,10 +128,10 @@ class SFTPGoService
             if ($response->successful()) {
                 // Update User
                 Log::info("SFTPGo API: Syncing update for user {$user->sftp_username}");
-                $existingData = $response->json();
+                $existingData = json_decode($response->body()) ?: new \stdClass();
                 
-                // Merge data and preserve unmanaged attributes
-                $payload = array_merge($existingData, $userData);
+                // Merge data and preserve unmanaged attributes (casting $existingData to array shallowly, nested objects remain stdClass)
+                $payload = array_merge((array) $existingData, $userData);
 
                 // Omit password if it is empty/not updated (SFTPGo keeps existing password)
                 if (empty($password)) {
