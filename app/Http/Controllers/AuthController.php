@@ -14,6 +14,14 @@ class AuthController extends Controller
         $user = $request->user();
         $hasSftpAccess = in_array($user->role, ['trusted', 'admin', 'superadmin']);
 
+        if ($hasSftpAccess && $user->sftp_username) {
+            try {
+                \App\Services\SFTPGoService::syncUser($user);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to sync user on profile view: " . $e->getMessage());
+            }
+        }
+
         return response()->json([
             'success' => true,
             'name' => $user->name,

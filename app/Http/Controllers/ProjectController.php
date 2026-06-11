@@ -250,6 +250,12 @@ class ProjectController extends Controller
                 $sftpDetails['username'] = $user->sftp_username;
                 $sftpDetails['password'] = $rawPassword; // Give the raw password ONCE
             } else {
+                // Ensure they are synced to SFTPGo just in case they were missing
+                try {
+                    \App\Services\SFTPGoService::syncUser($user);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to sync user on storeSftp: " . $e->getMessage());
+                }
                 $sftpDetails['username'] = $user->sftp_username;
                 $sftpDetails['password'] = $user->sftp_password; // 🚀 Show plain text
             }
