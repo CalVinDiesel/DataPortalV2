@@ -95,8 +95,8 @@ class SFTPGoService
             return;
         }
 
-        // Construct home directory path
-        $sftpRoot = rtrim(env('SFTP_DELIVERY_ROOT', '/home/tiquan'), '/');
+        // Construct home directory path (checks SFTPGO_HOME_DIR_ROOT for container-internal paths, falling back to SFTP_DELIVERY_ROOT)
+        $sftpRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', env('SFTP_DELIVERY_ROOT', '/home/tiquan')), '/');
         if (in_array($user->role, ['admin', 'superadmin'])) {
             $homeDir = $sftpRoot . '/delivered/' . $user->sftp_username;
         } else {
