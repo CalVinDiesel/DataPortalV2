@@ -5,6 +5,7 @@
             "title": "KK OSPREY",
             "description": "3D model of Kota Kinabalu area.",
             "thumbNailUrl": "/assets/img/front-pages/locations/kkosprey_pin_image.jpg",
+            "3dTiles": "https://3dhub.geosabah.my/3dmodel/KK_OSPREY/tileset.json",
             "display_order": 0
         },
         {
@@ -12,20 +13,23 @@
             "title": "KB 3DTiles Lite",
             "description": "3D model of buildings in Kota Kinabalu.",
             "thumbNailUrl": "/assets/img/front-pages/locations/kb_3dtiles_lite_pin_image.jpg",
+            "3dTiles": "https://3dhub.geosabah.my/3dmodel/Building_Planning/KB_3DTiles_Lite/tileset.json",
             "display_order": 1
-        },
-        {
-            "mapDataID": "fisheye_test_kolombong_18mac2025",
-            "title": "Kolombong Fisheye Test",
-            "description": "Fisheye test model in Kolombong area.",
-            "thumbNailUrl": "/assets/img/front-pages/locations/kolombong_pin_image.jpg",
-            "display_order": 2
         },
         {
             "mapDataID": "wismamerdeka",
             "title": "WISMA MERDEKA",
             "description": "3D model of Wisma Merdeka complex.",
             "thumbNailUrl": "/assets/img/front-pages/locations/wisma_merdeka_pin_image.jpg",
+            "3dTiles": "https://3dhub.geosabah.my/3dmodel/wismamerdeka/tileset.json",
+            "display_order": 2
+        },
+        {
+            "mapDataID": "fisheye_test_kolombong_18mac2025",
+            "title": "Kolombong Fisheye Test",
+            "description": "Fisheye test model in Kolombong area.",
+            "thumbNailUrl": "/assets/img/front-pages/locations/kolombong_pin_image.jpg",
+            "3dTiles": "https://3dhub.geosabah.my/3dmodel/Building_Planning/fisheye_test_kolombong_18mac2025/tileset.json",
             "display_order": 3
         },
         {
@@ -33,13 +37,15 @@
             "title": "PPNS YS",
             "description": "3D model of PPNS area.",
             "thumbNailUrl": "/assets/img/front-pages/locations/ppns_ys_pin_image.jpg",
+            "3dTiles": "https://3dhub.geosabah.my/3dmodel/ppns_ys/tileset.json",
             "display_order": 4
         },
         {
-            "mapDataID": "Keningau_Sabah_2026",
-            "title": "KENINGAU SABAH",
-            "description": "the city of Keningau Sabah",
-            "thumbNailUrl": "https://res.cloudinary.com/dssf0n6zc/image/upload/v1773823752/3dhub-map-thumbnails/Keningau-Sabah-2026_1773823748759.png",
+            "mapDataID": "Tamparuli-Point",
+            "title": "Tamparuli",
+            "description": "3d model of tamparuli",
+            "thumbNailUrl": "https://sabahtourism.com/assets/uploads/RS5432_tamparulib027.stb_.me_.f-lpr.jpg",
+            "3dTiles": "https://example.com/tileset.json",
             "display_order": 5
         }
     ]

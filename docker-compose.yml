@@ -32,6 +32,12 @@ services:
       # ── Laravel Storage: Persist uploaded files, logs, sessions ─────────────
       - laravel_storage:/var/www/html/storage
 
+      # ── Public Uploads: Persist uploaded thumbnail images ───────────────────
+      - ./public/uploads:/var/www/html/public/uploads
+
+      # ── Public Data: Persist locations.json and showcases.json config ───────
+      - ./public/data:/var/www/html/public/data
+
     environment:
       # These override .env values at runtime. The .env file is loaded as the
       # base, but these Docker-specific paths take precedence.
