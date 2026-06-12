@@ -55,6 +55,7 @@ Route::middleware('web')->group(function () {
     Route::post('/admin/seed-showcases-from-locations', [AdminSyncController::class, 'seedShowcasesFromLocations']);
     Route::post('/admin/showcases-renumber', [AdminSyncController::class, 'showcasesRenumber']);
     Route::post('/admin/export-locations-json', [AdminSyncController::class, 'exportLocationsJson']);
+    Route::post('/admin/export-showcases-json', [AdminSyncController::class, 'exportShowcasesJson']);
     Route::post('/admin/upload-map-thumbnail', [\App\Http\Controllers\UploadController::class, 'uploadMapThumbnail']);
 
     // Admin Client Uploads Routes

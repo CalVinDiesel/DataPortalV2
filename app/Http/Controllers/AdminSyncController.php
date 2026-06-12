@@ -83,34 +83,39 @@ class AdminSyncController extends Controller
 
     public function seedShowcasesFromLocations()
     {
-        // Ensure MapData is updated first
-        $this->seedMapDataFromLocations();
+        $path = public_path('data/showcases.json');
+        if (!File::exists($path)) {
+            return response()->json(['success' => false, 'message' => 'showcases.json not found']);
+        }
+
+        $json = File::get($path);
+        $data = json_decode($json, true);
+
+        if (!isset($data['showcases']) || !is_array($data['showcases'])) {
+            return response()->json(['success' => false, 'message' => 'Invalid showcases.json format']);
+        }
 
         $allPins = MapData::all();
-        
+        $countAdded = 0;
         $countRemoved = 0;
         $countUpdated = 0;
-        $countAdded = 0;
 
-        // 1. Clean up existing showcases
+        // 1. Clean up orphaned or duplicate showcase records
         $allShowcases = Showcase::all();
         foreach ($allShowcases as $s) {
             $sId = $s->map_data_id;
             $normId = $this->normalizeId($sId);
 
-            // Find if this showcase entry logically matches ANY official Map Pin
             $officialPin = $allPins->first(function($p) use ($normId) {
                 return $this->normalizeId($p->mapDataID) === $normId;
             });
 
             if (!$officialPin) {
-                // ORPHAN: Delete it.
                 $s->delete();
                 $countRemoved++;
                 continue;
             }
 
-            // DUPLICATE CHECK: Delete other duplicate showcases for this pin.
             $duplicates = Showcase::all()->filter(function($other) use ($normId, $s) {
                 return $other->id !== $s->id && $this->normalizeId($other->map_data_id) === $normId;
             });
@@ -120,7 +125,6 @@ class AdminSyncController extends Controller
                 $countRemoved++;
             }
 
-            // ID ALIGNMENT: Ensure this showcase uses the EXACT ID from MapData
             if ($s->map_data_id !== $officialPin->mapDataID) {
                 $s->map_data_id = $officialPin->mapDataID;
                 $s->save();
@@ -128,35 +132,70 @@ class AdminSyncController extends Controller
             }
         }
 
-        // 2. Add missing showcases for existing MapData pins
+        // 2. Add missing showcase items from showcases.json
         $currentShowcases = Showcase::all();
         $order = $currentShowcases->max('display_order');
         $order = ($order !== null) ? intval($order) : -1;
 
-        foreach ($allPins as $pin) {
-            $normPinId = $this->normalizeId($pin->mapDataID);
-            $hasShowcase = $currentShowcases->contains(function($s) use ($normPinId) {
-                return $this->normalizeId($s->map_data_id) === $normPinId;
+        foreach ($data['showcases'] as $item) {
+            $mapDataId = $item['mapDataID'] ?? '';
+            $normId = $this->normalizeId($mapDataId);
+
+            $officialPin = $allPins->first(function($p) use ($normId) {
+                return $this->normalizeId($p->mapDataID) === $normId;
+            });
+
+            if (!$officialPin) {
+                continue; // Skip if referenced map pin does not exist in DB
+            }
+
+            $hasShowcase = $currentShowcases->contains(function($s) use ($normId) {
+                return $this->normalizeId($s->map_data_id) === $normId;
             });
 
             if (!$hasShowcase) {
                 $order++;
                 Showcase::create([
-                    'map_data_id' => $pin->mapDataID,
-                    'display_order' => $order,
+                    'map_data_id' => $officialPin->mapDataID,
+                    'display_order' => $item['display_order'] ?? $order,
                     'created_at' => now(),
                 ]);
                 $countAdded++;
             }
         }
 
-        // 3. Renumber all display orders to be clean
+        // 3. Renumber all showcase items display orders sequentially
         $this->renumber();
 
         return response()->json([
             'success' => true, 
             'message' => "Showcase synced. Added $countAdded new showcases, removed $countRemoved orphans/duplicates, and updated $countUpdated IDs."
         ]);
+    }
+
+    public function exportShowcasesJson()
+    {
+        $showcases = Showcase::select('showcases.*', 'map_data.title', 'map_data.thumbNailUrl', 'map_data.description', 'map_data.3dTiles as tileset_path')
+            ->leftJoin('map_data', 'showcases.map_data_id', '=', 'map_data.mapDataID')
+            ->orderBy('showcases.display_order', 'asc')
+            ->get();
+
+        $items = [];
+        foreach ($showcases as $row) {
+            $items[] = [
+                'mapDataID' => $row->map_data_id,
+                'title' => $row->title,
+                'description' => $row->description,
+                'thumbNailUrl' => $row->thumbNailUrl,
+                '3dTiles' => $row->tileset_path,
+                'display_order' => (int) $row->display_order
+            ];
+        }
+
+        $path = public_path('data/showcases.json');
+        File::put($path, json_encode(['showcases' => $items], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        return response()->json(['success' => true, 'message' => 'Exported successfully to showcases.json']);
     }
 
     public function showcasesRenumber()

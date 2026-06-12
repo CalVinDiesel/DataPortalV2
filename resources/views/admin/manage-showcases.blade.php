@@ -133,13 +133,13 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
               <h4 class="fw-bold mb-0">Manage Showcase</h4>
               <div class="d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="syncShowcaseFromJsonBtn">Sync from locations.json</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="exportLocationsJsonBtn" title="Backfill data/locations.json from current database map pins">Export to locations.json</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="syncShowcaseFromJsonBtn">Sync from showcases.json</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="exportShowcasesJsonBtn" title="Backfill data/showcases.json from current database showcase items">Export to showcases.json</button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="renumberOrdersBtn" title="Fix order numbers to 0, 1, 2, …">Renumber orders</button>
                 <button type="button" class="btn btn-sm btn-primary" id="addToShowcaseBtn">Add to showcase</button>
               </div>
             </div>
-            <p class="text-muted mb-4">Manage which locations appear in the <strong>landing page showcase</strong> (tiles section). Use <strong>Sync from locations.json</strong> to add all locations from <code>data/locations.json</code> (same source as the map pins). The showcase is independent of the map: if you delete a pin from the overview map, it stays in the showcase until you remove it here.</p>
+            <p class="text-muted mb-4">Manage which locations appear in the <strong>landing page showcase</strong> (tiles section). Use <strong>Sync from showcases.json</strong> to sync showcase settings from <code>data/showcases.json</code>. The showcase is independent of the map: if you delete a pin from the overview map, it stays in the showcase until you remove it here.</p>
             <div id="showcaseAlert" class="alert alert-info d-none"></div>
             <div class="card">
               <div class="card-body">
@@ -166,7 +166,7 @@
       <div class="modal-content">
         <div class="modal-header"><h5 class="modal-title">Add to showcase</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
-          <p class="text-muted small">Choose a map pin to show in the landing page showcase. It must exist in <a href="{{ route('admin.manage_map_pins') }}">Manage Map Pins</a> first.</p>
+          <p class="text-muted small">Choose a map location to show in the landing page showcase. You can choose any location from the overview map. If the selected location has not been registered as a database map pin yet, it will be automatically registered when added.</p>
           <label class="form-label" for="addMapDataId">Map location</label>
           <select class="form-select" id="addMapDataId">
             <option value="">-- Select a location --</option>
@@ -264,22 +264,22 @@
         fetch(API_BASE + '/api/admin/seed-showcases-from-locations', { method: 'POST' })
           .then(function (r) { return r.json(); })
           .then(function (data) {
-            if (data.success) { loadShowcase(); showAlert(data.message || 'Showcase synced from locations.json.', 'success'); }
+            if (data.success) { loadShowcase(); showAlert(data.message || 'Showcase synced from showcases.json.', 'success'); }
             else alert(data.message || 'Sync failed.');
           })
           .catch(function () { alert('Request failed.'); })
           .finally(function () { btn.disabled = false; });
       });
 
-      var exportLocationsBtn = document.getElementById('exportLocationsJsonBtn');
-      if (exportLocationsBtn) exportLocationsBtn.addEventListener('click', function () {
+      var exportShowcasesBtn = document.getElementById('exportShowcasesJsonBtn');
+      if (exportShowcasesBtn) exportShowcasesBtn.addEventListener('click', function () {
         var btn = this;
         btn.disabled = true;
-        fetch(API_BASE + '/api/admin/export-locations-json', { method: 'POST' })
+        fetch(API_BASE + '/api/admin/export-showcases-json', { method: 'POST' })
           .then(function (r) { return r.json(); })
           .then(function (data) {
             if (data && data.success) {
-              showAlert(data.message || 'Exported to locations.json.', 'success');
+              showAlert(data.message || 'Exported to showcases.json.', 'success');
             } else {
               alert((data && data.message) || 'Export failed.');
             }
@@ -288,15 +288,75 @@
           .finally(function () { btn.disabled = false; });
       });
 
+      var allLocations = [];
+      var dbPinIds = new Set();
+
       document.getElementById('addToShowcaseBtn').addEventListener('click', function () {
-        fetch(API_BASE + '/api/map-data').then(function (r) { return r.json(); }).then(function (mapRows) {
+        var p1 = fetch(API_BASE + '/api/map-data').then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; });
+        var p2 = fetch('../../data/locations.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+        
+        Promise.all([p1, p2]).then(function (results) {
+          var mapRows = results[0];
+          var locsJson = results[1];
+          
+          dbPinIds = new Set();
+          var merged = [];
+          var seenIds = new Set();
+          
+          if (Array.isArray(mapRows)) {
+            mapRows.forEach(function (row) {
+              var id = row.mapDataID || row.id;
+              if (id) {
+                dbPinIds.add(id);
+                if (!seenIds.has(id)) {
+                  seenIds.add(id);
+                  merged.push({
+                    id: id,
+                    title: row.title || id,
+                    description: row.description || '',
+                    xAxis: row.xAxis != null ? parseFloat(row.xAxis) : 0,
+                    yAxis: row.yAxis != null ? parseFloat(row.yAxis) : 0,
+                    '3dTiles': row['3dTiles'] || '',
+                    thumbNailUrl: row.thumbNailUrl || '',
+                    inDb: true
+                  });
+                }
+              }
+            });
+          }
+          
+          if (locsJson && Array.isArray(locsJson.locations)) {
+            locsJson.locations.forEach(function (loc) {
+              var id = loc.id;
+              if (id && !seenIds.has(id)) {
+                seenIds.add(id);
+                merged.push({
+                  id: id,
+                  title: loc.name || id,
+                  description: loc.description || '',
+                  xAxis: loc.coordinates && loc.coordinates.longitude != null ? parseFloat(loc.coordinates.longitude) : 0,
+                  yAxis: loc.coordinates && loc.coordinates.latitude != null ? parseFloat(loc.coordinates.latitude) : 0,
+                  '3dTiles': loc.dataPaths && loc.dataPaths.tileset ? loc.dataPaths.tileset : '',
+                  thumbNailUrl: loc.thumbnailUrl || loc.thumbNailUrl || loc.previewImage || '',
+                  inDb: false
+                });
+              }
+            });
+          }
+          
+          allLocations = merged;
+          
           var select = document.getElementById('addMapDataId');
           select.innerHTML = '<option value="">-- Select a location --</option>';
-          if (Array.isArray(mapRows)) mapRows.forEach(function (row) {
-            var id = row.mapDataID || row.id; if (id) select.appendChild(new Option((row.title || id) + ' (' + id + ')', id));
+          merged.forEach(function (loc) {
+            select.appendChild(new Option(loc.title + ' (' + loc.id + ')', loc.id));
           });
-          var modal = new bootstrap.Modal(document.getElementById('addModal')); modal.show();
-        }).catch(function () { alert('Could not load map pins.'); });
+          
+          var modal = new bootstrap.Modal(document.getElementById('addModal'));
+          modal.show();
+        }).catch(function () {
+          alert('Could not load map locations.');
+        });
       });
 
       document.getElementById('addConfirmBtn').addEventListener('click', function () {
@@ -307,11 +367,64 @@
           alert('This specific 3D model showcase has been added into the showcase already, cannot add duplicate 3D model in showcase section.');
           return;
         }
-        fetch(API_BASE + '/api/showcases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ map_data_id: mapDataId, display_order: order }) })
-          .then(function (r) { return r.json(); }).then(function (data) {
-            if (data.success) { bootstrap.Modal.getInstance(document.getElementById('addModal')).hide(); loadShowcase(); showAlert('Added to showcase.', 'success'); }
-            else alert(data.message || 'Failed.');
-          }).catch(function () { alert('Request failed.'); });
+
+        var confirmBtn = this;
+        confirmBtn.disabled = true;
+
+        var selectedLoc = allLocations.find(function (loc) { return loc.id === mapDataId; });
+
+        function saveToShowcase() {
+          fetch(API_BASE + '/api/showcases', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ map_data_id: mapDataId, display_order: order }) 
+          })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.success) { 
+              bootstrap.Modal.getInstance(document.getElementById('addModal')).hide(); 
+              loadShowcase(); 
+              showAlert('Added to showcase.', 'success'); 
+            } else { 
+              alert(data.message || 'Failed to add to showcase.'); 
+            }
+          })
+          .catch(function () { alert('Request failed.'); })
+          .finally(function () { confirmBtn.disabled = false; });
+        }
+
+        if (selectedLoc && !dbPinIds.has(mapDataId)) {
+          // Auto-provision map pin in the database first
+          fetch(API_BASE + '/api/map-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              mapDataID: selectedLoc.id,
+              title: selectedLoc.title,
+              description: selectedLoc.description,
+              xAxis: selectedLoc.xAxis,
+              yAxis: selectedLoc.yAxis,
+              '3dTiles': selectedLoc['3dTiles'],
+              thumbNailUrl: selectedLoc.thumbNailUrl,
+              is_update: false
+            })
+          })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.success) {
+              saveToShowcase();
+            } else {
+              alert(data.message || 'Failed to auto-register map pin in database.');
+              confirmBtn.disabled = false;
+            }
+          })
+          .catch(function () {
+            alert('Request failed during map pin auto-provisioning.');
+            confirmBtn.disabled = false;
+          });
+        } else {
+          saveToShowcase();
+        }
       });
 
       document.getElementById('deleteConfirmBtn').addEventListener('click', function () {

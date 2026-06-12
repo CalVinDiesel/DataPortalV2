@@ -387,14 +387,14 @@
         </h4>
         <p class="text-center mb-12">Direct 3D views of Kota Kinabalu locations. Click a tile to load the full 3D model.</p>
         <div class="row g-4" id="tilesShowcase">
-          <!-- Fallback: static tiles loaded from locations.json; replaced by script when GET /api/showcases returns data -->
+          <!-- Fallback: static tiles loaded from showcases.json; replaced by script when GET /api/showcases returns data -->
           @php
-            $locationsPath = public_path('data/locations.json');
-            $fallbackLocations = [];
-            if (file_exists($locationsPath)) {
-                $json = file_get_contents($locationsPath);
+            $showcasesPath = public_path('data/showcases.json');
+            $fallbackShowcases = [];
+            if (file_exists($showcasesPath)) {
+                $json = file_get_contents($showcasesPath);
                 $data = json_decode($json, true);
-                $fallbackLocations = $data['locations'] ?? [];
+                $fallbackShowcases = $data['showcases'] ?? [];
             }
             // Settle on premium colors for fallback placeholders
             $getPremiumColor = function($id) {
@@ -416,8 +416,8 @@
             };
             
             $getDynamicCategory = function($loc) {
-                $tileset = strtolower($loc['dataPaths']['tileset'] ?? '');
-                $id = strtolower($loc['id'] ?? '');
+                $tileset = strtolower($loc['3dTiles'] ?? '');
+                $id = strtolower($loc['mapDataID'] ?? '');
                 if (str_contains($tileset, 'building_planning') || str_contains($tileset, 'building')) {
                     return 'Building Planning';
                 }
@@ -428,12 +428,12 @@
             };
           @endphp
 
-          @if(count($fallbackLocations) > 0)
-            @foreach($fallbackLocations as $loc)
+          @if(count($fallbackShowcases) > 0)
+            @foreach($fallbackShowcases as $loc)
               @php
-                $id = $loc['id'] ?? '';
-                $title = $loc['name'] ?? $id;
-                $rawImg = trim($loc['thumbnailUrl'] ?? '');
+                $id = $loc['mapDataID'] ?? '';
+                $title = $loc['title'] ?? $id;
+                $rawImg = trim($loc['thumbNailUrl'] ?? '');
                 $finalSrc = '';
                 if ($rawImg) {
                     $encoded = str_replace(' ', '%20', $rawImg);
