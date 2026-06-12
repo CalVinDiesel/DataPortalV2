@@ -87,8 +87,10 @@ RUN composer run-script post-autoload-dump || true
 # www-data is the user that PHP-FPM runs as inside the container
 RUN chown -R www-data:www-data /var/www/html/storage \
     && chown -R www-data:www-data /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html/public/data \
     && chmod -R 775 /var/www/html/storage \
-    && chmod -R 775 /var/www/html/bootstrap/cache
+    && chmod -R 775 /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/public/data
 
 # ── Copy production configuration files ──────────────────────────────────────
 COPY docker/nginx.conf /etc/nginx/sites-available/default
