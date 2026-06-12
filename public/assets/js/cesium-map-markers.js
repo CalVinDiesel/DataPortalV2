@@ -300,7 +300,7 @@
           id: loc.id,
           name: loc.name || loc.id,
           description: loc.description || '',
-          thumbnailUrl: loc.previewImage || loc.thumbNailUrl || '',
+          thumbnailUrl: loc.thumbnailUrl || loc.thumbNailUrl || loc.previewImage || '',
           longitude: loc.coordinates && loc.coordinates.longitude != null ? loc.coordinates.longitude : null,
           latitude: loc.coordinates && loc.coordinates.latitude != null ? loc.coordinates.latitude : null
         });
