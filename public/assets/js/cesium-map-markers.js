@@ -782,7 +782,9 @@
         img.onerror = function () {
           if (settled) return; settled = true; clearTimeout(timer); onFail();
         };
-        img.src = src;
+        // Add a cache buster parameter to bypass browser CORS cache race conditions
+        var cacheBuster = src.indexOf('?') !== -1 ? '&_cb=' + Date.now() : '?_cb=' + Date.now();
+        img.src = src.indexOf('data:') === 0 ? src : src + cacheBuster;
       }
 
       // Derived static path for second-chance attempt (only if different from primary URL)
