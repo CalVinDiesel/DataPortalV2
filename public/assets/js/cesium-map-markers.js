@@ -230,22 +230,6 @@
     return 'data:image/svg+xml,' + encodeURIComponent(svg);
   }
 
-  // Single fallback for KK_OSPREY if the API/DB has no thumbnail
-  var MAPDATA_KK_OSPREY_FALLBACK = {
-    mapDataID: 'KK_OSPREY',
-    title: 'KK OSPREY',
-    description: '3D model from GeoSabah 3D Hub (Kota Kinabalu area).',
-    xAxis: 116.070466,
-    yAxis: 5.957839,
-    '3dTiles': API_BASE + '/3dmodel/KK_OSPREY/tileset.json',
-    thumbNailUrl: '',
-    updateDateTime: null
-  };
-
-  var ALL_PINS_FALLBACK = [
-    { id: 'KK_OSPREY', name: 'KK OSPREY', description: '3D model from GeoSabah 3D Hub (Kota Kinabalu area).', thumbnailUrl: '', longitude: 116.070466, latitude: 5.957839 }
-  ];
-
   function getViewer(cb) {
     if (window.cesiumViewer) {
       cb(window.cesiumViewer);
@@ -1852,20 +1836,7 @@
         if (mapDataArray && Array.isArray(mapDataArray) && mapDataArray.length > 0) {
           list = normalizeLocations(null, mapDataArray);
         } else {
-          var fallbackData = [MAPDATA_KK_OSPREY_FALLBACK];
-          list = normalizeLocations(locationsJson || null, fallbackData);
-          ALL_PINS_FALLBACK.forEach(function (fallbackLoc) {
-            if (!list.some(function (l) { return l.id === fallbackLoc.id; })) {
-              list.push({
-                id: fallbackLoc.id,
-                name: fallbackLoc.name,
-                description: fallbackLoc.description || '',
-                thumbnailUrl: fallbackLoc.thumbnailUrl || '',
-                longitude: fallbackLoc.longitude,
-                latitude: fallbackLoc.latitude
-              });
-            }
-          });
+          list = normalizeLocations(locationsJson || null, null);
         }
         addMarkersWithClustering(viewer, list);
       }

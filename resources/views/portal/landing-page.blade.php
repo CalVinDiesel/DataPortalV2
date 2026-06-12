@@ -387,73 +387,81 @@
         </h4>
         <p class="text-center mb-12">Direct 3D views of Kota Kinabalu locations. Click a tile to load the full 3D model.</p>
         <div class="row g-4" id="tilesShowcase">
-          <!-- Fallback: static tiles when API is empty or unavailable; replaced by script when GET /api/showcase returns data -->
-          <div class="col-lg-4 col-md-6" id="tile-mapdata-KK_OSPREY">
-            <a href="{{ route('loading_3d') }}?id=KK_OSPREY"
- class="tile-3d-card" target="_blank" rel="noopener">
-              <div class="tile-3d-img"><img src="https://placehold.co/400x220/1a1a2e/696cff?text=KK+OSPREY+3D" alt="KK OSPREY" onerror="this.src='https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model'"></div>
-              <div class="tile-3d-body">
-                <h6 class="tile-3d-title">KK OSPREY</h6>
-                <div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Kota Kinabalu</span></div>
-                <div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div>
+          <!-- Fallback: static tiles loaded from locations.json; replaced by script when GET /api/showcases returns data -->
+          @php
+            $locationsPath = public_path('data/locations.json');
+            $fallbackLocations = [];
+            if (file_exists($locationsPath)) {
+                $json = file_get_contents($locationsPath);
+                $data = json_decode($json, true);
+                $fallbackLocations = $data['locations'] ?? [];
+            }
+            // Settle on premium colors for fallback placeholders
+            $getPremiumColor = function($id) {
+                $colors = [
+                    '1a1a2e/696cff', // Navy/Blue
+                    '667eea/ffffff', // Indigo
+                    'f093fb/ffffff', // Pink
+                    '4facfe/ffffff', // Sky Blue
+                    '43e97b/ffffff', // Green
+                    '6a11cb/ffffff', // Purple
+                    'ff0844/ffffff', // Red
+                    'f09819/ffffff'  // Orange
+                ];
+                $hash = 0;
+                for ($i = 0; $i < strlen($id); $i++) {
+                    $hash = ord($id[$i]) + (($hash << 5) - $hash);
+                }
+                return $colors[abs($hash) % count($colors)];
+            };
+            
+            $getDynamicCategory = function($loc) {
+                $tileset = strtolower($loc['dataPaths']['tileset'] ?? '');
+                $id = strtolower($loc['id'] ?? '');
+                if (str_contains($tileset, 'building_planning') || str_contains($tileset, 'building')) {
+                    return 'Building Planning';
+                }
+                if (str_contains($id, 'keningau') || str_contains($tileset, 'keningau')) {
+                    return 'Regional Planning';
+                }
+                return 'Kota Kinabalu';
+            };
+          @endphp
+
+          @if(count($fallbackLocations) > 0)
+            @foreach(array_slice($fallbackLocations, 0, 6) as $loc)
+              @php
+                $id = $loc['id'] ?? '';
+                $title = $loc['name'] ?? $id;
+                $rawImg = trim($loc['thumbnailUrl'] ?? '');
+                $finalSrc = '';
+                if ($rawImg) {
+                    $encoded = str_replace(' ', '%20', $rawImg);
+                    $finalSrc = (str_starts_with($rawImg, 'http') ? $encoded : asset($encoded));
+                } else {
+                    $finalSrc = 'https://placehold.co/' . $getPremiumColor($id) . '?text=' . urlencode(substr($title, 0, 20));
+                }
+                $category = $getDynamicCategory($loc);
+              @endphp
+              <div class="col-lg-4 col-md-6" id="tile-mapdata-{{ $id }}">
+                <a href="{{ route('loading_3d') }}?id={{ urlencode($id) }}" class="tile-3d-card" target="_blank" rel="noopener">
+                  <div class="tile-3d-img">
+                    <img src="{{ $finalSrc }}" alt="{{ $title }}" onerror="this.src='https://placehold.co/{{ $getPremiumColor($id) }}?text=3D+Model'">
+                  </div>
+                  <div class="tile-3d-body">
+                    <h6 class="tile-3d-title">{{ $title }}</h6>
+                    <div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>{{ $category }}</span></div>
+                    <div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div>
+                  </div>
+                </a>
               </div>
-            </a>
-          </div>
-          <div class="col-lg-4 col-md-6" id="tile-mapdata-kb-3dtiles-lite">
-            <a href="{{ route('loading_3d') }}?id=kb-3dtiles-lite"
- class="tile-3d-card" target="_blank" rel="noopener">
-              <div class="tile-3d-img"><img src="https://placehold.co/400x220/667eea/ffffff?text=KB+3DTiles+Lite" alt="KB 3DTiles Lite" onerror="this.src='https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model'"></div>
-              <div class="tile-3d-body">
-                <h6 class="tile-3d-title">KB 3DTiles Lite</h6>
-                <div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Building Planning</span></div>
-                <div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div>
-              </div>
-            </a>
-          </div>
-          <div class="col-lg-4 col-md-6" id="tile-mapdata-kolombong-fisheye">
-            <a href="{{ route('loading_3d') }}?id=kolombong-fisheye"
- class="tile-3d-card" target="_blank" rel="noopener">
-              <div class="tile-3d-img"><img src="https://placehold.co/400x220/f093fb/ffffff?text=Kolombong+Fisheye" alt="Kolombong" onerror="this.src='https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model'"></div>
-              <div class="tile-3d-body">
-                <h6 class="tile-3d-title">Kolombong Fisheye Test</h6>
-                <div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Building Planning</span></div>
-                <div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div>
-              </div>
-            </a>
-          </div>
-          <div class="col-lg-4 col-md-6" id="tile-mapdata-wisma-merdeka">
-            <a href="{{ route('loading_3d') }}?id=wisma-merdeka"
- class="tile-3d-card" target="_blank" rel="noopener">
-              <div class="tile-3d-img"><img src="https://placehold.co/400x220/4facfe/ffffff?text=WISMA+MERDEKA" alt="WISMA MERDEKA" onerror="this.src='https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model'"></div>
-              <div class="tile-3d-body">
-                <h6 class="tile-3d-title">WISMA MERDEKA</h6>
-                <div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Kota Kinabalu</span></div>
-                <div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div>
-              </div>
-            </a>
-          </div>
-          <div class="col-lg-4 col-md-6" id="tile-mapdata-ppns-ys">
-            <a href="{{ route('loading_3d') }}?id=ppns-ys"
- class="tile-3d-card" target="_blank" rel="noopener">
-              <div class="tile-3d-img"><img src="https://placehold.co/400x220/43e97b/ffffff?text=PPNS+YS" alt="PPNS YS" onerror="this.src='https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model'"></div>
-              <div class="tile-3d-body">
-                <h6 class="tile-3d-title">PPNS YS</h6>
-                <div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Kota Kinabalu</span></div>
-                <div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div>
-              </div>
-            </a>
-          </div>
-          <div class="col-lg-4 col-md-6" id="tile-mapdata-Keningau-Sabah-2026">
-            <a href="{{ route('loading_3d') }}?id=Keningau-Sabah-2026"
- class="tile-3d-card" target="_blank" rel="noopener">
-              <div class="tile-3d-img"><img src="https://placehold.co/400x220/6a11cb/ffffff?text=KENINGAU+SABAH" alt="Keningau Sabah" onerror="this.src='https://placehold.co/400x220/1a1a2e/696cff?text=3D+Model'"></div>
-              <div class="tile-3d-body">
-                <h6 class="tile-3d-title">KENINGAU SABAH</h6>
-                <div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>Regional Planning</span></div>
-                <div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div>
-              </div>
-            </a>
-          </div>
+            @endforeach
+          @else
+            <div class="col-12 text-center py-5 text-muted">
+              <i class="bx bx-show-alt fs-1 mb-2"></i>
+              <p class="mb-0">No showcased models available at the moment.</p>
+            </div>
+          @endif
         </div>
       </div>
     </section>
