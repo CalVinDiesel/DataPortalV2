@@ -96,7 +96,7 @@
             "dataPaths": {
                 "tileset": "https://3dhub.geosabah.my/3dmodel/KK_OSPREY/tileset.json"
             },
-            "thumbnailUrl": "/assets/img/front-pages/locations/kkOsprey_pin_image.jpg"
+            "thumbnailUrl": "/assets/img/front-pages/locations/kkosprey_pin_image.jpg"
         },
         {
             "id": "KB_3DTiles_Lite",
