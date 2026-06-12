@@ -429,7 +429,7 @@
           @endphp
 
           @if(count($fallbackLocations) > 0)
-            @foreach(array_slice($fallbackLocations, 0, 6) as $loc)
+            @foreach($fallbackLocations as $loc)
               @php
                 $id = $loc['id'] ?? '';
                 $title = $loc['name'] ?? $id;
