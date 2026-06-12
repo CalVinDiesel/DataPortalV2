@@ -100,7 +100,12 @@ class AdminSyncController extends Controller
         $countRemoved = 0;
         $countUpdated = 0;
 
-        // 1. Clean up orphaned or duplicate showcase records
+        // Collect all normalized showcases.json IDs
+        $jsonIds = collect($data['showcases'])->map(function($item) {
+            return $this->normalizeId($item['mapDataID'] ?? '');
+        })->filter()->toArray();
+
+        // 1. Clean up orphaned, duplicate, or non-showcase.json showcase records
         $allShowcases = Showcase::all();
         foreach ($allShowcases as $s) {
             $sId = $s->map_data_id;
@@ -110,12 +115,14 @@ class AdminSyncController extends Controller
                 return $this->normalizeId($p->mapDataID) === $normId;
             });
 
-            if (!$officialPin) {
+            // If the pin doesn't exist or is not in showcases.json, delete it!
+            if (!$officialPin || !in_array($normId, $jsonIds)) {
                 $s->delete();
                 $countRemoved++;
                 continue;
             }
 
+            // Remove duplicate showcase entries for the same pin
             $duplicates = Showcase::all()->filter(function($other) use ($normId, $s) {
                 return $other->id !== $s->id && $this->normalizeId($other->map_data_id) === $normId;
             });
@@ -132,11 +139,7 @@ class AdminSyncController extends Controller
             }
         }
 
-        // 2. Add missing showcase items from showcases.json
-        $currentShowcases = Showcase::all();
-        $order = $currentShowcases->max('display_order');
-        $order = ($order !== null) ? intval($order) : -1;
-
+        // 2. Add missing showcase items and sync display orders from showcases.json
         foreach ($data['showcases'] as $item) {
             $mapDataId = $item['mapDataID'] ?? '';
             $normId = $this->normalizeId($mapDataId);
@@ -149,27 +152,35 @@ class AdminSyncController extends Controller
                 continue; // Skip if referenced map pin does not exist in DB
             }
 
-            $hasShowcase = $currentShowcases->contains(function($s) use ($normId) {
+            // Find existing showcase for this pin
+            $showcase = Showcase::all()->first(function($s) use ($normId) {
                 return $this->normalizeId($s->map_data_id) === $normId;
             });
 
-            if (!$hasShowcase) {
-                $order++;
+            $targetOrder = intval($item['display_order'] ?? 0);
+
+            if ($showcase) {
+                if ($showcase->display_order !== $targetOrder) {
+                    $showcase->display_order = $targetOrder;
+                    $showcase->save();
+                    $countUpdated++;
+                }
+            } else {
                 Showcase::create([
                     'map_data_id' => $officialPin->mapDataID,
-                    'display_order' => $item['display_order'] ?? $order,
+                    'display_order' => $targetOrder,
                     'created_at' => now(),
                 ]);
                 $countAdded++;
             }
         }
 
-        // 3. Renumber all showcase items display orders sequentially
+        // 3. Renumber all showcase items display orders sequentially to heal any remaining gaps
         $this->renumber();
 
         return response()->json([
             'success' => true, 
-            'message' => "Showcase synced. Added $countAdded new showcases, removed $countRemoved orphans/duplicates, and updated $countUpdated IDs."
+            'message' => "Showcase synced. Added $countAdded new showcases, removed $countRemoved old/orphan showcases, and updated $countUpdated order numbers."
         ]);
     }
 

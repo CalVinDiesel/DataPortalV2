@@ -236,6 +236,58 @@
       </div>
     </div>
   </div>
+
+  <!-- Confirm Sync locations.json modal -->
+  <div class="modal fade" id="confirmSyncPinsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Sync from locations.json</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-warning fw-bold mb-2">⚠️ WARNING: This will overwrite your active map pin database records!</p>
+          <p>Syncing will replace all database map pins with the entries currently saved in <code>data/locations.json</code>.</p>
+          <p class="text-danger fw-bold">Important Result:</p>
+          <ul>
+            <li>Any map pins you previously deleted from the dashboard <strong>will be recovered and restored</strong> back to the database and map if they are still listed in <code>locations.json</code>.</li>
+            <li>Any custom map pins added to the dashboard that were not exported will be deleted from the database.</li>
+          </ul>
+          <p>Are you sure you want to proceed with this sync?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-warning" id="confirmSyncPinsBtn">Proceed Sync</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Export locations.json modal -->
+  <div class="modal fade" id="confirmExportPinsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Export to locations.json</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-warning fw-bold mb-2">⚠️ WARNING: This will overwrite the locations.json configuration file!</p>
+          <p>Exporting will save the current database map pin list directly to <code>public/data/locations.json</code>.</p>
+          <p class="text-danger fw-bold">Important Result:</p>
+          <ul>
+            <li>Any map pins you deleted from the dashboard <strong>will be permanently deleted</strong> from <code>locations.json</code> on the server filesystem.</li>
+            <li>This saves your current dashboard curation permanently as the offline/fallback list.</li>
+          </ul>
+          <p>Are you sure you want to proceed with this export?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmExportPinsBtn">Proceed Export</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <script>
     (function () {
       var API_BASE = (typeof window !== 'undefined' && window.TemaDataPortal_API_BASE) || (window.location ? window.location.origin : '') || 'http://localhost:3000';
@@ -354,7 +406,17 @@
 
       var syncBtn = document.getElementById('syncFromJsonBtn');
       if (syncBtn) syncBtn.addEventListener('click', function () {
-        var btn = this;
+        var modal = new bootstrap.Modal(document.getElementById('confirmSyncPinsModal'));
+        modal.show();
+      });
+
+      var confirmSyncPinsBtn = document.getElementById('confirmSyncPinsBtn');
+      if (confirmSyncPinsBtn) confirmSyncPinsBtn.addEventListener('click', function () {
+        var modalEl = document.getElementById('confirmSyncPinsModal');
+        var modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+
+        var btn = syncBtn;
         btn.disabled = true;
         fetch(API_BASE + '/api/admin/seed-map_data-from-locations', { method: 'POST' })
           .then(function (r) { return r.json(); })
@@ -373,7 +435,17 @@
 
       var exportBtn = document.getElementById('exportToJsonBtn');
       if (exportBtn) exportBtn.addEventListener('click', function () {
-        var btn = this;
+        var modal = new bootstrap.Modal(document.getElementById('confirmExportPinsModal'));
+        modal.show();
+      });
+
+      var confirmExportPinsBtn = document.getElementById('confirmExportPinsBtn');
+      if (confirmExportPinsBtn) confirmExportPinsBtn.addEventListener('click', function () {
+        var modalEl = document.getElementById('confirmExportPinsModal');
+        var modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+
+        var btn = exportBtn;
         btn.disabled = true;
         fetch(API_BASE + '/api/admin/export-locations-json', { method: 'POST' })
           .then(function (r) { return r.json(); })

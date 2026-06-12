@@ -198,6 +198,58 @@
       </div>
     </div>
   </div>
+
+  <!-- Confirm Sync showcases.json modal -->
+  <div class="modal fade" id="confirmSyncShowcasesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Sync from showcases.json</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-warning fw-bold mb-2">⚠️ WARNING: This will overwrite your active showcase database records!</p>
+          <p>Syncing will replace all database showcases with the entries currently saved in <code>data/showcases.json</code>.</p>
+          <p class="text-danger fw-bold">Important Result:</p>
+          <ul>
+            <li>Any showcase items you previously deleted from the dashboard <strong>will be recovered and restored</strong> back to the database and homepage if they are still listed in <code>showcases.json</code>.</li>
+            <li>Any custom showcases added to the dashboard that were not exported will be deleted from the database.</li>
+          </ul>
+          <p>Are you sure you want to proceed with this sync?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-warning" id="confirmSyncShowcasesBtn">Proceed Sync</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Export showcases.json modal -->
+  <div class="modal fade" id="confirmExportShowcasesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Export to showcases.json</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-warning fw-bold mb-2">⚠️ WARNING: This will overwrite the showcases.json configuration file!</p>
+          <p>Exporting will save the current database showcase list directly to <code>public/data/showcases.json</code>.</p>
+          <p class="text-danger fw-bold">Important Result:</p>
+          <ul>
+            <li>Any showcase locations you deleted from the dashboard <strong>will be permanently deleted</strong> from <code>showcases.json</code> on the server filesystem.</li>
+            <li>This saves your current dashboard curation permanently as the offline/fallback list.</li>
+          </ul>
+          <p>Are you sure you want to proceed with this export?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmExportShowcasesBtn">Proceed Export</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <script>
     (function () {
       var API_BASE = (typeof window !== 'undefined' && window.TemaDataPortal_API_BASE) || (window.location && window.location.origin) || 'http://localhost:3000';
@@ -259,7 +311,17 @@
       });
       var syncShowcaseBtn = document.getElementById('syncShowcaseFromJsonBtn');
       if (syncShowcaseBtn) syncShowcaseBtn.addEventListener('click', function () {
-        var btn = this;
+        var modal = new bootstrap.Modal(document.getElementById('confirmSyncShowcasesModal'));
+        modal.show();
+      });
+
+      var confirmSyncShowcasesBtn = document.getElementById('confirmSyncShowcasesBtn');
+      if (confirmSyncShowcasesBtn) confirmSyncShowcasesBtn.addEventListener('click', function () {
+        var modalEl = document.getElementById('confirmSyncShowcasesModal');
+        var modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+
+        var btn = syncShowcaseBtn;
         btn.disabled = true;
         fetch(API_BASE + '/api/admin/seed-showcases-from-locations', { method: 'POST' })
           .then(function (r) { return r.json(); })
@@ -273,7 +335,17 @@
 
       var exportShowcasesBtn = document.getElementById('exportShowcasesJsonBtn');
       if (exportShowcasesBtn) exportShowcasesBtn.addEventListener('click', function () {
-        var btn = this;
+        var modal = new bootstrap.Modal(document.getElementById('confirmExportShowcasesModal'));
+        modal.show();
+      });
+
+      var confirmExportShowcasesBtn = document.getElementById('confirmExportShowcasesBtn');
+      if (confirmExportShowcasesBtn) confirmExportShowcasesBtn.addEventListener('click', function () {
+        var modalEl = document.getElementById('confirmExportShowcasesModal');
+        var modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+
+        var btn = exportShowcasesBtn;
         btn.disabled = true;
         fetch(API_BASE + '/api/admin/export-showcases-json', { method: 'POST' })
           .then(function (r) { return r.json(); })
