@@ -1,9 +1,9 @@
 ##############################################################################
-# DataPortalV2 — Docker Compose (Production)
+# DataPortalV2 - Docker Compose (Production)
 # Usage: docker compose up -d --build
 #
 # Services:
-#   app  — PHP 8.3 FPM + Nginx bundled together via Supervisor (port 80)
+#   app  - PHP 8.3 FPM + Nginx bundled together via Supervisor (port 80)
 #
 # The app container runs both Nginx (web gateway) and PHP-FPM (worker pool)
 # managed by Supervisord. This is the simplest single-container production
@@ -24,17 +24,17 @@ services:
       - "8000:80"
 
     volumes:
-      # ── Nitro Storage: Persist large file chunks between container restarts ──
+      # -- Nitro Storage: Persist large file chunks between container restarts --
       # Maps the host directory to the container path set in NITRO_STORAGE_ROOT
       - nitro_storage:/var/www/nitro_storage
 
-      # ── Laravel Storage: Persist uploaded files, logs, sessions ─────────────
+      # -- Laravel Storage: Persist uploaded files, logs, sessions -------------
       - laravel_storage:/var/www/html/storage
 
-      # ── Public Uploads: Persist uploaded thumbnail images ───────────────────
+      # -- Public Uploads: Persist uploaded thumbnail images -------------------
       - ./public/uploads:/var/www/html/public/uploads
 
-      # ── Public Data: Persist locations.json and showcases.json config ───────
+      # -- Public Data: Persist locations.json and showcases.json config -------
       - ./public/data:/var/www/html/public/data
 
     environment:
@@ -49,14 +49,14 @@ services:
     networks:
       - dataportal_net
 
-# ── Named Volumes (managed by Docker, persisted on the host) ─────────────────
+# -- Named Volumes (managed by Docker, persisted on the host) -----------------
 volumes:
   nitro_storage:
     driver: local
   laravel_storage:
     driver: local
 
-# ── Internal network ──────────────────────────────────────────────────────────
+# -- Internal network ----------------------------------------------------------
 networks:
   dataportal_net:
     driver: bridge
