@@ -67,9 +67,36 @@ class ProjectController extends Controller
         $upload = $query->firstOrFail();
 
         if ($isAdmin) {
+            // 🚀 Cleanup physical files on deletion
+            // 1. Delete from SFTP server
+            try {
+                $creator = \App\Models\User::where('email', $upload->created_by_email)->first();
+                if ($creator) {
+                    $sftpUser = !empty($creator->sftp_username) ? $creator->sftp_username : \Illuminate\Support\Str::slug($creator->name);
+                } else {
+                    $sftpUser = \Illuminate\Support\Str::slug(explode('@', $upload->created_by_email)[0]);
+                }
+                
+                $relativeSftpPath = "uploads/{$sftpUser}/{$upload->project_id}";
+                if (\Illuminate\Support\Facades\Storage::disk('sftp_delivery')->exists($relativeSftpPath)) {
+                    \Illuminate\Support\Facades\Storage::disk('sftp_delivery')->deleteDirectory($relativeSftpPath);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("Failed to delete project folder from SFTP: " . $e->getMessage());
+            }
+
+            // 2. Delete from local nitro disk
+            try {
+                if (\Illuminate\Support\Facades\Storage::disk('nitro')->exists($upload->project_id)) {
+                    \Illuminate\Support\Facades\Storage::disk('nitro')->deleteDirectory($upload->project_id);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("Failed to delete project folder from local nitro disk: " . $e->getMessage());
+            }
+
             // 🚀 ADMIN AUTHORITY (v211): Permanent Database Deletion
             $upload->delete();
-            return response()->json(['success' => true, 'message' => 'Project permanently deleted from database.']);
+            return response()->json(['success' => true, 'message' => 'Project permanently deleted from database and filesystems.']);
         } else {
             // 🚀 USER REMOVAL (v211): Only hide from their browser view
             $upload->update(['request_status' => 'user_hidden']);
