@@ -119,11 +119,17 @@
    * then replace all whitespace with underscores and lowercase.
    * This reconciles filenames stored with spaces in DB vs underscored files on disk.
    */
-  function normalizeFilename(filename) {
+  function normalizeFilename(filename, fullPath) {
     if (!filename || typeof filename !== 'string') return filename;
     var decoded = filename;
     try { decoded = decodeURIComponent(filename); } catch (e) { /* keep as-is if malformed */ }
-    return decoded.replace(/\s+/g, '_').toLowerCase();
+    var normalized = decoded.replace(/\s+/g, '_');
+    
+    // If it's an uploaded file, do not lowercase (preserves case-sensitive random characters and extension)
+    if (fullPath && isUploadUrl(fullPath)) {
+      return normalized;
+    }
+    return normalized.toLowerCase();
   }
 
   /**
@@ -136,7 +142,7 @@
     var query = qIdx !== -1 ? path.slice(qIdx) : '';
     var base = qIdx !== -1 ? path.slice(0, qIdx) : path;
     var parts = base.split('/');
-    parts[parts.length - 1] = normalizeFilename(parts[parts.length - 1]);
+    parts[parts.length - 1] = normalizeFilename(parts[parts.length - 1], path);
     return parts.join('/') + query;
   }
 

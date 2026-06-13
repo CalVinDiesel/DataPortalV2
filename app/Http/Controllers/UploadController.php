@@ -513,7 +513,7 @@ class UploadController extends Controller
         
         try {
             $file = $request->file('pin_image');
-            $fileName = 'pin_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $fileName = 'pin_' . time() . '_' . Str::lower(Str::random(10)) . '.' . Str::lower($file->getClientOriginalExtension());
             $file->move(public_path('uploads/pins'), $fileName);
             $url = asset('uploads/pins/' . $fileName);
             
@@ -539,7 +539,7 @@ class UploadController extends Controller
         try {
             $file = $request->file('thumbnail');
             
-            $fileName = 'thumbnail_' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $fileName = 'thumbnail_' . time() . '_' . Str::lower(Str::random(10)) . '.' . Str::lower($file->getClientOriginalExtension());
             $file->move(public_path('uploads/thumbnails'), $fileName);
             $url = asset('uploads/thumbnails/' . $fileName);
             
