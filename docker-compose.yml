@@ -20,9 +20,8 @@ services:
     restart: unless-stopped
 
     ports:
-      # Expose container port 80 on host port 80
-      # If you run Nginx on the host as a reverse proxy, change to "127.0.0.1:8080:80"
-      - "80:80"
+      # Expose container port 80 on host port 8000 (Cloudflare Tunnel target)
+      - "8000:80"
 
     volumes:
       # ── Nitro Storage: Persist large file chunks between container restarts ──
