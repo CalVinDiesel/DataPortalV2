@@ -436,6 +436,7 @@
     var flightPolyline = null;
     var rootFolderStats = {};
     var modalMap = null, mainMap = null, mainMarker = null;
+    var scanCancelled = false;
 
     var isUploading = false;
     var isUploadPaused = false;
@@ -518,6 +519,10 @@
     }
 
     function selectUploadType(type) {
+        // Reset file inputs so change event fires even if the same files are selected again
+        document.getElementById('dataFile').value = '';
+        document.getElementById('zipFile').value = '';
+
         document.getElementById('cardSingle').classList.remove('active');
         document.getElementById('cardMulti').classList.remove('active');
         document.getElementById(type === 'single' ? 'cardSingle' : 'cardMulti').classList.add('active');
@@ -533,6 +538,7 @@
         if (files.length === 0) return;
         pendingUploadFiles = files;
         flightPathPoints = [];
+        scanCancelled = false; // Reset scan cancellation flag
         
         document.getElementById('uploadTypeSelection').style.display = 'none';
         document.getElementById('alwaysVisibleFields').style.display = 'none';
@@ -618,6 +624,7 @@
 
         const runWorker = async () => {
             while (activeIndex < totalFiles) {
+                if (scanCancelled) break;
                 const i = activeIndex++;
                 if (i >= totalFiles) break;
 
@@ -640,9 +647,11 @@
                         // Process sampled entries in parallel batches of 5 to speed up decompression
                         const zipBatchSize = 5;
                         for (let j = 0; j < sampledEntries.length; j += zipBatchSize) {
+                            if (scanCancelled) break;
                             const chunk = sampledEntries.slice(j, j + zipBatchSize);
                             await Promise.all(chunk.map(async (entry) => {
                                 try {
+                                    if (scanCancelled) return;
                                     const blob = await entry.async("blob");
                                     const coords = await extractExifFast(blob);
                                     if (coords) flightPathPoints.push(coords);
@@ -678,6 +687,7 @@
         }
         await Promise.all(workers);
         
+        if (scanCancelled) return;
         scanDisplay.textContent = totalFiles;
         finishScanPhase();
     }
@@ -729,10 +739,16 @@
     }
 
     function closeSetPositionModal() { 
+        scanCancelled = true; // Signal active workers to abort
+        
         document.getElementById('setPositionModal').classList.remove('show');
         document.getElementById('inlineLoadingState').style.display = 'none';
         document.getElementById('alwaysVisibleFields').style.display = 'block';
         document.getElementById('uploadTypeSelection').style.display = 'block';
+        
+        // Reset file inputs so that the change event can fire if they choose to select again
+        document.getElementById('dataFile').value = '';
+        document.getElementById('zipFile').value = '';
         
         // 🚀 CONGESTION BYPASS: Destroy modalMap when closed to abort pending tile downloads and free sockets
         if (modalMap) {
