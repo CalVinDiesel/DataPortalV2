@@ -749,12 +749,13 @@
         };
 
         try {
-            // 🚀 SMART-SCALE (v154): Anything under 2MB gets batched. Medium files (2MB - 80MB) upload in full.
-            // Large files (> 80MB) get sharded into 20MB chunks for Cloudflare compatibility.
-            const BATCH_SIZE_LIMIT = 2 * 1024 * 1024; // 2MB
+            // 🚀 SMART-SCALE (v154): Batch small files (< 10MB) to reduce requests.
+            // Medium files (10MB - 80MB) are uploaded directly in full.
+            // Large files (> 80MB) are sharded into 30MB chunks for Cloudflare compatibility.
+            const BATCH_SIZE_LIMIT = 10 * 1024 * 1024; // 10MB
             const SHARD_THRESHOLD  = 80 * 1024 * 1024; // 80MB (Cloudflare limit is 100MB)
-            const SHARD_CHUNK_SIZE = 20 * 1024 * 1024; // 20MB shards
-            const MAX_BATCH_COUNT  = 30;
+            const SHARD_CHUNK_SIZE = 30 * 1024 * 1024; // 30MB shards
+            const MAX_BATCH_COUNT  = 50;
 
             // 🚀 HYPER-NITRO SHARDING PIPELINE (v320): Stream chunks/batches in parallel lanes
             const batches = [];
@@ -765,7 +766,7 @@
                 const rel = f.webkitRelativePath || f.name;
 
                 if (f.size > SHARD_THRESHOLD) {
-                    // Large file gets sliced into 20MB chunks for Cloudflare compatibility
+                    // Large file gets sliced into 30MB chunks for Cloudflare compatibility
                     const numChunks = Math.ceil(f.size / SHARD_CHUNK_SIZE);
                     for (let c = 0; c < numChunks; c++) {
                         const start = c * SHARD_CHUNK_SIZE;
@@ -779,7 +780,7 @@
                     }
                     fileIdx++;
                 } else if (f.size > BATCH_SIZE_LIMIT) {
-                    // Medium file (2MB - 80MB) gets uploaded in full
+                    // Medium file (10MB - 80MB) gets uploaded in full
                     batches.push({
                         files: [f],
                         paths: [rel],
@@ -818,7 +819,7 @@
             st.textContent = `Autonomous Nitro: Streaming through parallel lanes... 🚀`;
 
             let nextBatchIdx = 0;
-            const LANE_COUNT = 6;
+            const LANE_COUNT = 16;
             
             const runLane = async (laneId) => {
                 while (nextBatchIdx < batches.length) {
