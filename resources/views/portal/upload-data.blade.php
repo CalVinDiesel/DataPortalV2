@@ -749,9 +749,12 @@
         };
 
         try {
-            // 🚀 SMART-SCALE (v154): Anything over 2MB now gets the Nitro-Sharding treatment
-            const MAX_CHUNK_SIZE = 2 * 1024 * 1024; 
-            const MAX_BATCH_COUNT = 30;
+            // 🚀 SMART-SCALE (v154): Anything under 2MB gets batched. Medium files (2MB - 80MB) upload in full.
+            // Large files (> 80MB) get sharded into 20MB chunks for Cloudflare compatibility.
+            const BATCH_SIZE_LIMIT = 2 * 1024 * 1024; // 2MB
+            const SHARD_THRESHOLD  = 80 * 1024 * 1024; // 80MB (Cloudflare limit is 100MB)
+            const SHARD_CHUNK_SIZE = 20 * 1024 * 1024; // 20MB shards
+            const MAX_BATCH_COUNT  = 30;
 
             // 🚀 HYPER-NITRO SHARDING PIPELINE (v320): Stream chunks/batches in parallel lanes
             const batches = [];
@@ -761,12 +764,12 @@
                 const f = pendingUploadFiles[fileIdx];
                 const rel = f.webkitRelativePath || f.name;
 
-                if (f.size > MAX_CHUNK_SIZE) {
-                    // Large file gets sliced into 2MB chunks for Cloudflare compatibility
-                    const numChunks = Math.ceil(f.size / MAX_CHUNK_SIZE);
+                if (f.size > SHARD_THRESHOLD) {
+                    // Large file gets sliced into 20MB chunks for Cloudflare compatibility
+                    const numChunks = Math.ceil(f.size / SHARD_CHUNK_SIZE);
                     for (let c = 0; c < numChunks; c++) {
-                        const start = c * MAX_CHUNK_SIZE;
-                        const end = Math.min(f.size, start + MAX_CHUNK_SIZE);
+                        const start = c * SHARD_CHUNK_SIZE;
+                        const end = Math.min(f.size, start + SHARD_CHUNK_SIZE);
                         const chunkBlob = f.slice(start, end);
                         batches.push({
                             files: [chunkBlob],
@@ -775,16 +778,25 @@
                         });
                     }
                     fileIdx++;
+                } else if (f.size > BATCH_SIZE_LIMIT) {
+                    // Medium file (2MB - 80MB) gets uploaded in full
+                    batches.push({
+                        files: [f],
+                        paths: [rel],
+                        slot: 'w' + batchIdx
+                    });
+                    batchIdx++;
+                    fileIdx++;
                 } else {
                     // Small files get batched together
                     let bFiles = [], bPaths = [], bSize = 0;
                     while (fileIdx < pendingUploadFiles.length) {
                         const nextF = pendingUploadFiles[fileIdx];
                         const nextRel = nextF.webkitRelativePath || nextF.name;
-                        if (nextF.size > MAX_CHUNK_SIZE) {
-                            break; // Handle large file in next iteration
+                        if (nextF.size > BATCH_SIZE_LIMIT) {
+                            break; // Stop batching for medium/large files
                         }
-                        if (bSize + nextF.size > MAX_CHUNK_SIZE || bFiles.length >= MAX_BATCH_COUNT) {
+                        if (bSize + nextF.size > BATCH_SIZE_LIMIT || bFiles.length >= MAX_BATCH_COUNT) {
                             break; // Batch full
                         }
                         bFiles.push(nextF);
@@ -796,7 +808,7 @@
                         batches.push({
                             files: bFiles,
                             paths: bPaths,
-                            slot: 'w' + batchIdx // non-numeric slot, saved directly
+                            slot: 'w' + batchIdx
                         });
                         batchIdx++;
                     }
