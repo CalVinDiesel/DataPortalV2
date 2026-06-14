@@ -686,8 +686,8 @@
                 const host = window.location.hostname;
                 return `http://${host}:${port}/nitro_upload.php?${qs}`;
             }
-            // Production: same origin, web server handles concurrency natively
-            return '{{ route('api.upload.direct') }}?' + qs;
+            // Production: bypass Laravel bootstrap by using the standalone script directly!
+            return `/nitro_upload.php?${qs}`;
         }
 
         let activeSlotSent = {}; 
