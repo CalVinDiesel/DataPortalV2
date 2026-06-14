@@ -36,9 +36,9 @@ function nitroLog($msg) {
     // file_put_contents($logFile, "[$timestamp] $msg\n", FILE_APPEND);
 }
 
-// Parse .env manually for raw speed
+// Parse .env manually for raw speed (fallback if not in environment)
 $env = file_exists(__DIR__ . '/../.env') ? parse_ini_file(__DIR__ . '/../.env') : [];
-$root = $env['NITRO_STORAGE_ROOT'] ?? 'C:/DataPortal_Nitro_Storage';
+$root = getenv('NITRO_STORAGE_ROOT') ?: ($_ENV['NITRO_STORAGE_ROOT'] ?? ($env['NITRO_STORAGE_ROOT'] ?? 'C:/DataPortal_Nitro_Storage'));
 
     $projectId  = $_GET['projectID'] ?? 'unknown_project';
     $isFirst    = ($_GET['isFirstChunk'] ?? 'true') !== 'false';
@@ -78,7 +78,7 @@ try {
 
         // D. Prepare Destination File
         $localAbsPath = $storageDir . '/' . $path;
-        if ($slot !== null) {
+        if ($slot !== null && is_numeric($slot)) {
             $localAbsPath .= ".slot{$slot}";
         }
         
