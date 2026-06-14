@@ -753,100 +753,56 @@
             const MAX_CHUNK_SIZE = 2 * 1024 * 1024; 
             const MAX_BATCH_COUNT = 30;
 
-            for (let i = 0; i < pendingUploadFiles.length; i++) {
-                const file = pendingUploadFiles[i];
-                const relPath = file.webkitRelativePath || file.name;
-
-                if (pendingUploadFiles.length === 1 && file.size > MAX_CHUNK_SIZE) {
-                    // 🚀 ADAPTIVE-NITRO (v249): Dynamically calculate shards to ensure 10MB chunks for weak-internet stability
-                    const getNitroSpecs = (bytes) => {
-                        const targetChunkSize = 2 * 1024 * 1024; // 🚀 INSTANT RESUME (v278): Smaller chunks (2MB) ensure faster resume recovery
-                        let shards = Math.ceil(bytes / targetChunkSize);
-                        if (shards < 1) shards = 1;
-                        if (shards > 500) shards = 500; // Cap to prevent request overhead
-                        
-                        let lanes = 3;
-                        if (bytes < 5 * 1024 * 1024) lanes = 1;
-                        
-                        return { shards, lanes };
-                    };
-
-                    const specs = getNitroSpecs(file.size);
-                    st.textContent = `Autonomous Nitro: Streaming through ${specs.lanes} lanes... 🚀`;
-                    
-                    const shardSize = Math.ceil(file.size / specs.shards);
-                    const shardPromises = [];
-                    
-                    for (let x = 0; x < specs.shards; x++) {
-                        // 🚀 PAUSE-RESPECT (v281): Stop spawning new shards if paused
-                        if (isUploadPaused) await uploadPausePromise;
-                        
-                        // 🚀 STAGGERED IGNITION
-                        await backgroundSafeDelay(50);
-                        
-                        let start = x * shardSize;
-                        let end = (x === specs.shards - 1) ? file.size : (start + shardSize);
-                        if (start >= file.size) break;
-
-                        let shardBlob = file.slice(start, end);
-                        let batchPort = NITRO_IS_DEV ? (9001 + (x % 16)) : 9001;
-                        
-                        shardPromises.push((async () => {
-                            let batchSuccess = false;
-                            let retries = 0;
-                            const maxRetries = 3;
-
-                            while (!batchSuccess && retries < maxRetries) {
-                                try {
-                                    if (retries > 0) {
-                                        console.warn(`🔄 Retrying Shard ${x} on port ${batchPort} (Attempt ${retries + 1}/${maxRetries})...`);
-                                        await new Promise(r => setTimeout(r, 2000));
-                                    }
-                                    await uploadBatchNative([shardBlob], [file.name], true, batchPort, x);
-                                    batchSuccess = true;
-                                } catch (e) {
-                                    if (e.message === 'ABORTED') {
-                                        await uploadPausePromise;
-                                    } else {
-                                        retries++;
-                                        if (retries >= maxRetries) throw e;
-                                    }
-                                }
-                            }
-                        })());
+            // 🚀 PARALLEL LANE PIPELINE (v315): Stream multiple files/batches in parallel lanes
+            const batches = [];
+            let fileIdx = 0;
+            while (fileIdx < pendingUploadFiles.length) {
+                let bFiles = [], bPaths = [], bSize = 0;
+                while (fileIdx < pendingUploadFiles.length) {
+                    const f = pendingUploadFiles[fileIdx];
+                    const rel = f.webkitRelativePath || f.name;
+                    if (f.size > MAX_CHUNK_SIZE) {
+                        // Large file gets its own batch
+                        if (bFiles.length > 0) break;
+                        bFiles.push(f);
+                        bPaths.push(rel);
+                        fileIdx++;
+                        break;
                     }
-                    await Promise.all(shardPromises);
-                    i = pendingUploadFiles.length; // Mark all done
-                } else {
-                    let currentBatchFiles = [];
-                    let currentBatchPaths = [];
-                    let currentBatchSize = 0;
-                    while (i < pendingUploadFiles.length) {
-                        if (isUploadPaused) await uploadPausePromise;
-                        const nextFile = pendingUploadFiles[i];
-                        if (nextFile.size > MAX_CHUNK_SIZE) {
-                            if (currentBatchFiles.length > 0) break; 
-                            currentBatchFiles.push(nextFile);
-                            currentBatchPaths.push(nextFile.webkitRelativePath || nextFile.name);
-                            i++;
-                            break;
-                        }
-                        if (currentBatchSize + nextFile.size > MAX_CHUNK_SIZE || currentBatchFiles.length >= MAX_BATCH_COUNT) break;
-                        currentBatchFiles.push(nextFile);
-                        currentBatchPaths.push(nextFile.webkitRelativePath || nextFile.name);
-                        currentBatchSize += nextFile.size;
-                        i++;
-                    }
-                    if (currentBatchFiles.length === 0) continue;
+                    if (bSize + f.size > MAX_CHUNK_SIZE || bFiles.length >= MAX_BATCH_COUNT) break;
+                    bFiles.push(f);
+                    bPaths.push(rel);
+                    bSize  += f.size;
+                    fileIdx++;
+                }
+                if (bFiles.length > 0) batches.push({ files: bFiles, paths: bPaths });
+            }
+
+            st.textContent = `Autonomous Nitro: Streaming through parallel lanes... 🚀`;
+
+            let nextBatchIdx = 0;
+            const LANE_COUNT = 6;
+            
+            const runLane = async (laneId) => {
+                while (nextBatchIdx < batches.length) {
+                    if (isUploadPaused) await uploadPausePromise;
+                    const idx = nextBatchIdx++;
+                    if (idx >= batches.length) break;
                     
-                    const batchPort = NITRO_IS_DEV ? (9001 + Math.floor(Math.random() * 16)) : 9001;
+                    const b = batches[idx];
+                    const batchPort = NITRO_IS_DEV ? (9001 + (idx % 16)) : 9001;
+                    
                     let batchSuccess = false;
                     let retries = 0;
                     const maxRetries = 3;
 
                     while (!batchSuccess && retries < maxRetries) {
                         try {
-                            await uploadBatchNative(currentBatchFiles, currentBatchPaths, true, batchPort, 'small');
+                            if (retries > 0) {
+                                console.warn(`🔄 Retrying Batch ${idx} (Attempt ${retries + 1}/${maxRetries})...`);
+                                await new Promise(r => setTimeout(r, 2000));
+                            }
+                            await uploadBatchNative(b.files, b.paths, true, batchPort, 'w' + idx);
                             batchSuccess = true;
                         } catch (e) {
                             if (e.message === 'ABORTED') {
@@ -858,7 +814,14 @@
                         }
                     }
                 }
+            };
+
+            const activeLanes = Math.min(LANE_COUNT, batches.length);
+            const lanePromises = [];
+            for (let l = 0; l < activeLanes; l++) {
+                lanePromises.push(runLane(l));
             }
+            await Promise.all(lanePromises);
 
             // Move to Finalization
             overallSent = totalSizeBytes;
