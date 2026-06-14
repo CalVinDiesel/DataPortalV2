@@ -96,6 +96,12 @@
       font-family: 'Public Sans', sans-serif;
       position: relative;
       overflow: hidden;
+      transition: padding-left 0.3s ease;
+    }
+    @media (min-width: 992px) {
+      .upload-dashboard {
+        padding-left: 604px; /* Center content in the remaining space next to the left form panel (580px width + 24px gap) */
+      }
     }
     .radial-progress-container {
       position: relative;
@@ -367,9 +373,9 @@
             </linearGradient>
           </defs>
         </svg>
-        <div class="ambient-glow"></div>
-        <div class="radar-pulse"></div>
         <div class="radial-progress-container">
+          <div class="ambient-glow"></div>
+          <div class="radar-pulse"></div>
           <svg class="radial-progress-svg" viewBox="0 0 200 200">
             <circle class="radial-progress-bg" cx="100" cy="100" r="80"></circle>
             <circle id="radialProgressCircle" class="radial-progress-bar" cx="100" cy="100" r="80"></circle>
