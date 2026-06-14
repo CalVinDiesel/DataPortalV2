@@ -82,6 +82,138 @@
     [data-bs-theme="dark"] .premium-loading-panel { background: #1a1a2e; border-color: rgba(255, 255, 255, 0.1); }
     [data-bs-theme="dark"] .folder-list-item { background: #1a1a2e; border-color: rgba(255, 255, 255, 0.1); }
     [data-bs-theme="dark"] .folder-name { color: #e1e4e8; }
+
+    /* 🚀 PREMIUM UPLOAD DASHBOARD HUD (v320) */
+    .upload-dashboard {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #18182c 0%, #080812 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-family: 'Public Sans', sans-serif;
+      position: relative;
+      overflow: hidden;
+    }
+    .radial-progress-container {
+      position: relative;
+      width: 240px;
+      height: 240px;
+      margin-bottom: 2.5rem;
+      z-index: 5;
+    }
+    .radial-progress-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .radial-progress-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.05);
+      stroke-width: 12;
+    }
+    .radial-progress-bar {
+      fill: none;
+      stroke: url(#progressGradient);
+      stroke-width: 12;
+      stroke-linecap: round;
+      stroke-dasharray: 502;
+      stroke-dashoffset: 502;
+      transition: stroke-dashoffset 0.3s ease;
+      filter: drop-shadow(0 0 8px rgba(105, 108, 255, 0.6));
+    }
+    .radial-progress-text {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #dashPercent {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    .radial-progress-text small {
+      font-size: 0.8rem;
+      color: #8592a3;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 4px;
+    }
+    .glass-stats-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      z-index: 5;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 110px;
+    }
+    .stat-label {
+      font-size: 0.72rem;
+      color: #8592a3;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+      white-space: nowrap;
+    }
+    .stat-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .stat-divider {
+      width: 1px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .ambient-glow {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(105, 108, 255, 0.15) 0%, rgba(105, 108, 255, 0) 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .radar-pulse {
+      position: absolute;
+      width: 350px;
+      height: 350px;
+      border: 1px solid rgba(105, 108, 255, 0.1);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: radar 4s linear infinite;
+      pointer-events: none;
+      z-index: 2;
+    }
+    @keyframes radar {
+      0% { width: 240px; height: 240px; opacity: 1; }
+      100% { width: 600px; height: 600px; opacity: 0; }
+    }
   </style>
 </head>
 
@@ -224,6 +356,46 @@
     </div>
     <div class="right-panel">
       <div id="mapPicker"></div>
+      
+      <!-- 🚀 PREMIUM UPLOAD DASHBOARD HUD (v320) -->
+      <div id="uploadDashboard" class="upload-dashboard" style="display: none;">
+        <svg style="width:0;height:0;position:absolute;">
+          <defs>
+            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#696cff" />
+              <stop offset="100%" stop-color="#00f2ff" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="ambient-glow"></div>
+        <div class="radar-pulse"></div>
+        <div class="radial-progress-container">
+          <svg class="radial-progress-svg" viewBox="0 0 200 200">
+            <circle class="radial-progress-bg" cx="100" cy="100" r="80"></circle>
+            <circle id="radialProgressCircle" class="radial-progress-bar" cx="100" cy="100" r="80"></circle>
+          </svg>
+          <div class="radial-progress-text">
+            <span id="dashPercent">0%</span>
+            <small>Uploaded</small>
+          </div>
+        </div>
+        <div class="glass-stats-card">
+          <div class="stat-item">
+            <div class="stat-label">Upload Speed</div>
+            <div class="stat-value" id="dashSpeed">0.0 MB/s</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-label">Time Remaining</div>
+            <div class="stat-value" id="dashEta">Calculating...</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-label">Concurrency</div>
+            <div class="stat-value" id="dashLanes">6 / 6 lanes</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -260,6 +432,15 @@
     var modalMap = null, mainMap = null, mainMarker = null;
 
     var isUploading = false;
+    var isUploadPaused = false;
+    var uploadPausePromise = null;
+    var uploadPauseResolve = null;
+    var runningXhrs = {}; 
+    var maxVisualPercent = 0; // 🛡️ Progress Lock: Prevents jumping back
+
+    // 🚀 Speed & Progress Tracking Variables
+    var overallSent = 0;
+    var activeSlotSent = {};
     var isUploadPaused = false;
     var uploadPausePromise = null;
     var uploadPauseResolve = null;
@@ -310,7 +491,14 @@
           zoomControl: false, 
           attributionControl: false 
       }).setView([5.98, 116.07], 13);
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(mainMap);
+      
+      // Use clean, optimized CartoDB tiles for the form backdrop to keep LCP under 1s
+      const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+      const basemapUrl = isDark 
+          ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' 
+          : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+          
+      L.tileLayer(basemapUrl, { maxZoom: 19 }).addTo(mainMap);
       mainMap.on('click', e => placeMarker(e.latlng));
     });
 
@@ -497,6 +685,13 @@
         document.getElementById('inlineLoadingState').style.display = 'none';
         document.getElementById('alwaysVisibleFields').style.display = 'block';
         document.getElementById('uploadTypeSelection').style.display = 'block';
+        
+        // 🚀 CONGESTION BYPASS: Destroy modalMap when closed to abort pending tile downloads and free sockets
+        if (modalMap) {
+            modalMap.remove();
+            modalMap = null;
+            flightPolyline = null;
+        }
     }
 
     function importPositionData() {
@@ -536,6 +731,66 @@
                   </div>`;
         }
         w.innerHTML = h;
+    }
+
+    let speedTimer = null;
+    let prevSent = 0;
+    let speedHistory = [];
+
+    function startSpeedEstimator(totalBytes) {
+        prevSent = 0;
+        speedHistory = [];
+        const dashSpeed = document.getElementById('dashSpeed');
+        const dashEta = document.getElementById('dashEta');
+        
+        if (speedTimer) clearInterval(speedTimer);
+        
+        speedTimer = setInterval(() => {
+            if (!isUploading || isUploadPaused) return;
+            
+            const inFlightSum = Object.values(activeSlotSent).reduce((a, b) => a + b, 0);
+            const currentSent = overallSent + inFlightSum;
+            
+            const bytesDiff = Math.max(0, currentSent - prevSent);
+            prevSent = currentSent;
+            
+            speedHistory.push(bytesDiff);
+            if (speedHistory.length > 5) speedHistory.shift();
+            
+            const avgBytesPerSec = speedHistory.reduce((a, b) => a + b, 0) / speedHistory.length;
+            
+            const mbps = avgBytesPerSec / (1024 * 1024);
+            if (dashSpeed) dashSpeed.textContent = mbps.toFixed(1) + ' MB/s';
+            
+            const remainingBytes = totalBytes - currentSent;
+            if (dashEta) {
+                if (avgBytesPerSec > 1024) {
+                    const etaSecs = remainingBytes / avgBytesPerSec;
+                    if (etaSecs <= 0) {
+                        dashEta.textContent = 'Finishing...';
+                    } else if (etaSecs > 3600) {
+                        const h = Math.floor(etaSecs / 3600);
+                        const m = Math.floor((etaSecs % 3600) / 60);
+                        dashEta.textContent = `${h}h ${m}m`;
+                    } else if (etaSecs > 60) {
+                        const m = Math.floor(etaSecs / 60);
+                        const s = Math.floor(etaSecs % 60);
+                        dashEta.textContent = `${m}m ${s}s`;
+                    } else {
+                        dashEta.textContent = `${Math.round(etaSecs)}s`;
+                    }
+                } else {
+                    dashEta.textContent = 'Calculating...';
+                }
+            }
+        }, 1000);
+    }
+
+    function stopSpeedEstimator() {
+        if (speedTimer) {
+            clearInterval(speedTimer);
+            speedTimer = null;
+        }
     }
 
     function generateProjectID() {
@@ -592,6 +847,15 @@
         isUploading = true;
         document.getElementById('pauseBtn').style.display = 'inline-block';
         document.getElementById('uploadProgressContainer').style.display = 'block';
+        
+        // 🚀 GIGABIT-CONGESTION BYPASS (v320): Destroy map tiles & show premium HUD
+        if (mainMap) {
+            mainMap.remove();
+            mainMap = null;
+        }
+        document.getElementById('mapPicker').style.display = 'none';
+        document.getElementById('uploadDashboard').style.display = 'flex';
+        
         const st = document.getElementById('uploadStatusText'), 
               pb = document.getElementById('uploadProgressBar'), 
               pt = document.getElementById('uploadPercentageText'), 
@@ -599,6 +863,7 @@
         btn.disabled = true;
 
         const totalSizeBytes = pendingUploadFiles.reduce((acc, f) => acc + f.size, 0);
+        startSpeedEstimator(totalSizeBytes);
 
         // 🚀 STORAGE QUOTA CHECK (v310)
         try {
@@ -632,7 +897,7 @@
         st.textContent = "Preparing Nitro Stream...";
 
         // 🏎️ UNLIMITED DIRECT ENGINE: Utilizes native 50G PHP limit for extreme speed
-        let overallSent = 0;
+        overallSent = 0;
         let lastPaintTime = Date.now();
 
         let lastVisualPercent = -1;
@@ -651,6 +916,18 @@
                         pb.style.width = maxVisualPercent + '%'; 
                         pt.textContent = maxVisualPercent + '%';
                         st.textContent = statusText;
+                        
+                        // Update radial progress and dashboard HUD
+                        const radialCircle = document.getElementById('radialProgressCircle');
+                        const dashPercent = document.getElementById('dashPercent');
+                        if (radialCircle) {
+                            const offset = 502 - (maxVisualPercent / 100) * 502;
+                            radialCircle.style.strokeDashoffset = offset;
+                        }
+                        if (dashPercent) {
+                            dashPercent.textContent = maxVisualPercent + '%';
+                        }
+
                         lastVisualPercent = p;
                         lastPaintTime = Date.now();
                         resolve();
@@ -660,6 +937,18 @@
                             pb.style.width = maxVisualPercent + '%'; 
                             pt.textContent = maxVisualPercent + '%';
                             st.textContent = statusText;
+                            
+                            // Update radial progress and dashboard HUD
+                            const radialCircle = document.getElementById('radialProgressCircle');
+                            const dashPercent = document.getElementById('dashPercent');
+                            if (radialCircle) {
+                                const offset = 502 - (maxVisualPercent / 100) * 502;
+                                radialCircle.style.strokeDashoffset = offset;
+                            }
+                            if (dashPercent) {
+                                dashPercent.textContent = maxVisualPercent + '%';
+                            }
+
                             lastVisualPercent = p;
                             lastPaintTime = Date.now();
                             resolve();
@@ -690,7 +979,7 @@
             return `/nitro_upload.php?${qs}`;
         }
 
-        let activeSlotSent = {}; 
+        activeSlotSent = {}; 
 
         function uploadBatchNative(files, relPaths, isFirst, port, slotId) {
             return new Promise((resolve, reject) => {
@@ -819,7 +1108,7 @@
             st.textContent = `Autonomous Nitro: Streaming through parallel lanes... 🚀`;
 
             let nextBatchIdx = 0;
-            const LANE_COUNT = 16;
+            const LANE_COUNT = 6;
             
             const runLane = async (laneId) => {
                 while (nextBatchIdx < batches.length) {
@@ -828,7 +1117,7 @@
                     if (idx >= batches.length) break;
                     
                     const b = batches[idx];
-                    const batchPort = NITRO_IS_DEV ? (9001 + (idx % 16)) : 9001;
+                    const batchPort = NITRO_IS_DEV ? (9001 + (idx % 6)) : 9001;
                     
                     let batchSuccess = false;
                     let retries = 0;
@@ -855,6 +1144,10 @@
             };
 
             const activeLanes = Math.min(LANE_COUNT, batches.length);
+            const dashLanes = document.getElementById('dashLanes');
+            if (dashLanes) {
+                dashLanes.textContent = `${activeLanes} / ${LANE_COUNT} lanes`;
+            }
             const lanePromises = [];
             for (let l = 0; l < activeLanes; l++) {
                 lanePromises.push(runLane(l));
@@ -937,6 +1230,7 @@
             if (data.success) {
                 document.getElementById('uploadProgressBar').style.backgroundColor = '#2ecc71';
                 document.getElementById('uploadStatusText').innerHTML = "✨ Upload Complete! Nitro Integrity Verified! 🛰️";
+                stopSpeedEstimator();
                 setTimeout(() => {
                     isUploading = false;
                     window.location.href = '/my-uploads';
@@ -944,6 +1238,7 @@
             } else throw new Error(data.message);
         } catch (e) {
             isUploading = false;
+            stopSpeedEstimator();
             alert("Nitro Error: " + (e.message || "Network Error"));
             document.getElementById('submitBtn').disabled = false;
         }
