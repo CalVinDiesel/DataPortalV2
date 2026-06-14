@@ -753,29 +753,54 @@
             const MAX_CHUNK_SIZE = 2 * 1024 * 1024; 
             const MAX_BATCH_COUNT = 30;
 
-            // 🚀 PARALLEL LANE PIPELINE (v315): Stream multiple files/batches in parallel lanes
+            // 🚀 HYPER-NITRO SHARDING PIPELINE (v320): Stream chunks/batches in parallel lanes
             const batches = [];
             let fileIdx = 0;
+            let batchIdx = 0;
             while (fileIdx < pendingUploadFiles.length) {
-                let bFiles = [], bPaths = [], bSize = 0;
-                while (fileIdx < pendingUploadFiles.length) {
-                    const f = pendingUploadFiles[fileIdx];
-                    const rel = f.webkitRelativePath || f.name;
-                    if (f.size > MAX_CHUNK_SIZE) {
-                        // Large file gets its own batch
-                        if (bFiles.length > 0) break;
-                        bFiles.push(f);
-                        bPaths.push(rel);
-                        fileIdx++;
-                        break;
+                const f = pendingUploadFiles[fileIdx];
+                const rel = f.webkitRelativePath || f.name;
+
+                if (f.size > MAX_CHUNK_SIZE) {
+                    // Large file gets sliced into 2MB chunks for Cloudflare compatibility
+                    const numChunks = Math.ceil(f.size / MAX_CHUNK_SIZE);
+                    for (let c = 0; c < numChunks; c++) {
+                        const start = c * MAX_CHUNK_SIZE;
+                        const end = Math.min(f.size, start + MAX_CHUNK_SIZE);
+                        const chunkBlob = f.slice(start, end);
+                        batches.push({
+                            files: [chunkBlob],
+                            paths: [rel],
+                            slot: c // numeric slot for automatic merging!
+                        });
                     }
-                    if (bSize + f.size > MAX_CHUNK_SIZE || bFiles.length >= MAX_BATCH_COUNT) break;
-                    bFiles.push(f);
-                    bPaths.push(rel);
-                    bSize  += f.size;
                     fileIdx++;
+                } else {
+                    // Small files get batched together
+                    let bFiles = [], bPaths = [], bSize = 0;
+                    while (fileIdx < pendingUploadFiles.length) {
+                        const nextF = pendingUploadFiles[fileIdx];
+                        const nextRel = nextF.webkitRelativePath || nextF.name;
+                        if (nextF.size > MAX_CHUNK_SIZE) {
+                            break; // Handle large file in next iteration
+                        }
+                        if (bSize + nextF.size > MAX_CHUNK_SIZE || bFiles.length >= MAX_BATCH_COUNT) {
+                            break; // Batch full
+                        }
+                        bFiles.push(nextF);
+                        bPaths.push(nextRel);
+                        bSize += nextF.size;
+                        fileIdx++;
+                    }
+                    if (bFiles.length > 0) {
+                        batches.push({
+                            files: bFiles,
+                            paths: bPaths,
+                            slot: 'w' + batchIdx // non-numeric slot, saved directly
+                        });
+                        batchIdx++;
+                    }
                 }
-                if (bFiles.length > 0) batches.push({ files: bFiles, paths: bPaths });
             }
 
             st.textContent = `Autonomous Nitro: Streaming through parallel lanes... 🚀`;
@@ -802,7 +827,7 @@
                                 console.warn(`🔄 Retrying Batch ${idx} (Attempt ${retries + 1}/${maxRetries})...`);
                                 await new Promise(r => setTimeout(r, 2000));
                             }
-                            await uploadBatchNative(b.files, b.paths, true, batchPort, 'w' + idx);
+                            await uploadBatchNative(b.files, b.paths, true, batchPort, b.slot);
                             batchSuccess = true;
                         } catch (e) {
                             if (e.message === 'ABORTED') {
