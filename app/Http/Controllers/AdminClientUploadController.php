@@ -126,6 +126,33 @@ class AdminClientUploadController extends Controller
             return response()->json(['success' => false, 'message' => 'Not found.']);
         }
 
+        // 🚀 Cleanup physical files on deletion
+        // 1. Delete from SFTP server
+        try {
+            $creator = \App\Models\User::where('email', $upload->created_by_email)->first();
+            if ($creator) {
+                $sftpUser = !empty($creator->sftp_username) ? $creator->sftp_username : \Illuminate\Support\Str::slug($creator->name);
+            } else {
+                $sftpUser = \Illuminate\Support\Str::slug(explode('@', $upload->created_by_email)[0]);
+            }
+            
+            $relativeSftpPath = "uploads/{$sftpUser}/{$upload->project_id}";
+            if (Storage::disk('sftp_delivery')->exists($relativeSftpPath)) {
+                Storage::disk('sftp_delivery')->deleteDirectory($relativeSftpPath);
+            }
+        } catch (\Exception $e) {
+            \Log::warning("Failed to delete project folder from SFTP: " . $e->getMessage());
+        }
+
+        // 2. Delete from local nitro disk
+        try {
+            if (Storage::disk('nitro')->exists($upload->project_id)) {
+                Storage::disk('nitro')->deleteDirectory($upload->project_id);
+            }
+        } catch (\Exception $e) {
+            \Log::warning("Failed to delete project folder from local nitro disk: " . $e->getMessage());
+        }
+
         // Delete connected processing requests first
         ProcessingRequest::where('upload_id', $id)->delete();
         $upload->delete();
@@ -143,10 +170,41 @@ class AdminClientUploadController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Delete connected processing requests first
+            $uploads = ClientUpload::whereIn('id', $ids)->get();
+
+            foreach ($uploads as $upload) {
+                // 🚀 Cleanup physical files on deletion
+                // 1. Delete from SFTP server
+                try {
+                    $creator = \App\Models\User::where('email', $upload->created_by_email)->first();
+                    if ($creator) {
+                        $sftpUser = !empty($creator->sftp_username) ? $creator->sftp_username : \Illuminate\Support\Str::slug($creator->name);
+                    } else {
+                        $sftpUser = \Illuminate\Support\Str::slug(explode('@', $upload->created_by_email)[0]);
+                    }
+                    
+                    $relativeSftpPath = "uploads/{$sftpUser}/{$upload->project_id}";
+                    if (Storage::disk('sftp_delivery')->exists($relativeSftpPath)) {
+                        Storage::disk('sftp_delivery')->deleteDirectory($relativeSftpPath);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning("Failed to delete project folder from SFTP in batch: " . $e->getMessage());
+                }
+
+                // 2. Delete from local nitro disk
+                try {
+                    if (Storage::disk('nitro')->exists($upload->project_id)) {
+                        Storage::disk('nitro')->deleteDirectory($upload->project_id);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning("Failed to delete project folder from local nitro disk in batch: " . $e->getMessage());
+                }
+            }
+
+            // 3. Delete connected processing requests first
             ProcessingRequest::whereIn('upload_id', $ids)->delete();
 
-            // 2. Delete the client uploads
+            // 4. Delete the client uploads
             ClientUpload::whereIn('id', $ids)->delete();
 
             DB::commit();
