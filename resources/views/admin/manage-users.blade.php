@@ -234,11 +234,22 @@
               return;
             }
             reqTbody.innerHTML = reqs.map(function(r) {
+              var status = r.status || 'pending';
+              var statusBadge = '';
+              if (status === 'rejected') {
+                statusBadge = ' <span class="badge bg-label-danger ms-1">Rejected</span>';
+              } else {
+                statusBadge = ' <span class="badge bg-label-warning ms-1">Pending</span>';
+              }
+
               var actions = '<div class="d-flex flex-wrap gap-2">' +
-                '<button type="button" class="btn btn-sm btn-success approve-req-btn" data-id="' + r.id + '">Approve</button>' +
-                '<button type="button" class="btn btn-sm btn-danger reject-req-btn" data-id="' + r.id + '">Reject</button>' +
+                '<button type="button" class="btn btn-sm btn-success approve-req-btn" data-id="' + r.id + '">Approve</button>';
+              if (status === 'pending') {
+                actions += '<button type="button" class="btn btn-sm btn-danger reject-req-btn" data-id="' + r.id + '">Reject</button>';
+              }
+              actions += '<button type="button" class="btn btn-sm btn-outline-danger remove-req-btn" data-id="' + r.id + '">Remove</button>' +
                 '</div>';
-              return '<tr><td>' + (r.email || '') + '</td><td>' + (r.name || '') + '</td><td>' + (r.company_name || '—') + '</td><td>' + (r.reason_for_access || '—') + '</td><td>' + actions + '</td></tr>';
+              return '<tr><td>' + (r.email || '') + statusBadge + '</td><td>' + (r.name || '') + '</td><td>' + (r.company_name || '—') + '</td><td>' + (r.reason_for_access || '—') + '</td><td>' + actions + '</td></tr>';
             }).join('');
             
             reqTbody.querySelectorAll('.approve-req-btn').forEach(function(btn) {
@@ -265,6 +276,30 @@
                 }).then(r => r.json()).then(data => {
                   if (data.success) { showReqAlert('Request Rejected.', true); loadAccessRequests(); } 
                   else { showReqAlert('Failed: ' + data.message, false); btn.disabled = false; }
+                });
+              });
+            });
+
+            reqTbody.querySelectorAll('.remove-req-btn').forEach(function(btn) {
+              btn.addEventListener('click', function() {
+                var id = this.getAttribute('data-id');
+                if (!confirm('Permanently remove this access request from the database? This cannot be undone.')) return;
+                this.disabled = true;
+                fetch(API + '/api/admin/access-requests/' + id, {
+                  method: 'DELETE',
+                  credentials: 'include'
+                }).then(r => r.json()).then(data => {
+                  if (data.success) {
+                    showReqAlert('Request permanently removed.', true);
+                    loadAccessRequests();
+                    loadUsers();
+                  } else {
+                    showReqAlert('Failed: ' + data.message, false);
+                    btn.disabled = false;
+                  }
+                }).catch(() => {
+                  showReqAlert('Network error. Failed to remove request.', false);
+                  btn.disabled = false;
                 });
               });
             });
@@ -312,8 +347,15 @@
                 ? '<span class="badge bg-label-danger">Removed</span>'
                 : (isSuperAdmin ? '<span class="badge bg-label-dark">Super Admin</span>' : (isPending ? '<span class="badge bg-label-warning">Pending</span>' : (isAdmin ? '<span class="badge bg-label-success">Admin</span>' : (isTrusted ? '<span class="badge bg-label-primary">Trusted User</span>' : '<span class="badge bg-label-secondary">Registered</span>'))));
 
-              if (isAdmin || isSuperAdmin || isRemoved || isPending) {
+              if (isAdmin || isSuperAdmin || isRemoved) {
                 return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td><td>' + roleBadge + '</td><td><span class="text-muted small">—</span></td></tr>';
+              }
+
+              if (isPending) {
+                var action = '<div class="d-flex flex-wrap gap-2">';
+                action += '<button type="button" class="btn btn-sm btn-outline-danger remove-user-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Remove</button>';
+                action += '</div>';
+                return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td><td>' + roleBadge + '</td><td>' + action + '</td></tr>';
               }
 
               var action = '<div class="d-flex flex-wrap gap-2">';

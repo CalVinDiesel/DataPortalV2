@@ -144,6 +144,13 @@ class AdminUserController extends Controller
             return response()->json(['success' => false, 'message' => 'User not found.']);
         }
 
+        if ($user->role === 'pending') {
+            // Permanently delete associated access request and the pending user
+            \App\Models\AccessRequest::where('email', $user->email)->delete();
+            $user->delete();
+            return response()->json(['success' => true, 'message' => 'Pending user and invite request removed successfully.']);
+        }
+
         $user->is_active = false;
         $user->save();
         

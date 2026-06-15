@@ -13,7 +13,7 @@ class AdminAccessRequestController extends Controller
 {
     public function index()
     {
-        $requests = AccessRequest::where('status', 'pending')
+        $requests = AccessRequest::whereIn('status', ['pending', 'rejected'])
                     ->orderBy('created_at', 'desc')
                     ->get();
         return response()->json($requests);
@@ -23,8 +23,8 @@ class AdminAccessRequestController extends Controller
     {
         $accessRequest = AccessRequest::findOrFail($id);
 
-        if ($accessRequest->status !== 'pending') {
-            return response()->json(['success' => false, 'message' => 'Request is not pending.'], 400);
+        if ($accessRequest->status !== 'pending' && $accessRequest->status !== 'rejected') {
+            return response()->json(['success' => false, 'message' => 'Request is not in pending or rejected status.'], 400);
         }
 
         // Generate invitation token
@@ -65,5 +65,21 @@ class AdminAccessRequestController extends Controller
         $accessRequest->save();
 
         return response()->json(['success' => true, 'message' => 'Request rejected.']);
+    }
+
+    public function destroy($id)
+    {
+        $accessRequest = AccessRequest::findOrFail($id);
+        
+        // Find if there is a pending user created for this request (by matching email)
+        // and delete it too, just in case they were approved first then removed/deleted
+        $user = User::where('email', $accessRequest->email)->first();
+        if ($user) {
+            $user->delete();
+        }
+        
+        $accessRequest->delete();
+
+        return response()->json(['success' => true, 'message' => 'Request permanently removed from database.']);
     }
 }

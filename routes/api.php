@@ -80,4 +80,5 @@ Route::middleware('web')->group(function () {
     Route::get('/admin/access-requests', [AdminAccessRequestController::class, 'index']);
     Route::post('/admin/access-requests/{id}/approve', [AdminAccessRequestController::class, 'approve']);
     Route::post('/admin/access-requests/{id}/reject', [AdminAccessRequestController::class, 'reject']);
+    Route::delete('/admin/access-requests/{id}', [AdminAccessRequestController::class, 'destroy']);
 });
