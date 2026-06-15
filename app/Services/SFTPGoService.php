@@ -106,6 +106,9 @@ class SFTPGoService
         // Retrieve decrypted plain-text password from model accessor or passed value
         $password = $plainPassword ?: $user->sftp_password;
 
+        $isAdmin = in_array($user->role, ['admin', 'superadmin']);
+        $permissions = $isAdmin ? ['*'] : ['list', 'download', 'upload', 'overwrite', 'create_dirs', 'rename', 'chtimes'];
+
         $userData = [
             'username' => $user->sftp_username,
             'password' => $password,
@@ -114,7 +117,7 @@ class SFTPGoService
             'uid' => 1000,
             'gid' => 1000,
             'permissions' => [
-                '/' => ['*']
+                '/' => $permissions
             ],
             'max_sessions' => 0,
             'quota_size' => 0,
