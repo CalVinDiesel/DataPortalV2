@@ -101,7 +101,7 @@ class User extends Authenticatable
      */
     protected function regenerateAndSyncSftpPassword(): string
     {
-        $plainText = \Illuminate\Support\Str::random(12);
+        $plainText = self::generateSecureSftpPassword(12);
         $encrypted = \Illuminate\Support\Facades\Crypt::encryptString($plainText);
         
         // Update database directly to avoid Eloquent saved recursion
@@ -135,5 +135,20 @@ class User extends Authenticatable
             },
             set: fn ($value) => $value ? \Illuminate\Support\Facades\Crypt::encryptString($value) : null,
         );
+    }
+
+    /**
+     * Generate a secure, cryptographically random SFTP password
+     * excluding ambiguous/look-alike characters (0, O, o, 1, I, l).
+     */
+    public static function generateSecureSftpPassword(int $length = 12): string
+    {
+        $pool = '23456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ';
+        $password = '';
+        $max = strlen($pool) - 1;
+        for ($i = 0; $i < $length; $i++) {
+            $password .= $pool[random_int(0, $max)];
+        }
+        return $password;
     }
 }

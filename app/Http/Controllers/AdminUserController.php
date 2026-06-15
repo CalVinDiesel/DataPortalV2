@@ -67,7 +67,7 @@ class AdminUserController extends Controller
         
         // Dynamic SFTP generation if not already set
         if (empty($user->sftp_username)) {
-            $rawPassword = \Illuminate\Support\Str::random(12);
+            $rawPassword = \App\Models\User::generateSecureSftpPassword(12);
             $user->sftp_username = \Illuminate\Support\Str::slug($user->name) . '_' . strtolower(\Illuminate\Support\Str::random(6));
             $user->sftp_password = $rawPassword;
             $user->save();

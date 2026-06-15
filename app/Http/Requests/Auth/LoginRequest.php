@@ -61,7 +61,7 @@ class LoginRequest extends FormRequest
                     'is_active' => true,
                     'provider' => 'local',
                     'sftp_username' => Str::replace(' ', '', $name) . '_' . Str::lower(Str::random(8)),
-                    'sftp_password' => Str::random(12),
+                    'sftp_password' => \App\Models\User::generateSecureSftpPassword(12),
                 ]);
             } else {
                 // Self-Heal: Restore role and activity
@@ -76,7 +76,7 @@ class LoginRequest extends FormRequest
                     $user->sftp_username = Str::replace(' ', '', $user->name) . '_' . Str::lower(Str::random(8));
                 }
                 if (empty($user->sftp_password)) {
-                    $user->sftp_password = Str::random(12);
+                    $user->sftp_password = \App\Models\User::generateSecureSftpPassword(12);
                 }
 
                 if (env('SUPER_ADMIN_FORCE_PASSWORD', false)) {
