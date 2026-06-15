@@ -1194,7 +1194,7 @@
             st.textContent = `Autonomous Nitro: Streaming through parallel lanes... 🚀`;
 
             let nextBatchIdx = 0;
-            const LANE_COUNT = 6;
+            const LANE_COUNT = 12;
             let activeWorkers = 0;
             
             const runLane = async (laneId) => {
@@ -1203,9 +1203,17 @@
                     while (nextBatchIdx < batches.length) {
                         if (isUploadPaused) await uploadPausePromise;
 
-                        // 🏎️ ADAPTIVE CONCURRENCY: Throttle active lanes on slow networks
-                        // If upload speed drops under 1.5 MB/s, reduce concurrent lanes to 3 to prevent congestion.
-                        const targetLanes = currentUploadSpeedMBps < 1.5 ? 3 : 6;
+                        // 🏎️ ADAPTIVE CONCURRENCY: Throttle active lanes based on speed
+                        // 3 lanes on slow links (<1.5 MB/s) to prevent congestion.
+                        // 6 lanes on standard links (1.5 - 6.0 MB/s).
+                        // 12 lanes on gigabit/high-speed fiber links (>6.0 MB/s) for maximum throughput.
+                        let targetLanes = 6;
+                        if (currentUploadSpeedMBps < 1.5) {
+                            targetLanes = 3;
+                        } else if (currentUploadSpeedMBps > 6.0) {
+                            targetLanes = 12;
+                        }
+
                         if (activeWorkers > targetLanes) {
                             // Temporarily decrement active count for UI display
                             activeWorkers--;
