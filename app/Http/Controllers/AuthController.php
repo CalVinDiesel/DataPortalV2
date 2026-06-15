@@ -12,6 +12,7 @@ class AuthController extends Controller
     public function profile(Request $request)
     {
         $user = $request->user();
+        $this->ensureSftpCredentials($user);
         $hasSftpAccess = in_array($user->role, ['trusted', 'admin', 'superadmin']);
 
         if ($hasSftpAccess && $user->sftp_username) {
@@ -120,6 +121,7 @@ class AuthController extends Controller
     public function sftp(Request $request)
     {
         $user = $request->user();
+        $this->ensureSftpCredentials($user);
         $hasSftpAccess = in_array($user->role, ['trusted', 'admin', 'superadmin']);
 
         return response()->json([
@@ -144,5 +146,20 @@ class AuthController extends Controller
         $user->save();
 
         return response()->json(['success' => true, 'message' => 'SFTP password updated.']);
+    }
+
+    protected function ensureSftpCredentials($user)
+    {
+        $hasSftpAccess = in_array($user->role, ['trusted', 'admin', 'superadmin']) && $user->is_active;
+        if ($hasSftpAccess && empty($user->sftp_username)) {
+            try {
+                $rawPassword = \App\Models\User::generateSecureSftpPassword(12);
+                $user->sftp_username = \Illuminate\Support\Str::slug($user->name) . '_' . strtolower(\Illuminate\Support\Str::random(6));
+                $user->sftp_password = $rawPassword;
+                $user->save();
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to auto-generate SFTP credentials: " . $e->getMessage());
+            }
+        }
     }
 }

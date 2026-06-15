@@ -76,6 +76,7 @@ Route::middleware('web')->group(function () {
     Route::post('/admin/users/downgrade-registered', [AdminUserController::class, 'downgradeRegistered']);
     Route::post('/admin/users/remove', [AdminUserController::class, 'remove']);
     Route::post('/admin/users/resend-invitation', [AdminUserController::class, 'resendInvitation']);
+    Route::post('/admin/users/downgrade-admin', [AdminUserController::class, 'downgradeAdmin']);
 
     // Admin Access Requests (Waitlist) Routes
     Route::get('/admin/access-requests', [AdminAccessRequestController::class, 'index']);

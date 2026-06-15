@@ -347,8 +347,20 @@
                 ? '<span class="badge bg-label-danger">Removed</span>'
                 : (isSuperAdmin ? '<span class="badge bg-label-dark">Super Admin</span>' : (isPending ? '<span class="badge bg-label-warning">Pending</span>' : (isAdmin ? '<span class="badge bg-label-success">Admin</span>' : (isTrusted ? '<span class="badge bg-label-primary">Trusted User</span>' : '<span class="badge bg-label-secondary">Registered</span>'))));
 
-              if (isAdmin || isSuperAdmin || isRemoved) {
+              if (isSuperAdmin || isRemoved) {
                 return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td><td>' + roleBadge + '</td><td><span class="text-muted small">—</span></td></tr>';
+              }
+
+              if (isAdmin) {
+                var action = '<div class="d-flex flex-wrap gap-2">';
+                if (currentRole === 'superadmin') {
+                  action += '<button type="button" class="btn btn-sm btn-outline-warning downgrade-admin-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Downgrade Admin</button>';
+                  action += '<button type="button" class="btn btn-sm btn-outline-danger remove-user-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Remove</button>';
+                } else {
+                  action += '<span class="text-muted small">—</span>';
+                }
+                action += '</div>';
+                return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td><td>' + roleBadge + '</td><td>' + action + '</td></tr>';
               }
 
               if (isPending) {
@@ -489,6 +501,34 @@
                     showAlert('Network error. Could not resend invitation.', false);
                     btn.disabled = false;
                     btn.innerHTML = oldHtml;
+                  });
+              });
+            });
+
+            tbody.querySelectorAll('.downgrade-admin-btn').forEach(function(btn) {
+              btn.addEventListener('click', function() {
+                var email = this.getAttribute('data-email');
+                if (!email || !confirm('Downgrade admin "' + email + '" back to their previous role?')) return;
+                this.disabled = true;
+                fetch(API + '/api/admin/users/downgrade-admin', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ email: email })
+                })
+                  .then(function(r) { return r.json(); })
+                  .then(function(data) {
+                    if (data.success) {
+                      showAlert(data.message || 'Admin downgraded successfully.', true);
+                      loadUsers();
+                    } else {
+                      showAlert(data.message || 'Failed to downgrade admin.', false);
+                      btn.disabled = false;
+                    }
+                  })
+                  .catch(function() {
+                    showAlert('Network error. Could not downgrade admin.', false);
+                    btn.disabled = false;
                   });
               });
             });

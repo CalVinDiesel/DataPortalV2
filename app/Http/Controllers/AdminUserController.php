@@ -40,7 +40,16 @@ class AdminUserController extends Controller
             return response()->json(['success' => false, 'message' => 'User not found.']);
         }
 
+        $user->previous_role = $user->role;
         $user->role = 'admin';
+
+        // Auto-generate SFTP credentials if they do not exist
+        if (empty($user->sftp_username)) {
+            $rawPassword = \App\Models\User::generateSecureSftpPassword(12);
+            $user->sftp_username = \Illuminate\Support\Str::slug($user->name) . '_' . strtolower(\Illuminate\Support\Str::random(6));
+            $user->sftp_password = $rawPassword;
+        }
+
         $user->save();
 
         return response()->json(['success' => true, 'message' => 'User promoted to admin.']);
@@ -189,5 +198,38 @@ class AdminUserController extends Controller
         }
 
         return response()->json(['success' => true, 'message' => 'Invitation email resent successfully.']);
+    }
+
+    public function downgradeAdmin(Request $request)
+    {
+        \Illuminate\Support\Facades\Gate::authorize('superadmin');
+
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        // Prevent modifying the base Super Admin defined in .env or anyone with superadmin role
+        if ($request->email === env('SUPER_ADMIN_EMAIL') || ($user && $user->role === 'superadmin')) {
+            return response()->json(['success' => false, 'message' => 'The Super Admin cannot be downgraded.'], 403);
+        }
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'User not found.']);
+        }
+
+        if ($user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'User is not an admin.']);
+        }
+
+        // Determine the role to restore
+        $previousRole = $user->previous_role ?: 'registered';
+
+        $user->role = $previousRole;
+        $user->previous_role = null;
+        $user->save();
+
+        return response()->json(['success' => true, 'message' => 'Admin successfully downgraded to ' . $previousRole . '.']);
     }
 }
