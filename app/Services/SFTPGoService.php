@@ -136,6 +136,22 @@ class SFTPGoService
                 // Merge data and preserve unmanaged attributes (casting $existingData to array shallowly, nested objects remain stdClass)
                 $payload = array_merge((array) $existingData, $userData);
 
+                // Strip read-only and system-managed fields that SFTPGo rejects in PUT requests
+                $readOnlyFields = [
+                    'id',
+                    'used_quota_size',
+                    'used_quota_files',
+                    'last_quota_update',
+                    'used_upload_data_transfer',
+                    'used_download_data_transfer',
+                    'last_login',
+                    'created_at',
+                    'updated_at'
+                ];
+                foreach ($readOnlyFields as $field) {
+                    unset($payload[$field]);
+                }
+
                 // Omit password if it is empty/not updated (SFTPGo keeps existing password)
                 if (empty($password)) {
                     unset($payload['password']);
