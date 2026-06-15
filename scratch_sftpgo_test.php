@@ -83,29 +83,67 @@ try {
     echo "ERROR fetching user from SFTPGo: " . $e->getMessage() . "\n";
 }
 
-// Execute Sync
-echo "\n--- Running SFTPGoService::syncUser() ---\n";
+// Execute Sync manually to see the exact payload and response
+echo "\n--- Running Manual SFTPGo User Update (PUT) ---\n";
 try {
-    SFTPGoService::syncUser($user);
-    echo "Sync method execution completed. Check your Laravel logs (/storage/logs/laravel.log) for details.\n";
-} catch (\Exception $e) {
-    echo "ERROR during syncUser: " . $e->getMessage() . "\n";
-}
+    // Replicate syncUser logic
+    $sftpRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', env('SFTP_DELIVERY_ROOT', '/home/tiquan')), '/');
+    if (in_array($user->role, ['admin', 'superadmin'])) {
+        $homeDir = $sftpRoot . '/delivered/' . $user->sftp_username;
+    } else {
+        $homeDir = $sftpRoot . '/uploads/' . $user->sftp_username;
+    }
 
-// Check user status in SFTPGo again
-echo "\n--- Re-verifying user in SFTPGo after Sync ---\n";
-try {
+    $password = $user->sftp_password;
+    $isAdmin = in_array($user->role, ['admin', 'superadmin']);
+    $permissions = $isAdmin ? ['*'] : ['list', 'download', 'upload', 'overwrite', 'create_dirs', 'rename', 'chtimes'];
+
+    $userData = [
+        'username' => $user->sftp_username,
+        'password' => $password,
+        'status' => 1,
+        'home_dir' => $homeDir,
+        'uid' => 1000,
+        'gid' => 1000,
+        'permissions' => [
+            '/' => $permissions
+        ],
+        'max_sessions' => 0,
+        'quota_size' => 0,
+        'quota_files' => 0,
+    ];
+
     $getResponse = $client->get('/users/' . urlencode($username));
     if ($getResponse->successful()) {
-        echo "User exists in SFTPGo.\n";
-        $existingData = json_decode($getResponse->body(), true);
-        echo "Updated Home directory: " . ($existingData['home_dir'] ?? 'Not set') . "\n";
-        echo "Updated permissions: " . json_encode($existingData['permissions'] ?? []) . "\n";
+        $existingData = json_decode($getResponse->body()) ?: new \stdClass();
+        $payload = array_merge((array) $existingData, $userData);
+
+        // Strip read-only fields
+        $readOnlyFields = [
+            'id',
+            'used_quota_size',
+            'used_quota_files',
+            'last_quota_update',
+            'used_upload_data_transfer',
+            'used_download_data_transfer',
+            'last_login',
+            'created_at',
+            'updated_at'
+        ];
+        foreach ($readOnlyFields as $field) {
+            unset($payload[$field]);
+        }
+
+        echo "PUT Payload: " . json_encode($payload, JSON_PRETTY_PRINT) . "\n";
+
+        $putResponse = $client->put('/users/' . urlencode($user->sftp_username), $payload);
+        echo "PUT Response Status: " . $putResponse->status() . "\n";
+        echo "PUT Response Body: " . $putResponse->body() . "\n";
     } else {
-        echo "GET /users/{$username} returned status " . $getResponse->status() . "\n";
+        echo "ERROR: Could not fetch user data for merge: " . $getResponse->body() . "\n";
     }
 } catch (\Exception $e) {
-    echo "ERROR re-verifying: " . $e->getMessage() . "\n";
+    echo "ERROR during manual sync: " . $e->getMessage() . "\n";
 }
 
 echo "=========================================\n";
