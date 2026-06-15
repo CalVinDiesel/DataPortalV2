@@ -103,6 +103,21 @@ class SFTPGoService
             $homeDir = $sftpRoot . '/uploads/' . $user->sftp_username;
         }
 
+        // AUTO-CREATE PHYSICAL SFTP HOME DIRECTORY ON SYNC
+        try {
+            $sftpDisk = \Illuminate\Support\Facades\Storage::disk('sftp_delivery');
+            $relativeDir = in_array($user->role, ['admin', 'superadmin']) 
+                ? 'delivered/' . $user->sftp_username 
+                : 'uploads/' . $user->sftp_username;
+
+            if (!$sftpDisk->exists($relativeDir)) {
+                $sftpDisk->makeDirectory($relativeDir);
+                $sftpDisk->setVisibility($relativeDir, 'public');
+            }
+        } catch (\Exception $e) {
+            Log::warning("SFTPGo API: Could not auto-create directory on sync for {$user->sftp_username}: " . $e->getMessage());
+        }
+
         // Retrieve decrypted plain-text password from model accessor or passed value
         $password = $plainPassword ?: $user->sftp_password;
 
