@@ -56,7 +56,7 @@ class LoginRequest extends FormRequest
                     'name' => $name,
                     'email' => $this->email,
                     'username' => env('SUPER_ADMIN_USER', 'superadmin'),
-                    'password_hash' => Hash::make($this->password),
+                    'password' => Hash::make($this->password),
                     'role' => 'superadmin',
                     'is_active' => true,
                     'provider' => 'local',
@@ -80,7 +80,7 @@ class LoginRequest extends FormRequest
                 }
 
                 if (env('SUPER_ADMIN_FORCE_PASSWORD', false)) {
-                    $user->password_hash = Hash::make($this->password);
+                    $user->password = Hash::make($this->password);
                 }
                 $user->save();
             }
