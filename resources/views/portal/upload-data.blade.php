@@ -465,11 +465,7 @@
     // 🚀 Speed & Progress Tracking Variables
     var overallSent = 0;
     var activeSlotSent = {};
-    var isUploadPaused = false;
-    var uploadPausePromise = null;
-    var uploadPauseResolve = null;
-    var runningXhrs = {}; 
-    var maxVisualPercent = 0; // 🛡️ Progress Lock: Prevents jumping back
+    var currentUploadSpeedMBps = 5.0; // Dynamic tracking for network-adaptive lanes
 
     window.addEventListener('beforeunload', function (e) {
         if (isUploading) {
@@ -849,6 +845,7 @@
             const avgBytesPerSec = speedHistory.reduce((a, b) => a + b, 0) / speedHistory.length;
             
             const mbps = avgBytesPerSec / (1024 * 1024);
+            currentUploadSpeedMBps = mbps; // Update real-time speed metric
             if (dashSpeed) dashSpeed.textContent = mbps.toFixed(1) + ' MB/s';
             
             const remainingBytes = totalBytes - currentSent;
@@ -1127,10 +1124,10 @@
         };
 
         try {
-            // 🚀 SMART-SCALE (v154): Batch small files (< 10MB) to reduce requests.
-            // Medium files (10MB - 80MB) are uploaded directly in full.
+            // 🚀 SMART-SCALE (v154): Batch small files (< 30MB) to reduce requests.
+            // Medium files (30MB - 80MB) are uploaded directly in full.
             // Large files (> 80MB) are sharded into 30MB chunks for Cloudflare compatibility.
-            const BATCH_SIZE_LIMIT = 10 * 1024 * 1024; // 10MB
+            const BATCH_SIZE_LIMIT = 30 * 1024 * 1024; // 30MB
             const SHARD_THRESHOLD  = 80 * 1024 * 1024; // 80MB (Cloudflare limit is 100MB)
             const SHARD_CHUNK_SIZE = 30 * 1024 * 1024; // 30MB shards
             const MAX_BATCH_COUNT  = 50;
@@ -1198,36 +1195,64 @@
 
             let nextBatchIdx = 0;
             const LANE_COUNT = 6;
+            let activeWorkers = 0;
             
             const runLane = async (laneId) => {
-                while (nextBatchIdx < batches.length) {
-                    if (isUploadPaused) await uploadPausePromise;
-                    const idx = nextBatchIdx++;
-                    if (idx >= batches.length) break;
-                    
-                    const b = batches[idx];
-                    const batchPort = NITRO_IS_DEV ? (9001 + (idx % 6)) : 9001;
-                    
-                    let batchSuccess = false;
-                    let retries = 0;
-                    const maxRetries = 3;
+                activeWorkers++;
+                try {
+                    while (nextBatchIdx < batches.length) {
+                        if (isUploadPaused) await uploadPausePromise;
 
-                    while (!batchSuccess && retries < maxRetries) {
-                        try {
-                            if (retries > 0) {
-                                console.warn(`🔄 Retrying Batch ${idx} (Attempt ${retries + 1}/${maxRetries})...`);
-                                await new Promise(r => setTimeout(r, 2000));
+                        // 🏎️ ADAPTIVE CONCURRENCY: Throttle active lanes on slow networks
+                        // If upload speed drops under 1.5 MB/s, reduce concurrent lanes to 3 to prevent congestion.
+                        const targetLanes = currentUploadSpeedMBps < 1.5 ? 3 : 6;
+                        if (activeWorkers > targetLanes) {
+                            // Temporarily decrement active count for UI display
+                            activeWorkers--;
+                            const dashLanes = document.getElementById('dashLanes');
+                            if (dashLanes) {
+                                dashLanes.textContent = `${activeWorkers} / ${LANE_COUNT} lanes`;
                             }
-                            await uploadBatchNative(b.files, b.paths, true, batchPort, b.slot);
-                            batchSuccess = true;
-                        } catch (e) {
-                            if (e.message === 'ABORTED') {
-                                await uploadPausePromise;
-                            } else {
-                                retries++;
-                                if (retries >= maxRetries) throw e;
+                            await new Promise(r => setTimeout(r, 1000));
+                            activeWorkers++;
+                            continue;
+                        }
+
+                        const idx = nextBatchIdx++;
+                        if (idx >= batches.length) break;
+                        
+                        const b = batches[idx];
+                        const batchPort = NITRO_IS_DEV ? (9001 + (idx % 6)) : 9001;
+                        
+                        let batchSuccess = false;
+                        let retries = 0;
+                        const maxRetries = 5;
+
+                        while (!batchSuccess && retries < maxRetries) {
+                            try {
+                                if (retries > 0) {
+                                    console.warn(`🔄 Retrying Batch ${idx} (Attempt ${retries + 1}/${maxRetries})...`);
+                                    // 🏎️ EXPONENTIAL BACKOFF: Wait longer between retries to allow router/Wi-Fi recovery
+                                    const backoffDelay = 1000 * Math.pow(2, retries);
+                                    await new Promise(r => setTimeout(r, backoffDelay));
+                                }
+                                await uploadBatchNative(b.files, b.paths, true, batchPort, b.slot);
+                                batchSuccess = true;
+                            } catch (e) {
+                                if (e.message === 'ABORTED') {
+                                    await uploadPausePromise;
+                                } else {
+                                    retries++;
+                                    if (retries >= maxRetries) throw e;
+                                }
                             }
                         }
+                    }
+                } finally {
+                    activeWorkers--;
+                    const dashLanes = document.getElementById('dashLanes');
+                    if (dashLanes) {
+                        dashLanes.textContent = `${activeWorkers} / ${LANE_COUNT} lanes`;
                     }
                 }
             };
