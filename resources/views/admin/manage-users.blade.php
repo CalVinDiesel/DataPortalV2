@@ -353,6 +353,7 @@
 
               if (isPending) {
                 var action = '<div class="d-flex flex-wrap gap-2">';
+                action += '<button type="button" class="btn btn-sm btn-outline-info resend-invite-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Resend Invite</button>';
                 action += '<button type="button" class="btn btn-sm btn-outline-danger remove-user-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Remove</button>';
                 action += '</div>';
                 return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td><td>' + roleBadge + '</td><td>' + action + '</td></tr>';
@@ -454,6 +455,40 @@
                   .catch(function() {
                     showAlert('Network error. Could not downgrade user.', false);
                     btn.disabled = false;
+                  });
+              });
+            });
+
+            tbody.querySelectorAll('.resend-invite-btn').forEach(function(btn) {
+              btn.addEventListener('click', function() {
+                var email = this.getAttribute('data-email');
+                if (!email || !confirm('Resend invitation email to "' + email + '"? This will refresh their signup link.')) return;
+                this.disabled = true;
+                
+                var oldHtml = this.innerHTML;
+                this.textContent = 'Sending…';
+
+                fetch(API + '/api/admin/users/resend-invitation', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ email: email })
+                })
+                  .then(function(r) { return r.json(); })
+                  .then(function(data) {
+                    if (data.success) {
+                      showAlert(data.message || 'Invitation email resent.', true);
+                      loadUsers();
+                    } else {
+                      showAlert(data.message || 'Failed to resend invitation.', false);
+                      btn.disabled = false;
+                      btn.innerHTML = oldHtml;
+                    }
+                  })
+                  .catch(function() {
+                    showAlert('Network error. Could not resend invitation.', false);
+                    btn.disabled = false;
+                    btn.innerHTML = oldHtml;
                   });
               });
             });

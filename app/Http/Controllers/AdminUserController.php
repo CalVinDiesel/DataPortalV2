@@ -156,4 +156,38 @@ class AdminUserController extends Controller
         
         return response()->json(['success' => true, 'message' => 'User removed from data portal.']);
     }
+
+    public function resendInvitation(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'User not found.']);
+        }
+
+        if ($user->role !== 'pending') {
+            return response()->json(['success' => false, 'message' => 'User is not in pending status.']);
+        }
+
+        // Regenerate invitation token and expiry
+        $token = \Illuminate\Support\Str::random(60);
+        $user->invitation_token = $token;
+        $user->invitation_expires_at = now()->addHours(48);
+        $user->save();
+
+        // Send Email
+        $setupUrl = url("/setup?token={$token}");
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\UserInvitation($user->name, $setupUrl));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Resend invitation mail failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Invitation regenerated, but failed to send email: ' . $e->getMessage()]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Invitation email resent successfully.']);
+    }
 }
