@@ -236,18 +236,34 @@
 
           <div id="uploadTypeSelection" class="mt-4">
             <div class="mb-3">
-              <div class="upload-card" id="cardSingle" onclick="selectUploadType('single')">
+              <div class="upload-card p-4 pb-3" id="cardSingle" onclick="selectUploadType('single', 'files')">
                 <i class="bx bx-camera upload-card-icon"></i>
                 <div class="upload-card-title">Single-lens Photos</div>
-                <div class="upload-card-text text-muted">Direct upload for standard DJI or Mavlink drones<br><small class="opacity-75">jpg, jpeg, zip</small></div>
+                <div class="upload-card-text text-muted mb-3">Direct upload for standard DJI or Mavlink drones<br><small class="opacity-75">jpg, jpeg, zip</small></div>
+                <div class="d-flex gap-2 justify-content-center w-100 mt-2 position-relative" style="z-index: 5;">
+                  <button type="button" class="btn btn-sm btn-primary px-3 py-1-5 fw-semibold" onclick="selectUploadType('single', 'files'); event.stopPropagation();">
+                    <i class="bx bx-file me-1"></i> Files / ZIP
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-primary px-3 py-1-5 fw-semibold" onclick="selectUploadType('single', 'folder'); event.stopPropagation();">
+                    <i class="bx bx-folder me-1"></i> Upload Folder
+                  </button>
+                </div>
                 <input type="radio" name="cameraConfiguration" id="singleCamera" value="single" class="d-none" required>
               </div>
             </div>
             <div class="mb-4">
-              <div class="upload-card" id="cardMulti" onclick="selectUploadType('multiple')">
+              <div class="upload-card p-4 pb-3" id="cardMulti" onclick="selectUploadType('multiple', 'files')">
                 <i class="bx bx-layer upload-card-icon"></i>
                 <div class="upload-card-title">Multi-lens Photos</div>
-                <div class="upload-card-text text-muted">For multispectral or thermal rig configurations<br><small class="opacity-75">jpg, jpeg, zip</small></div>
+                <div class="upload-card-text text-muted mb-3">For multispectral or thermal rig configurations<br><small class="opacity-75">jpg, jpeg, zip</small></div>
+                <div class="d-flex gap-2 justify-content-center w-100 mt-2 position-relative" style="z-index: 5;">
+                  <button type="button" class="btn btn-sm btn-primary px-3 py-1-5 fw-semibold" onclick="selectUploadType('multiple', 'files'); event.stopPropagation();">
+                    <i class="bx bx-file me-1"></i> Files / ZIP
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-primary px-3 py-1-5 fw-semibold" onclick="selectUploadType('multiple', 'folder'); event.stopPropagation();">
+                    <i class="bx bx-folder me-1"></i> Upload Folder
+                  </button>
+                </div>
                 <input type="radio" name="cameraConfiguration" id="multipleCamera" value="multiple" class="d-none" required>
               </div>
             </div>
@@ -334,6 +350,7 @@
 
           <div style="display: none;">
             <input type="file" id="dataFile" multiple>
+            <input type="file" id="folderFile" webkitdirectory directory multiple>
             <input type="file" id="zipFile" accept=".zip">
           </div>
 
@@ -518,9 +535,10 @@
       document.getElementById('longitude').value = lng.toFixed(6);
     }
 
-    function selectUploadType(type) {
+    function selectUploadType(type, mode) {
         // Reset file inputs so change event fires even if the same files are selected again
         document.getElementById('dataFile').value = '';
+        document.getElementById('folderFile').value = '';
         document.getElementById('zipFile').value = '';
 
         document.getElementById('cardSingle').classList.remove('active');
@@ -528,10 +546,16 @@
         document.getElementById(type === 'single' ? 'cardSingle' : 'cardMulti').classList.add('active');
         document.getElementById(type === 'single' ? 'singleCamera' : 'multipleCamera').checked = true;
         document.getElementById('cameraDetailsDiv').style.display = (type === 'multiple' ? 'block' : 'none');
-        document.getElementById('dataFile').click();
+        
+        if (mode === 'folder') {
+            document.getElementById('folderFile').click();
+        } else {
+            document.getElementById('dataFile').click();
+        }
     }
 
     document.getElementById('dataFile').addEventListener('change', e => handleFilesSelected(e.target.files));
+    document.getElementById('folderFile').addEventListener('change', e => handleFilesSelected(e.target.files));
 
     async function handleFilesSelected(filesList) {
         const files = Array.from(filesList);
@@ -748,6 +772,7 @@
         
         // Reset file inputs so that the change event can fire if they choose to select again
         document.getElementById('dataFile').value = '';
+        document.getElementById('folderFile').value = '';
         document.getElementById('zipFile').value = '';
         
         // 🚀 CONGESTION BYPASS: Destroy modalMap when closed to abort pending tile downloads and free sockets

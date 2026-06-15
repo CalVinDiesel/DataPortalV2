@@ -391,7 +391,10 @@ class UploadController extends Controller
                 }
                 foreach ($cargoFiles as $localPath) {
                     $stream = fopen($localPath, 'r');
-                    $sftp->put($remoteDir . '/' . basename($localPath), $stream);
+                    // Compute path relative to targetDir to preserve subfolder directory structures
+                    $relativeLocalPath = ltrim(str_replace($targetDir, '', $localPath), '/\\');
+                    $remoteFile = $remoteDir . '/' . str_replace('\\', '/', $relativeLocalPath);
+                    $sftp->put($remoteFile, $stream);
                     if (is_resource($stream)) fclose($stream);
                 }
                 $sftpSuccess = true;
