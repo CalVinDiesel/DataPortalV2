@@ -137,9 +137,7 @@ class AdminClientUploadController extends Controller
             }
             
             $relativeSftpPath = "uploads/{$sftpUser}/{$upload->project_id}";
-            if (Storage::disk('sftp_delivery')->exists($relativeSftpPath)) {
-                Storage::disk('sftp_delivery')->deleteDirectory($relativeSftpPath);
-            }
+            Storage::disk('sftp_delivery')->deleteDirectory($relativeSftpPath);
         } catch (\Exception $e) {
             \Log::warning("Failed to delete project folder from SFTP: " . $e->getMessage());
         }
@@ -184,9 +182,7 @@ class AdminClientUploadController extends Controller
                     }
                     
                     $relativeSftpPath = "uploads/{$sftpUser}/{$upload->project_id}";
-                    if (Storage::disk('sftp_delivery')->exists($relativeSftpPath)) {
-                        Storage::disk('sftp_delivery')->deleteDirectory($relativeSftpPath);
-                    }
+                    Storage::disk('sftp_delivery')->deleteDirectory($relativeSftpPath);
                 } catch (\Exception $e) {
                     \Log::warning("Failed to delete project folder from SFTP in batch: " . $e->getMessage());
                 }

@@ -78,9 +78,7 @@ class ProjectController extends Controller
                 }
                 
                 $relativeSftpPath = "uploads/{$sftpUser}/{$upload->project_id}";
-                if (\Illuminate\Support\Facades\Storage::disk('sftp_delivery')->exists($relativeSftpPath)) {
-                    \Illuminate\Support\Facades\Storage::disk('sftp_delivery')->deleteDirectory($relativeSftpPath);
-                }
+                \Illuminate\Support\Facades\Storage::disk('sftp_delivery')->deleteDirectory($relativeSftpPath);
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::warning("Failed to delete project folder from SFTP: " . $e->getMessage());
             }
