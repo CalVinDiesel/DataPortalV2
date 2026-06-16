@@ -93,7 +93,7 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
 
 
 
-    const [expandedPoints, setExpandedPoints] = useState(true);
+    const [expandedPoints, setExpandedPoints] = useState(false);
     const [expandedLines, setExpandedLines] = useState(false);
     const [expandedPolygons, setExpandedPolygons] = useState(false);
 
