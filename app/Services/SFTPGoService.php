@@ -127,6 +127,7 @@ class SFTPGoService
         $userData = [
             'username' => $user->sftp_username,
             'password' => $password,
+            'email' => $user->email,
             'status' => 1,
             'home_dir' => $homeDir,
             'uid' => 1000,
