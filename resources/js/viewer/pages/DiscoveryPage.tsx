@@ -555,6 +555,9 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         viewerRef.current = viewer;
 
+        // Disable default double-click action (which causes camera to fly to infinity/clashes when double-clicking)
+        viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+
         // ENABLE LIGHTING (VITAL FOR HIDING GLOBE)
         viewer.scene.light = new DirectionalLight({
             direction: new Cartesian3(1, 1, -1),
@@ -768,8 +771,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                                 return 0.1;
                             }, false),
                             material: Color.YELLOW.withAlpha(0.3),
-                            outline: true,
-                            outlineColor: Color.YELLOW,
+                            outline: false,
                         })
                     });
                 } else if (activeTool === 'triangle') {
@@ -1187,9 +1189,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             polygon: new PolygonGraphics({
                 hierarchy: points,
                 material: Color.CYAN.withAlpha(0.5),
-                outline: true,
-                outlineColor: Color.CYAN,
-                outlineWidth: 2,
+                outline: false,
                 classificationType: ClassificationType.CESIUM_3D_TILE,
             }),
             label: new LabelGraphics({
@@ -1343,9 +1343,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             polygon: new PolygonGraphics({
                 hierarchy: points,
                 material: Color.PURPLE.withAlpha(0.5),
-                outline: true,
-                outlineColor: Color.PURPLE,
-                outlineWidth: 2,
+                outline: false,
                 classificationType: ClassificationType.CESIUM_3D_TILE,
             }),
             label: new LabelGraphics({
@@ -1403,9 +1401,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 semiMajorAxis: radius,
                 semiMinorAxis: radius,
                 material: Color.GREEN.withAlpha(0.5),
-                outline: true,
-                outlineColor: Color.GREEN,
-                outlineWidth: 2,
+                outline: false,
                 classificationType: ClassificationType.CESIUM_3D_TILE,
             }),
             label: new LabelGraphics({
