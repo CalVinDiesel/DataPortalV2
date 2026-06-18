@@ -62,11 +62,11 @@ return [
 
         'sftp_delivery' => [
             'driver'          => 'sftp',
-            'host'            => env('SFTP_DELIVERY_HOST'),
-            'username'        => env('SFTP_DELIVERY_USERNAME'),
-            'password'        => env('SFTP_DELIVERY_PASSWORD'),
-            'port'            => (int) env('SFTP_DELIVERY_PORT', 22),
-            'root'            => env('SFTP_DELIVERY_ROOT', '/'),
+            'host'            => env('SYSTEM_SSH_HOST'),
+            'username'        => env('SYSTEM_SSH_USERNAME'),
+            'password'        => env('SYSTEM_SSH_PASSWORD'),
+            'port'            => (int) env('SYSTEM_SSH_PORT', 22),
+            'root'            => env('SYSTEM_SSH_STORAGE_ROOT', '/'),
             'visibility'      => 'public',
             'directory_visibility' => 'public',
             'permissions' => [

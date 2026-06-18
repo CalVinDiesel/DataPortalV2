@@ -310,7 +310,7 @@
       </div>
       <div class="profile-row">
         <span class="profile-label">SFTP Port</span>
-        <span class="profile-value text-primary fw-bold" id="profile-sftp-port">{{ env('SFTP_PORT', 2222) }}</span>
+        <span class="profile-value text-primary fw-bold" id="profile-sftp-port">{{ env('CLIENT_SFTP_PORT', env('SFTP_PORT', 2222)) }}</span>
       </div>
 
       <!-- SFTP Username (read-only) -->
@@ -646,7 +646,7 @@ var sftpPasswordVisible = false;
                 
                 // 🚀 PORT SYNC (v142): Ensure port 2223 is shown for clients
                 if (document.getElementById('profile-sftp-port')) {
-                  document.getElementById('profile-sftp-port').textContent = data.sftpPort || '{{ env('SFTP_PORT', 2222) }}';
+                  document.getElementById('profile-sftp-port').textContent = data.sftpPort || '{{ env('CLIENT_SFTP_PORT', env('SFTP_PORT', 2222)) }}';
                 }
                 if (document.getElementById('profile-sftp-host')) {
                   document.getElementById('profile-sftp-host').textContent = data.sftpHost || '{{ config('filesystems.disks.sftp_delivery.host') ?: request()->getHost() }}';

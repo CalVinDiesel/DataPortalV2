@@ -266,7 +266,7 @@ class ProjectController extends Controller
             'absolutePath' => rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/') . '/uploads/' . $sftpUser . '/' . $upload->project_id . '/',
             'clientPath'   => '/' . $upload->project_id . '/', 
             'host'         => config('filesystems.disks.sftp_delivery.host'),
-            'port'         => (int)env('SFTP_PORT', 2222),
+            'port'         => (int)env('CLIENT_SFTP_PORT', env('SFTP_PORT', 2222)),
         ];
 
         if ($isAdmin) {
