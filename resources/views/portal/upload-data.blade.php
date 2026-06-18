@@ -46,7 +46,7 @@
     .modal-header-custom { padding: 1.5rem 2rem; border-bottom: 1px solid #f0f2f5; display: flex; justify-content: space-between; align-items: center; background: #fafbfc; }
     .modal-body-custom { padding: 0; flex-grow: 1; position: relative; }
     .modal-footer-custom { padding: 1.25rem 2rem; border-top: 1px solid #f0f2f5; display: flex; justify-content: flex-end; gap: 1rem; background: #fafbfc; }
-    .floating-glass-panel { position: absolute; top: 1.5rem; left: 1.5rem; z-index: 10; background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 1rem; max-width: 400px; border: 1px solid rgba(255,255,255,0.5); }
+    .floating-glass-panel { position: absolute; top: 1.5rem; left: 1.5rem; z-index: 1001; background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 1rem; max-width: 400px; border: 1px solid rgba(255,255,255,0.5); }
     .stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     .stats-table th { text-align: left; color: #8592a3; font-weight: 600; padding: 0.5rem; border-bottom: 1px solid #edf2f7; }
     .stats-table td { padding: 0.75rem 0.5rem; color: #566a7f; border-bottom: 1px solid #f7fafc; }
