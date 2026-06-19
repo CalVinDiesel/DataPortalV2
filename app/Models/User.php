@@ -16,7 +16,7 @@ class User extends Authenticatable
     protected static function booted()
     {
         static::saved(function ($user) {
-            if ($user->wasRecentlyCreated || $user->wasChanged(['role', 'is_active', 'sftp_username', 'sftp_password'])) {
+            if ($user->wasRecentlyCreated || $user->wasChanged(['role', 'is_active', 'sftp_username', 'sftp_password', 'email'])) {
                 \App\Services\SFTPGoService::syncUser($user);
             }
         });
