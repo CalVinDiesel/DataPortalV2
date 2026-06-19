@@ -173,6 +173,15 @@ class SFTPGoService
                     unset($payload['password']);
                 }
 
+                // Fix SFTPGo TOTP secret unmarshal issue (json_decode decodes empty JSON object {} for secret as array [])
+                if (isset($payload['filters']) && is_object($payload['filters'])) {
+                    if (isset($payload['filters']->totp_config) && is_object($payload['filters']->totp_config)) {
+                        if (isset($payload['filters']->totp_config->secret) && is_array($payload['filters']->totp_config->secret) && empty($payload['filters']->totp_config->secret)) {
+                            $payload['filters']->totp_config->secret = (object)[];
+                        }
+                    }
+                }
+
                 $putResponse = $client->put('/users/' . urlencode($user->sftp_username), $payload);
                 if (!$putResponse->successful()) {
                     Log::error("SFTPGo API: Failed to update user {$user->sftp_username}. Status: " . $putResponse->status() . " Response: " . $putResponse->body());
