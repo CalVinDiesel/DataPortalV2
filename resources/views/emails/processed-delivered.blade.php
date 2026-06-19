@@ -27,7 +27,7 @@
                 @elseif($method === 'sftp')
                     <h3>Delivery Method: Direct SFTP</h3>
                     <p>Your processed data has been placed in your dedicated SFTP folder:</p>
-                    <code>{{ $upload->sftp_delivery_path ?: '/processed/' }}</code>
+                    <code>{{ $upload->sftp_delivery_path ? '/' . $upload->project_id . '/delivered/' . basename($upload->sftp_delivery_path) : '/processed/' }}</code>
                     <p>Please log in using your SFTP credentials to retrieve the files.</p>
                 @elseif($method === 'google_drive')
                     <h3>Delivery Method: Google Drive</h3>

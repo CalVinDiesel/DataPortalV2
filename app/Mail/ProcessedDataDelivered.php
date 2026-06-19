@@ -41,7 +41,7 @@ class ProcessedDataDelivered extends Mailable
             view: 'emails.processed-delivered',
             with: [
                 'upload' => $this->upload,
-                'method' => $this->upload->delivery_method,
+                'method' => $this->upload->upload_type === 'browser' ? 'portal' : $this->upload->delivery_method,
             ],
         );
     }
