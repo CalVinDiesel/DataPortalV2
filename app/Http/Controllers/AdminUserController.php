@@ -153,17 +153,10 @@ class AdminUserController extends Controller
             return response()->json(['success' => false, 'message' => 'User not found.']);
         }
 
-        if ($user->role === 'pending') {
-            // Permanently delete associated access request and the pending user
-            \App\Models\AccessRequest::where('email', $user->email)->delete();
-            $user->delete();
-            return response()->json(['success' => true, 'message' => 'Pending user and invite request removed successfully.']);
-        }
-
-        $user->is_active = false;
-        $user->save();
+        // Permanently delete the user (triggers User model's static::deleted hook for comprehensive cleanup)
+        $user->delete();
         
-        return response()->json(['success' => true, 'message' => 'User removed from data portal.']);
+        return response()->json(['success' => true, 'message' => 'User and all associated data permanently removed from the data portal.']);
     }
 
     public function resendInvitation(Request $request)

@@ -22,8 +22,51 @@ class User extends Authenticatable
         });
 
         static::deleted(function ($user) {
+            // 1. Delete SFTPGo Account
             if ($user->sftp_username) {
                 \App\Services\SFTPGoService::deleteUser($user->sftp_username);
+            }
+
+            // 2. Delete physical SFTP directories on the SSH host server
+            if ($user->sftp_username) {
+                try {
+                    $sftpDisk = \Illuminate\Support\Facades\Storage::disk('sftp_delivery');
+                    $userUploadsDir = 'uploads/' . $user->sftp_username;
+                    $userDeliveredDir = 'delivered/' . $user->sftp_username;
+
+                    if ($sftpDisk->exists($userUploadsDir)) {
+                        $sftpDisk->deleteDirectory($userUploadsDir);
+                    }
+                    if ($sftpDisk->exists($userDeliveredDir)) {
+                        $sftpDisk->deleteDirectory($userDeliveredDir);
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning("User deletion: Could not delete SFTP directories for {$user->sftp_username}: " . $e->getMessage());
+                }
+            }
+
+            // 3. Delete Nitro chunk folders for each upload
+            try {
+                $uploads = \App\Models\ClientUpload::where('created_by_email', $user->email)->get();
+                foreach ($uploads as $upload) {
+                    if (\Illuminate\Support\Facades\Storage::disk('nitro')->exists($upload->project_id)) {
+                        \Illuminate\Support\Facades\Storage::disk('nitro')->deleteDirectory($upload->project_id);
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("User deletion: Exception cleaning up Nitro chunks: " . $e->getMessage());
+            }
+
+            // 4. Delete all database records associated with the user's email or ID
+            try {
+                \App\Models\ClientUpload::where('created_by_email', $user->email)->delete();
+                \App\Models\TokenWallet::where('user_email', $user->email)->delete();
+                \App\Models\TokenTransaction::where('user_email', $user->email)->delete();
+                \App\Models\MapDataPurchase::where('user_email', $user->email)->delete();
+                \App\Models\StripePayment::where('user_email', $user->email)->delete();
+                \App\Models\AccessRequest::where('email', $user->email)->delete();
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("User deletion: Exception cleaning database records: " . $e->getMessage());
             }
         });
     }
