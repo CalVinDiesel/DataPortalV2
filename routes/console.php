@@ -10,3 +10,5 @@ Artisan::command('inspire', function () {
 use Illuminate\Support\Facades\Schedule;
 Schedule::command('nitro:cleanup')->daily();
 Schedule::command('nitro:cleanup --hours=1')->hourly(); // Extra safety for short-lived temp files
+Schedule::command('app:cleanup-expired-deliveries')->daily();
+
