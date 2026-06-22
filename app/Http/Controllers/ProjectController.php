@@ -488,66 +488,205 @@ class ProjectController extends Controller
 
             $filePath = $upload->delivered_file_path;
 
-            // 🔑 Preserve the ORIGINAL filename (with spaces) for SFTP path lookups.
-            // The sanitized copy is only for the browser Content-Disposition header.
-            $originalFileName = basename($filePath);
-            if (!Str::endsWith(strtolower($originalFileName), '.zip')) $originalFileName .= '.zip';
-            $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalFileName); // safe for header
-
             // 🚀 LOCAL-FIRST OPTIMIZATION (v176): If both servers are on the same machine, 
             // streaming directly from the disk is INSTANT and bypasses SFTP handshake delays.
             if (file_exists($filePath) && is_readable($filePath)) {
-                $size = filesize($filePath);
-                return response()->stream(function() use ($filePath) {
-                    while (ob_get_level() > 0) ob_end_clean();
-                    $file = fopen($filePath, 'rb');
-                    if ($file) {
-                        fpassthru($file);
-                        fclose($file);
+                if (is_dir($filePath)) {
+                    // 🚀 DIRECTORY ON-THE-FLY ZIP (v320)
+                    $zipName = basename($filePath) . '.zip';
+                    $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $zipName);
+                    
+                    // Create local temporary zip archive path
+                    $tempDir = storage_path('app/temp_downloads');
+                    if (!file_exists($tempDir)) {
+                        mkdir($tempDir, 0777, true);
                     }
-                }, 200, [
-                    'Content-Type' => 'application/zip',
-                    'Content-Disposition' => 'attachment; filename="' . $fileName . '"; filename*=UTF-8\'\'' . rawurlencode($fileName),
-                    'Content-Length' => $size,
-                    'Cache-Control' => 'no-cache, no-store, must-revalidate',
-                    'Pragma' => 'no-cache',
-                    'Expires' => '0',
-                    'X-Accel-Buffering' => 'no',
-                ]);
+                    $tempZipPath = $tempDir . '/' . uniqid('dl_') . '.zip';
+
+                    $zip = new \ZipArchive();
+                    if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+                        $files = new \RecursiveIteratorIterator(
+                            new \RecursiveDirectoryIterator($filePath),
+                            \RecursiveIteratorIterator::LEAVES_ONLY
+                        );
+
+                        foreach ($files as $name => $file) {
+                            if (!$file->isDir()) {
+                                $realPath = $file->getRealPath();
+                                // Build relative path within the zip (stripping the base path)
+                                $relativePath = substr($realPath, strlen($filePath) + 1);
+                                $zip->addFile($realPath, $relativePath);
+                            }
+                        }
+                        $zip->close();
+                    } else {
+                        return response()->json(['error' => 'Could not package directory.'], 500);
+                    }
+
+                    // Return stream response download and delete temp file after sending
+                    return response()->download($tempZipPath, $fileName, [
+                        'Content-Type' => 'application/zip',
+                        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                        'Pragma' => 'no-cache',
+                        'Expires' => '0',
+                    ])->deleteFileAfterSend(true);
+                } else {
+                    // It is a file (could be zip, obj, pdf, fbx, etc.)
+                    $originalFileName = basename($filePath);
+                    $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalFileName);
+                    $size = filesize($filePath);
+                    
+                    // Enforce correct mime-type
+                    $mimeType = 'application/octet-stream';
+                    try {
+                        $mimeType = mime_content_type($filePath) ?: 'application/octet-stream';
+                    } catch (\Exception $e) {}
+
+                    // If it is a zip, force application/zip
+                    if (Str::endsWith(strtolower($originalFileName), '.zip')) {
+                        $mimeType = 'application/zip';
+                    }
+
+                    return response()->stream(function() use ($filePath) {
+                        while (ob_get_level() > 0) ob_end_clean();
+                        $file = fopen($filePath, 'rb');
+                        if ($file) {
+                            fpassthru($file);
+                            fclose($file);
+                        }
+                    }, 200, [
+                        'Content-Type' => $mimeType,
+                        'Content-Disposition' => 'attachment; filename="' . $fileName . '"; filename*=UTF-8\'\'' . rawurlencode($fileName),
+                        'Content-Length' => $size,
+                        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                        'Pragma' => 'no-cache',
+                        'Expires' => '0',
+                        'X-Accel-Buffering' => 'no',
+                    ]);
+                }
             }
 
             // Fallback to SFTP if local path is not accessible
             $disk = Storage::disk('sftp_delivery');
             
             // 🚀 ROOT STRIPPING (v218): Strip the absolute root prefix to get a relative SFTP path.
-            // Use $filePath (original path) so spaces in the filename are preserved for the SFTP lookup.
             $root = config('filesystems.disks.sftp_delivery.root', '/');
             if (Str::startsWith($filePath, $root)) {
                 $filePath = Str::after($filePath, $root);
             }
             $filePath = ltrim($filePath, '/');
 
-            // 🛠️ SIZE FIX (v262): Use delivered_file_size (the actual processed ZIP size) for Content-Length.
-            // total_size_bytes stores the size of the RAW CLIENT UPLOAD, not the delivered result —
-            // using it here caused browsers to truncate large deliveries, producing a corrupt ZIP.
+            // Check if it is a directory on remote SFTP
+            $isDir = false;
+            try {
+                if (method_exists($disk, 'directoryExists')) {
+                    $isDir = $disk->directoryExists($filePath);
+                } else {
+                    // Fallback to listing contents check
+                    $isDir = !empty($disk->listContents($filePath)->toArray());
+                }
+            } catch (\Exception $e) {}
+
+            if ($isDir) {
+                // SFTP DIRECTORY ON-THE-FLY ZIP (v320)
+                $zipName = basename($filePath) . '.zip';
+                $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $zipName);
+
+                $tempDir = storage_path('app/temp_downloads/' . uniqid('sftp_dl_'));
+                if (!file_exists($tempDir)) {
+                    mkdir($tempDir, 0777, true);
+                }
+
+                try {
+                    // Download all files from SFTP recursively
+                    $contents = $disk->listContents($filePath, true);
+                    foreach ($contents as $item) {
+                        $relativePath = Str::after($item->path(), $filePath . '/');
+                        if ($item->isDir()) {
+                            $dirToMake = $tempDir . '/' . $relativePath;
+                            if (!file_exists($dirToMake)) {
+                                mkdir($dirToMake, 0777, true);
+                            }
+                        } else {
+                            $fileLocalPath = $tempDir . '/' . $relativePath;
+                            $parentDir = dirname($fileLocalPath);
+                            if (!file_exists($parentDir)) {
+                                mkdir($parentDir, 0777, true);
+                            }
+                            $stream = $disk->readStream($item->path());
+                            if ($stream) {
+                                file_put_contents($fileLocalPath, $stream);
+                                fclose($stream);
+                            }
+                        }
+                    }
+
+                    // Zip the downloaded directory
+                    $tempZipPath = storage_path('app/temp_downloads/' . uniqid('dl_') . '.zip');
+                    $zip = new \ZipArchive();
+                    if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+                        $files = new \RecursiveIteratorIterator(
+                            new \RecursiveDirectoryIterator($tempDir),
+                            \RecursiveIteratorIterator::LEAVES_ONLY
+                        );
+                        foreach ($files as $name => $file) {
+                            if (!$file->isDir()) {
+                                $realPath = $file->getRealPath();
+                                $relativePath = substr($realPath, strlen($tempDir) + 1);
+                                $zip->addFile($realPath, $relativePath);
+                            }
+                        }
+                        $zip->close();
+                    } else {
+                        throw new \Exception("Could not create ZipArchive.");
+                    }
+                } catch (\Exception $ex) {
+                    \Log::error("SFTP Dir Zip Failed: " . $ex->getMessage());
+                    return response()->json(['error' => 'Failed to package remote directory.'], 500);
+                } finally {
+                    // Clean up downloaded directory
+                    $deleteFolder = function($dir) use (&$deleteFolder) {
+                        if (!file_exists($dir)) return;
+                        $files = array_diff(scandir($dir), ['.', '..']);
+                        foreach ($files as $file) {
+                            (is_dir("$dir/$file")) ? $deleteFolder("$dir/$file") : @unlink("$dir/$file");
+                        }
+                        @rmdir($dir);
+                    };
+                    $deleteFolder($tempDir);
+                }
+
+                return response()->download($tempZipPath, $fileName, [
+                    'Content-Type' => 'application/zip',
+                    'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                    'Pragma' => 'no-cache',
+                    'Expires' => '0',
+                ])->deleteFileAfterSend(true);
+            }
+
+            // It is a single file on SFTP
+            $originalFileName = basename($filePath);
+            $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalFileName);
+
             $size = $upload->delivered_file_size ?: null;
             if (!$size) {
-                // Live-stat the file from SFTP as the authoritative fallback
                 try {
                     $size = $disk->size($filePath);
                 } catch (\Exception $e) {
                     \Log::warning("downloadDelivered: Could not stat SFTP size for [{$filePath}]: " . $e->getMessage());
-                    $size = null; // Send without Content-Length rather than a wrong value
+                    $size = null;
                 }
             }
-            
+
+            $mimeType = 'application/octet-stream';
+            if (Str::endsWith(strtolower($originalFileName), '.zip')) {
+                $mimeType = 'application/zip';
+            }
+
             return response()->stream(function() use ($disk, $filePath) {
-                // 🚀 BUFFER KILLER: Ensure no server-side buffering delays the first byte
                 while (ob_get_level() > 0) ob_end_clean();
-                
                 $stream = $disk->readStream($filePath);
                 if ($stream) {
-                    // 🚀 HIGH-VELOCITY STREAM (v146): Use 4MB chunks for balanced throughput
                     while (!feof($stream)) {
                         echo fread($stream, 4194304); 
                         flush();
@@ -555,13 +694,13 @@ class ProjectController extends Controller
                     fclose($stream);
                 }
             }, 200, [
-                'Content-Type' => 'application/zip',
+                'Content-Type' => $mimeType,
                 'Content-Disposition' => 'attachment; filename="' . $fileName . '"; filename*=UTF-8\'\'' . rawurlencode($fileName),
                 'Content-Length' => $size,
                 'Cache-Control' => 'no-cache, no-store, must-revalidate',
                 'Pragma' => 'no-cache',
                 'Expires' => '0',
-                'X-Accel-Buffering' => 'no', // 🚀 NGINX INSTANT STREAM
+                'X-Accel-Buffering' => 'no',
             ]);
         }
 
