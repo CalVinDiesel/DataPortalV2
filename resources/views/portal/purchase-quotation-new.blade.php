@@ -356,23 +356,75 @@
           if (attempts > 100) clearInterval(t);
         }, 50);
       }
-
       getViewer(function(viewer) {
         var C = Cesium;
         
-        // 1. Create a Pin/Billboard for KK Osprey on the 2D map
-        var pinBuilder = new C.PinBuilder();
-        var kkOspreyCoords = C.Cartesian3.fromDegrees(116.070466, 5.957839, 50);
+        // Helper function to generate a premium bordered square pin dynamically, falling back to a CSS styled pin
+        function makePinImage(imageUrl, size, border, callback) {
+          var img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = function() {
+            try {
+              var canvas = document.createElement('canvas');
+              canvas.width = size + 2 * border;
+              canvas.height = size + 2 * border;
+              var ctx = canvas.getContext('2d');
+              
+              // White border background
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              
+              // Draw the image
+              ctx.drawImage(img, border, border, size, size);
+              callback(canvas.toDataURL('image/png'));
+            } catch (e) {
+              callback(imageUrl);
+            }
+          };
+          img.onerror = function() {
+            try {
+              var canvas = document.createElement('canvas');
+              canvas.width = size + 2 * border;
+              canvas.height = size + 2 * border;
+              var ctx = canvas.getContext('2d');
+              
+              // White border background
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              
+              // Purple themed square
+              ctx.fillStyle = '#696cff';
+              ctx.fillRect(border, border, size, size);
+              
+              // KK abbreviation
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold ' + Math.round(size * 0.4) + 'px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('KK', canvas.width / 2, canvas.height / 2);
+              callback(canvas.toDataURL('image/png'));
+            } catch (err) {
+              callback(imageUrl);
+            }
+          };
+          img.src = imageUrl;
+        }
+
+        // 1. Create a Pin/Billboard for KK Osprey on the 2D map (at height 0 so it aligns correctly)
+        var kkOspreyCoords = C.Cartesian3.fromDegrees(116.070466, 5.957839, 0);
         var currentTileset = null;
+        var defaultPinUrl = "{{ asset('assets/img/front-pages/locations/kkosprey_pin_image.jpg') }}";
         
         var kkOspreyEntity = viewer.entities.add({
           id: 'KK_OSPREY',
           name: 'KK OSPREY',
           position: kkOspreyCoords,
           billboard: {
-            image: pinBuilder.fromColor(C.Color.fromCssColorString('#696cff'), 48).toDataURL(),
+            image: defaultPinUrl,
+            width: 54,
+            height: 54,
             verticalOrigin: C.VerticalOrigin.BOTTOM,
-            heightReference: C.HeightReference.CLAMP_TO_GROUND
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
           },
           label: {
             text: 'KK OSPREY',
@@ -382,10 +434,19 @@
             outlineColor: C.Color.fromCssColorString('#1a1a2e'),
             outlineWidth: 3,
             verticalOrigin: C.VerticalOrigin.BOTTOM,
-            pixelOffset: new C.Cartesian2(0, -50),
-            heightReference: C.HeightReference.CLAMP_TO_GROUND
+            pixelOffset: new C.Cartesian2(0, -62),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
           }
         });
+        
+        // Dynamically load the bordered version and update the billboard
+        makePinImage(defaultPinUrl, 48, 3, function(dataUrl) {
+          kkOspreyEntity.billboard.image = dataUrl;
+          viewer.scene.requestRender();
+        });
+
+        // Force an initial render since requestRenderMode is true
+        viewer.scene.requestRender();
         
         // 2. Click Handler: Transition to 3D and Load tileset
         var handler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
@@ -455,6 +516,7 @@
               offset: new C.HeadingPitchRange(C.Math.toRadians(0), C.Math.toRadians(-35), boundingSphere.radius * 2.5),
               duration: 2.0
             });
+            viewer.scene.requestRender();
           })
           .catch(function(err) {
             console.error('[CesiumMap] Failed to load 3D Tileset:', err);
@@ -466,6 +528,7 @@
             // Revert back to 2D
             kkOspreyEntity.show = true;
             viewer.scene.mode = C.SceneMode.SCENE2D;
+            viewer.scene.requestRender();
           });
         }
 
@@ -484,10 +547,10 @@
               viewer.scene.primitives.remove(currentTileset);
               currentTileset = null;
             }
+            viewer.scene.requestRender();
           });
         }
       });
-    })();
   </script>
 
   <script>
