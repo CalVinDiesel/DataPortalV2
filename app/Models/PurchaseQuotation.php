@@ -10,6 +10,7 @@ class PurchaseQuotation extends Model
         'purchase_id',
         'user_id',
         'user_email',
+        'map_data_id',
         'output_categories',
         'area_coordinates',
         'status',
@@ -23,5 +24,10 @@ class PurchaseQuotation extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function mapData()
+    {
+        return $this->belongsTo(MapData::class, 'map_data_id', 'mapDataID');
     }
 }

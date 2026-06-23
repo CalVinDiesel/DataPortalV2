@@ -255,8 +255,17 @@
                 <div class="form-text mb-2">Use the Cesium map viewer to specify the area coordinates for your purchase quotation.</div>
                 
                 <!-- Field 3: Cesium Ion Map -->
-                <div id="heroMapContainer">
+                <div id="heroMapContainer" style="position: relative;">
                   <div id="cesiumContainer"></div>
+                  <!-- Drawing Toolbar (hidden in 2D mode, shown in 3D mode) -->
+                  <div id="drawingToolbar" style="position: absolute; top: 12px; left: 12px; z-index: 1000; display: none; gap: 8px;">
+                    <button type="button" id="btnDrawPolygon" class="btn btn-sm btn-primary shadow-sm fw-bold d-flex align-items-center gap-1" style="border-radius: 8px; padding: 8px 14px; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                      <i class="bx bx-pencil me-1"></i> Draw Purchase Area
+                    </button>
+                    <button type="button" id="btnClearPolygon" class="btn btn-sm btn-danger shadow-sm fw-bold d-flex align-items-center gap-1" style="border-radius: 8px; padding: 8px 14px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                      <i class="bx bx-trash me-1"></i> Clear Area
+                    </button>
+                  </div>
                   <!-- Map control sidebar (zoom, reset, fullscreen) -->
                   <div class="right-controls">
                     <div class="navigation-container"></div>
@@ -341,7 +350,6 @@
   <!-- Initialize Cesium map using common script files (matching overview map exactly) -->
   <script src="{{ asset('assets') }}/js/cesium-map.js?v={{ time() }}"></script>
   <script src="{{ asset('assets') }}/js/cesium-map-controls.js?v={{ time() }}"></script>
-
   <script>
     (function() {
       // Force initialization of Cesium map if it hasn't run yet (resolves timing issues with window load event)
@@ -370,11 +378,35 @@
           if (attempts > 100) clearInterval(t);
         }, 50);
       }
+
+      // State shared across map logic and form submission
+      var selectedModel = null; // Currently selected MapData item
+      var allModelEntities = {}; // Map of mapDataID -> Cesium entity
+
+      // Drawing state
+      var isDrawing = false;
+      var polygonPoints = []; // Array of C.Cartesian3 positions
+      var drawingEntities = []; // Array of C.Entity (temp vertices, lines, preview polygon)
+      var finalPolygonEntity = null; // The confirmed polygon entity
+      var editVertexEntities = []; // Array of C.Entity for vertex grab handles
+      var activeDrawingPreview = null; // The CallbackProperty preview entity
+      var mousePosition = null; // Current mouse Cartesian3
+      
+      var drawingHandler = null; // ScreenSpaceEventHandler for drawing
+      var editHandler = null; // ScreenSpaceEventHandler for editing (dragging vertices)
+      var draggedVertexIndex = null; // Index of currently dragged vertex
+      var draggedVertexEntity = null; // Entity of currently dragged vertex
+
       getViewer(function(viewer) {
         var C = Cesium;
         
         // Helper function to generate a premium bordered square pin dynamically, falling back to a CSS styled pin
-        function makePinImage(imageUrl, size, border, callback) {
+        function makePinImage(imageUrl, size, border, title, callback) {
+          var abbreviation = (title || '3D').substring(0, 2).toUpperCase();
+          if (!imageUrl) {
+            drawFallback();
+            return;
+          }
           var img = new Image();
           img.crossOrigin = 'anonymous';
           img.onload = function() {
@@ -392,10 +424,15 @@
               ctx.drawImage(img, border, border, size, size);
               callback(canvas.toDataURL('image/png'));
             } catch (e) {
-              callback(imageUrl);
+              drawFallback();
             }
           };
           img.onerror = function() {
+            drawFallback();
+          };
+          img.src = imageUrl;
+
+          function drawFallback() {
             try {
               var canvas = document.createElement('canvas');
               canvas.width = size + 2 * border;
@@ -410,74 +447,82 @@
               ctx.fillStyle = '#696cff';
               ctx.fillRect(border, border, size, size);
               
-              // KK abbreviation
+              // Dynamic abbreviation
               ctx.fillStyle = '#ffffff';
               ctx.font = 'bold ' + Math.round(size * 0.4) + 'px sans-serif';
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
-              ctx.fillText('KK', canvas.width / 2, canvas.height / 2);
+              ctx.fillText(abbreviation, canvas.width / 2, canvas.height / 2);
               callback(canvas.toDataURL('image/png'));
             } catch (err) {
-              callback(imageUrl);
+              callback(imageUrl || '');
             }
-          };
-          img.src = imageUrl;
+          }
         }
 
-        // 1. Create a Pin/Billboard for KK Osprey on the 2D map (at height 0 so it aligns correctly)
-        var kkOspreyCoords = C.Cartesian3.fromDegrees(116.070466, 5.957839, 0);
+        // 1. Create Pins/Billboards dynamically for all map locations
+        var mapLocations = @json($mapLocations);
         var currentTileset = null;
-        var defaultPinUrl = "{{ asset('assets/img/front-pages/locations/kkosprey_pin_image.jpg') }}";
-        
-        var kkOspreyEntity = viewer.entities.add({
-          id: 'KK_OSPREY',
-          name: 'KK OSPREY',
-          position: kkOspreyCoords,
-          billboard: {
-            image: defaultPinUrl,
-            width: 54,
-            height: 54,
-            verticalOrigin: C.VerticalOrigin.BOTTOM,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY
-          },
-          label: {
-            text: 'KK OSPREY',
-            font: 'bold 12px "Public Sans", sans-serif',
-            style: C.LabelStyle.FILL_AND_OUTLINE,
-            fillColor: C.Color.WHITE,
-            outlineColor: C.Color.fromCssColorString('#1a1a2e'),
-            outlineWidth: 3,
-            verticalOrigin: C.VerticalOrigin.BOTTOM,
-            pixelOffset: new C.Cartesian2(0, -62),
-            disableDepthTestDistance: Number.POSITIVE_INFINITY
-          }
-        });
-        
-        // Dynamically load the bordered version and update the billboard
-        makePinImage(defaultPinUrl, 48, 3, function(dataUrl) {
-          kkOspreyEntity.billboard.image = dataUrl;
-          viewer.scene.requestRender();
+
+        mapLocations.forEach(function(loc) {
+          var pinCoords = C.Cartesian3.fromDegrees(Number(loc.xAxis), Number(loc.yAxis), 0);
+          var pinUrl = loc.thumbNailUrl || '';
+          
+          var pinEntity = viewer.entities.add({
+            id: loc.mapDataID,
+            name: loc.title,
+            position: pinCoords,
+            billboard: {
+              image: pinUrl || null,
+              width: 54,
+              height: 54,
+              verticalOrigin: C.VerticalOrigin.BOTTOM,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY
+            },
+            label: {
+              text: loc.title,
+              font: 'bold 12px "Public Sans", sans-serif',
+              style: C.LabelStyle.FILL_AND_OUTLINE,
+              fillColor: C.Color.WHITE,
+              outlineColor: C.Color.fromCssColorString('#1a1a2e'),
+              outlineWidth: 3,
+              verticalOrigin: C.VerticalOrigin.BOTTOM,
+              pixelOffset: new C.Cartesian2(0, -62),
+              disableDepthTestDistance: Number.POSITIVE_INFINITY
+            }
+          });
+          
+          pinEntity.modelData = loc;
+          allModelEntities[loc.mapDataID] = pinEntity;
+          
+          // Generate bordered version dynamically
+          makePinImage(pinUrl, 48, 3, loc.title, function(dataUrl) {
+            pinEntity.billboard.image = dataUrl;
+            viewer.scene.requestRender();
+          });
         });
 
         // Force an initial render since requestRenderMode is true
         viewer.scene.requestRender();
         
-        // 2. Click Handler: Transition to 3D and Load tileset
+        // Click Handler: Transition to 3D and Load tileset dynamically
         var handler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
         handler.setInputAction(function(click) {
           var pickedObject = viewer.scene.pick(click.position);
-          if (C.defined(pickedObject) && pickedObject.id === kkOspreyEntity) {
-            switchTo3D();
+          if (C.defined(pickedObject) && pickedObject.id && pickedObject.id.modelData) {
+            switchTo3D(pickedObject.id.modelData);
           }
         }, C.ScreenSpaceEventType.LEFT_CLICK);
 
         // Hover Handler: Cursor style change
         handler.setInputAction(function(movement) {
           var pickedObject = viewer.scene.pick(movement.endPosition);
-          if (C.defined(pickedObject) && pickedObject.id === kkOspreyEntity) {
+          if (C.defined(pickedObject) && pickedObject.id && pickedObject.id.modelData) {
             viewer.canvas.style.cursor = 'pointer';
           } else {
-            viewer.canvas.style.cursor = '';
+            if (!isDrawing && draggedVertexIndex === null) {
+              viewer.canvas.style.cursor = '';
+            }
           }
         }, C.ScreenSpaceEventType.MOUSE_MOVE);
 
@@ -512,7 +557,6 @@
           var startHeading = viewer.camera.heading;
           var targetPitch = viewer.camera.pitch;
           
-          // Maintain a beautiful low angle (horizontal side/surface perspective: -12 to -25 degrees)
           if (targetPitch < C.Math.toRadians(-45) || targetPitch > C.Math.toRadians(-5)) {
             targetPitch = C.Math.toRadians(-18);
           }
@@ -536,7 +580,6 @@
               ? 2 * progress * progress
               : -1 + (4 - 2 * progress) * progress;
 
-            // 180 degrees sweep (Math.PI radians)
             var currentHeading = startHeading + easeProgress * Math.PI;
 
             viewer.camera.lookAt(center, new C.HeadingPitchRange(currentHeading, targetPitch, range));
@@ -560,8 +603,269 @@
           });
         }
 
-        function switchTo3D() {
+        // --- Interactive Polygon Drawing & Vertex Editing Logic ---
+        function startDrawing() {
+          cancelOrbit();
+          clearPolygon();
+          isDrawing = true;
+          viewer.canvas.style.cursor = 'crosshair';
+
+          var drawBtn = document.getElementById('btnDrawPolygon');
+          if (drawBtn) {
+            drawBtn.innerHTML = '<i class="bx bx-x me-1"></i> Cancel';
+            drawBtn.className = 'btn btn-sm btn-secondary shadow-sm fw-bold d-flex align-items-center gap-1';
+          }
+
+          drawingHandler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+          drawingHandler.setInputAction(function(movement) {
+            mousePosition = viewer.scene.pickPosition(movement.endPosition);
+            if (!mousePosition) {
+              mousePosition = viewer.camera.pickEllipsoid(movement.endPosition);
+            }
+            viewer.scene.requestRender();
+          }, C.ScreenSpaceEventType.MOUSE_MOVE);
+
+          drawingHandler.setInputAction(function(click) {
+            var pickedPosition = viewer.scene.pickPosition(click.position);
+            if (!pickedPosition) {
+              pickedPosition = viewer.camera.pickEllipsoid(click.position);
+            }
+            if (!pickedPosition) return;
+
+            polygonPoints.push(pickedPosition);
+
+            // Place vertex helper dot
+            var pointEntity = viewer.entities.add({
+              position: pickedPosition,
+              point: {
+                pixelSize: 10,
+                color: C.Color.YELLOW,
+                outlineColor: C.Color.WHITE,
+                outlineWidth: 2,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY
+              }
+            });
+            drawingEntities.push(pointEntity);
+
+            // On first point, draw the live preview polyline and polygon fill
+            if (polygonPoints.length === 1) {
+              var dynamicPositions = new C.CallbackProperty(function() {
+                var pts = [].concat(polygonPoints);
+                if (mousePosition) {
+                  pts.push(mousePosition);
+                }
+                return pts;
+              }, false);
+
+              activeDrawingPreview = viewer.entities.add({
+                polyline: {
+                  positions: dynamicPositions,
+                  width: 3,
+                  material: C.Color.CYAN,
+                  clampToGround: true
+                },
+                polygon: {
+                  hierarchy: new C.CallbackProperty(function() {
+                    var pts = [].concat(polygonPoints);
+                    if (mousePosition) {
+                      pts.push(mousePosition);
+                    }
+                    return pts.length >= 3 ? new C.PolygonHierarchy(pts) : undefined;
+                  }, false),
+                  material: C.Color.CYAN.withAlpha(0.3),
+                  classificationType: C.ClassificationType.CESIUM_3D_TILE
+                }
+              });
+              drawingEntities.push(activeDrawingPreview);
+            }
+          }, C.ScreenSpaceEventType.LEFT_CLICK);
+
+          drawingHandler.setInputAction(function() {
+            if (polygonPoints.length >= 3) {
+              // Truncate double click noise (extra click triggers)
+              if (polygonPoints.length > 3) {
+                polygonPoints.pop();
+              }
+              completeDrawing();
+            }
+          }, C.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+        }
+
+        function completeDrawing() {
+          isDrawing = false;
+          viewer.canvas.style.cursor = '';
+          
+          if (drawingHandler) {
+            drawingHandler.destroy();
+            drawingHandler = null;
+          }
+
+          // Clear temporary drawing helper lines and dots
+          drawingEntities.forEach(function(ent) {
+            viewer.entities.remove(ent);
+          });
+          drawingEntities = [];
+
+          // Hide draw button, show clear button
+          var drawBtn = document.getElementById('btnDrawPolygon');
+          if (drawBtn) drawBtn.style.display = 'none';
+          var clearBtn = document.getElementById('btnClearPolygon');
+          if (clearBtn) clearBtn.style.display = 'flex';
+
+          // 1. Create premium final polygon with CallbackProperty hierarchy
+          finalPolygonEntity = viewer.entities.add({
+            polygon: {
+              hierarchy: new C.CallbackProperty(function() {
+                return new C.PolygonHierarchy(polygonPoints);
+              }, false),
+              material: C.Color.fromCssColorString('#696cff').withAlpha(0.4),
+              outline: true,
+              outlineColor: C.Color.WHITE,
+              outlineWidth: 2,
+              classificationType: C.ClassificationType.CESIUM_3D_TILE
+            }
+          });
+
+          // 2. Create editable grab handle entities at each vertex
+          polygonPoints.forEach(function(pos, idx) {
+            var handle = viewer.entities.add({
+              position: pos,
+              point: {
+                pixelSize: 12,
+                color: C.Color.YELLOW,
+                outlineColor: C.Color.WHITE,
+                outlineWidth: 2.5,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY
+              },
+              isVertex: true,
+              vertexIndex: idx
+            });
+            editVertexEntities.push(handle);
+          });
+
+          // 3. Set up interactive vertex dragging
+          editHandler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+          editHandler.setInputAction(function(click) {
+            var picked = viewer.scene.pick(click.position);
+            if (C.defined(picked) && picked.id && picked.id.isVertex) {
+              draggedVertexIndex = picked.id.vertexIndex;
+              draggedVertexEntity = picked.id;
+              viewer.scene.screenSpaceCameraController.enableInputs = false; // lock camera
+            }
+          }, C.ScreenSpaceEventType.LEFT_DOWN);
+
+          editHandler.setInputAction(function(movement) {
+            if (draggedVertexIndex === null) {
+              var picked = viewer.scene.pick(movement.endPosition);
+              if (C.defined(picked) && picked.id && picked.id.isVertex) {
+                viewer.canvas.style.cursor = 'grab';
+              } else {
+                if (!isDrawing) {
+                  viewer.canvas.style.cursor = '';
+                }
+              }
+              return;
+            }
+
+            var newPos = viewer.scene.pickPosition(movement.endPosition);
+            if (!newPos) {
+              newPos = viewer.camera.pickEllipsoid(movement.endPosition);
+            }
+            if (newPos) {
+              draggedVertexEntity.position = newPos;
+              polygonPoints[draggedVertexIndex] = newPos;
+              viewer.scene.requestRender();
+            }
+          }, C.ScreenSpaceEventType.MOUSE_MOVE);
+
+          editHandler.setInputAction(function() {
+            if (draggedVertexIndex !== null) {
+              draggedVertexIndex = null;
+              draggedVertexEntity = null;
+              viewer.scene.screenSpaceCameraController.enableInputs = true; // unlock camera
+            }
+          }, C.ScreenSpaceEventType.LEFT_UP);
+
+          viewer.scene.requestRender();
+        }
+
+        function clearPolygon() {
+          if (draggedVertexIndex !== null) {
+            draggedVertexIndex = null;
+            draggedVertexEntity = null;
+            viewer.scene.screenSpaceCameraController.enableInputs = true;
+          }
+
+          if (drawingHandler) {
+            drawingHandler.destroy();
+            drawingHandler = null;
+          }
+          if (editHandler) {
+            editHandler.destroy();
+            editHandler = null;
+          }
+
+          drawingEntities.forEach(function(ent) { viewer.entities.remove(ent); });
+          drawingEntities = [];
+          editVertexEntities.forEach(function(ent) { viewer.entities.remove(ent); });
+          editVertexEntities = [];
+
+          if (finalPolygonEntity) {
+            viewer.entities.remove(finalPolygonEntity);
+            finalPolygonEntity = null;
+          }
+
+          polygonPoints = [];
+          isDrawing = false;
+          viewer.canvas.style.cursor = '';
+
+          // Reset buttons
+          var drawBtn = document.getElementById('btnDrawPolygon');
+          if (drawBtn) {
+            drawBtn.style.display = 'flex';
+            drawBtn.innerHTML = '<i class="bx bx-pencil me-1"></i> Draw Purchase Area';
+            drawBtn.className = 'btn btn-sm btn-primary shadow-sm fw-bold d-flex align-items-center gap-1';
+          }
+          var clearBtn = document.getElementById('btnClearPolygon');
+          if (clearBtn) {
+            clearBtn.style.display = 'none';
+          }
+
+          viewer.scene.requestRender();
+        }
+
+        // Wire toolbar buttons
+        var drawBtn = document.getElementById('btnDrawPolygon');
+        if (drawBtn) {
+          drawBtn.addEventListener('click', function() {
+            if (isDrawing) {
+              clearPolygon();
+            } else {
+              startDrawing();
+            }
+          });
+        }
+
+        var clearBtn = document.getElementById('btnClearPolygon');
+        if (clearBtn) {
+          clearBtn.addEventListener('click', function() {
+            clearPolygon();
+          });
+        }
+
+        // Cancel drawing with Escape key
+        window.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && isDrawing) {
+            clearPolygon();
+          }
+        });
+
+        function switchTo3D(modelData) {
           if (currentTileset) return; // already loaded
+
+          selectedModel = modelData;
 
           // Add a loading overlay
           var container = document.getElementById('heroMapContainer');
@@ -583,17 +887,24 @@
           loadingIndicator.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary" role="status"></span>Loading 3D Model...';
           container.appendChild(loadingIndicator);
 
-          // Hide the 2D pin
-          kkOspreyEntity.show = false;
+          // Hide all 2D pins
+          Object.keys(allModelEntities).forEach(function(id) {
+            allModelEntities[id].show = false;
+          });
 
           // Switch scene mode to 3D
           viewer.scene.mode = C.SceneMode.SCENE3D;
 
-          // Load the 3D model (tileset)
-          var tilesetUrl = 'https://3dhub.geosabah.my/3dmodel/KK_OSPREY/tileset.json';
+          // Load the 3D model (tileset) dynamically
+          var tilesetUrl = selectedModel['3dTiles'];
+          var tilesetOptions = {};
+          if (tilesetUrl.indexOf('geosabah.my') !== -1 || tilesetUrl.indexOf('http') === 0) {
+            tilesetOptions.proxy = new C.DefaultProxy('/proxy?url=');
+          }
+
           C.Cesium3DTileset.fromUrl(new C.Resource({
             url: tilesetUrl,
-            proxy: new C.DefaultProxy('/proxy?url=')
+            proxy: tilesetOptions.proxy
           }))
           .then(function(tileset) {
             currentTileset = tileset;
@@ -603,7 +914,8 @@
             var indicator = document.getElementById('mapLoadingIndicator');
             if (indicator) indicator.remove();
 
-            // Show orbit button
+            // Show drawing toolbar and orbit button
+            document.getElementById('drawingToolbar').style.display = 'flex';
             if (orbitBtn) {
               orbitBtn.style.display = 'flex';
             }
@@ -626,9 +938,15 @@
               indicator.innerHTML = '<span class="text-danger"><i class="bx bx-error me-1"></i>Error loading 3D Model</span>';
               setTimeout(function() { indicator.remove(); }, 3000);
             }
+            
             // Revert back to 2D
-            kkOspreyEntity.show = true;
+            clearPolygon();
+            Object.keys(allModelEntities).forEach(function(id) {
+              allModelEntities[id].show = true;
+            });
+            selectedModel = null;
             viewer.scene.mode = C.SceneMode.SCENE2D;
+            document.getElementById('drawingToolbar').style.display = 'none';
             if (orbitBtn) {
               orbitBtn.style.display = 'none';
             }
@@ -642,6 +960,10 @@
           resetBtn.addEventListener('click', function() {
             // Cancel any active orbit
             cancelOrbit();
+            
+            // Clear drawing toolbar and polygon
+            clearPolygon();
+            document.getElementById('drawingToolbar').style.display = 'none';
             if (orbitBtn) {
               orbitBtn.style.display = 'none';
             }
@@ -649,24 +971,24 @@
             // Restore 2D mode
             viewer.scene.mode = C.SceneMode.SCENE2D;
             
-            // Re-show 2D pin
-            kkOspreyEntity.show = true;
+            // Re-show all 2D pins
+            Object.keys(allModelEntities).forEach(function(id) {
+              allModelEntities[id].show = true;
+            });
             
             // Remove 3D tileset
             if (currentTileset) {
               viewer.scene.primitives.remove(currentTileset);
               currentTileset = null;
             }
+            
+            selectedModel = null;
             viewer.scene.requestRender();
           });
         }
       });
-    })();
-  </script>
 
-  <script>
-    // 2. Handle Logout Form submit
-    (function() {
+      // 2. Handle Logout Form submit
       function doLogout() {
         document.querySelector('form[action*="logout"]').submit();
       }
@@ -678,78 +1000,100 @@
           document.getElementById('logoutConfirmBtn').onclick = function() { doLogout(); };
         });
       }
-    })();
 
-    // 3. Form Submit handling (Store Quotation)
-    document.getElementById('purchaseQuoteForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
+      // 3. Form Submit handling (Store Quotation)
+      document.getElementById('purchaseQuoteForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
 
-      // Check if at least one checkbox is checked
-      var checkedCategories = ["3D Tiles", "OSGB"];
-      document.querySelectorAll('input[name="output_categories[]"]:checked').forEach(function(cb) {
-        if (!checkedCategories.includes(cb.value)) {
-          checkedCategories.push(cb.value);
+        if (!selectedModel) {
+          alert('Please select a 3D model on the map first by clicking its pin.');
+          return;
         }
-      });
 
-      var btnSubmit = document.getElementById('btnSubmitQuotation');
-      var originalHtml = btnSubmit.innerHTML;
-      btnSubmit.disabled = true;
-      btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+        if (polygonPoints.length < 3) {
+          alert("Please outline the area you wish to purchase. Click 'Draw Purchase Area' and click on the 3D model to draw a polygon. Double-click to complete.");
+          return;
+        }
 
-      // For now, area coordinates placeholder (since logic will be added later)
-      var areaCoordinatesPlaceholder = {
-        center: [5.9804, 116.0735],
-        zoom: 11
-      };
+        var btnSubmit = document.getElementById('btnSubmitQuotation');
+        var originalHtml = btnSubmit.innerHTML;
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
 
-      var payload = {
-        purchase_id: document.getElementById('purchase_id').value,
-        output_categories: checkedCategories,
-        area_coordinates: areaCoordinatesPlaceholder
-      };
-
-      try {
-        var res = await fetch('{{ route('purchase_quotation.store') }}', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-          },
-          body: JSON.stringify(payload)
+        // Convert Cartesian3 points to standard WGS84 degree coordinates for GeoJSON Polygon format
+        var C = Cesium;
+        var coords = polygonPoints.map(function(pos) {
+          var carto = C.Cartographic.fromCartesian(pos);
+          return [
+            C.Math.toDegrees(carto.longitude),
+            C.Math.toDegrees(carto.latitude)
+          ];
         });
 
-        var data = await res.json();
-        if (data.success) {
-          // Show success message and reset form or disable
-          document.getElementById('successAlert').classList.remove('d-none');
-          document.getElementById('purchaseQuoteForm').reset();
-          
-          // Disable form controls
-          document.querySelectorAll('#purchaseQuoteForm input, #purchaseQuoteForm button').forEach(function(el) {
-            el.disabled = true;
+        // Close the ring (GeoJSON exterior rings must end at the starting coordinate)
+        if (coords.length > 0) {
+          coords.push([coords[0][0], coords[0][1]]);
+        }
+
+        var areaCoordinatesPayload = {
+          type: "Polygon",
+          coordinates: [coords]
+        };
+
+        // Check if at least one checkbox is checked
+        var checkedCategories = ["3D Tiles", "OSGB"];
+        document.querySelectorAll('input[name="output_categories[]"]:checked').forEach(function(cb) {
+          if (!checkedCategories.includes(cb.value)) {
+            checkedCategories.push(cb.value);
+          }
+        });
+
+        var payload = {
+          purchase_id: document.getElementById('purchase_id').value,
+          map_data_id: selectedModel.mapDataID,
+          output_categories: checkedCategories,
+          area_coordinates: areaCoordinatesPayload
+        };
+
+        try {
+          var res = await fetch('{{ route('purchase_quotation.store') }}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify(payload)
           });
-          
-          // Smooth scroll to top of page to see success alert
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          
-          // Redirect to my-quotations page after 3 seconds
-          setTimeout(function() {
-            window.location.href = '{{ route('purchase_quotation.my') }}';
-          }, 3000);
-        } else {
-          alert('Error: ' + (data.message || 'Failed to submit quotation.'));
+
+          var data = await res.json();
+          if (data.success) {
+            document.getElementById('successAlert').classList.remove('d-none');
+            document.getElementById('purchaseQuoteForm').reset();
+            
+            document.querySelectorAll('#purchaseQuoteForm input, #purchaseQuoteForm button').forEach(function(el) {
+              el.disabled = true;
+            });
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            setTimeout(function() {
+              window.location.href = '{{ route('purchase_quotation.my') }}';
+            }, 3000);
+          } else {
+            alert('Error: ' + (data.message || 'Failed to submit quotation.'));
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = originalHtml;
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Server error occurred during submission.');
           btnSubmit.disabled = false;
           btnSubmit.innerHTML = originalHtml;
         }
-      } catch (err) {
-        console.error(err);
-        alert('Server error occurred during submission.');
-        btnSubmit.disabled = false;
-        btnSubmit.innerHTML = originalHtml;
-      }
-    });
+      });
+
+    })();
   </script>
 </body>
 </html>
