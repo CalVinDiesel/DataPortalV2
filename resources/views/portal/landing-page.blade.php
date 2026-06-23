@@ -198,6 +198,7 @@
             <a class="nav-link fw-medium" href="{{ route('landing') }}#landingShowCase">ShowCase</a>
           </li>
           @auth
+          {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (3D MODEL SALES FIRST)
           <li class="nav-item dropdown d-none d-xl-block" id="navUpload">
             <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
               Upload
@@ -218,6 +219,7 @@
               <a class="nav-link fw-medium" href="{{ route('my_uploads') }}">My Projects</a>
             </div>
           </li>
+          --}}
           @endauth
 
           <!--<li class="nav-item">
@@ -734,7 +736,7 @@
           for your 3D workflow
         </h4>
         <p class="text-center pb-2 mb-7">Gain access to 40+ premium showcases or request professional processing for your own datasets.<br />From free exploration to high-performance data processing and easy token management,<br />our portal is built to support your end-to-end geospatial requirements.</p>
-        <div class="row g-6 pt-lg-5">
+        <div class="row g-6 pt-lg-5 justify-content-center">
           <div class="col-xl-4 col-lg-6">
             <div class="card pricing-plan-card">
               <div class="card-header">
@@ -769,6 +771,7 @@
             </div>
           </div>
 
+          {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (3D MODEL SALES FIRST)
           <div class="col-xl-4 col-lg-6">
             <div class="card pricing-plan-card">
               <div class="card-header">
@@ -802,6 +805,7 @@
               </div>
             </div>
           </div>
+          --}}
 
           <div class="col-xl-4 col-lg-6">
             <div class="card pricing-plan-card">

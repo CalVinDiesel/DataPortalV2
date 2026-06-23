@@ -128,6 +128,8 @@ Route::get('/payment', function () {
 })->name('payment');
 
 Route::middleware('auth')->group(function () {
+    // TEMPORARILY REDIRECTED FOR PRE-LAUNCH (3D MODEL SALES FIRST)
+    /*
     Route::get('/create-project', function () {
         return view('portal.create-project');
     })->name('create_project');
@@ -155,6 +157,31 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/my-uploads', function () {
         return view('portal.my-uploads');
+    })->name('my_uploads');
+    */
+
+    Route::get('/create-project', function () {
+        return redirect()->route('landing');
+    })->name('create_project');
+
+    Route::get('/upload-data', function () {
+        return redirect()->route('landing');
+    })->name('upload_data');
+
+    Route::get('/upload-sftp', function () {
+        return redirect()->route('landing');
+    })->name('upload_sftp');
+
+    Route::get('/upload-cloud', function () {
+        return redirect()->route('landing');
+    })->name('upload_cloud');
+
+    Route::get('/upload-gdrive', function () {
+        return redirect()->route('landing');
+    })->name('upload_gdrive');
+
+    Route::get('/my-uploads', function () {
+        return redirect()->route('landing');
     })->name('my_uploads');
 
     Route::get('/profile', function () {
@@ -193,8 +220,15 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
         return view('admin.manage-showcases');
     })->name('admin.manage_showcases');
 
+    // TEMPORARILY REDIRECTED FOR PRE-LAUNCH (3D MODEL SALES FIRST)
+    /*
     Route::get('/admin/client-uploads', function () {
         return view('admin.client-uploads');
+    })->name('admin.client_uploads');
+    */
+
+    Route::get('/admin/client-uploads', function () {
+        return redirect()->route('admin_dashboard');
     })->name('admin.client_uploads');
 
     Route::get('/admin/manage-users', function () {
