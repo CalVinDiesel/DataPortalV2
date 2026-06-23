@@ -432,6 +432,10 @@
             drawFallback();
             return;
           }
+          // Proxy remote image URL to bypass CORS
+          if (imageUrl.indexOf('http') === 0 && imageUrl.indexOf(window.location.origin) !== 0) {
+            imageUrl = '/proxy?url=' + encodeURIComponent(imageUrl);
+          }
           var img = new Image();
           img.crossOrigin = 'anonymous';
           img.onload = function() {
@@ -532,6 +536,10 @@
           if (!url) {
             callback(placeholder, fullSize, fullSize);
             return;
+          }
+          // Proxy remote image URL to bypass CORS
+          if (url.indexOf('http') === 0 && url.indexOf(window.location.origin) !== 0) {
+            url = '/proxy?url=' + encodeURIComponent(url);
           }
           var img = new Image();
           img.crossOrigin = 'anonymous';
