@@ -1878,11 +1878,16 @@
             dataSource.show = false;
           }
 
-          // Switch scene mode to 3D
-          viewer.scene.mode = C.SceneMode.SCENE3D;
+          // Switch scene mode to 3D instantly without animation
           try {
-            viewer.scene.completeMorph();
-          } catch (e) {}
+            if (typeof viewer.scene.morphTo3D === 'function') {
+              viewer.scene.morphTo3D(0);
+            } else {
+              viewer.scene.mode = C.SceneMode.SCENE3D;
+            }
+          } catch (e) {
+            viewer.scene.mode = C.SceneMode.SCENE3D;
+          }
 
           // Load the 3D model (tileset) dynamically
           var tilesetOptions = {};
@@ -1911,24 +1916,38 @@
               dataSource.show = true;
             }
             selectedModel = null;
-            viewer.scene.mode = C.SceneMode.SCENE2D;
+            
+            // Revert back to 2D instantly
             try {
-              viewer.scene.completeMorph();
-            } catch (e) {}
+              if (typeof viewer.scene.morphTo2D === 'function') {
+                viewer.scene.morphTo2D(0);
+              } else {
+                viewer.scene.mode = C.SceneMode.SCENE2D;
+              }
+            } catch (e) {
+              viewer.scene.mode = C.SceneMode.SCENE2D;
+            }
+
             document.getElementById('drawingToolbar').style.display = 'none';
             if (orbitBtn) {
               orbitBtn.style.display = 'none';
             }
             
-            // Reset camera to default 2D view and orientation
-            viewer.camera.setView({
-              destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
-              orientation: {
-                heading: C.Math.toRadians(0),
-                pitch: C.Math.toRadians(-90),
-                roll: 0
-              }
-            });
+            // Reset camera orientation with absolute triple safety timing
+            var resetCamera = function() {
+              viewer.camera.setView({
+                destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
+                orientation: {
+                  heading: C.Math.toRadians(0),
+                  pitch: C.Math.toRadians(-90),
+                  roll: 0
+                }
+              });
+            };
+            resetCamera();
+            setTimeout(resetCamera, 50);
+            setTimeout(resetCamera, 150);
+            setTimeout(resetCamera, 300);
             viewer.scene.requestRender();
           }
 
@@ -1991,11 +2010,16 @@
               orbitBtn.style.display = 'none';
             }
 
-            // Restore 2D mode
-            viewer.scene.mode = C.SceneMode.SCENE2D;
+            // Restore 2D mode instantly
             try {
-              viewer.scene.completeMorph();
-            } catch (e) {}
+              if (typeof viewer.scene.morphTo2D === 'function') {
+                viewer.scene.morphTo2D(0);
+              } else {
+                viewer.scene.mode = C.SceneMode.SCENE2D;
+              }
+            } catch (e) {
+              viewer.scene.mode = C.SceneMode.SCENE2D;
+            }
             
             // Re-show all 2D pins
             if (dataSource) {
@@ -2014,15 +2038,21 @@
               indicator.parentNode.removeChild(indicator);
             }
             
-            // Reset camera to default 2D view and orientation
-            viewer.camera.setView({
-              destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
-              orientation: {
-                heading: C.Math.toRadians(0),
-                pitch: C.Math.toRadians(-90),
-                roll: 0
-              }
-            });
+            // Reset camera orientation with absolute triple safety timing
+            var resetCamera = function() {
+              viewer.camera.setView({
+                destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
+                orientation: {
+                  heading: C.Math.toRadians(0),
+                  pitch: C.Math.toRadians(-90),
+                  roll: 0
+                }
+              });
+            };
+            resetCamera();
+            setTimeout(resetCamera, 50);
+            setTimeout(resetCamera, 150);
+            setTimeout(resetCamera, 300);
 
             selectedModel = null;
             viewer.scene.requestRender();
