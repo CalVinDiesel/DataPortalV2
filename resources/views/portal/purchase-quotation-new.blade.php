@@ -43,34 +43,17 @@
       }
     }
     
-    #purchaseMapContainer {
-      position: relative;
+    #heroMapContainer {
       border-radius: 12px;
       overflow: hidden;
       border: 1px solid var(--bs-border-color);
     }
-    #cesiumMapContainer {
+    #cesiumContainer {
       height: 420px;
       width: 100%;
       margin: 0;
       padding: 0;
       overflow: hidden;
-    }
-
-    /* Fullscreen styling for purchase map container */
-    #purchaseMapContainer:fullscreen,
-    #purchaseMapContainer:-webkit-full-screen {
-      width: 100vw !important;
-      height: 100vh !important;
-      max-width: none !important;
-      max-height: none !important;
-      background: black;
-    }
-    #purchaseMapContainer:fullscreen #cesiumMapContainer,
-    #purchaseMapContainer:-webkit-full-screen #cesiumMapContainer {
-      width: 100% !important;
-      height: 100% !important;
-      min-height: 100% !important;
     }
 
     .form-section-title {
@@ -272,8 +255,8 @@
                 <div class="form-text mb-2">Use the Cesium map viewer to specify the area coordinates for your purchase quotation.</div>
                 
                 <!-- Field 3: Cesium Ion Map -->
-                <div id="purchaseMapContainer">
-                  <div id="cesiumMapContainer"></div>
+                <div id="heroMapContainer">
+                  <div id="cesiumContainer"></div>
                   <!-- Map control sidebar (zoom, reset, fullscreen) -->
                   <div class="right-controls">
                     <div class="navigation-container"></div>
@@ -285,26 +268,25 @@
                             <path d="M17.5 13.75V17.5H13.75" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
                             <path d="M6.25 17.5H2.5V13.75" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
                             <path d="M2.5 6.25V2.5H6.25" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
-                            <rect x="8" y="8" width="4" height="4" rx="2" fill="currentColor"></rect>
                           </svg>
                         </div>
                         <div class="el-tooltip__trigger" id="zoomInBtn" title="Zoom In">
                           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M8 3.33334V12.6667" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
-                            <path d="M3.33334 8H12.6667" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M12.0208 11.0782L14.8762 13.9328L13.9328 14.8762L11.0782 12.0208C10.016 12.8723 8.69483 13.3354 7.3335 13.3335C4.0215 13.3335 1.3335 10.6455 1.3335 7.3335C1.3335 4.0215 4.0215 1.3335 7.3335 1.3335C10.6455 1.3335 13.3335 4.0215 13.3335 7.3335C13.3354 8.69483 12.8723 10.016 12.0208 11.0782ZM10.6835 10.5835C11.5296 9.71342 12.0021 8.54712 12.0002 7.3335C12.0002 4.75483 9.9115 2.66683 7.3335 2.66683C4.75483 2.66683 2.66683 4.75483 2.66683 7.3335C2.66683 9.9115 4.75483 12.0002 7.3335 12.0002C8.54712 12.0021 9.71342 11.5296 10.5835 10.6835L10.6835 10.5835ZM6.66683 6.66683V4.66683H8.00016V6.66683H10.0002V8.00016H8.00016V10.0002H6.66683V8.00016H4.66683V6.66683H6.66683Z" fill="currentColor"></path>
                           </svg>
                         </div>
                         <div class="el-tooltip__trigger" id="zoomOutBtn" title="Zoom Out">
                           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3.33334 8H12.6667" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M12.0208 11.0782L14.8762 13.9328L13.9328 14.8762L11.0782 12.0208C10.016 12.8723 8.69483 13.3354 7.3335 13.3335C4.0215 13.3335 1.3335 10.6455 1.3335 7.3335C1.3335 4.0215 4.0215 1.3335 7.3335 1.3335C10.6455 1.3335 13.3335 4.0215 13.3335 7.3335C13.3354 8.69483 12.8723 10.016 12.0208 11.0782ZM10.6835 10.5835C11.5296 9.71342 12.0021 8.54712 12.0002 7.3335C12.0002 4.75483 9.9115 2.66683 7.3335 2.66683C4.75483 2.66683 2.66683 4.75483 2.66683 7.3335C2.66683 9.9115 4.75483 12.0002 7.3335 12.0002C8.54712 12.0021 9.71342 11.5296 10.5835 10.6835L10.6835 10.5835ZM4.66683 6.66683H10.0002V8.00016H4.66683V6.66683Z" fill="currentColor"></path>
                           </svg>
                         </div>
-                        <div class="el-tooltip__trigger" id="fullscreenBtn" title="Toggle Fullscreen">
+                        <div class="divider"></div>
+                        <div class="el-tooltip__trigger" id="fullscreenBtn" title="Fullscreen">
                           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M2.5 7.5V2.5H7.5" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
-                            <path d="M17.5 7.5V2.5H12.5" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
-                            <path d="M2.5 12.5V17.5H7.5" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
-                            <path d="M17.5 12.5V17.5H12.5" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M13.75 2.5H17.5V6.25" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M17.5 13.75V17.5H13.75" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M6.25 17.5H2.5V13.75" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M2.5 6.25V2.5H6.25" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
                           </svg>
                         </div>
                       </div>
@@ -351,112 +333,11 @@
   <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
 
+  <!-- Initialize Cesium map using common script files (matching overview map exactly) -->
+  <script src="{{ asset('assets') }}/js/cesium-map.js?v={{ time() }}"></script>
+  <script src="{{ asset('assets') }}/js/cesium-map-controls.js?v={{ time() }}"></script>
+
   <script>
-    // 1. Initialize Cesium Ion Map (Empty / 2D View first, matching overview map)
-    var viewer;
-    var defaultDestination = Cesium.Cartesian3.fromDegrees(116.46905, 5.63444, 710000);
-    try {
-      // Set empty token to avoid conflicts
-      if (typeof Cesium.Ion !== 'undefined') {
-        Cesium.Ion.defaultAccessToken = '';
-      }
-
-      viewer = new Cesium.Viewer('cesiumMapContainer', {
-        animation: false,
-        baseLayerPicker: false,
-        fullscreenButton: false,
-        vrButton: false,
-        geocoder: false,
-        homeButton: false,
-        infoBox: false,
-        sceneModePicker: false,
-        selectionIndicator: false,
-        timeline: false,
-        navigationHelpButton: false,
-        sceneMode: Cesium.SceneMode.SCENE2D,
-        requestRenderMode: true,
-        useDefaultRenderLoop: true,
-        baseLayer: new Cesium.ImageryLayer(new Cesium.OpenStreetMapImageryProvider({
-          url: 'https://tile.openstreetmap.org/'
-        }))
-      });
-      
-      // Zoom to Sabah/Malaysia area default coordinates (matching overview map)
-      viewer.camera.setView({
-        destination: defaultDestination
-      });
-
-      // Wire up custom controls (zoom in/out, reset, fullscreen)
-      var resetBtn = document.getElementById('resetViewBtn');
-      var zoomInBtn = document.getElementById('zoomInBtn');
-      var zoomOutBtn = document.getElementById('zoomOutBtn');
-      var fullscreenBtn = document.getElementById('fullscreenBtn');
-      var purchaseMapContainer = document.getElementById('purchaseMapContainer');
-
-      if (resetBtn) {
-        resetBtn.addEventListener('click', function() {
-          try {
-            viewer.camera.setView({ destination: defaultDestination });
-            viewer.scene.requestRender();
-          } catch (e) {}
-        });
-      }
-
-      if (zoomInBtn) {
-        zoomInBtn.addEventListener('click', function() {
-          try {
-            var h = viewer.camera.positionCartographic.height;
-            viewer.camera.zoomIn(h * 0.4);
-            viewer.scene.requestRender();
-          } catch (e) {}
-        });
-      }
-
-      if (zoomOutBtn) {
-        zoomOutBtn.addEventListener('click', function() {
-          try {
-            var h = viewer.camera.positionCartographic.height;
-            viewer.camera.zoomOut(h * 0.4);
-            viewer.scene.requestRender();
-          } catch (e) {}
-        });
-      }
-
-      if (fullscreenBtn && purchaseMapContainer) {
-        function onFullscreenChange() {
-          if (viewer) {
-            viewer.resize();
-            viewer.scene.requestRender();
-          }
-        }
-        document.addEventListener('fullscreenchange', onFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
-        fullscreenBtn.addEventListener('click', function() {
-          try {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-              if (purchaseMapContainer.requestFullscreen) {
-                purchaseMapContainer.requestFullscreen();
-              } else if (purchaseMapContainer.webkitRequestFullscreen) {
-                purchaseMapContainer.webkitRequestFullscreen();
-              }
-            } else {
-              if (document.exitFullscreen) {
-                document.exitFullscreen();
-              } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-              }
-            }
-          } catch (e) {}
-        });
-      }
-
-    } catch (e) {
-      console.error("Cesium Map failed to load:", e);
-      document.getElementById('cesiumMapContainer').innerHTML = 
-        '<div class="d-flex align-items-center justify-content-center h-100 bg-light text-muted"><p class="m-0"><i class="bx bx-error me-1"></i>Failed to load Cesium Map. Check your internet connection or console errors.</p></div>';
-    }
-
     // 2. Handle Logout Form submit
     (function() {
       function doLogout() {
