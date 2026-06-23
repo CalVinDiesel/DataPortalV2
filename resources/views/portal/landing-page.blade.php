@@ -737,7 +737,7 @@
           </span>
           for your 3D workflow
         </h4>
-        <p class="text-center pb-2 mb-7">Gain access to 40+ premium showcases or request professional processing for your own datasets.<br />From free exploration to high-performance data processing and easy token management,<br />our portal is built to support your end-to-end geospatial requirements.</p>
+        <p class="text-center pb-2 mb-7">Gain access to 40+ premium showcases or purchase high-quality 3D models for your projects.<br />From free map exploration to premium 3D assets, our portal is built to support your geospatial requirements.</p>
         <div class="row g-6 pt-lg-5 justify-content-center">
           <div class="col-xl-4 col-lg-6">
             <div class="card pricing-plan-card">
@@ -746,7 +746,7 @@
                   <img src="{{ asset('assets') }}/img/front-pages/icons/paper-airplane.png" alt="paper airplane icon" class="mb-8 pb-2" />
                   <h4 class="mb-0">Request Access(Free)</h4>
                   <div class="d-flex align-items-center justify-content-center">
-                    <span class="price-monthly h2 text-primary fw-extrabold mb-0">0 Token Required</span>
+                    <span class="price-monthly h2 text-primary fw-extrabold mb-0">Free Access</span>
                     <sub class="h6 text-body-secondary mb-n1 ms-1"></sub>
                   </div>
                 </div>
@@ -1195,7 +1195,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p class="mb-0">You are already registered. You can upload data and purchase 3D models from the Data Portal.</p>
+            <p class="mb-0">You are already registered. You can purchase 3D models from the Data Portal.</p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
