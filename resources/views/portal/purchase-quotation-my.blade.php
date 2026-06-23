@@ -41,9 +41,14 @@
     /* ── Page Hero ── */
     .pq-hero {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 3rem 0 4.5rem;
+      padding: 8rem 0 4.5rem;
       position: relative;
       overflow: hidden;
+    }
+    @media (max-width: 991px) {
+      .pq-hero {
+        padding-top: 7rem;
+      }
     }
     .pq-hero::before {
       content: '';
