@@ -809,6 +809,7 @@
           </div>
           --}}
 
+          {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (TOKEN RELOAD FEATURE UNDER DEVELOPMENT)
           <div class="col-xl-4 col-lg-6">
             <div class="card pricing-plan-card">
               <div class="card-header">
@@ -842,6 +843,7 @@
               </div>
             </div>
           </div>
+          --}}
         </div>
       </div>
     </section>
