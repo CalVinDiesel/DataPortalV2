@@ -338,6 +338,159 @@
   <script src="{{ asset('assets') }}/js/cesium-map-controls.js?v={{ time() }}"></script>
 
   <script>
+    (function() {
+      // Helper function to poll/wait for cesiumViewer to be defined by cesium-map.js
+      function getViewer(cb) {
+        if (window.cesiumViewer) {
+          cb(window.cesiumViewer);
+          return;
+        }
+        var attempts = 0;
+        var t = setInterval(function () {
+          attempts++;
+          if (window.cesiumViewer) {
+            clearInterval(t);
+            cb(window.cesiumViewer);
+            return;
+          }
+          if (attempts > 100) clearInterval(t);
+        }, 50);
+      }
+
+      getViewer(function(viewer) {
+        var C = Cesium;
+        
+        // 1. Create a Pin/Billboard for KK Osprey on the 2D map
+        var pinBuilder = new C.PinBuilder();
+        var kkOspreyCoords = C.Cartesian3.fromDegrees(116.070466, 5.957839, 50);
+        var currentTileset = null;
+        
+        var kkOspreyEntity = viewer.entities.add({
+          id: 'KK_OSPREY',
+          name: 'KK OSPREY',
+          position: kkOspreyCoords,
+          billboard: {
+            image: pinBuilder.fromColor(C.Color.fromCssColorString('#696cff'), 48).toDataURL(),
+            verticalOrigin: C.VerticalOrigin.BOTTOM,
+            heightReference: C.HeightReference.CLAMP_TO_GROUND
+          },
+          label: {
+            text: 'KK OSPREY',
+            font: 'bold 12px "Public Sans", sans-serif',
+            style: C.LabelStyle.FILL_AND_OUTLINE,
+            fillColor: C.Color.WHITE,
+            outlineColor: C.Color.fromCssColorString('#1a1a2e'),
+            outlineWidth: 3,
+            verticalOrigin: C.VerticalOrigin.BOTTOM,
+            pixelOffset: new C.Cartesian2(0, -50),
+            heightReference: C.HeightReference.CLAMP_TO_GROUND
+          }
+        });
+        
+        // 2. Click Handler: Transition to 3D and Load tileset
+        var handler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
+        handler.setInputAction(function(click) {
+          var pickedObject = viewer.scene.pick(click.position);
+          if (C.defined(pickedObject) && pickedObject.id === kkOspreyEntity) {
+            switchTo3D();
+          }
+        }, C.ScreenSpaceEventType.LEFT_CLICK);
+
+        // Hover Handler: Cursor style change
+        handler.setInputAction(function(movement) {
+          var pickedObject = viewer.scene.pick(movement.endPosition);
+          if (C.defined(pickedObject) && pickedObject.id === kkOspreyEntity) {
+            viewer.canvas.style.cursor = 'pointer';
+          } else {
+            viewer.canvas.style.cursor = '';
+          }
+        }, C.ScreenSpaceEventType.MOUSE_MOVE);
+
+        function switchTo3D() {
+          if (currentTileset) return; // already loaded
+
+          // Add a loading overlay
+          var container = document.getElementById('heroMapContainer');
+          var loadingIndicator = document.createElement('div');
+          loadingIndicator.id = 'mapLoadingIndicator';
+          loadingIndicator.style.position = 'absolute';
+          loadingIndicator.style.top = '50%';
+          loadingIndicator.style.left = '50%';
+          loadingIndicator.style.transform = 'translate(-50%, -50%)';
+          loadingIndicator.style.background = 'rgba(26, 26, 46, 0.9)';
+          loadingIndicator.style.color = '#fff';
+          loadingIndicator.style.padding = '12px 24px';
+          loadingIndicator.style.borderRadius = '8px';
+          loadingIndicator.style.fontSize = '14px';
+          loadingIndicator.style.fontWeight = 'bold';
+          loadingIndicator.style.zIndex = '9999';
+          loadingIndicator.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+          loadingIndicator.style.border = '1px solid rgba(255,255,255,0.1)';
+          loadingIndicator.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary" role="status"></span>Loading 3D Model...';
+          container.appendChild(loadingIndicator);
+
+          // Hide the 2D pin
+          kkOspreyEntity.show = false;
+
+          // Switch scene mode to 3D
+          viewer.scene.mode = C.SceneMode.SCENE3D;
+
+          // Load the 3D model (tileset)
+          var tilesetUrl = 'https://3dhub.geosabah.my/3dmodel/KK_OSPREY/tileset.json';
+          C.Cesium3DTileset.fromUrl(new C.Resource({
+            url: tilesetUrl,
+            proxy: new C.DefaultProxy('/proxy?url=')
+          }))
+          .then(function(tileset) {
+            currentTileset = tileset;
+            viewer.scene.primitives.add(tileset);
+
+            // Clean up loader UI
+            var indicator = document.getElementById('mapLoadingIndicator');
+            if (indicator) indicator.remove();
+
+            // Zoom to the 3D tileset with a beautiful camera perspective
+            var boundingSphere = tileset.boundingSphere;
+            viewer.camera.flyToBoundingSphere(boundingSphere, {
+              offset: new C.HeadingPitchRange(C.Math.toRadians(0), C.Math.toRadians(-35), boundingSphere.radius * 2.5),
+              duration: 2.0
+            });
+          })
+          .catch(function(err) {
+            console.error('[CesiumMap] Failed to load 3D Tileset:', err);
+            var indicator = document.getElementById('mapLoadingIndicator');
+            if (indicator) {
+              indicator.innerHTML = '<span class="text-danger"><i class="bx bx-error me-1"></i>Error loading 3D Model</span>';
+              setTimeout(function() { indicator.remove(); }, 3000);
+            }
+            // Revert back to 2D
+            kkOspreyEntity.show = true;
+            viewer.scene.mode = C.SceneMode.SCENE2D;
+          });
+        }
+
+        // Intercept Reset View button click to clean up 3D tileset and switch back to 2D view
+        var resetBtn = document.getElementById('resetViewBtn');
+        if (resetBtn) {
+          resetBtn.addEventListener('click', function() {
+            // Restore 2D mode
+            viewer.scene.mode = C.SceneMode.SCENE2D;
+            
+            // Re-show 2D pin
+            kkOspreyEntity.show = true;
+            
+            // Remove 3D tileset
+            if (currentTileset) {
+              viewer.scene.primitives.remove(currentTileset);
+              currentTileset = null;
+            }
+          });
+        }
+      });
+    })();
+  </script>
+
+  <script>
     // 2. Handle Logout Form submit
     (function() {
       function doLogout() {
