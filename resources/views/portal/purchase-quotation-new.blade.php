@@ -339,6 +339,15 @@
 
   <script>
     (function() {
+      // Force initialization of Cesium map if it hasn't run yet (resolves timing issues with window load event)
+      if (typeof initializeCesium === 'function' && !window.cesiumViewer) {
+        try {
+          initializeCesium();
+        } catch (e) {
+          console.error("Manual Cesium initialization failed:", e);
+        }
+      }
+
       // Helper function to poll/wait for cesiumViewer to be defined by cesium-map.js
       function getViewer(cb) {
         if (window.cesiumViewer) {
