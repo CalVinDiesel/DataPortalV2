@@ -1847,7 +1847,7 @@
 
           // Check if 3D Tiles URL is defined and valid
           var tilesetUrl = selectedModel ? selectedModel['3dTiles'] : null;
-          if (!tilesetUrl || tilesetUrl.trim() === '') {
+          if (!tilesetUrl || typeof tilesetUrl !== 'string' || tilesetUrl.trim() === '') {
             alert('No 3D model is available for this location.');
             selectedModel = null;
             return;
@@ -1905,6 +1905,16 @@
             if (orbitBtn) {
               orbitBtn.style.display = 'none';
             }
+            
+            // Reset camera to default 2D view and orientation
+            viewer.camera.setView({
+              destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
+              orientation: {
+                heading: C.Math.toRadians(0),
+                pitch: C.Math.toRadians(-90),
+                roll: 0
+              }
+            });
             viewer.scene.requestRender();
           }
 
@@ -1976,6 +1986,16 @@
               currentTileset = null;
             }
             
+            // Reset camera to default 2D view and orientation
+            viewer.camera.setView({
+              destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
+              orientation: {
+                heading: C.Math.toRadians(0),
+                pitch: C.Math.toRadians(-90),
+                roll: 0
+              }
+            });
+
             selectedModel = null;
             viewer.scene.requestRender();
           });
