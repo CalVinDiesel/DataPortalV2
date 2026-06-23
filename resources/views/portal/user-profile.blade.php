@@ -331,7 +331,7 @@
       </div>
       <form id="formChangeSftpPassword" class="profile-inline-form d-none">
         @csrf
-        {{-- 🚀 BROWSER ACCESSIBILITY (v155): Added hidden username field to satisfy accessibility warnings --}}
+        <!-- 🚀 BROWSER ACCESSIBILITY (v155): Added hidden username field to satisfy accessibility warnings -->
         <input type="text" name="username" value="{{ Auth::user()->sftp_username ?? Auth::user()->email }}" style="display:none;" autocomplete="username">
         
         <div class="mb-2">
@@ -425,15 +425,19 @@
             document.getElementById('profile-provider').textContent = providerLabel;
 
             // Update SFTP display if loaded together or separately
+            var sftpUsernameEl = document.getElementById('profile-sftp-username');
+            var sftpPasswordEl = document.getElementById('profile-sftp-password');
+            var sftpAlertEl = document.getElementById('sftpNotSetAlert');
+
             if (data.sftpUsername && data.sftpUsername !== 'Not set') {
-              document.getElementById('profile-sftp-username').textContent = data.sftpUsername;
+              if (sftpUsernameEl) sftpUsernameEl.textContent = data.sftpUsername;
               actualSftpPassword = data.sftpPassword || '';
-              document.getElementById('profile-sftp-password').textContent = '••••••••';
-              document.getElementById('sftpNotSetAlert').classList.add('d-none');
+              if (sftpPasswordEl) sftpPasswordEl.textContent = '••••••••';
+              if (sftpAlertEl) sftpAlertEl.classList.add('d-none');
             } else {
-              document.getElementById('profile-sftp-username').textContent = 'Not set';
-              document.getElementById('profile-sftp-password').textContent = 'Not set';
-              document.getElementById('sftpNotSetAlert').classList.remove('d-none');
+              if (sftpUsernameEl) sftpUsernameEl.textContent = 'Not set';
+              if (sftpPasswordEl) sftpPasswordEl.textContent = 'Not set';
+              if (sftpAlertEl) sftpAlertEl.classList.remove('d-none');
             }
           })
           .catch(function () {
@@ -632,104 +636,133 @@
         });
 
 // ---- SFTP Credentials ----
-var sftpPasswordVisible = false;
+        var sftpPasswordVisible = false;
         var actualSftpPassword = '';
 
         // Load SFTP credentials
-        fetch(AUTH_API + '/api/auth/profile/sftp', { credentials: 'include' })
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            if (data.success) {
-              if (data.sftpUsername && data.sftpUsername !== 'Not set') {
-                document.getElementById('profile-sftp-username').textContent = data.sftpUsername;
-                actualSftpPassword = data.sftpPassword || '';
-                document.getElementById('profile-sftp-password').textContent = '••••••••';
-                document.getElementById('sftpNotSetAlert').classList.add('d-none');
-                
-                // 🚀 PORT SYNC (v142): Ensure port 2223 is shown for clients
-                if (document.getElementById('profile-sftp-port')) {
-                  document.getElementById('profile-sftp-port').textContent = data.sftpPort || '{{ env('CLIENT_SFTP_PORT', env('SFTP_PORT', 2222)) }}';
-                }
-                if (document.getElementById('profile-sftp-host')) {
-                  document.getElementById('profile-sftp-host').textContent = data.sftpHost || '{{ config('filesystems.disks.sftp_delivery.host') ?: request()->getHost() }}';
-                }
-                
-                document.getElementById('btnChangeSftpPassword').disabled = false;
-                document.getElementById('btnToggleSftpPassword').disabled = false;
-              } else {
-                document.getElementById('profile-sftp-username').textContent = 'Not set';
-                document.getElementById('profile-sftp-password').textContent = 'Not set';
-                document.getElementById('sftpNotSetAlert').classList.remove('d-none');
-                document.getElementById('btnChangeSftpPassword').disabled = true;
-                document.getElementById('btnToggleSftpPassword').disabled = true;
-              }
-            }
-          })
-          .catch(function() {});
-
-        // Toggle show/hide SFTP password
-        document.getElementById('btnToggleSftpPassword').addEventListener('click', function() {
-          sftpPasswordVisible = !sftpPasswordVisible;
-          document.getElementById('profile-sftp-password').textContent = sftpPasswordVisible ? (actualSftpPassword || '—') : '••••••••';
-          this.textContent = sftpPasswordVisible ? 'Hide' : 'Show';
-        });
-
-        // Show change SFTP password form
-        document.getElementById('btnChangeSftpPassword').addEventListener('click', function() {
-          hideInlineForms();
-          document.getElementById('formChangeSftpPassword').classList.remove('d-none');
-          document.getElementById('newSftpPassword').value = '';
-          document.getElementById('confirmSftpPassword').value = '';
-          showMessage('sftpPasswordMessage', '');
-        });
-
-        document.getElementById('btnSftpPasswordCancel').addEventListener('click', function() {
-          document.getElementById('formChangeSftpPassword').classList.add('d-none');
-          showMessage('sftpPasswordMessage', '');
-        });
-
-        // Submit new SFTP password
-        document.getElementById('formChangeSftpPassword').addEventListener('submit', function(e) {
-          e.preventDefault();
-          var btn = document.getElementById('btnSftpPasswordSubmit');
-          var newPw = document.getElementById('newSftpPassword').value;
-          var confirmPw = document.getElementById('confirmSftpPassword').value;
-
-          if (!newPw || newPw.length < 8) {
-            showMessage('sftpPasswordMessage', 'Password must be at least 8 characters.', true);
-            return;
-          }
-          if (newPw !== confirmPw) {
-            showMessage('sftpPasswordMessage', 'Passwords do not match.', true);
-            return;
-          }
-
-          btn.disabled = true;
-          showMessage('sftpPasswordMessage', 'Updating…');
-
-          fetch(AUTH_API + '/api/auth/profile/sftp-password', {
-            method: 'PUT',
-            headers: { 
-              'Content-Type': 'application/json',
-              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            credentials: 'include',
-            body: JSON.stringify({ newPassword: newPw })
-          })
+        var sftpUsernameEl_main = document.getElementById('profile-sftp-username');
+        if (sftpUsernameEl_main) {
+          fetch(AUTH_API + '/api/auth/profile/sftp', { credentials: 'include' })
             .then(function(r) { return r.json(); })
             .then(function(data) {
               if (data.success) {
-                showMessage('sftpPasswordMessage', data.message || 'SFTP password updated.', false);
-                actualSftpPassword = newPw;
-                document.getElementById('profile-sftp-password').textContent = sftpPasswordVisible ? newPw : '••••••••';
-                document.getElementById('formChangeSftpPassword').classList.add('d-none');
-              } else {
-                showMessage('sftpPasswordMessage', data.message || 'Update failed.', true);
+                var sftpPasswordEl = document.getElementById('profile-sftp-password');
+                var sftpAlertEl = document.getElementById('sftpNotSetAlert');
+                var sftpPortEl = document.getElementById('profile-sftp-port');
+                var sftpHostEl = document.getElementById('profile-sftp-host');
+                var sftpChangePwBtn = document.getElementById('btnChangeSftpPassword');
+                var sftpTogglePwBtn = document.getElementById('btnToggleSftpPassword');
+
+                if (data.sftpUsername && data.sftpUsername !== 'Not set') {
+                  if (sftpUsernameEl_main) sftpUsernameEl_main.textContent = data.sftpUsername;
+                  actualSftpPassword = data.sftpPassword || '';
+                  if (sftpPasswordEl) sftpPasswordEl.textContent = '••••••••';
+                  if (sftpAlertEl) sftpAlertEl.classList.add('d-none');
+                  
+                  // 🚀 PORT SYNC (v142): Ensure port 2223 is shown for clients
+                  if (sftpPortEl) {
+                    sftpPortEl.textContent = data.sftpPort || '{{ env('CLIENT_SFTP_PORT', env('SFTP_PORT', 2222)) }}';
+                  }
+                  if (sftpHostEl) {
+                    sftpHostEl.textContent = data.sftpHost || '{{ config('filesystems.disks.sftp_delivery.host') ?: request()->getHost() }}';
+                  }
+                  
+                  if (sftpChangePwBtn) sftpChangePwBtn.disabled = false;
+                  if (sftpTogglePwBtn) sftpTogglePwBtn.disabled = false;
+                } else {
+                  if (sftpUsernameEl_main) sftpUsernameEl_main.textContent = 'Not set';
+                  if (sftpPasswordEl) sftpPasswordEl.textContent = 'Not set';
+                  if (sftpAlertEl) sftpAlertEl.classList.remove('d-none');
+                  if (sftpChangePwBtn) sftpChangePwBtn.disabled = true;
+                  if (sftpTogglePwBtn) sftpTogglePwBtn.disabled = true;
+                }
               }
             })
-            .catch(function() { showMessage('sftpPasswordMessage', 'Network error.', true); })
-            .finally(function() { btn.disabled = false; });
-        });
+            .catch(function() {});
+        }
+
+        // Toggle show/hide SFTP password
+        var btnToggleSftpPassword = document.getElementById('btnToggleSftpPassword');
+        if (btnToggleSftpPassword) {
+          btnToggleSftpPassword.addEventListener('click', function() {
+            sftpPasswordVisible = !sftpPasswordVisible;
+            var sftpPasswordEl = document.getElementById('profile-sftp-password');
+            if (sftpPasswordEl) sftpPasswordEl.textContent = sftpPasswordVisible ? (actualSftpPassword || '—') : '••••••••';
+            this.textContent = sftpPasswordVisible ? 'Hide' : 'Show';
+          });
+        }
+
+        // Show change SFTP password form
+        var btnChangeSftpPassword = document.getElementById('btnChangeSftpPassword');
+        if (btnChangeSftpPassword) {
+          btnChangeSftpPassword.addEventListener('click', function() {
+            hideInlineForms();
+            var formChangeSftpPassword = document.getElementById('formChangeSftpPassword');
+            if (formChangeSftpPassword) formChangeSftpPassword.classList.remove('d-none');
+            var newSftpPassword = document.getElementById('newSftpPassword');
+            if (newSftpPassword) newSftpPassword.value = '';
+            var confirmSftpPassword = document.getElementById('confirmSftpPassword');
+            if (confirmSftpPassword) confirmSftpPassword.value = '';
+            showMessage('sftpPasswordMessage', '');
+          });
+        }
+
+        var btnSftpPasswordCancel = document.getElementById('btnSftpPasswordCancel');
+        if (btnSftpPasswordCancel) {
+          btnSftpPasswordCancel.addEventListener('click', function() {
+            var formChangeSftpPassword = document.getElementById('formChangeSftpPassword');
+            if (formChangeSftpPassword) formChangeSftpPassword.classList.add('d-none');
+            showMessage('sftpPasswordMessage', '');
+          });
+        }
+
+        // Submit new SFTP password
+        var formChangeSftpPassword = document.getElementById('formChangeSftpPassword');
+        if (formChangeSftpPassword) {
+          formChangeSftpPassword.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('btnSftpPasswordSubmit');
+            var newPwVal = document.getElementById('newSftpPassword').value;
+            var confirmPwVal = document.getElementById('confirmSftpPassword').value;
+
+            if (!newPwVal || newPwVal.length < 8) {
+              showMessage('sftpPasswordMessage', 'Password must be at least 8 characters.', true);
+              return;
+            }
+            if (newPwVal !== confirmPwVal) {
+              showMessage('sftpPasswordMessage', 'Passwords do not match.', true);
+              return;
+            }
+
+            if (btn) btn.disabled = true;
+            showMessage('sftpPasswordMessage', 'Updating…');
+
+            fetch(AUTH_API + '/api/auth/profile/sftp-password', {
+              method: 'PUT',
+              headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+              },
+              credentials: 'include',
+              body: JSON.stringify({ newPassword: newPwVal })
+            })
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                if (data.success) {
+                  showMessage('sftpPasswordMessage', data.message || 'SFTP password updated.', false);
+                  actualSftpPassword = newPwVal;
+                  var sftpPasswordEl = document.getElementById('profile-sftp-password');
+                  if (sftpPasswordEl) sftpPasswordEl.textContent = sftpPasswordVisible ? newPwVal : '••••••••';
+                  var formChangeSftpPassword = document.getElementById('formChangeSftpPassword');
+                  if (formChangeSftpPassword) formChangeSftpPassword.classList.add('d-none');
+                } else {
+                  showMessage('sftpPasswordMessage', data.message || 'Update failed.', true);
+                }
+              })
+              .catch(function() { showMessage('sftpPasswordMessage', 'Network error.', true); })
+              .finally(function() { if (btn) btn.disabled = false; });
+          });
+        }
 
         // 🚀 CUSTOM TOGGLE LOGIC (v152): Since theme JS is not auto-loaded here
         document.querySelectorAll('.form-password-toggle .input-group-text').forEach(function(btn) {
