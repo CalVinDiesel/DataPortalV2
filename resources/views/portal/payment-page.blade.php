@@ -101,6 +101,15 @@
       }
       .nav-upload-mobile-sub .nav-link { padding-top: 0.35rem; padding-bottom: 0.35rem; font-size: 0.9375rem; }
       #navUploadCollapsePayment .nav-link:hover { color: var(--bs-primary); }
+      
+      /* Dropdown hover behavior for desktop navigation links */
+      @media (min-width: 992px) {
+        #navPurchaseQuotation:hover .dropdown-menu,
+        #navUpload:hover .dropdown-menu {
+          display: block;
+          margin-top: 0;
+        }
+      }
     </style>
 
     <!-- Helpers -->
