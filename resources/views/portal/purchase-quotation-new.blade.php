@@ -220,11 +220,11 @@
                   <div class="form-text mb-2">Select the 3D model formats you would like to include in your quotation.</div>
                   
                   <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" name="output_categories[]" id="cat3dTiles" value="3D Tiles" checked>
+                    <input class="form-check-input" type="checkbox" id="cat3dTiles" value="3D Tiles" checked disabled>
                     <label class="form-check-label fw-medium" for="cat3dTiles">3D Tiles (Default)</label>
                   </div>
                   <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" name="output_categories[]" id="catOSGB" value="OSGB" checked>
+                    <input class="form-check-input" type="checkbox" id="catOSGB" value="OSGB" checked disabled>
                     <label class="form-check-label fw-medium" for="catOSGB">OSGB (Default)</label>
                   </div>
                   <div class="form-check mb-2">
@@ -337,15 +337,12 @@
       e.preventDefault();
 
       // Check if at least one checkbox is checked
-      var checkedCategories = [];
+      var checkedCategories = ["3D Tiles", "OSGB"];
       document.querySelectorAll('input[name="output_categories[]"]:checked').forEach(function(cb) {
-        checkedCategories.push(cb.value);
+        if (!checkedCategories.includes(cb.value)) {
+          checkedCategories.push(cb.value);
+        }
       });
-
-      if (checkedCategories.length === 0) {
-        alert("Please select at least one output format.");
-        return;
-      }
 
       var btnSubmit = document.getElementById('btnSubmitQuotation');
       var originalHtml = btnSubmit.innerHTML;
