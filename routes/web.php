@@ -240,6 +240,12 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
         return view('admin.manage-users');
     })->name('admin.manage_users');
 
+    // Purchase Quotation Admin Routes
+    Route::get('/admin/purchase-quotations', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminIndex'])->name('admin.purchase_quotations');
+    Route::get('/api/admin/purchase-quotations', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminList']);
+    Route::get('/api/admin/purchase-quotations/{id}', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminShow']);
+    Route::patch('/api/admin/purchase-quotations/{id}/status', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminUpdateStatus']);
+
     Route::post('/admin/client-uploads/check-sftp-status', [UploadController::class, 'checkSftpStatus'])
         ->name('admin.client_uploads.check_sftp_status');
 

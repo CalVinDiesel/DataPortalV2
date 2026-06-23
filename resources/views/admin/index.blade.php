@@ -95,9 +95,7 @@
           <a href="{{ route('admin.add_3d_model') }}" class="admin-nav-link">Add 3D Model</a>
           <a href="{{ route('admin.manage_map_pins') }}" class="admin-nav-link">Manage Map Pins</a>
           <a href="{{ route('admin.manage_showcases') }}" class="admin-nav-link">Manage Showcase</a>
-          {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (3D MODEL SALES FIRST)
-          <a href="{{ route('admin.client_uploads') }}" class="admin-nav-link">Client Uploads</a>
-          --}}
+          <a href="{{ route('admin.purchase_quotations') }}" class="admin-nav-link">Purchase Quotations</a>
           <a href="{{ route('admin.manage_users') }}" class="admin-nav-link">Manage Users</a>
           <a href="{{ route('landing') }}" class="admin-nav-link" target="_blank">View Portal</a>
         </div>
@@ -196,6 +194,21 @@
                 </a>
               </div>
               --}}
+              <div class="col-md-6 col-lg-4 mb-4">
+                <a href="{{ route('admin.purchase_quotations') }}" class="card text-decoration-none h-100">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center">
+                      <div class="avatar avatar-lg me-3">
+                        <span class="avatar-initial rounded bg-label-info"><i class="bx bx-receipt bx-lg"></i></span>
+                      </div>
+                      <div>
+                        <h5 class="card-title mb-0">Purchase Quotations</h5>
+                        <p class="text-muted small mb-0">Review client quotation requests, preview their selected 3D area, and send formal quotations with pricing and bank details.</p>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
               <div class="col-md-6 col-lg-4 mb-4">
                 <a href="{{ route('admin.manage_users') }}" class="card text-decoration-none h-100">
                   <div class="card-body">
