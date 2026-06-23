@@ -275,6 +275,7 @@
           <li class="nav-item">
             <a class="nav-link fw-medium" href="{{ route('landing') }}#landingContact">Contact us</a>
           </li>
+          {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (PAGES DROPDOWN NOT USED YET)
           <li class="nav-item mega-dropdown">
             <a href="javascript:void(0);" class="nav-link dropdown-toggle navbar-ex-14-mega-dropdown mega-dropdown fw-medium" aria-expanded="false" data-bs-toggle="mega-dropdown" data-trigger="hover">
               <span data-i18n="Pages">Pages</span>
@@ -287,6 +288,7 @@
               </div>
             </div>
           </li>
+          --}}
           <li class="nav-item" id="navAdmin" style="display:none;">
             <a class="nav-link fw-medium" href="{{ route('admin_dashboard') }}" target="_blank">Admin</a>
           </li>
