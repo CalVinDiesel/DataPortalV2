@@ -488,7 +488,7 @@
       document.addEventListener('DOMContentLoaded', function () {
         var logoutBtn = document.getElementById('navLogoutBtn');
         if (logoutBtn) logoutBtn.addEventListener('click', function () {
-          if (!confirm('Are you sure you want to log out? You will need to sign in again to use Reload Tokens and Upload.')) return;
+          if (!confirm('Are you sure you want to log out? You will need to sign in again to purchase 3D models.')) return;
           fetch(API + '/api/auth/logout', { method: 'POST', credentials: 'include' })
             .then(function () { window.location.href = API + '/api/auth/sign-out?callbackURL=' + encodeURIComponent(LANDING_URL); })
             .catch(function () { window.location.href = LANDING_URL; });

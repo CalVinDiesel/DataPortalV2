@@ -1313,8 +1313,8 @@
           var msgEl = document.getElementById('logoutConfirmMessage');
           var messages = {
             admin: 'Are you sure you want to log out? You will need to sign in again to use the Admin Data Portal.',
-            trusted: 'Are you sure you want to log out? You will need to sign in again to use Upload (including SFTP) and purchase 3D models.',
-            registered: 'Are you sure you want to log out? You will need to sign in again to upload data and purchase 3D models.'
+            trusted: 'Are you sure you want to log out? You will need to sign in again to purchase 3D models.',
+            registered: 'Are you sure you want to log out? You will need to sign in again to purchase 3D models.'
           };
           if (msgEl) msgEl.textContent = messages[role] || messages.registered;
           var modal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'));
