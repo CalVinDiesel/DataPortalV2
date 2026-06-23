@@ -188,6 +188,11 @@ Route::middleware('auth')->group(function () {
         return view('portal.user-profile');
     })->name('profile');
 
+    // Purchase Quotation Routes
+    Route::get('/purchase-quotation/new', [\App\Http\Controllers\PurchaseQuotationController::class, 'create'])->name('purchase_quotation.new');
+    Route::post('/purchase-quotation/store', [\App\Http\Controllers\PurchaseQuotationController::class, 'store'])->name('purchase_quotation.store');
+    Route::get('/purchase-quotation/my', [\App\Http\Controllers\PurchaseQuotationController::class, 'my'])->name('purchase_quotation.my');
+
     // 🚀 SESSION-SYNC (v271): Moved from api.php to ensure stable session access for AJAX
     Route::get('/api/user/my-uploads', [ProjectController::class, 'index']);
     Route::post('/api/user/my-uploads/{id}/confirm-received', [ProjectController::class, 'confirmReceived']);

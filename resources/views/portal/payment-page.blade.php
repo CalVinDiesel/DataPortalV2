@@ -270,9 +270,9 @@
               PurchaseQuotation
             </a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="javascript:void(0);">New PurchaseQuotation</a></li>
+              <li><a class="dropdown-item" href="{{ route('purchase_quotation.new') }}">New PurchaseQuotation</a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="javascript:void(0);">My PurchaseQuotation</a></li>
+              <li><a class="dropdown-item" href="{{ route('purchase_quotation.my') }}">My PurchaseQuotation</a></li>
             </ul>
           </li>
           <!-- PurchaseQuotation Dropdown for Mobile -->
@@ -281,9 +281,9 @@
               PurchaseQuotation
             </a>
             <div class="collapse nav-upload-mobile-sub" id="navPurchaseQuotationCollapsePayment">
-              <a class="nav-link fw-medium" href="javascript:void(0);">New PurchaseQuotation</a>
+              <a class="nav-link fw-medium" href="{{ route('purchase_quotation.new') }}">New PurchaseQuotation</a>
               <hr class="dropdown-divider">
-              <a class="nav-link fw-medium" href="javascript:void(0);">My PurchaseQuotation</a>
+              <a class="nav-link fw-medium" href="{{ route('purchase_quotation.my') }}">My PurchaseQuotation</a>
             </div>
           </li>
           {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (3D MODEL SALES FIRST)
