@@ -1847,7 +1847,7 @@
 
           // Check if 3D Tiles URL is defined and valid
           var tilesetUrl = selectedModel ? selectedModel['3dTiles'] : null;
-          if (!tilesetUrl || typeof tilesetUrl !== 'string' || tilesetUrl.trim() === '') {
+          if (!tilesetUrl || typeof tilesetUrl !== 'string' || tilesetUrl.trim() === '' || tilesetUrl.indexOf('example.com') !== -1) {
             alert('No 3D model is available for this location.');
             selectedModel = null;
             return;
@@ -1889,10 +1889,18 @@
 
           function handleLoadError(err) {
             console.error('[CesiumMap] Failed to load 3D Tileset:', err);
+            
+            // Prevent race conditions: if user already reset the view, just return without alert
+            if (viewer.scene.mode !== C.SceneMode.SCENE3D || !selectedModel || selectedModel['3dTiles'] !== tilesetUrl) {
+              return;
+            }
+
             var indicator = document.getElementById('mapLoadingIndicator');
             if (indicator && indicator.parentNode) {
               indicator.parentNode.removeChild(indicator);
             }
+            
+            alert('Failed to load the 3D model for this location. Reverting to 2D map.');
             
             // Revert back to 2D
             clearPolygon();
@@ -1924,6 +1932,11 @@
               proxy: tilesetOptions.proxy
             }))
             .then(function(tileset) {
+              // Prevent race conditions: check if the user went back to 2D or selected a different model while this was loading
+              if (viewer.scene.mode !== C.SceneMode.SCENE3D || !selectedModel || selectedModel['3dTiles'] !== tilesetUrl) {
+                return;
+              }
+
               currentTileset = tileset;
               viewer.scene.primitives.add(tileset);
 
@@ -1984,6 +1997,12 @@
             if (currentTileset) {
               viewer.scene.primitives.remove(currentTileset);
               currentTileset = null;
+            }
+
+            // Also clean up loader UI if user reset while loading
+            var indicator = document.getElementById('mapLoadingIndicator');
+            if (indicator && indicator.parentNode) {
+              indicator.parentNode.removeChild(indicator);
             }
             
             // Reset camera to default 2D view and orientation
