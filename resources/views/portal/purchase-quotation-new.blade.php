@@ -257,6 +257,12 @@
                 <!-- Field 3: Cesium Ion Map -->
                 <div id="heroMapContainer" style="position: relative;">
                   <div id="cesiumContainer"></div>
+                  <!-- Location choice bar: appears on pin hover, image + description per location -->
+                  <div id="locationChoiceBar" class="location-choice-bar" aria-hidden="true">
+                    <div class="location-choice-bar-inner">
+                      <div class="location-choice-bar-cards" id="locationChoiceBarCards"></div>
+                    </div>
+                  </div>
                   <!-- Drawing Toolbar (hidden in 2D mode, shown in 3D mode) -->
                   <div id="drawingToolbar" style="position: absolute; top: 12px; left: 12px; z-index: 1000; display: none; gap: 8px;">
                     <button type="button" id="btnDrawPolygon" class="btn btn-sm btn-primary shadow-sm fw-bold d-flex align-items-center gap-1" style="border-radius: 8px; padding: 8px 14px; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
@@ -381,7 +387,7 @@
 
       // State shared across map logic and form submission
       var selectedModel = null; // Currently selected MapData item
-      var allModelEntities = {}; // Map of mapDataID -> Cesium entity
+      var dataSource = null; // Cesium CustomDataSource for pins/clusters
 
       // Drawing state
       var isDrawing = false;
@@ -461,70 +467,1045 @@
         }
 
         // 1. Create Pins/Billboards dynamically for all map locations
-        var mapLocations = @json($mapLocations);
-        var currentTileset = null;
-
-        mapLocations.forEach(function(loc) {
-          var pinCoords = C.Cartesian3.fromDegrees(Number(loc.xAxis), Number(loc.yAxis), 0);
-          var pinUrl = loc.thumbNailUrl || '';
-          
-          var pinEntity = viewer.entities.add({
+        var rawLocations = @json($mapLocations);
+        var locations = rawLocations.map(function(loc) {
+          return {
             id: loc.mapDataID,
             name: loc.title,
-            position: pinCoords,
-            billboard: {
-              image: pinUrl || null,
-              width: 54,
-              height: 54,
+            description: loc.description || '',
+            thumbnailUrl: loc.thumbNailUrl || '',
+            longitude: Number(loc.xAxis),
+            latitude: Number(loc.yAxis),
+            originalData: loc
+          };
+        });
+
+        var currentTileset = null;
+        dataSource = new C.CustomDataSource('locationMarkers');
+        viewer.dataSources.add(dataSource);
+
+        var BLANK_THUMBNAIL_DATAURL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+        function makePinPlaceholderDataUrl(name, size) {
+          try {
+            var c = document.createElement('canvas');
+            c.width = size; c.height = size;
+            var ctx = c.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, size, size);
+            ctx.fillStyle = '#696cff'; // Premium color
+            ctx.fillRect(3, 3, size - 6, size - 6);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold ' + Math.max(8, Math.round(size * 0.18)) + 'px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            var label = (name || '?').substring(0, 6);
+            ctx.fillText(label, size / 2, size / 2);
+            return c.toDataURL('image/png');
+          } catch (e) {
+            return BLANK_THUMBNAIL_DATAURL;
+          }
+        }
+
+        function preloadPinImage(url, pinSize, borderPx, locId, callback) {
+          var fullSize = pinSize + 2 * borderPx;
+          var placeholder = makePinPlaceholderDataUrl(locId, fullSize);
+          if (!url) {
+            callback(placeholder, fullSize, fullSize);
+            return;
+          }
+          var img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = function() {
+            try {
+              var c = document.createElement('canvas');
+              c.width = fullSize; c.height = fullSize;
+              var ctx = c.getContext('2d');
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, fullSize, fullSize);
+              ctx.drawImage(img, borderPx, borderPx, pinSize, pinSize);
+              callback(c.toDataURL('image/png'), fullSize, fullSize);
+            } catch (e) {
+              callback(placeholder, fullSize, fullSize);
+            }
+          };
+          img.onerror = function() {
+            callback(placeholder, fullSize, fullSize);
+          };
+          img.src = url;
+        }
+
+        dataSource.clustering.clusterEvent.addEventListener(function (entities, cluster) {
+          cluster.label.show = false;
+          var count = entities.length;
+          var dpr = 3; 
+          var canvas = document.createElement('canvas');
+          canvas.width = 42 * dpr; 
+          canvas.height = 42 * dpr;
+          var ctx = canvas.getContext('2d');
+          ctx.scale(dpr, dpr);
+          
+          ctx.fillStyle = '#2c5fb3';
+          ctx.fillRect(0, 0, 42, 42);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(1.5, 1.5, 39, 39);
+          
+          ctx.fillStyle = '#ffffff';
+          var fontSize = count > 9 ? 17 : 19;
+          ctx.shadowColor = "rgba(255, 255, 255, 0.5)";
+          ctx.shadowBlur = 1; 
+          ctx.font = '900 ' + fontSize + 'px "Public Sans", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(count.toString(), 21, 21);
+          
+          cluster.billboard.image = canvas.toDataURL('image/png');
+          cluster.billboard.width = 42;
+          cluster.billboard.height = 42; 
+          cluster.billboard.show = true;
+          cluster.billboard.verticalOrigin = C.VerticalOrigin.CENTER;
+          cluster.billboard.horizontalOrigin = C.HorizontalOrigin.CENTER;
+          cluster.billboard.disableDepthTestDistance = Number.POSITIVE_INFINITY;
+
+          if (cluster.point) cluster.point.show = false;
+          
+          // Calculate centroid
+          var sumLon = 0, sumLat = 0, posCount = 0;
+          var time = viewer.clock.currentTime;
+          var ids = [];
+          for (var i = 0; i < entities.length; i++) {
+            var ent = entities[i];
+            if (ent.id) ids.push(ent.id);
+            var ePos = ent.position;
+            var cartesian = ePos && typeof ePos.getValue === 'function' ? ePos.getValue(time) : ePos;
+            if (cartesian) {
+              var carto = C.Cartographic.fromCartesian(cartesian);
+              sumLon += carto.longitude; 
+              sumLat += carto.latitude; 
+              posCount++;
+            }
+          }
+          
+          if (posCount > 0) {
+            cluster._wgs84Position = C.Cartesian3.fromRadians(sumLon / posCount, sumLat / posCount, 0);
+            if (cluster.billboard) {
+              cluster.billboard._wgs84Position = cluster._wgs84Position;
+            }
+          }
+          
+          if (ids.length) {
+            ids.forEach(function (id) {
+              if (!viewer._clusteredLocationIds) viewer._clusteredLocationIds = {};
+              viewer._clusteredLocationIds[String(id).toLowerCase()] = true;
+            });
+            var clusterKey = ids.slice().sort().join(',');
+            cluster._clusterKey = clusterKey;
+            cluster.locationIds = ids;
+            if (cluster.billboard) {
+              cluster.billboard._clusterKey = clusterKey;
+              cluster.billboard.locationIds = ids;
+            }
+
+            var activeCluster = {
+              _clusterKey: clusterKey,
+              locationIds: ids,
+              _wgs84Position: cluster._wgs84Position,
+              billboard: cluster.billboard
+            };
+
+            if (!viewer._activeClusters) {
+              viewer._activeClusters = [];
+            }
+            var exists = false;
+            for (var k = 0; k < viewer._activeClusters.length; k++) {
+              if (viewer._activeClusters[k]._clusterKey === clusterKey) {
+                viewer._activeClusters[k] = activeCluster;
+                exists = true;
+                break;
+              }
+            }
+            if (!exists) {
+              viewer._activeClusters.push(activeCluster);
+            }
+          }
+        });
+
+        var pendingCount = locations.length;
+        var loadedPins = [];
+
+        function addPinEntity(loc, position, labelText, billboardW, billboardH, imageOrDataUrl) {
+          var entityOpt = {
+            position: position,
+            name: loc.name,
+            id: loc.id
+          };
+          if (imageOrDataUrl && billboardW > 0 && billboardH > 0) {
+            entityOpt.billboard = {
+              image: imageOrDataUrl,
+              width: billboardW,
+              height: billboardH,
               verticalOrigin: C.VerticalOrigin.BOTTOM,
               disableDepthTestDistance: Number.POSITIVE_INFINITY
-            },
-            label: {
-              text: loc.title,
+            };
+            entityOpt.label = {
+              text: labelText,
               font: 'bold 12px "Public Sans", sans-serif',
-              style: C.LabelStyle.FILL_AND_OUTLINE,
               fillColor: C.Color.WHITE,
               outlineColor: C.Color.fromCssColorString('#1a1a2e'),
               outlineWidth: 3,
+              style: C.LabelStyle.FILL_AND_OUTLINE,
               verticalOrigin: C.VerticalOrigin.BOTTOM,
-              pixelOffset: new C.Cartesian2(0, -62),
+              pixelOffset: new C.Cartesian2(0, -billboardH - 8),
               disableDepthTestDistance: Number.POSITIVE_INFINITY
-            }
-          });
-          
-          pinEntity.modelData = loc;
-          allModelEntities[loc.mapDataID] = pinEntity;
-          
-          // Generate bordered version dynamically
-          makePinImage(pinUrl, 48, 3, loc.title, function(dataUrl) {
-            pinEntity.billboard.image = dataUrl;
-            viewer.scene.requestRender();
-          });
-        });
+            };
+          }
+          try {
+            var ent = dataSource.entities.add(entityOpt);
+            ent.modelData = loc.originalData;
+          } catch (err) {
+            console.warn('Map marker add failed for', loc.id, err);
+          }
+        }
 
-        // Force an initial render since requestRenderMode is true
-        viewer.scene.requestRender();
-        
-        // Click Handler: Transition to 3D and Load tileset dynamically
+        if (pendingCount === 0) {
+          viewer.scene.requestRender();
+        } else {
+          locations.forEach(function (loc) {
+            var position = C.Cartesian3.fromDegrees(loc.longitude, loc.latitude, 0);
+            preloadPinImage(loc.thumbnailUrl, 48, 3, loc.id, function (dataUrl, w, h) {
+              loadedPins.push({
+                loc: loc,
+                position: position,
+                w: w,
+                h: h,
+                dataUrl: dataUrl
+              });
+              pendingCount--;
+              if (pendingCount === 0) {
+                loadedPins.forEach(function (p) {
+                  addPinEntity(p.loc, p.position, p.loc.name, p.w, p.h, p.dataUrl);
+                });
+                viewer._activeClusters = [];
+                viewer._clusteredLocationIds = {};
+                dataSource.clustering.enabled = false;
+                dataSource.clustering.enabled = true;
+                updateClusterPixelRange();
+                viewer.scene.requestRender();
+              }
+            });
+          });
+        }
+
+        var INITIAL_PIXEL_RANGE = 80;
+        var isZoomingToCluster = false;
+
+        function getClusterPixelRange() {
+          var canvas = viewer.scene.canvas;
+          if (!canvas || !canvas.clientWidth || !canvas.clientHeight) return INITIAL_PIXEL_RANGE;
+          var minDim = Math.min(canvas.clientWidth, canvas.clientHeight);
+          var is2D = viewer.scene.mode === C.SceneMode.SCENE2D;
+          if (is2D) return getClusterPixelRange2DFallback();
+          var rect = viewer.camera.computeViewRectangle(viewer.scene.globe.ellipsoid);
+          if (!rect) return Math.max(INITIAL_PIXEL_RANGE, minDim * 0.9);
+          var heightRad = rect.north - rect.south;
+          var heightDeg = heightRad * (180 / Math.PI);
+          
+          var zoomedInHeight = 0.05;
+          var zoomedOutHeight = 3.0;
+          
+          if (heightDeg >= zoomedOutHeight) return INITIAL_PIXEL_RANGE;
+          if (heightDeg <= zoomedInHeight) return 50;
+          
+          var t = (heightDeg - zoomedInHeight) / (zoomedOutHeight - zoomedInHeight);
+          return Math.max(50, Math.round(50 + t * (INITIAL_PIXEL_RANGE - 50)));
+        }
+
+        function getClusterPixelRange2DFallback() {
+          try {
+            var f = viewer.camera.frustum;
+            if (f && typeof f.right === 'number' && typeof f.left === 'number') {
+              var width = Math.abs(f.right - f.left);
+              var zoomedOutWidth = 4e5;
+              var zoomedInWidth = 1e4;
+              if (width >= zoomedOutWidth) return INITIAL_PIXEL_RANGE;
+              if (width <= zoomedInWidth) return 50;
+              
+              var t = (width - zoomedInWidth) / (zoomedOutWidth - zoomedInWidth);
+              return Math.max(50, Math.round(50 + t * (INITIAL_PIXEL_RANGE - 50)));
+            }
+          } catch (e) {}
+          return INITIAL_PIXEL_RANGE;
+        }
+
+        function updateClusterPixelRange() {
+          if (isZoomingToCluster) return;
+          var pr = getClusterPixelRange();
+          if (dataSource.clustering.pixelRange === pr) return;
+          dataSource.clustering.pixelRange = pr;
+          setTimeout(function() {
+            viewer._activeClusters = [];
+            viewer._clusteredLocationIds = {};
+            dataSource.clustering.enabled = false;
+            dataSource.clustering.enabled = true;
+            viewer.scene.requestRender();
+          }, 50);
+        }
+
+        dataSource.clustering.pixelRange = INITIAL_PIXEL_RANGE;
+        var clusterRangeThrottle = null;
+
+        function throttledUpdateClusterPixelRange() {
+          if (clusterRangeThrottle) return;
+          clusterRangeThrottle = setTimeout(function () {
+            clusterRangeThrottle = null;
+            updateClusterPixelRange();
+          }, 180);
+        }
+
+        var locationByIdForActiveCheck = {};
+        locations.forEach(function (loc) { locationByIdForActiveCheck[loc.id] = loc; });
+
+        function isClusterActive(cluster) {
+          if (!cluster) return false;
+          if (dataSource && dataSource.clustering && dataSource.clustering.pixelRange === 1) {
+            return false;
+          }
+          try {
+            if (cluster.locationIds && cluster.locationIds.length > 0) {
+              if (typeof isLocationClustered === 'function') {
+                return isLocationClustered(cluster.locationIds[0]);
+              }
+            }
+          } catch (e) {}
+          return false;
+        }
+
+        function pruneActiveClusters() {
+          if (viewer._activeClusters && typeof isClusterActive === 'function') {
+            viewer._activeClusters = viewer._activeClusters.filter(isClusterActive);
+          }
+        }
+
+        viewer._activeClusters = [];
+        viewer._clusteredLocationIds = {};
+
+        function isLocationClustered(locId) {
+          if (!locId) return false;
+          if (dataSource && dataSource.clustering && dataSource.clustering.enabled) {
+            if (dataSource.clustering.pixelRange === 1) return false;
+            var searchId = String(locId).toLowerCase();
+            if (viewer._clusteredLocationIds && viewer._clusteredLocationIds[searchId]) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        var PIN_SEARCH_HALF_H = 24;
+
+        function getLocationsInRadius(screenX, screenY, radiusPx) {
+          var scene = viewer.scene;
+          var canvas = scene.canvas;
+          var cameraPos = scene.camera.position;
+          var R = 6371000;
+          var distToCenter = C.Cartesian3.magnitude(cameraPos);
+          var cameraHeight = Math.max(distToCenter - R, 0);
+          var horizonDistSq = cameraHeight * (2 * R + cameraHeight);
+          
+          var scaleX = (canvas.clientWidth && canvas.width) ? (canvas.clientWidth / canvas.width) : 1;
+          var scaleY = (canvas.clientHeight && canvas.height) ? (canvas.clientHeight / canvas.height) : 1;
+          
+          var nearby = [];
+          var maxDistSq = (radiusPx || 70) * (radiusPx || 70);
+
+          function projectCartesian(scene, position) {
+            if (!scene || !position) return null;
+            try {
+              return C.SceneTransforms.wgs84ToWindowCoordinates(scene, position);
+            } catch (e) {
+              return null;
+            }
+          }
+
+          for (var i = 0; i < locations.length; i++) {
+            var loc = locations[i];
+            var cartesian = C.Cartesian3.fromDegrees(loc.longitude, loc.latitude, 0);
+            var is2D = scene.mode === C.SceneMode.SCENE2D;
+            var distSqToPoint = C.Cartesian3.distanceSquared(cameraPos, cartesian);
+            if (!is2D && distSqToPoint > horizonDistSq * 1.5) continue;
+
+            var screenPos = projectCartesian(scene, cartesian);
+            if (screenPos && typeof screenPos.x === 'number' && typeof screenPos.y === 'number') {
+              var pinCenterX = screenPos.x;
+              var pinCenterY = screenPos.y - PIN_SEARCH_HALF_H;
+
+              var dx1 = pinCenterX - screenX;
+              var dy1 = pinCenterY - screenY;
+              var distSq1 = dx1 * dx1 + dy1 * dy1;
+              
+              var dx2 = pinCenterX * scaleX - screenX;
+              var dy2 = pinCenterY * scaleY - screenY;
+              var distSq2 = dx2 * dx2 + dy2 * dy2;
+              
+              var dx3 = pinCenterX - screenX / scaleX;
+              var dy3 = pinCenterY - screenY / scaleY;
+              var distSq3 = dx3 * dx3 + dy3 * dy3;
+
+              var minDistSq = Math.min(distSq1, distSq2, distSq3);
+              if (minDistSq <= maxDistSq) {
+                nearby.push({ loc: loc, distSq: minDistSq });
+              }
+            }
+          }
+          nearby.sort(function(a, b) { return a.distSq - b.distSq; });
+          return nearby.map(function(item) { return item.loc; });
+        }
+
+        function getClusterAtScreenPosition(screenX, screenY, radiusPx) {
+          pruneActiveClusters();
+          var arr = viewer._activeClusters || [];
+          if (arr.length === 0) return null;
+          var scene = viewer.scene;
+          var canvas = scene.canvas;
+          var R = 6371000;
+          var distToCenter = C.Cartesian3.magnitude(scene.camera.position);
+          var horizonDistSq = Math.max(distToCenter - R, 0) * (2 * R + Math.max(distToCenter - R, 0));
+          
+          var scaleX = (canvas.clientWidth && canvas.width) ? (canvas.clientWidth / canvas.width) : 1;
+          var scaleY = (canvas.clientHeight && canvas.height) ? (canvas.clientHeight / canvas.height) : 1;
+          
+          var closestCluster = null;
+          var minVal = radiusPx * radiusPx;
+
+          function projectCartesian(scene, position) {
+            if (!scene || !position) return null;
+            try {
+              return C.SceneTransforms.wgs84ToWindowCoordinates(scene, position);
+            } catch (e) {
+              return null;
+            }
+          }
+
+          for (var i = 0; i < arr.length; i++) {
+            var cluster = arr[i];
+            if (!isClusterActive(cluster)) continue;
+            var pos = cluster._wgs84Position;
+            if (!pos) continue;
+
+            var is2D = scene.mode === C.SceneMode.SCENE2D;
+            if (!is2D && C.Cartesian3.distanceSquared(scene.camera.position, pos) > horizonDistSq * 1.5) continue;
+            
+            var screenPos = projectCartesian(scene, pos);
+            if (screenPos && typeof screenPos.x === 'number' && typeof screenPos.y === 'number') {
+              var dx1 = screenPos.x - screenX, dy1 = screenPos.y - screenY;
+              var distSq1 = dx1 * dx1 + dy1 * dy1;
+              
+              var dx2 = screenPos.x * scaleX - screenX, dy2 = screenPos.y * scaleY - screenY;
+              var distSq2 = dx2 * dx2 + dy2 * dy2;
+              
+              var dx3 = screenPos.x - screenX / scaleX, dy3 = screenPos.y - screenY / scaleY;
+              var distSq3 = dx3 * dx3 + dy3 * dy3;
+
+              var minDistSq = Math.min(distSq1, distSq2, distSq3);
+              if (minDistSq <= minVal) {
+                minVal = minDistSq;
+                closestCluster = cluster;
+              }
+            }
+          }
+          return closestCluster;
+        }
+
+        function getBoundsRectForLocations(locs) {
+          if (!locs || !locs.length) return null;
+          var lonMin = Infinity, latMin = Infinity, lonMax = -Infinity, latMax = -Infinity;
+          for (var i = 0; i < locs.length; i++) {
+            var loc = locs[i];
+            var lon = loc.longitude * (Math.PI / 180), lat = loc.latitude * (Math.PI / 180);
+            if (lon < lonMin) lonMin = lon;
+            if (lat < latMin) latMin = lat;
+            if (lon > lonMax) lonMax = lon;
+            if (lat > latMax) latMax = lat;
+          }
+          if (lonMin > lonMax || latMin > latMax) return null;
+          var pad = 0.2;
+          var w = Math.max((lonMax - lonMin) * pad, 0.00001);
+          var h = Math.max((latMax - latMin) * pad, 0.00001);
+          return C.Rectangle.fromRadians(lonMin - w, latMin - h, lonMax + w, latMax + h);
+        }
+
+        function getLocationsNearPoint(lonDeg, latDeg, radiusDeg) {
+          var r = (radiusDeg || 0.08) * (Math.PI / 180);
+          var centerLon = lonDeg * (Math.PI / 180), centerLat = latDeg * (Math.PI / 180);
+          var nearby = [];
+          for (var i = 0; i < locations.length; i++) {
+            var loc = locations[i];
+            var lon = loc.longitude * (Math.PI / 180), lat = loc.latitude * (Math.PI / 180);
+            var dy = lat - centerLat, dx = (lon - centerLon) * Math.cos(centerLat);
+            if (dx * dx + dy * dy <= r * r) nearby.push(loc);
+          }
+          return nearby;
+        }
+
+        function zoomInOneStepTowardCluster(clusterPosition) {
+          var camera = viewer.camera;
+          var scene = viewer.scene;
+          try {
+            var carto = C.Cartographic.fromCartesian(clusterPosition);
+            var rect = camera.computeViewRectangle(scene.globe.ellipsoid);
+            if (rect) {
+              var width = (rect.east - rect.west) * 0.15;
+              var height = (rect.north - rect.south) * 0.15;
+              var halfW = width * 0.5, halfH = height * 0.5;
+              var newWest = C.Math.clamp(carto.longitude - halfW, -Math.PI, Math.PI);
+              var newEast = C.Math.clamp(carto.longitude + halfW, -Math.PI, Math.PI);
+              var newSouth = C.Math.clamp(carto.latitude - halfH, -C.Math.PI_OVER_TWO, C.Math.PI_OVER_TWO);
+              var newNorth = C.Math.clamp(carto.latitude + halfH, -C.Math.PI_OVER_TWO, C.Math.PI_OVER_TWO);
+              camera.flyTo({ 
+                destination: new C.Rectangle(newWest, newSouth, newEast, newNorth), 
+                duration: 0.35, 
+                complete: function () { 
+                  isZoomingToCluster = true;
+                  dataSource.clustering.pixelRange = 1;
+                  viewer._activeClusters = [];
+                  viewer._clusteredLocationIds = {};
+                  dataSource.clustering.enabled = false;
+                  dataSource.clustering.enabled = true;
+                  scene.requestRender(); 
+                  setTimeout(function() { isZoomingToCluster = false; updateClusterPixelRange(); }, 1200);
+                } 
+              });
+            } else {
+              var lon = C.Math.toDegrees(carto.longitude);
+              var lat = C.Math.toDegrees(carto.latitude);
+              var span = 0.003;
+              camera.flyTo({ 
+                destination: C.Rectangle.fromDegrees(lon - span, lat - span * 0.6, lon + span, lat + span * 0.6), 
+                duration: 0.35, 
+                complete: function () { 
+                  isZoomingToCluster = true;
+                  dataSource.clustering.pixelRange = 1;
+                  viewer._activeClusters = [];
+                  viewer._clusteredLocationIds = {};
+                  dataSource.clustering.enabled = false;
+                  dataSource.clustering.enabled = true;
+                  scene.requestRender(); 
+                  setTimeout(function() { isZoomingToCluster = false; updateClusterPixelRange(); }, 1200);
+                } 
+              });
+            }
+          } catch (e) {
+            console.warn('Cluster zoom failed', e);
+          }
+        }
+
+        var locationByIdForZoom = {};
+        locations.forEach(function (loc) { locationByIdForZoom[loc.id] = loc; });
+
+        function tryZoomToCluster(entity) {
+          var bounds = null;
+          var clusterPos = entity._wgs84Position || (entity.position && (typeof entity.position.getValue === 'function' ? entity.position.getValue(viewer.clock.currentTime) : entity.position));
+          
+          var clusterLocs = [];
+          if (entity && entity.locationIds && entity.locationIds.length > 0) {
+            entity.locationIds.forEach(function (id) {
+              var loc = locationByIdForZoom[id];
+              if (loc) clusterLocs.push(loc);
+            });
+          }
+          
+          if (clusterLocs.length > 0) {
+            bounds = getBoundsRectForLocations(clusterLocs);
+          } else if (clusterPos) {
+            var carto = C.Cartographic.fromCartesian(clusterPos);
+            var locsNear = getLocationsNearPoint(carto.longitude * (180 / Math.PI), carto.latitude * (180 / Math.PI), 0.12);
+            if (locsNear.length > 0) bounds = getBoundsRectForLocations(locsNear);
+          }
+          
+          if (!bounds) return null;
+          
+          try {
+            var rect = null;
+            try { rect = viewer.camera.computeViewRectangle(viewer.scene.globe.ellipsoid); } catch(e) {}
+            if (rect) {
+              var currentWidth = rect.east - rect.west;
+              var boundsWidth = bounds.east - bounds.west;
+              if (currentWidth <= boundsWidth * 1.5) {
+                 return false;
+              }
+            }
+
+            viewer.camera.flyTo({ 
+              destination: bounds, 
+              duration: 0.45, 
+              complete: function () { 
+                isZoomingToCluster = true;
+                dataSource.clustering.pixelRange = 1;
+                viewer._activeClusters = [];
+                viewer._clusteredLocationIds = {};
+                dataSource.clustering.enabled = false;
+                dataSource.clustering.enabled = true;
+                viewer.scene.requestRender(); 
+                setTimeout(function() { isZoomingToCluster = false; updateClusterPixelRange(); }, 1200);
+              } 
+            });
+            return true;
+          } catch (e) {
+            return false;
+          }
+        }
+
         var handler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
-        handler.setInputAction(function(click) {
-          var pickedObject = viewer.scene.pick(click.position);
-          if (C.defined(pickedObject) && pickedObject.id && pickedObject.id.modelData) {
-            switchTo3D(pickedObject.id.modelData);
+        handler.setInputAction(function (click) {
+          try {
+            if (viewer.scene.mode !== C.SceneMode.SCENE2D) return;
+
+            var screenX = typeof click.position.x === 'number' ? click.position.x : 0;
+            var screenY = typeof click.position.y === 'number' ? click.position.y : 0;
+            
+            // 1. Math Cluster Search
+            var cluster = getClusterAtScreenPosition(screenX, screenY, 40);
+            if (cluster) {
+               isZoomingToCluster = true;
+               dataSource.clustering.pixelRange = 1;
+               if (tryZoomToCluster(cluster)) return;
+               var clusterPos = cluster._wgs84Position;
+               if (clusterPos) { zoomInOneStepTowardCluster(clusterPos); return; }
+            }
+     
+            // 2. Math Single Pin Search
+            var locsInRadius = getLocationsInRadius(screenX, screenY, 30);
+            var visibleNear = [];
+            for (var i = 0; i < locsInRadius.length; i++) {
+              if (!isLocationClustered(locsInRadius[i].id)) {
+                visibleNear.push(locsInRadius[i]);
+              }
+            }
+
+            if (visibleNear.length === 1) {
+               switchTo3D(visibleNear[0].originalData);
+               return;
+            } else if (visibleNear.length >= 2) {
+               var bounds = getBoundsRectForLocations(visibleNear);
+               if (bounds) {
+                  isZoomingToCluster = true;
+                  dataSource.clustering.pixelRange = 1;
+                  try {
+                    viewer.camera.flyTo({ 
+                      destination: bounds, 
+                      duration: 0.45, 
+                      complete: function () { 
+                        isZoomingToCluster = true;
+                        dataSource.clustering.pixelRange = 1;
+                        viewer._activeClusters = [];
+                        viewer._clusteredLocationIds = {};
+                        dataSource.clustering.enabled = false;
+                        dataSource.clustering.enabled = true;
+                        viewer.scene.requestRender(); 
+                        setTimeout(function() { isZoomingToCluster = false; updateClusterPixelRange(); }, 1200);
+                      } 
+                    });
+                  } catch(e) {}
+                  return;
+               }
+            }
+
+            // 3. WebGL Pick Fallback
+            var picked = viewer.scene.pick(click.position);
+            var entity = C.defined(picked) && picked.id ? picked.id : null;
+            if (entity) {
+              var id = typeof entity.id === 'string' ? entity.id : (entity.id && entity.id.id);
+              if (id && locationByIdForZoom[id]) {
+                var pinLoc = locationByIdForZoom[id];
+                if (pinLoc && !isLocationClustered(pinLoc.id)) {
+                  switchTo3D(pinLoc.originalData);
+                }
+                return;
+              }
+            }
+          } catch (clickErr) {
+            console.warn("Click handler error: ", clickErr);
           }
         }, C.ScreenSpaceEventType.LEFT_CLICK);
 
-        // Hover Handler: Cursor style change
+        // Hover cursor style change handler
         handler.setInputAction(function(movement) {
+          if (viewer.scene.mode !== C.SceneMode.SCENE2D) return;
+
           var pickedObject = viewer.scene.pick(movement.endPosition);
-          if (C.defined(pickedObject) && pickedObject.id && pickedObject.id.modelData) {
+          var entity = C.defined(pickedObject) && pickedObject.id ? pickedObject.id : null;
+          var isOverMarker = false;
+
+          if (entity) {
+            var id = typeof entity.id === 'string' ? entity.id : (entity.id && entity.id.id);
+            if (id && locationByIdForZoom[id]) {
+              isOverMarker = true;
+            }
+          }
+
+          if (isOverMarker) {
             viewer.canvas.style.cursor = 'pointer';
           } else {
-            if (!isDrawing && draggedVertexIndex === null) {
-              viewer.canvas.style.cursor = '';
+            var screenX = movement.endPosition.x;
+            var screenY = movement.endPosition.y;
+            var cluster = getClusterAtScreenPosition(screenX, screenY, 40);
+            var locs = getLocationsInRadius(screenX, screenY, 36);
+            var hasVisiblePin = false;
+            for (var i = 0; i < locs.length; i++) {
+              if (!isLocationClustered(locs[i].id)) {
+                hasVisiblePin = true;
+                break;
+              }
+            }
+
+            if (cluster || hasVisiblePin) {
+              viewer.canvas.style.cursor = 'pointer';
+            } else {
+              if (!isDrawing && draggedVertexIndex === null) {
+                viewer.canvas.style.cursor = '';
+              }
             }
           }
         }, C.ScreenSpaceEventType.MOUSE_MOVE);
+
+        // Setup Location Choice Bar
+        var bar = document.getElementById('locationChoiceBar');
+        var cardsContainer = document.getElementById('locationChoiceBarCards');
+        var mapContainer = document.getElementById('heroMapContainer');
+        var canvas = viewer.scene.canvas;
+        var canvasRect = canvas.getBoundingClientRect();
+        var cameraIsMoving = false;
+        var barVisible = false;
+        var _lastRenderedKey = null;
+        var hideRafId = null;
+        var placeRafId = null;
+
+        function projectCartesian(scene, position) {
+          if (!scene || !position) return null;
+          try {
+            return C.SceneTransforms.wgs84ToWindowCoordinates(scene, position);
+          } catch (e) {
+            return null;
+          }
+        }
+
+        viewer.camera.moveStart.addEventListener(function () { 
+          cameraIsMoving = true; 
+          hideBar(); 
+        });
+        viewer.camera.moveEnd.addEventListener(function () { 
+          cameraIsMoving = false;
+          canvasRect = canvas.getBoundingClientRect();
+        });
+
+        var hoverHandler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
+        hoverHandler.setInputAction(function (movement) {
+          try {
+            if (cameraIsMoving || viewer.scene.mode !== C.SceneMode.SCENE2D) return;
+            var screenX = movement.endPosition.x;
+            var screenY = movement.endPosition.y;
+
+            var locs = getLocationsForHover(screenX, screenY);
+            var rect = viewer.scene.canvas.getBoundingClientRect();
+            var clientX = rect.left + screenX;
+            var clientY = rect.top + screenY;
+
+            if (!locs || locs.length === 0) {
+              if (!isMouseOverBarExpanded(clientX, clientY)) {
+                hideBar();
+              }
+              return;
+            }
+
+            var anchor = getPinAnchor(locs, screenX, screenY);
+            if (!anchor) {
+              if (!isMouseOverBarExpanded(clientX, clientY)) {
+                hideBar();
+              }
+              return;
+            }
+
+            showBar(locs, anchor.clientX, anchor.clientY);
+          } catch (err) {
+            console.warn('Hover update skipped:', err);
+          }
+        }, C.ScreenSpaceEventType.MOUSE_MOVE);
+
+        if (viewer.scene.canvas._cesiumHoverHandler) {
+          viewer.scene.canvas._cesiumHoverHandler.destroy();
+        }
+        viewer.scene.canvas._cesiumHoverHandler = hoverHandler;
+
+        var locationById = {};
+        locations.forEach(function (loc) { locationById[loc.id] = loc; });
+
+        function getLocationsForHover(screenX, screenY) {
+          try {
+            var picked = viewer.scene.pick(new C.Cartesian2(screenX, screenY));
+            if (picked && picked.primitive) {
+              var ids = picked.primitive.locationIds;
+              if (!ids || ids.length < 2) {
+                var activeClusters = viewer._activeClusters || [];
+                for (var c = 0; c < activeClusters.length; c++) {
+                  if (activeClusters[c].billboard === picked.primitive) {
+                    ids = activeClusters[c].locationIds;
+                    break;
+                  }
+                }
+              }
+              if (ids && ids.length >= 2) {
+                var list = ids.map(function (id) { return locationById[id]; }).filter(Boolean);
+                if (list.length >= 2) return list.slice(0, ids.length);
+              }
+              
+              var entityId = picked.id && typeof picked.id === 'object' ? picked.id.id : picked.id;
+              if (typeof entityId === 'string' && locationById[entityId]) {
+                return [locationById[entityId]];
+              }
+            }
+          } catch (e) {}
+
+          var cluster = getClusterAtScreenPosition(screenX, screenY, 40);
+          if (cluster) {
+            var ids = cluster.locationIds;
+            if (ids && ids.length >= 2) {
+              var list = ids.map(function (id) { return locationById[id]; }).filter(Boolean);
+              if (list.length >= 2) return list.slice(0, ids.length);
+            }
+          }
+
+          var near = getLocationsInRadius(screenX, screenY, 36);
+          var visibleNear = [];
+          for (var i = 0; i < near.length; i++) {
+            if (!isLocationClustered(near[i].id)) {
+              visibleNear.push(near[i]);
+            }
+          }
+
+          if (visibleNear.length > 0) {
+            return [visibleNear[0]];
+          }
+          return [];
+        }
+
+        function getPinCenterClientPosition(nearby) {
+          if (!nearby || !nearby.length) return null;
+          var scene = viewer.scene;
+          var sumX = 0, sumY = 0, count = 0;
+          for (var i = 0; i < nearby.length; i++) {
+            var loc = nearby[i];
+            var cartesian = C.Cartesian3.fromDegrees(loc.longitude, loc.latitude, 0);
+            var screenPos = projectCartesian(scene, cartesian);
+            if (screenPos && typeof screenPos.x === 'number' && typeof screenPos.y === 'number') {
+              sumX += screenPos.x; sumY += screenPos.y; count++;
+            }
+          }
+          if (count === 0) return null;
+          var rect = canvas.getBoundingClientRect();
+          var centerX = rect.left + (sumX / count);
+          var centerY = rect.top + (sumY / count) - PIN_SEARCH_HALF_H;
+          return { clientX: centerX, clientY: centerY };
+        }
+
+        function getPinAnchor(locs, cursorX, cursorY) {
+          if (!locs || !locs.length) return null;
+          if (locs.length >= 2) {
+            var cluster = getClusterAtScreenPosition(cursorX, cursorY, 40);
+            if (cluster && cluster._wgs84Position) {
+              var screenPos = projectCartesian(viewer.scene, cluster._wgs84Position);
+              if (screenPos && typeof screenPos.x === 'number') {
+                var rect = canvas.getBoundingClientRect();
+                return { clientX: rect.left + screenPos.x, clientY: rect.top + screenPos.y };
+              }
+            }
+          }
+          var center = getPinCenterClientPosition(locs);
+          if (center) return center;
+          return null;
+        }
+
+        function truncateDesc(str, maxLen) {
+          if (!str) return '';
+          str = str.trim();
+          if (str.length <= maxLen) return str;
+          return str.substring(0, maxLen).trim() + '…';
+        }
+
+        function renderBarCards(nearby) {
+          cardsContainer.innerHTML = '';
+          if (!nearby.length) return;
+          var isSingle = nearby.length === 1;
+          bar.classList.toggle('location-choice-bar-single', isSingle);
+          
+          nearby.forEach(function (loc) {
+            var card = document.createElement('div');
+            card.className = 'location-choice-card' + (isSingle ? ' location-choice-card-single' : '');
+            
+            var wrap = document.createElement('div');
+            wrap.className = 'location-choice-card-image-wrap';
+            
+            var img = document.createElement('img');
+            img.alt = loc.name || '';
+            img.src = loc.thumbnailUrl || BLANK_THUMBNAIL_DATAURL;
+            img.onerror = function () {
+              this.src = BLANK_THUMBNAIL_DATAURL;
+            };
+            
+            wrap.appendChild(img);
+            card.appendChild(wrap);
+            
+            var body = document.createElement('div');
+            body.className = 'location-choice-card-body';
+            body.innerHTML = '<p class="location-choice-card-title">' + (loc.name || loc.id).replace(/</g, '&lt;') + '</p>' +
+              '<p class="location-choice-card-desc">' + truncateDesc(loc.description || '', 70).replace(/</g, '&lt;') + '</p>';
+            
+            card.appendChild(body);
+            card.addEventListener('click', function () {
+              switchTo3D(loc.originalData);
+            });
+            cardsContainer.appendChild(card);
+          });
+        }
+
+        function placeFloatingBox(clientX, clientY, singlePin) {
+          var pinGap = 2;
+          var screenPad = 14;
+          var pinHalfW = singlePin ? 24 : 21;
+          var maxW = window.innerWidth, maxH = window.innerHeight;
+          var barW = bar.offsetWidth || (singlePin ? 220 : 320);
+          var barH = bar.offsetHeight || (singlePin ? 100 : 280);
+
+          var left = clientX + pinHalfW + pinGap;
+          if (left + barW > maxW - screenPad && (clientX - pinHalfW - pinGap - barW >= screenPad)) {
+            left = clientX - pinHalfW - pinGap - barW;
+          }
+
+          if (left < screenPad) left = screenPad;
+          if (left + barW > maxW - screenPad) left = maxW - screenPad - barW;
+
+          var top = clientY - barH * 0.5;
+          if (top < screenPad) top = screenPad;
+          if (top + barH > maxH - screenPad) top = maxH - barH - screenPad;
+
+          bar.style.left = left + 'px';
+          bar.style.top = top + 'px';
+        }
+
+        function showBar(nearby, clientX, clientY) {
+          if (hideRafId) {
+            cancelAnimationFrame(hideRafId);
+            hideRafId = null;
+          }
+          var key = nearby.map(function(l) { return l.id; }).sort().join(',');
+          var isSingle = nearby.length === 1;
+          if (key !== _lastRenderedKey) {
+            _lastRenderedKey = key;
+            renderBarCards(nearby);
+          }
+          bar.classList.add('location-choice-bar-floating', 'is-visible');
+          bar.setAttribute('aria-hidden', 'false');
+          
+          if (typeof clientX === 'number' && typeof clientY === 'number') {
+            if (placeRafId) cancelAnimationFrame(placeRafId);
+            placeRafId = requestAnimationFrame(function () {
+              placeFloatingBox(clientX, clientY, isSingle);
+              placeRafId = null;
+            });
+          }
+          barVisible = true;
+        }
+
+        function hideBar() {
+          barVisible = false;
+          _lastRenderedKey = null;
+          bar.classList.remove('location-choice-bar-single');
+          bar.setAttribute('aria-hidden', 'true');
+          bar.style.transition = 'none';
+          bar.classList.remove('is-visible');
+
+          if (placeRafId) {
+            cancelAnimationFrame(placeRafId);
+            placeRafId = null;
+          }
+          if (hideRafId) cancelAnimationFrame(hideRafId);
+          hideRafId = requestAnimationFrame(function () {
+            bar.classList.remove('location-choice-bar-floating');
+            bar.removeAttribute('style');
+            hideRafId = null;
+          });
+        }
+
+        function isMouseOverBarExpanded(clientX, clientY) {
+          if (!bar.classList.contains('is-visible')) return false;
+          var rect = bar.getBoundingClientRect();
+          var pad = 30;
+          return clientX >= (rect.left - pad) && clientX <= (rect.right + pad) && clientY >= (rect.top - pad) && clientY <= (rect.bottom + pad);
+        }
+
+        mapContainer.addEventListener('mouseleave', hideBar);
+
+        document.addEventListener('mousemove', function (e) {
+          if (!barVisible) return;
+          var rect = canvas.getBoundingClientRect();
+          var overCanvas = rect.left <= e.clientX && e.clientX <= rect.right && rect.top <= e.clientY && e.clientY <= rect.bottom;
+          if (!isMouseOverBarExpanded(e.clientX, e.clientY) && !overCanvas) {
+            hideBar();
+          }
+        });
+
+        var cameraChangeDebounceTimer = null;
+
+        function handleCameraChangeEnd() {
+          if (isZoomingToCluster) return;
+          updateClusterPixelRange();
+          viewer._activeClusters = [];
+          viewer._clusteredLocationIds = {};
+          dataSource.clustering.enabled = false;
+          dataSource.clustering.enabled = true;
+          viewer.scene.requestRender();
+          pruneActiveClusters();
+        }
+
+        viewer.camera.moveStart.addEventListener(function() {
+          viewer._activeClusters = [];
+          viewer._clusteredLocationIds = {};
+        });
+
+        viewer.camera.moveEnd.addEventListener(function() {
+          if (cameraChangeDebounceTimer) {
+            clearTimeout(cameraChangeDebounceTimer);
+            cameraChangeDebounceTimer = null;
+          }
+          handleCameraChangeEnd();
+        });
+
+        viewer.camera.changed.addEventListener(function() {
+          throttledUpdateClusterPixelRange();
+          if (cameraChangeDebounceTimer) clearTimeout(cameraChangeDebounceTimer);
+          cameraChangeDebounceTimer = setTimeout(function () {
+            cameraChangeDebounceTimer = null;
+            handleCameraChangeEnd();
+          }, 150);
+        });
+
+        var resizeTimer = null;
+        function refreshLayout() {
+          cameraIsMoving = false;
+          canvasRect = canvas.getBoundingClientRect();
+          if (viewer && viewer.resize) {
+            viewer.resize();
+            viewer.scene.requestRender();
+          }
+          hideBar();
+        }
+        window.addEventListener('resize', function() {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(refreshLayout, 200);
+        });
+        document.addEventListener('fullscreenchange', refreshLayout);
+        document.addEventListener('webkitfullscreenchange', refreshLayout);
+        document.addEventListener('mozfullscreenchange', refreshLayout);
 
         // --- 180-Degree Side/Surface Orbit Animation ---
         var orbitTickListener = null;
@@ -888,9 +1869,9 @@
           container.appendChild(loadingIndicator);
 
           // Hide all 2D pins
-          Object.keys(allModelEntities).forEach(function(id) {
-            allModelEntities[id].show = false;
-          });
+          if (dataSource) {
+            dataSource.show = false;
+          }
 
           // Switch scene mode to 3D
           viewer.scene.mode = C.SceneMode.SCENE3D;
@@ -941,9 +1922,9 @@
             
             // Revert back to 2D
             clearPolygon();
-            Object.keys(allModelEntities).forEach(function(id) {
-              allModelEntities[id].show = true;
-            });
+            if (dataSource) {
+              dataSource.show = true;
+            }
             selectedModel = null;
             viewer.scene.mode = C.SceneMode.SCENE2D;
             document.getElementById('drawingToolbar').style.display = 'none';
@@ -972,9 +1953,9 @@
             viewer.scene.mode = C.SceneMode.SCENE2D;
             
             // Re-show all 2D pins
-            Object.keys(allModelEntities).forEach(function(id) {
-              allModelEntities[id].show = true;
-            });
+            if (dataSource) {
+              dataSource.show = true;
+            }
             
             // Remove 3D tileset
             if (currentTileset) {
