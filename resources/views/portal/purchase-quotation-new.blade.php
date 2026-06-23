@@ -406,6 +406,25 @@
       getViewer(function(viewer) {
         var C = Cesium;
         
+        function projectCartesian(scene, position) {
+          if (!scene || !position) return null;
+          try {
+            if (typeof scene.cartesianToCanvasCoordinates === 'function') {
+              var res = scene.cartesianToCanvasCoordinates(position);
+              if (res && typeof res.x === 'number') return res;
+            }
+          } catch (e) {}
+          try {
+            var res = C.SceneTransforms.wgs84ToWindowCoordinates(scene, position);
+            if (res && typeof res.x === 'number') return res;
+          } catch (e) {}
+          try {
+            var res = C.SceneTransforms.worldToWindowCoordinates(scene, position);
+            if (res && typeof res.x === 'number') return res;
+          } catch (e) {}
+          return null;
+        }
+        
         // Helper function to generate a premium bordered square pin dynamically, falling back to a CSS styled pin
         function makePinImage(imageUrl, size, border, title, callback) {
           var abbreviation = (title || '3D').substring(0, 2).toUpperCase();
@@ -819,15 +838,6 @@
           var nearby = [];
           var maxDistSq = (radiusPx || 70) * (radiusPx || 70);
 
-          function projectCartesian(scene, position) {
-            if (!scene || !position) return null;
-            try {
-              return C.SceneTransforms.wgs84ToWindowCoordinates(scene, position);
-            } catch (e) {
-              return null;
-            }
-          }
-
           for (var i = 0; i < locations.length; i++) {
             var loc = locations[i];
             var cartesian = C.Cartesian3.fromDegrees(loc.longitude, loc.latitude, 0);
@@ -877,15 +887,6 @@
           
           var closestCluster = null;
           var minVal = radiusPx * radiusPx;
-
-          function projectCartesian(scene, position) {
-            if (!scene || !position) return null;
-            try {
-              return C.SceneTransforms.wgs84ToWindowCoordinates(scene, position);
-            } catch (e) {
-              return null;
-            }
-          }
 
           for (var i = 0; i < arr.length; i++) {
             var cluster = arr[i];
@@ -1180,15 +1181,6 @@
         var _lastRenderedKey = null;
         var hideRafId = null;
         var placeRafId = null;
-
-        function projectCartesian(scene, position) {
-          if (!scene || !position) return null;
-          try {
-            return C.SceneTransforms.wgs84ToWindowCoordinates(scene, position);
-          } catch (e) {
-            return null;
-          }
-        }
 
         viewer.camera.moveStart.addEventListener(function () { 
           cameraIsMoving = true; 
@@ -1848,6 +1840,14 @@
 
           selectedModel = modelData;
 
+          // Check if 3D Tiles URL is defined and valid
+          var tilesetUrl = selectedModel ? selectedModel['3dTiles'] : null;
+          if (!tilesetUrl || tilesetUrl.trim() === '') {
+            alert('No 3D model is available for this location.');
+            selectedModel = null;
+            return;
+          }
+
           // Add a loading overlay
           var container = document.getElementById('heroMapContainer');
           var loadingIndicator = document.createElement('div');
@@ -1877,42 +1877,12 @@
           viewer.scene.mode = C.SceneMode.SCENE3D;
 
           // Load the 3D model (tileset) dynamically
-          var tilesetUrl = selectedModel['3dTiles'];
           var tilesetOptions = {};
           if (tilesetUrl.indexOf('geosabah.my') !== -1 || tilesetUrl.indexOf('http') === 0) {
             tilesetOptions.proxy = new C.DefaultProxy('/proxy?url=');
           }
 
-          C.Cesium3DTileset.fromUrl(new C.Resource({
-            url: tilesetUrl,
-            proxy: tilesetOptions.proxy
-          }))
-          .then(function(tileset) {
-            currentTileset = tileset;
-            viewer.scene.primitives.add(tileset);
-
-            // Clean up loader UI
-            var indicator = document.getElementById('mapLoadingIndicator');
-            if (indicator) indicator.remove();
-
-            // Show drawing toolbar and orbit button
-            document.getElementById('drawingToolbar').style.display = 'flex';
-            if (orbitBtn) {
-              orbitBtn.style.display = 'flex';
-            }
-
-            // Zoom to the 3D tileset with a beautiful camera perspective and start automatic orbit tour
-            var boundingSphere = tileset.boundingSphere;
-            viewer.camera.flyToBoundingSphere(boundingSphere, {
-              offset: new C.HeadingPitchRange(C.Math.toRadians(0), C.Math.toRadians(-18), boundingSphere.radius * 2.2),
-              duration: 2.0,
-              complete: function() {
-                startOrbit180(boundingSphere.center, boundingSphere.radius);
-              }
-            });
-            viewer.scene.requestRender();
-          })
-          .catch(function(err) {
+          function handleLoadError(err) {
             console.error('[CesiumMap] Failed to load 3D Tileset:', err);
             var indicator = document.getElementById('mapLoadingIndicator');
             if (indicator) {
@@ -1932,7 +1902,44 @@
               orbitBtn.style.display = 'none';
             }
             viewer.scene.requestRender();
-          });
+          }
+
+          try {
+            C.Cesium3DTileset.fromUrl(new C.Resource({
+              url: tilesetUrl,
+              proxy: tilesetOptions.proxy
+            }))
+            .then(function(tileset) {
+              currentTileset = tileset;
+              viewer.scene.primitives.add(tileset);
+
+              // Clean up loader UI
+              var indicator = document.getElementById('mapLoadingIndicator');
+              if (indicator) indicator.remove();
+
+              // Show drawing toolbar and orbit button
+              document.getElementById('drawingToolbar').style.display = 'flex';
+              if (orbitBtn) {
+                orbitBtn.style.display = 'flex';
+              }
+
+              // Zoom to the 3D tileset with a beautiful camera perspective and start automatic orbit tour
+              var boundingSphere = tileset.boundingSphere;
+              viewer.camera.flyToBoundingSphere(boundingSphere, {
+                offset: new C.HeadingPitchRange(C.Math.toRadians(0), C.Math.toRadians(-18), boundingSphere.radius * 2.2),
+                duration: 2.0,
+                complete: function() {
+                  startOrbit180(boundingSphere.center, boundingSphere.radius);
+                }
+              });
+              viewer.scene.requestRender();
+            })
+            .catch(function(err) {
+              handleLoadError(err);
+            });
+          } catch (syncErr) {
+            handleLoadError(syncErr);
+          }
         }
 
         // Intercept Reset View button click to clean up 3D tileset and switch back to 2D view
