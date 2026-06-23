@@ -277,7 +277,7 @@
                     <div class="navigation-container"></div>
                     <div id="controls">
                       <div id="zoom-item" class="scale-item">
-                        <div class="el-tooltip__trigger" id="resetViewBtn" title="Reset View">
+                        <div class="el-tooltip__trigger" id="purchaseResetViewBtn" title="Reset View">
                           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M13.75 2.5H17.5V6.25" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
                             <path d="M17.5 13.75V17.5H13.75" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -1935,6 +1935,9 @@
             
             // Reset camera orientation with absolute triple safety timing
             var resetCamera = function() {
+              try {
+                viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
+              } catch (e) {}
               viewer.camera.setView({
                 destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
                 orientation: {
@@ -1948,6 +1951,8 @@
             setTimeout(resetCamera, 50);
             setTimeout(resetCamera, 150);
             setTimeout(resetCamera, 300);
+            setTimeout(resetCamera, 600);
+            setTimeout(resetCamera, 1000);
             viewer.scene.requestRender();
           }
 
@@ -1997,7 +2002,7 @@
         }
 
         // Intercept Reset View button click to clean up 3D tileset and switch back to 2D view
-        var resetBtn = document.getElementById('resetViewBtn');
+        var resetBtn = document.getElementById('purchaseResetViewBtn');
         if (resetBtn) {
           resetBtn.addEventListener('click', function() {
             // Cancel any active orbit
@@ -2040,6 +2045,9 @@
             
             // Reset camera orientation with absolute triple safety timing
             var resetCamera = function() {
+              try {
+                viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
+              } catch (e) {}
               viewer.camera.setView({
                 destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
                 orientation: {
@@ -2053,6 +2061,8 @@
             setTimeout(resetCamera, 50);
             setTimeout(resetCamera, 150);
             setTimeout(resetCamera, 300);
+            setTimeout(resetCamera, 600);
+            setTimeout(resetCamera, 1000);
 
             selectedModel = null;
             viewer.scene.requestRender();
