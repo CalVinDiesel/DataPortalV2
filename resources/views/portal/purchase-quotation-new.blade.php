@@ -27,6 +27,8 @@
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/Cesium.js"></script>
 
+  <link rel="stylesheet" href="{{ asset('assets') }}/css/cesium-map.css">
+
   <!-- Helpers and front-config -->
   <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
   <script src="{{ asset('assets') }}/js/front-config.js"></script>
@@ -41,12 +43,34 @@
       }
     }
     
+    #purchaseMapContainer {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--bs-border-color);
+    }
     #cesiumMapContainer {
       height: 420px;
       width: 100%;
-      border-radius: 12px;
-      border: 1px solid var(--bs-border-color);
+      margin: 0;
+      padding: 0;
       overflow: hidden;
+    }
+
+    /* Fullscreen styling for purchase map container */
+    #purchaseMapContainer:fullscreen,
+    #purchaseMapContainer:-webkit-full-screen {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: none !important;
+      max-height: none !important;
+      background: black;
+    }
+    #purchaseMapContainer:fullscreen #cesiumMapContainer,
+    #purchaseMapContainer:-webkit-full-screen #cesiumMapContainer {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 100% !important;
     }
 
     .form-section-title {
@@ -248,7 +272,45 @@
                 <div class="form-text mb-2">Use the Cesium map viewer to specify the area coordinates for your purchase quotation.</div>
                 
                 <!-- Field 3: Cesium Ion Map -->
-                <div id="cesiumMapContainer"></div>
+                <div id="purchaseMapContainer">
+                  <div id="cesiumMapContainer"></div>
+                  <!-- Map control sidebar (zoom, reset, fullscreen) -->
+                  <div class="right-controls">
+                    <div class="navigation-container"></div>
+                    <div id="controls">
+                      <div id="zoom-item" class="scale-item">
+                        <div class="el-tooltip__trigger" id="resetViewBtn" title="Reset View">
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13.75 2.5H17.5V6.25" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M17.5 13.75V17.5H13.75" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M6.25 17.5H2.5V13.75" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M2.5 6.25V2.5H6.25" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <rect x="8" y="8" width="4" height="4" rx="2" fill="currentColor"></rect>
+                          </svg>
+                        </div>
+                        <div class="el-tooltip__trigger" id="zoomInBtn" title="Zoom In">
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 3.33334V12.6667" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M3.33334 8H12.6667" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                          </svg>
+                        </div>
+                        <div class="el-tooltip__trigger" id="zoomOutBtn" title="Zoom Out">
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.33334 8H12.6667" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                          </svg>
+                        </div>
+                        <div class="el-tooltip__trigger" id="fullscreenBtn" title="Toggle Fullscreen">
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2.5 7.5V2.5H7.5" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M17.5 7.5V2.5H12.5" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M2.5 12.5V17.5H7.5" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M17.5 12.5V17.5H12.5" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -290,27 +352,105 @@
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
 
   <script>
-    // 1. Initialize Cesium Ion Map (Empty / Default View first)
+    // 1. Initialize Cesium Ion Map (Empty / 2D View first, matching overview map)
     var viewer;
+    var defaultDestination = Cesium.Cartesian3.fromDegrees(116.46905, 5.63444, 710000);
     try {
+      // Set empty token to avoid conflicts
+      if (typeof Cesium.Ion !== 'undefined') {
+        Cesium.Ion.defaultAccessToken = '';
+      }
+
       viewer = new Cesium.Viewer('cesiumMapContainer', {
-        terrainProvider: Cesium.createWorldTerrain ? Cesium.createWorldTerrain() : undefined,
-        baseLayerPicker: true,
-        geocoder: true,
-        homeButton: true,
-        infoBox: false,
-        navigationHelpButton: false,
-        sceneModePicker: true,
-        timeline: false,
         animation: false,
-        fullscreenButton: true,
-        selectionIndicator: false
+        baseLayerPicker: false,
+        fullscreenButton: false,
+        vrButton: false,
+        geocoder: false,
+        homeButton: false,
+        infoBox: false,
+        sceneModePicker: false,
+        selectionIndicator: false,
+        timeline: false,
+        navigationHelpButton: false,
+        sceneMode: Cesium.SceneMode.SCENE2D,
+        requestRenderMode: true,
+        useDefaultRenderLoop: true,
+        baseLayer: new Cesium.ImageryLayer(new Cesium.OpenStreetMapImageryProvider({
+          url: 'https://tile.openstreetmap.org/'
+        }))
       });
       
-      // Zoom to Sabah/Malaysia area default coordinates
+      // Zoom to Sabah/Malaysia area default coordinates (matching overview map)
       viewer.camera.setView({
-        destination: Cesium.Cartesian3.fromDegrees(116.0735, 5.9804, 15000.0)
+        destination: defaultDestination
       });
+
+      // Wire up custom controls (zoom in/out, reset, fullscreen)
+      var resetBtn = document.getElementById('resetViewBtn');
+      var zoomInBtn = document.getElementById('zoomInBtn');
+      var zoomOutBtn = document.getElementById('zoomOutBtn');
+      var fullscreenBtn = document.getElementById('fullscreenBtn');
+      var purchaseMapContainer = document.getElementById('purchaseMapContainer');
+
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+          try {
+            viewer.camera.setView({ destination: defaultDestination });
+            viewer.scene.requestRender();
+          } catch (e) {}
+        });
+      }
+
+      if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', function() {
+          try {
+            var h = viewer.camera.positionCartographic.height;
+            viewer.camera.zoomIn(h * 0.4);
+            viewer.scene.requestRender();
+          } catch (e) {}
+        });
+      }
+
+      if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', function() {
+          try {
+            var h = viewer.camera.positionCartographic.height;
+            viewer.camera.zoomOut(h * 0.4);
+            viewer.scene.requestRender();
+          } catch (e) {}
+        });
+      }
+
+      if (fullscreenBtn && purchaseMapContainer) {
+        function onFullscreenChange() {
+          if (viewer) {
+            viewer.resize();
+            viewer.scene.requestRender();
+          }
+        }
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+        fullscreenBtn.addEventListener('click', function() {
+          try {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+              if (purchaseMapContainer.requestFullscreen) {
+                purchaseMapContainer.requestFullscreen();
+              } else if (purchaseMapContainer.webkitRequestFullscreen) {
+                purchaseMapContainer.webkitRequestFullscreen();
+              }
+            } else {
+              if (document.exitFullscreen) {
+                document.exitFullscreen();
+              } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+              }
+            }
+          } catch (e) {}
+        });
+      }
+
     } catch (e) {
       console.error("Cesium Map failed to load:", e);
       document.getElementById('cesiumMapContainer').innerHTML = 
