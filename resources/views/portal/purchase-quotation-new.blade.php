@@ -1882,6 +1882,9 @@
           try {
             if (typeof viewer.scene.morphTo3D === 'function') {
               viewer.scene.morphTo3D(0);
+              if (typeof viewer.scene.completeMorph === 'function') {
+                viewer.scene.completeMorph();
+              }
             } else {
               viewer.scene.mode = C.SceneMode.SCENE3D;
             }
@@ -1916,11 +1919,43 @@
               dataSource.show = true;
             }
             selectedModel = null;
-            
+
+            // Reset camera orientation with absolute safety timing
+            var resetCamera = function() {
+              try {
+                viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
+              } catch (e) {}
+              viewer.camera.setView({
+                destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
+                orientation: {
+                  heading: 0.0,
+                  pitch: C.Math.toRadians(-90),
+                  roll: 0.0
+                }
+              });
+            };
+
+            // If we are morphing or in 3D, listen for morph completion to reset
+            if (viewer.scene.mode !== C.SceneMode.SCENE2D && viewer.scene.morphComplete) {
+              try {
+                var removeListener = viewer.scene.morphComplete.addEventListener(function() {
+                  C.requestAnimationFrame(function() {
+                    resetCamera();
+                    setTimeout(resetCamera, 50);
+                    setTimeout(resetCamera, 150);
+                  });
+                  try { removeListener(); } catch (e) {}
+                });
+              } catch (e) {}
+            }
+
             // Revert back to 2D instantly
             try {
               if (typeof viewer.scene.morphTo2D === 'function') {
                 viewer.scene.morphTo2D(0);
+                if (typeof viewer.scene.completeMorph === 'function') {
+                  viewer.scene.completeMorph();
+                }
               } else {
                 viewer.scene.mode = C.SceneMode.SCENE2D;
               }
@@ -1933,20 +1968,6 @@
               orbitBtn.style.display = 'none';
             }
             
-            // Reset camera orientation with absolute triple safety timing
-            var resetCamera = function() {
-              try {
-                viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
-              } catch (e) {}
-              viewer.camera.setView({
-                destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
-                orientation: {
-                  heading: C.Math.toRadians(0),
-                  pitch: C.Math.toRadians(-90),
-                  roll: 0
-                }
-              });
-            };
             resetCamera();
             setTimeout(resetCamera, 50);
             setTimeout(resetCamera, 150);
@@ -2008,6 +2029,18 @@
             // Cancel any active orbit
             cancelOrbit();
             
+            // Cancel any active camera flight
+            try {
+              viewer.camera.cancelFlight();
+            } catch (e) {}
+
+            // Instantly complete any active morph transition before morphing back to 2D
+            try {
+              if (typeof viewer.scene.completeMorph === 'function') {
+                viewer.scene.completeMorph();
+              }
+            } catch (e) {}
+
             // Clear drawing toolbar and polygon
             clearPolygon();
             document.getElementById('drawingToolbar').style.display = 'none';
@@ -2015,10 +2048,42 @@
               orbitBtn.style.display = 'none';
             }
 
+            // Reset camera orientation with absolute safety timing
+            var resetCamera = function() {
+              try {
+                viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
+              } catch (e) {}
+              viewer.camera.setView({
+                destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
+                orientation: {
+                  heading: 0.0,
+                  pitch: C.Math.toRadians(-90),
+                  roll: 0.0
+                }
+              });
+            };
+
+            // If we are morphing or in 3D, listen for morph completion to reset
+            if (viewer.scene.mode !== C.SceneMode.SCENE2D && viewer.scene.morphComplete) {
+              try {
+                var removeListener = viewer.scene.morphComplete.addEventListener(function() {
+                  C.requestAnimationFrame(function() {
+                    resetCamera();
+                    setTimeout(resetCamera, 50);
+                    setTimeout(resetCamera, 150);
+                  });
+                  try { removeListener(); } catch (e) {}
+                });
+              } catch (e) {}
+            }
+
             // Restore 2D mode instantly
             try {
               if (typeof viewer.scene.morphTo2D === 'function') {
                 viewer.scene.morphTo2D(0);
+                if (typeof viewer.scene.completeMorph === 'function') {
+                  viewer.scene.completeMorph();
+                }
               } else {
                 viewer.scene.mode = C.SceneMode.SCENE2D;
               }
@@ -2043,20 +2108,6 @@
               indicator.parentNode.removeChild(indicator);
             }
             
-            // Reset camera orientation with absolute triple safety timing
-            var resetCamera = function() {
-              try {
-                viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
-              } catch (e) {}
-              viewer.camera.setView({
-                destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
-                orientation: {
-                  heading: C.Math.toRadians(0),
-                  pitch: C.Math.toRadians(-90),
-                  roll: 0
-                }
-              });
-            };
             resetCamera();
             setTimeout(resetCamera, 50);
             setTimeout(resetCamera, 150);
