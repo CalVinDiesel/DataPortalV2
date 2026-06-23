@@ -1837,6 +1837,11 @@
 
         function switchTo3D(modelData) {
           if (currentTileset) return; // already loaded
+          
+          // Prevent duplicate loading from double-clicks or multiple card selections
+          if (document.getElementById('mapLoadingIndicator')) {
+            return;
+          }
 
           selectedModel = modelData;
 
@@ -1885,9 +1890,8 @@
           function handleLoadError(err) {
             console.error('[CesiumMap] Failed to load 3D Tileset:', err);
             var indicator = document.getElementById('mapLoadingIndicator');
-            if (indicator) {
-              indicator.innerHTML = '<span class="text-danger"><i class="bx bx-error me-1"></i>Error loading 3D Model</span>';
-              setTimeout(function() { indicator.remove(); }, 3000);
+            if (indicator && indicator.parentNode) {
+              indicator.parentNode.removeChild(indicator);
             }
             
             // Revert back to 2D
@@ -1915,7 +1919,9 @@
 
               // Clean up loader UI
               var indicator = document.getElementById('mapLoadingIndicator');
-              if (indicator) indicator.remove();
+              if (indicator && indicator.parentNode) {
+                indicator.parentNode.removeChild(indicator);
+              }
 
               // Show drawing toolbar and orbit button
               document.getElementById('drawingToolbar').style.display = 'flex';
