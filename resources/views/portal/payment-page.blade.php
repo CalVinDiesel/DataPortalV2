@@ -161,12 +161,18 @@
           if (emailEl && d.email) emailEl.textContent = d.email;
           var navUpload = document.getElementById('navUpload');
           var navUploadMobile = document.querySelectorAll('.navUpload-mobile');
+          var navPurchaseQuotation = document.getElementById('navPurchaseQuotation');
+          var navPurchaseQuotationMobile = document.querySelectorAll('.navPurchaseQuotation-mobile');
           if (d.role === 'registered' || d.role === 'trusted' || d.role === 'admin' || d.role === 'superadmin') {
             if (navUpload) navUpload.style.display = '';
             navUploadMobile.forEach(function (el) { el.style.display = ''; });
+            if (navPurchaseQuotation) navPurchaseQuotation.style.display = '';
+            navPurchaseQuotationMobile.forEach(function (el) { el.style.display = ''; });
           } else {
             if (navUpload) navUpload.style.display = 'none';
             navUploadMobile.forEach(function (el) { el.style.display = 'none'; });
+            if (navPurchaseQuotation) navPurchaseQuotation.style.display = 'none';
+            navPurchaseQuotationMobile.forEach(function (el) { el.style.display = 'none'; });
           }
           var navAdmin = document.getElementById('navAdmin');
           if (navAdmin) navAdmin.style.display = (d.role === 'admin' || d.role === 'superadmin') ? '' : 'none';
@@ -248,6 +254,28 @@
           </li>
           <li class="nav-item">
             <a class="nav-link fw-medium" href="{{ route('landing') }}#landingShowCase">ShowCase</a>
+          </li>
+          <!-- PurchaseQuotation Dropdown for Desktop -->
+          <li class="nav-item dropdown d-none d-lg-block" id="navPurchaseQuotation" style="display:none;">
+            <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
+              PurchaseQuotation
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="javascript:void(0);">New PurchaseQuotation</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="javascript:void(0);">My PurchaseQuotation</a></li>
+            </ul>
+          </li>
+          <!-- PurchaseQuotation Dropdown for Mobile -->
+          <li class="nav-item d-lg-none navPurchaseQuotation-mobile" style="display:none;">
+            <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navPurchaseQuotationCollapsePayment" aria-expanded="false" aria-controls="navPurchaseQuotationCollapsePayment">
+              PurchaseQuotation
+            </a>
+            <div class="collapse nav-upload-mobile-sub" id="navPurchaseQuotationCollapsePayment">
+              <a class="nav-link fw-medium" href="javascript:void(0);">New PurchaseQuotation</a>
+              <hr class="dropdown-divider">
+              <a class="nav-link fw-medium" href="javascript:void(0);">My PurchaseQuotation</a>
+            </div>
           </li>
           {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (3D MODEL SALES FIRST)
           <li class="nav-item dropdown d-none d-lg-block" id="navUpload" style="display:none;">

@@ -198,6 +198,28 @@
             <a class="nav-link fw-medium" href="{{ route('landing') }}#landingShowCase">ShowCase</a>
           </li>
           @auth
+          <!-- PurchaseQuotation Dropdown for Desktop -->
+          <li class="nav-item dropdown d-none d-xl-block" id="navPurchaseQuotation">
+            <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
+              PurchaseQuotation
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="javascript:void(0);">New PurchaseQuotation</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="javascript:void(0);">My PurchaseQuotation</a></li>
+            </ul>
+          </li>
+          <!-- PurchaseQuotation Dropdown for Mobile -->
+          <li class="nav-item d-xl-none navPurchaseQuotation-mobile">
+            <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navPurchaseQuotationCollapse" aria-expanded="false" aria-controls="navPurchaseQuotationCollapse" id="navPurchaseQuotationMobileToggle">
+              PurchaseQuotation
+            </a>
+            <div class="collapse nav-upload-mobile-sub" id="navPurchaseQuotationCollapse">
+              <a class="nav-link fw-medium" href="javascript:void(0);">New PurchaseQuotation</a>
+              <hr class="dropdown-divider">
+              <a class="nav-link fw-medium" href="javascript:void(0);">My PurchaseQuotation</a>
+            </div>
+          </li>
           {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (3D MODEL SALES FIRST)
           <li class="nav-item dropdown d-none d-xl-block" id="navUpload">
             <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
