@@ -1880,6 +1880,9 @@
 
           // Switch scene mode to 3D
           viewer.scene.mode = C.SceneMode.SCENE3D;
+          try {
+            viewer.scene.completeMorph();
+          } catch (e) {}
 
           // Load the 3D model (tileset) dynamically
           var tilesetOptions = {};
@@ -1909,6 +1912,9 @@
             }
             selectedModel = null;
             viewer.scene.mode = C.SceneMode.SCENE2D;
+            try {
+              viewer.scene.completeMorph();
+            } catch (e) {}
             document.getElementById('drawingToolbar').style.display = 'none';
             if (orbitBtn) {
               orbitBtn.style.display = 'none';
@@ -1987,6 +1993,9 @@
 
             // Restore 2D mode
             viewer.scene.mode = C.SceneMode.SCENE2D;
+            try {
+              viewer.scene.completeMorph();
+            } catch (e) {}
             
             // Re-show all 2D pins
             if (dataSource) {
