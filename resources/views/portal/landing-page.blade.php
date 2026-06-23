@@ -1129,8 +1129,6 @@
         // v166: Dynamic API detection to replace hardcoded localhost:3000
         var AUTH_API = window.AppConfig ? window.AppConfig.baseUrl : (window.location.origin || 'http://localhost:8000');
         document.addEventListener('DOMContentLoaded', function() {
-          var btn = document.getElementById('pricingSubscribeBtn');
-          if (!btn) return;
           var getStartedBtn = document.getElementById('pricingGetStartedBtn');
           if (getStartedBtn) {
             getStartedBtn.addEventListener('click', function(e) {
@@ -1147,21 +1145,25 @@
               }
             });
           }
-          btn.addEventListener('click', function() {
-            var loggedIn = window.__authLoggedIn;
-            var role = window.__authRole || 'registered';
-            if (!loggedIn) {
-              var modal = new bootstrap.Modal(document.getElementById('subscribeVisitorModal'));
-              modal.show();
-              return;
-            }
-            if (role === 'admin' || role === 'superadmin') {
-              var modal = new bootstrap.Modal(document.getElementById('subscribeAdminModal'));
-              modal.show();
-              return;
-            }
-            window.location.href = '{{ route('payment') }}';
-          });
+
+          var btn = document.getElementById('pricingSubscribeBtn');
+          if (btn) {
+            btn.addEventListener('click', function() {
+              var loggedIn = window.__authLoggedIn;
+              var role = window.__authRole || 'registered';
+              if (!loggedIn) {
+                var modal = new bootstrap.Modal(document.getElementById('subscribeVisitorModal'));
+                modal.show();
+                return;
+              }
+              if (role === 'admin' || role === 'superadmin') {
+                var modal = new bootstrap.Modal(document.getElementById('subscribeAdminModal'));
+                modal.show();
+                return;
+              }
+              window.location.href = '{{ route('payment') }}';
+            });
+          }
         });
       })();
     </script>
