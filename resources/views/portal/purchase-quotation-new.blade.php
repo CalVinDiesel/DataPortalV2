@@ -280,6 +280,11 @@
                             <path d="M12.0208 11.0782L14.8762 13.9328L13.9328 14.8762L11.0782 12.0208C10.016 12.8723 8.69483 13.3354 7.3335 13.3335C4.0215 13.3335 1.3335 10.6455 1.3335 7.3335C1.3335 4.0215 4.0215 1.3335 7.3335 1.3335C10.6455 1.3335 13.3335 4.0215 13.3335 7.3335C13.3354 8.69483 12.8723 10.016 12.0208 11.0782ZM10.6835 10.5835C11.5296 9.71342 12.0021 8.54712 12.0002 7.3335C12.0002 4.75483 9.9115 2.66683 7.3335 2.66683C4.75483 2.66683 2.66683 4.75483 2.66683 7.3335C2.66683 9.9115 4.75483 12.0002 7.3335 12.0002C8.54712 12.0021 9.71342 11.5296 10.5835 10.6835L10.6835 10.5835ZM4.66683 6.66683H10.0002V8.00016H4.66683V6.66683Z" fill="currentColor"></path>
                           </svg>
                         </div>
+                        <div class="el-tooltip__trigger" id="orbit3dBtn" title="Orbit 180°" style="display: none; align-items: center; justify-content: center;">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 4V1L8 5L12 9V6C16.42 6 20 9.58 20 14C20 18.42 16.42 22 12 22C7.58 22 4 18.42 4 14H2C2 19.52 6.48 24 12 24C17.52 24 22 19.52 22 14C22 8.48 17.52 4 12 4Z" fill="currentColor"/>
+                          </svg>
+                        </div>
                         <div class="divider"></div>
                         <div class="el-tooltip__trigger" id="fullscreenBtn" title="Fullscreen">
                           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -476,6 +481,85 @@
           }
         }, C.ScreenSpaceEventType.MOUSE_MOVE);
 
+        // --- 180-Degree Side/Surface Orbit Animation ---
+        var orbitTickListener = null;
+
+        function cancelOrbit() {
+          if (orbitTickListener) {
+            viewer.clock.onTick.removeEventListener(orbitTickListener);
+            orbitTickListener = null;
+            viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
+            viewer.scene.requestRender();
+          }
+        }
+
+        // Cancel the automated orbit animation as soon as the user interacts with the map
+        var interactHandler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
+        var eventsToCancel = [
+          C.ScreenSpaceEventType.LEFT_DOWN,
+          C.ScreenSpaceEventType.MIDDLE_DOWN,
+          C.ScreenSpaceEventType.RIGHT_DOWN,
+          C.ScreenSpaceEventType.WHEEL
+        ];
+        eventsToCancel.forEach(function(evType) {
+          interactHandler.setInputAction(cancelOrbit, evType);
+        });
+
+        function startOrbit180(center, radius) {
+          cancelOrbit();
+
+          var duration = 6000; // Smooth 6-second rotation for the 180-degree sweep
+          var startHeading = viewer.camera.heading;
+          var targetPitch = viewer.camera.pitch;
+          
+          // Maintain a beautiful low angle (horizontal side/surface perspective: -12 to -25 degrees)
+          if (targetPitch < C.Math.toRadians(-45) || targetPitch > C.Math.toRadians(-5)) {
+            targetPitch = C.Math.toRadians(-18);
+          }
+          
+          var range = C.Cartesian3.distance(viewer.camera.position, center);
+          if (range < radius || range > radius * 5) {
+            range = radius * 2.2;
+          }
+
+          var startTime = null;
+
+          orbitTickListener = function() {
+            if (!startTime) {
+              startTime = Date.now();
+            }
+            var elapsed = Date.now() - startTime;
+            var progress = Math.min(elapsed / duration, 1.0);
+
+            // Easing: easeInOutQuad for premium feel
+            var easeProgress = progress < 0.5
+              ? 2 * progress * progress
+              : -1 + (4 - 2 * progress) * progress;
+
+            // 180 degrees sweep (Math.PI radians)
+            var currentHeading = startHeading + easeProgress * Math.PI;
+
+            viewer.camera.lookAt(center, new C.HeadingPitchRange(currentHeading, targetPitch, range));
+            viewer.scene.requestRender();
+
+            if (progress >= 1.0) {
+              cancelOrbit();
+            }
+          };
+
+          viewer.clock.onTick.addEventListener(orbitTickListener);
+        }
+
+        // Orbit button click listener
+        var orbitBtn = document.getElementById('orbit3dBtn');
+        if (orbitBtn) {
+          orbitBtn.addEventListener('click', function() {
+            if (currentTileset) {
+              startOrbit180(currentTileset.boundingSphere.center, currentTileset.boundingSphere.radius);
+            }
+          });
+        }
+
         function switchTo3D() {
           if (currentTileset) return; // already loaded
 
@@ -519,11 +603,19 @@
             var indicator = document.getElementById('mapLoadingIndicator');
             if (indicator) indicator.remove();
 
-            // Zoom to the 3D tileset with a beautiful camera perspective
+            // Show orbit button
+            if (orbitBtn) {
+              orbitBtn.style.display = 'flex';
+            }
+
+            // Zoom to the 3D tileset with a beautiful camera perspective and start automatic orbit tour
             var boundingSphere = tileset.boundingSphere;
             viewer.camera.flyToBoundingSphere(boundingSphere, {
-              offset: new C.HeadingPitchRange(C.Math.toRadians(0), C.Math.toRadians(-35), boundingSphere.radius * 2.5),
-              duration: 2.0
+              offset: new C.HeadingPitchRange(C.Math.toRadians(0), C.Math.toRadians(-18), boundingSphere.radius * 2.2),
+              duration: 2.0,
+              complete: function() {
+                startOrbit180(boundingSphere.center, boundingSphere.radius);
+              }
             });
             viewer.scene.requestRender();
           })
@@ -537,6 +629,9 @@
             // Revert back to 2D
             kkOspreyEntity.show = true;
             viewer.scene.mode = C.SceneMode.SCENE2D;
+            if (orbitBtn) {
+              orbitBtn.style.display = 'none';
+            }
             viewer.scene.requestRender();
           });
         }
@@ -545,6 +640,12 @@
         var resetBtn = document.getElementById('resetViewBtn');
         if (resetBtn) {
           resetBtn.addEventListener('click', function() {
+            // Cancel any active orbit
+            cancelOrbit();
+            if (orbitBtn) {
+              orbitBtn.style.display = 'none';
+            }
+
             // Restore 2D mode
             viewer.scene.mode = C.SceneMode.SCENE2D;
             
