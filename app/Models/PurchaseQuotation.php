@@ -23,6 +23,8 @@ class PurchaseQuotation extends Model
         'bank_account_name',
         'payment_deadline',
         'processing_started_at',
+        'delivery_ready',
+        'delivered_at',
     ];
 
     protected $casts = [
@@ -32,6 +34,8 @@ class PurchaseQuotation extends Model
         'quoted_at'             => 'datetime',
         'payment_deadline'      => 'date',
         'processing_started_at' => 'datetime',
+        'delivery_ready'        => 'boolean',
+        'delivered_at'          => 'datetime',
     ];
 
     /**
@@ -116,6 +120,31 @@ class PurchaseQuotation extends Model
     {
         $notes = $this->admin_notes;
         return $notes[$this->status] ?? null;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SFTP DELIVERY PATH HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Returns the relative SFTP path (relative to the sftp_delivery disk root)
+     * where admin should upload 3D model tiles for this purchase order.
+     * Path: purchase_deliveries/<purchase_id>
+     */
+    public function getSftpDeliveryRelativePath(): string
+    {
+        return 'purchase_deliveries/' . $this->purchase_id;
+    }
+
+    /**
+     * Returns the absolute filesystem path on the SFTP server
+     * where admin should upload 3D model tiles via WinSCP.
+     * Derived dynamically from SYSTEM_SSH_STORAGE_ROOT env variable.
+     */
+    public function getSftpDeliveryAbsolutePath(): string
+    {
+        $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/home/dataportal/sftpgo/sftpgo_home/data'), '/');
+        return $root . '/' . $this->getSftpDeliveryRelativePath();
     }
 
     /**

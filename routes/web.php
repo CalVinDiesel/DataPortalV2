@@ -192,6 +192,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/purchase-quotation/new', [\App\Http\Controllers\PurchaseQuotationController::class, 'create'])->name('purchase_quotation.new');
     Route::post('/purchase-quotation/store', [\App\Http\Controllers\PurchaseQuotationController::class, 'store'])->name('purchase_quotation.store');
     Route::get('/purchase-quotation/my', [\App\Http\Controllers\PurchaseQuotationController::class, 'my'])->name('purchase_quotation.my');
+    Route::get('/api/purchase-quotation/{id}/download', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientDownload'])->name('purchase_quotation.download');
 
     // 🚀 SESSION-SYNC (v271): Moved from api.php to ensure stable session access for AJAX
     Route::get('/api/user/my-uploads', [ProjectController::class, 'index']);
@@ -246,6 +247,8 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
     Route::get('/api/admin/purchase-quotations/{id}', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminShow']);
     Route::patch('/api/admin/purchase-quotations/{id}/status', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminUpdateStatus']);
     Route::patch('/api/admin/purchase-quotations/{id}/notes', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminUpdateSingleNote']);
+    Route::patch('/api/admin/purchase-quotations/{id}/delivery', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminToggleDelivery']);
+    Route::get('/api/admin/purchase-quotations/{id}/check-delivery', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminCheckDelivery']);
 
     Route::post('/admin/client-uploads/check-sftp-status', [UploadController::class, 'checkSftpStatus'])
         ->name('admin.client_uploads.check_sftp_status');

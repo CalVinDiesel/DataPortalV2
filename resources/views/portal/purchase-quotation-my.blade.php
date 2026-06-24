@@ -181,6 +181,25 @@
     .empty-state h5 { font-weight: 700; color: #374151; margin-bottom: .5rem; }
     .empty-state p  { color: #9ca3af; margin-bottom: 1.5rem; }
 
+    /* Download button */
+    .btn-download-tiles {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: linear-gradient(135deg, #059669, #0d9488);
+      color: #fff; font-weight: 700; border: none;
+      border-radius: 10px; padding: .65rem 1.5rem;
+      font-size: 14px; text-decoration: none;
+      transition: transform .2s, box-shadow .2s;
+      cursor: pointer;
+    }
+    .btn-download-tiles:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(5,150,105,.35); color: #fff; }
+    .btn-download-tiles:disabled { opacity: .6; pointer-events: none; }
+    .delivery-preparing {
+      display: flex; align-items: center; gap: .75rem;
+      background: #f5f3ff; border: 1.5px solid #ddd6fe;
+      border-radius: 10px; padding: .85rem 1.1rem;
+      color: #4c1d95; font-size: 13.5px;
+    }
+
     /* ── Navbar Contrast & Unified Color Fix ── */
     /* Logo text */
     .landing-navbar .app-brand-text {
@@ -576,10 +595,39 @@
                     <strong>Your payment has been confirmed</strong> — our team is currently processing and preparing your 3D model data. You will be notified once it is ready for delivery.
                   </div>
                 @elseif($quote->status === 'completed')
-                  <div class="alert alert-success mt-3 mb-0 small">
-                    <i class="bx bx-check-circle me-1"></i>
-                    <strong>Order completed!</strong> Your 3D model data has been delivered. Please contact us if you have not received it.
-                  </div>
+                  @if($quote->delivery_ready)
+                    {{-- Delivery is ready — show download button --}}
+                    <div class="mt-3 p-4 rounded-3" style="background: linear-gradient(135deg,#f0fdf4,#ecfdf5); border: 2px solid #6ee7b7;">
+                      <div class="d-flex align-items-center gap-2 mb-2">
+                        <span style="font-size:22px;">✅</span>
+                        <div>
+                          <div style="font-weight:700;color:#065f46;font-size:15px;">Your 3D model tiles are ready!</div>
+                          <div style="font-size:12.5px;color:#047857;">Click the button below to download your 3D model tile files.</div>
+                        </div>
+                      </div>
+                      @if($quote->delivered_at)
+                        <div class="small text-muted mb-3"><i class="bx bx-calendar me-1"></i>Made available on {{ $quote->delivered_at->format('d M Y, h:i A') }}</div>
+                      @endif
+                      <button
+                        type="button"
+                        class="btn-download-tiles"
+                        id="btnDownload-{{ $quote->id }}"
+                        onclick="downloadTiles({{ $quote->id }}, '{{ $quote->purchase_id }}')"
+                      >
+                        <i class="bx bx-download" style="font-size:18px;"></i>
+                        Download 3D Model Tiles
+                      </button>
+                    </div>
+                  @else
+                    {{-- Delivery not yet ready --}}
+                    <div class="delivery-preparing mt-3">
+                      <span class="spinner-border spinner-border-sm flex-shrink-0" style="color:#8b5cf6;"></span>
+                      <div>
+                        <div style="font-weight:700;">Preparing your 3D model tiles…</div>
+                        <div style="font-size:12.5px;opacity:.8;">Our team is finalising the delivery package. This page will reflect the download link once it is ready.</div>
+                      </div>
+                    </div>
+                  @endif
                 @endif
 
               </div>
@@ -632,6 +680,31 @@
       if (el) {
         el.classList.toggle('d-none');
       }
+    }
+
+    // Download 3D model tiles
+    function downloadTiles(quotationId, purchaseId) {
+      var btn = document.getElementById('btnDownload-' + quotationId);
+      if (!btn) return;
+
+      // Show loading state
+      var origHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Preparing Download\u2026';
+
+      // Trigger download via a hidden anchor (preserves button feedback)
+      var a = document.createElement('a');
+      a.href = '/api/purchase-quotation/' + quotationId + '/download';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      // Re-enable button after delay (download starts in browser)
+      setTimeout(function () {
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
+      }, 4000);
     }
 
     // Logout confirm

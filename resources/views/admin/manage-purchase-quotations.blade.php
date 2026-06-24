@@ -111,6 +111,24 @@
     /* Conditional form sections */
     .cond-section { display: none; }
     .cond-section.visible { display: block; }
+
+    /* === Delivery Section === */
+    .delivery-path-box {
+      background: #0f172a; color: #7dd3fc; border-radius: 8px;
+      padding: .65rem 1rem; font-family: monospace; font-size: 12.5px;
+      word-break: break-all; margin-bottom: .75rem;
+      border: 1px solid #1e3a5f;
+    }
+    .delivery-file-list { list-style: none; padding: 0; margin: 0; }
+    .delivery-file-list li {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .35rem .5rem; border-bottom: 1px solid #f0f0f0; font-size: 12.5px;
+    }
+    .delivery-file-list li:last-child { border-bottom: none; }
+    .delivery-file-list .fname { font-family: monospace; color: #374151; }
+    .delivery-file-list .fsize { color: #9ca3af; font-size: 11.5px; }
+    .delivery-ready-badge-on  { background:#f0fdf4;color:#065f46;border:1.5px solid #6ee7b7;border-radius:20px;padding:.2rem .8rem;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:.35rem; }
+    .delivery-ready-badge-off { background:#f8fafc;color:#9ca3af;border:1.5px solid #e5e7eb;border-radius:20px;padding:.2rem .8rem;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:.35rem; }
   </style>
 </head>
 <body>
@@ -337,6 +355,37 @@
                     <input type="date" id="paymentDeadline" class="form-control">
                   </div>
                 </div>
+              </div>
+
+              <!-- Delivery Section (shown when status = completed) -->
+              <div class="admin-form-section cond-section" id="sectionDelivery">
+                <h6>📦 3D Model Tiles Delivery</h6>
+
+                <!-- Delivery status indicator -->
+                <div class="mb-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                  <div>
+                    <div class="small fw-semibold text-muted mb-1">Delivery Status</div>
+                    <div id="deliveryStatusBadge" class="delivery-ready-badge-off"><span>⏳</span> Not Ready</div>
+                  </div>
+                  <button type="button" id="btnToggleDelivery" class="btn btn-sm btn-outline-success px-3" onclick="toggleDeliveryReady()">
+                    <i class="bx bx-check-circle me-1"></i> Mark as Ready
+                  </button>
+                </div>
+
+                <!-- WinSCP upload path -->
+                <div class="small fw-semibold text-muted mb-1 mt-2">📂 WinSCP Upload Path</div>
+                <div class="delivery-path-box" id="deliverySftpPath">—</div>
+                <p class="text-muted mb-2" style="font-size:11.5px;">
+                  <i class="bx bx-info-circle me-1"></i>
+                  Connect to the SFTP server with WinSCP and upload the 3D model tiles into the path above.
+                  Then click <strong>Check Files</strong> to verify, and <strong>Mark as Ready</strong> to notify the client.
+                </p>
+
+                <!-- Check Files button + result -->
+                <button type="button" class="btn btn-sm btn-outline-primary mb-2" onclick="checkDeliveryFiles()">
+                  <i class="bx bx-search me-1"></i> Check Files on Server
+                </button>
+                <div id="deliveryFileResult" class="d-none mt-2"></div>
               </div>
 
               <!-- Rejection reason (shown when status = rejected) -->
@@ -672,6 +721,11 @@
     showExistingData(q);
     renderNotesHistory(q);
     clearModalAlert();
+
+    // Populate delivery section if status is completed
+    if (q.status === 'completed') {
+      updateDeliverySection(q);
+    }
   }
 
   function renderModalTimeline(status) {
@@ -734,7 +788,7 @@
       quoted:           'Enter the price and bank details, then click "Save & Send" to email the client.',
       awaiting_payment: 'Client has been notified; waiting for bank transfer confirmation.',
       processing:       'Payment received and verified. Actively processing the 3D model for delivery.',
-      completed:        '3D model has been delivered to the client. Job is done.',
+      completed:        '3D model has been delivered. Upload tiles via WinSCP then mark delivery as ready for client download.',
       rejected:         'Enter a reason for rejection so the client understands.',
     };
     document.getElementById('statusHelpText').textContent = helpTexts[status] || '';
@@ -743,6 +797,7 @@
     document.getElementById('sectionPricing').classList.toggle('visible', status === 'quoted');
     document.getElementById('sectionBankDetails').classList.toggle('visible', status === 'quoted');
     document.getElementById('sectionRejection').classList.toggle('visible', status === 'rejected');
+    document.getElementById('sectionDelivery').classList.toggle('visible', status === 'completed');
 
     // Show "Save & Send" button only when status = quoted
     document.getElementById('btnSaveAndSend').classList.toggle('d-none', status !== 'quoted');
@@ -1069,6 +1124,112 @@
       btnSave.disabled = false;
     });
   };
+
+  window.toggleDeliveryReady = function () {
+    if (!currentQuotation) return;
+    var isReady = currentQuotation.delivery_ready;
+    var newReady = !isReady;
+
+    var btn = document.getElementById('btnToggleDelivery');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…'; }
+
+    fetch(API + '/api/admin/purchase-quotations/' + currentQuotation.id + '/delivery', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+      credentials: 'include',
+      body: JSON.stringify({ delivery_ready: newReady, _token: CSRF }),
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.success) {
+        var idx = allQuotations.findIndex(function (q) { return q.id === currentQuotation.id; });
+        if (idx !== -1) { allQuotations[idx] = data.data; currentQuotation = data.data; }
+        renderStats(allQuotations);
+        applyFilters();
+        updateDeliverySection(data.data);
+        showModalAlert(data.message, true);
+      } else {
+        showModalAlert(data.message || 'Failed to update delivery status.', false);
+        if (btn) { btn.disabled = false; }
+      }
+    })
+    .catch(function (err) {
+      showModalAlert('Network error: ' + err.message, false);
+      if (btn) { btn.disabled = false; }
+    })
+    .finally(function () {
+      updateDeliveryToggleBtn(currentQuotation);
+    });
+  };
+
+  window.checkDeliveryFiles = function () {
+    if (!currentQuotation) return;
+    var resultEl = document.getElementById('deliveryFileResult');
+    resultEl.className = 'mt-2';
+    resultEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Checking SFTP server…';
+
+    fetch(API + '/api/admin/purchase-quotations/' + currentQuotation.id + '/check-delivery', {
+      credentials: 'include',
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.success && data.file_count > 0) {
+        var rows = (data.files || []).map(function (f) {
+          return '<li><span class="fname"><i class="bx bx-file me-1 text-success"></i>' + esc(f.name) + '</span>' +
+                 '<span class="fsize">' + esc(f.size_human) + '</span></li>';
+        }).join('');
+        resultEl.innerHTML =
+          '<div class="alert alert-success py-2 px-3 mb-2 small"><i class="bx bx-check-circle me-1"></i>' +
+          '<strong>' + data.file_count + ' file(s) found</strong> — Total: ' + esc(data.total_size_human) + '</div>' +
+          '<ul class="delivery-file-list border rounded p-2">' + rows + '</ul>';
+      } else if (data.success && data.file_count === 0) {
+        resultEl.innerHTML =
+          '<div class="alert alert-warning py-2 px-3 small"><i class="bx bx-error me-1"></i>' +
+          'No files found in the delivery folder yet. Please upload via WinSCP first.</div>';
+      } else {
+        resultEl.innerHTML =
+          '<div class="alert alert-danger py-2 px-3 small"><i class="bx bx-x-circle me-1"></i>' +
+          esc(data.message || 'Could not check delivery folder.') + '</div>';
+      }
+    })
+    .catch(function (err) {
+      resultEl.innerHTML = '<div class="alert alert-danger py-2 px-3 small">Error: ' + esc(err.message) + '</div>';
+    });
+  };
+
+  function updateDeliverySection(q) {
+    // Update SFTP path display
+    var pathEl = document.getElementById('deliverySftpPath');
+    if (pathEl) pathEl.textContent = q.sftp_delivery_path || '—';
+    // Update badge
+    var badge = document.getElementById('deliveryStatusBadge');
+    if (badge) {
+      if (q.delivery_ready) {
+        badge.className = 'delivery-ready-badge-on';
+        badge.innerHTML = '<span>✅</span> Ready for Download';
+        if (q.delivered_at) {
+          badge.innerHTML += '<span class="text-muted fw-normal" style="font-size:11px;"> · ' + esc(q.delivered_at) + '</span>';
+        }
+      } else {
+        badge.className = 'delivery-ready-badge-off';
+        badge.innerHTML = '<span>⏳</span> Not Ready';
+      }
+    }
+    updateDeliveryToggleBtn(q);
+  }
+
+  function updateDeliveryToggleBtn(q) {
+    var btn = document.getElementById('btnToggleDelivery');
+    if (!btn) return;
+    btn.disabled = false;
+    if (q && q.delivery_ready) {
+      btn.className = 'btn btn-sm btn-outline-warning px-3';
+      btn.innerHTML = '<i class="bx bx-x-circle me-1"></i> Mark as Not Ready';
+    } else {
+      btn.className = 'btn btn-sm btn-outline-success px-3';
+      btn.innerHTML = '<i class="bx bx-check-circle me-1"></i> Mark as Ready';
+    }
+  }
 
   function esc(str) {
     if (str === null || str === undefined) return '';
