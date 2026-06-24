@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Mail\QuotationReceived;
 use App\Mail\AdminNewQuotationAlert;
 use App\Mail\QuotationSentToUser;
+use App\Mail\TilesReadyNotification;
 
 class PurchaseQuotationController extends Controller
 {
@@ -318,9 +319,21 @@ class PurchaseQuotationController extends Controller
         $quotation->update($updateData);
         $quotation->refresh()->load(['user', 'mapData']);
 
+        // Send notification email to client when delivery is marked as ready
+        if ($markReady) {
+            try {
+                $recipient = $quotation->user_email;
+                Mail::to($recipient)->send(new TilesReadyNotification($quotation));
+                Log::info('TilesReadyNotification sent to ' . $recipient . ' for ' . $quotation->purchase_id);
+            } catch (\Exception $e) {
+                // Never let a mail failure block the status update
+                Log::error('Failed to send TilesReadyNotification for ' . $quotation->purchase_id . ': ' . $e->getMessage());
+            }
+        }
+
         return response()->json([
             'success'  => true,
-            'message'  => $markReady ? 'Delivery marked as ready. Client can now download the 3D model tiles.' : 'Delivery marked as not ready. Client download disabled.',
+            'message'  => $markReady ? 'Delivery marked as ready. Client has been notified by email.' : 'Delivery marked as not ready. Client download disabled.',
             'data'     => $this->formatQuotationForApi($quotation),
         ]);
     }
