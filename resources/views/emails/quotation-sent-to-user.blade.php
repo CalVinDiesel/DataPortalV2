@@ -129,6 +129,18 @@
             </div>
             @endif
 
+            <div style="background-color: #f0f7ff; border-left: 4px solid #0070f3; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 20px 0; font-size: 13.5px; color: #0050b3; line-height: 1.6;">
+                <strong style="text-transform: uppercase; font-size: 11px; letter-spacing: 0.8px; color: #0070f3; display: block; margin-bottom: 8px;">⚠️ Important 3D Model Pricing Notices:</strong>
+                <ol style="margin: 0; padding-left: 18px;">
+                    <li style="margin-bottom: 8px;">
+                        <strong>Different Year/Capture Pricing:</strong> The same 3D model captured in different years will have different prices. A more recent capture is more expensive than older ones.
+                    </li>
+                    <li>
+                        <strong>Custom/Larger Area Requests:</strong> You can request a 3D model area larger than the boundaries shown on the map. This custom service is more expensive because it requires deploying a drone to capture the area specifically for you.
+                    </li>
+                </ol>
+            </div>
+
             <p class="section-title">📌 How to Proceed</p>
             <ul class="steps-list">
                 <li>

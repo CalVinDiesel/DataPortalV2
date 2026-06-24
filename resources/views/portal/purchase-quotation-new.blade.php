@@ -345,6 +345,33 @@
                     <label class="form-check-label" for="catOrthophoto">Orthophoto</label>
                   </div>
                 </div>
+
+                <!-- Real-time Area and Estimated Price calculation -->
+                <div id="areaCalcBox" class="mb-4 p-3 rounded d-none" style="background-color: rgba(105, 108, 255, 0.05); border: 1.5px solid rgba(105, 108, 255, 0.2);">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small fw-semibold text-muted">Drawn Area:</span>
+                    <strong class="text-primary" id="calcAreaVal" style="font-size: 13.5px;">0.00 m²</strong>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="small fw-semibold text-muted">Estimated Base Price (RM 20/m²):</span>
+                    <strong class="text-primary" id="calcPriceVal" style="font-size: 14.5px;">RM 0.00</strong>
+                  </div>
+                </div>
+
+                <!-- Pricing Guidance and Important Notes -->
+                <div class="alert alert-info border-info p-3" role="alert" style="background-color: rgba(105, 108, 255, 0.03); border: 1.5px solid rgba(105, 108, 255, 0.15); border-radius: 8px;">
+                  <h6 class="alert-heading mb-2 fw-bold text-primary" style="display: flex; align-items: center; gap: 0.4rem; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="bx bx-info-circle fs-5"></i> 3D Model Pricing Notice
+                  </h6>
+                  <ul class="ps-3 mb-0 small text-muted" style="font-size: 11.5px; line-height: 1.5; list-style-type: decimal;">
+                    <li class="mb-2">
+                      <strong class="text-dark">Different Year/Capture Pricing:</strong> The same 3D model captured in different years will have different prices. A more recent capture is more expensive than older ones.
+                    </li>
+                    <li>
+                      <strong class="text-dark">Custom/Larger Area Requests:</strong> You can request a 3D model area larger than the boundaries shown on the map. This custom service is more expensive because it requires deploying a drone to capture the area specifically for you.
+                    </li>
+                  </ul>
+                </div>
               </div>
 
               <!-- Right Map Column -->
@@ -521,6 +548,52 @@
           } catch (e) {}
           return null;
         }
+
+        function calculatePolygonArea(coords) {
+          if (coords.length < 3) return 0;
+          var baseLat = coords[0][1];
+          var cosLat = Math.cos(baseLat * Math.PI / 180.0);
+          var metersX = [];
+          var metersY = [];
+          for (var i = 0; i < coords.length; i++) {
+            metersX.push(coords[i][0] * 111320.0 * cosLat);
+            metersY.push(coords[i][1] * 111320.0);
+          }
+          var area = 0.0;
+          var j = coords.length - 1;
+          for (var i = 0; i < coords.length; i++) {
+            area += (metersX[j] + metersX[i]) * (metersY[j] - metersY[i]);
+            j = i;
+          }
+          return Math.abs(area / 2.0);
+        }
+
+        window.updateCalculatedArea = function() {
+          if (polygonPoints.length < 3) {
+            var calcBox = document.getElementById('areaCalcBox');
+            if (calcBox) calcBox.classList.add('d-none');
+            return;
+          }
+          
+          var coords = polygonPoints.map(function(pos) {
+            var carto = C.Cartographic.fromCartesian(pos);
+            return [
+              C.Math.toDegrees(carto.longitude),
+              C.Math.toDegrees(carto.latitude)
+            ];
+          });
+          
+          var areaM2 = calculatePolygonArea(coords);
+          var priceRM = areaM2 * 20.0;
+          
+          var calcBox = document.getElementById('areaCalcBox');
+          var areaVal = document.getElementById('calcAreaVal');
+          var priceVal = document.getElementById('calcPriceVal');
+          
+          if (calcBox) calcBox.classList.remove('d-none');
+          if (areaVal) areaVal.textContent = areaM2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m²';
+          if (priceVal) priceVal.textContent = 'RM ' + priceRM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
         
         // Helper function to generate a premium bordered square pin dynamically, falling back to a CSS styled pin
         function makePinImage(imageUrl, size, border, title, callback) {
@@ -1805,6 +1878,10 @@
             }
           });
 
+          if (typeof window.updateCalculatedArea === 'function') {
+            window.updateCalculatedArea();
+          }
+
           // 2. Create editable grab handle entities at each vertex
           polygonPoints.forEach(function(pos, idx) {
             var handle = viewer.entities.add({
@@ -1855,6 +1932,9 @@
               draggedVertexEntity.position = newPos;
               polygonPoints[draggedVertexIndex] = newPos;
               viewer.scene.requestRender();
+              if (typeof window.updateCalculatedArea === 'function') {
+                window.updateCalculatedArea();
+              }
             }
           }, C.ScreenSpaceEventType.MOUSE_MOVE);
 
@@ -1898,6 +1978,8 @@
           polygonPoints = [];
           isDrawing = false;
           viewer.canvas.style.cursor = '';
+          var calcBox = document.getElementById('areaCalcBox');
+          if (calcBox) calcBox.classList.add('d-none');
 
           // Reset buttons
           var drawBtn = document.getElementById('btnDrawPolygon');

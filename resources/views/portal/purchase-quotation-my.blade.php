@@ -502,10 +502,24 @@
                   </div>
 
                   @if(in_array($quote->status, ['quoted','awaiting_payment']))
-                    <div class="alert alert-warning mt-3 mb-0 small" role="alert">
+                    <div class="alert alert-warning mt-3 mb-3 small" role="alert">
                       <i class="bx bx-info-circle me-1"></i>
                       <strong>Action required:</strong> Please transfer <strong>RM {{ number_format($quote->quoted_price, 2) }}</strong> to the bank account above
                       @if($quote->payment_deadline) before <strong>{{ $quote->payment_deadline->format('d M Y') }}</strong>@endif. Keep your payment receipt as proof.
+                    </div>
+
+                    <div class="alert alert-info p-3 mb-0 small" role="alert" style="background-color: rgba(105, 108, 255, 0.03); border: 1.5px solid rgba(105, 108, 255, 0.15); border-radius: 8px;">
+                      <h6 class="alert-heading mb-2 fw-bold text-primary" style="display: flex; align-items: center; gap: 0.4rem; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 8px 0;">
+                        <i class="bx bx-info-circle fs-5"></i> 3D Model Pricing Notice
+                      </h6>
+                      <ul class="ps-3 mb-0 text-muted" style="font-size: 11.5px; line-height: 1.5; list-style-type: decimal;">
+                        <li class="mb-2">
+                          <strong class="text-dark">Different Year/Capture Pricing:</strong> The same 3D model captured in different years will have different prices. A more recent capture is more expensive than older ones.
+                        </li>
+                        <li>
+                          <strong class="text-dark">Custom/Larger Area Requests:</strong> You can request a 3D model area larger than the boundaries shown on the map. This custom service is more expensive because it requires deploying a drone to capture the area specifically for you.
+                        </li>
+                      </ul>
                     </div>
                   @endif
                 @endif
