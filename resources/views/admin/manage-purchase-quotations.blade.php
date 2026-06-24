@@ -786,7 +786,9 @@
     var container = document.getElementById('adminCesiumMap');
     if (!container) return;
 
-    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJjOGVhNGQzZS02ZGE2LTRjMjEtODExOS04NGMxMDYzNmQ3MWEiLCJpZCIyNzE0ODAsImlhdCI6MTczNzExNDIzOH0.Y_HZm2WuT30mTe9GZz_5i-KXbEzIruvZuBMNtG-K3cU';
+    if (typeof Cesium.Ion !== 'undefined') {
+      Cesium.Ion.defaultAccessToken = '';
+    }
 
     try {
       cesiumViewer = new Cesium.Viewer('adminCesiumMap', {
@@ -795,6 +797,9 @@
         navigationHelpButton: false, geocoder: false, vrButton: false,
         infoBox: false, selectionIndicator: false,
         terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+        baseLayer: new Cesium.ImageryLayer(new Cesium.OpenStreetMapImageryProvider({
+          url: 'https://tile.openstreetmap.org/'
+        }))
       });
       cesiumViewer.scene.globe.show = true;
 
