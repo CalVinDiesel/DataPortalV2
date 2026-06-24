@@ -202,10 +202,32 @@ class PurchaseQuotationController extends Controller
         }
         if ($newStatus === 'processing' && $oldStatus !== 'processing') {
             $updateData['processing_started_at'] = now();
+
+            // Proactively create the SFTP delivery directory
+            try {
+                $disk = Storage::disk('sftp_delivery');
+                $dir = $quotation->getSftpDeliveryRelativePath();
+                if (!$disk->exists($dir)) {
+                    $disk->makeDirectory($dir);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Could not pre-create SFTP directory for processing PQ [{$quotation->purchase_id}]: " . $e->getMessage());
+            }
         }
         // When transitioning INTO completed, stamp the delivered_at timestamp
         if ($newStatus === 'completed' && $oldStatus !== 'completed') {
             $updateData['delivered_at'] = now();
+
+            // Ensure directory exists on SFTP
+            try {
+                $disk = Storage::disk('sftp_delivery');
+                $dir = $quotation->getSftpDeliveryRelativePath();
+                if (!$disk->exists($dir)) {
+                    $disk->makeDirectory($dir);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Could not pre-create SFTP directory for completed PQ [{$quotation->purchase_id}]: " . $e->getMessage());
+            }
         }
 
         $quotation->update($updateData);
@@ -289,6 +311,12 @@ class PurchaseQuotationController extends Controller
             try {
                 $disk = Storage::disk('sftp_delivery');
                 $relativePath = $quotation->getSftpDeliveryRelativePath();
+                
+                // Ensure directory exists on SFTP
+                if (!$disk->exists($relativePath)) {
+                    $disk->makeDirectory($relativePath);
+                }
+                
                 $exists = false;
 
                 // Check directory existence via listing
@@ -351,6 +379,10 @@ class PurchaseQuotationController extends Controller
 
         try {
             $disk     = Storage::disk('sftp_delivery');
+            // Ensure directory exists on SFTP
+            if (!$disk->exists($relativePath)) {
+                $disk->makeDirectory($relativePath);
+            }
             $contents = $disk->listContents($relativePath, true)->toArray();
 
             $files = [];
