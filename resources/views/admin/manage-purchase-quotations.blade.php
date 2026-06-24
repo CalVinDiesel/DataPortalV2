@@ -259,7 +259,7 @@
               <div class="info-pair"><span class="lbl">Model Title</span><br><strong id="dMapTitle"></strong></div>
               <div class="info-pair"><span class="lbl">Output Formats Requested</span><br><div id="dOutputCategories"></div></div>
               <div class="info-pair"><span class="lbl">Calculated Area</span><br><strong id="dCalculatedArea">—</strong></div>
-              <div class="info-pair"><span class="lbl">Estimated Price (RM 20/m²)</span><br><strong id="dEstimatedPrice" class="text-success">—</strong></div>
+              <div class="info-pair"><span class="lbl">Estimated Price (RM 10/m²)</span><br><strong id="dEstimatedPrice" class="text-success">—</strong></div>
             </div>
 
             <!-- Cesium Map -->
@@ -641,7 +641,7 @@
 
     if (points.length >= 3) {
       var areaM2 = calculatePolygonArea(points);
-      var estimatedPrice = areaM2 * 20.0;
+      var estimatedPrice = areaM2 * 10.0;
       document.getElementById('dCalculatedArea').textContent = areaM2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m²';
       document.getElementById('dEstimatedPrice').textContent = 'RM ' + estimatedPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     } else {
