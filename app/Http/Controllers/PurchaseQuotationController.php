@@ -102,6 +102,13 @@ class PurchaseQuotationController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Auto-check and heal delivery_ready status for any completed quotations
+        foreach ($quotations as $quotation) {
+            if ($quotation->status === 'completed' && !$quotation->delivery_ready) {
+                $this->autoCheckAndMarkDeliveryReady($quotation);
+            }
+        }
+
         return view('portal.purchase-quotation-my', compact('quotations'));
     }
 
@@ -243,6 +250,11 @@ class PurchaseQuotationController extends Controller
 
         $quotation->update($updateData);
         $quotation->refresh()->load(['user', 'mapData']);
+
+        // Auto-check if delivery files exist immediately when status is updated to completed
+        if ($quotation->status === 'completed' && !$quotation->delivery_ready) {
+            $this->autoCheckAndMarkDeliveryReady($quotation);
+        }
 
         // Send email to user when admin sends a formal quotation
         $emailSent = false;
@@ -688,6 +700,80 @@ class PurchaseQuotationController extends Controller
             'created_at'            => $q->created_at->format('d M Y, h:i A'),
             'updated_at'            => $q->updated_at->format('d M Y, h:i A'),
         ];
+    }
+
+    /**
+     * Proactively checks if the delivery directory contains files.
+     * If files exist and status is completed, automatically updates delivery_ready to true.
+     */
+    protected function autoCheckAndMarkDeliveryReady(PurchaseQuotation $quotation): bool
+    {
+        if ($quotation->status !== 'completed' || $quotation->delivery_ready) {
+            return (bool) $quotation->delivery_ready;
+        }
+
+        try {
+            $relativePath = $quotation->getSftpDeliveryRelativePath();
+            $absolutePath = $quotation->getSftpDeliveryAbsolutePath();
+            $exists = false;
+
+            if (is_dir($absolutePath)) {
+                $localFiles = array_diff(scandir($absolutePath), ['.', '..']);
+                $exists = count($localFiles) > 0;
+            } else {
+                // Try fallback to SFTP
+                $disk = Storage::disk('sftp_delivery');
+                if ($disk->exists($relativePath)) {
+                    $contents = $disk->listContents($relativePath)->toArray();
+                    $exists = count($contents) > 0;
+                }
+            }
+
+            if ($exists) {
+                $updateData = ['delivery_ready' => true];
+                if (!$quotation->delivered_at) {
+                    $updateData['delivered_at'] = now();
+                }
+                $quotation->update($updateData);
+                $quotation->refresh();
+
+                // Send email notification to user
+                try {
+                    $recipient = $quotation->user_email;
+                    Mail::to($recipient)->send(new TilesReadyNotification($quotation));
+                    Log::info('TilesReadyNotification sent via autocheck to ' . $recipient . ' for ' . $quotation->purchase_id);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send TilesReadyNotification via autocheck for ' . $quotation->purchase_id . ': ' . $e->getMessage());
+                }
+
+                return true;
+            }
+        } catch (\Exception $e) {
+            Log::warning('autoCheckAndMarkDeliveryReady failed for ' . $quotation->purchase_id . ': ' . $e->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Client: check the status of a given quotation.
+     */
+    public function clientCheckStatus($id)
+    {
+        $user = Auth::user();
+        $quotation = PurchaseQuotation::where('id', $id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        // Perform auto check to detect uploaded files on status request
+        $this->autoCheckAndMarkDeliveryReady($quotation);
+
+        return response()->json([
+            'success'        => true,
+            'status'         => $quotation->status,
+            'delivery_ready' => (bool) $quotation->delivery_ready,
+            'delivered_at'   => $quotation->delivered_at ? $quotation->delivered_at->format('d M Y, h:i A') : null,
+        ]);
     }
 
     /**

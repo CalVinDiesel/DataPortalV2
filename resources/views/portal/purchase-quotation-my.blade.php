@@ -659,6 +659,19 @@
   <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
   <script>
+    // Initial state of quotations requiring polling (processing, or completed but not ready)
+    var pollingQuotations = [
+      @foreach($quotations as $quote)
+        @if($quote->status === 'processing' || ($quote->status === 'completed' && !$quote->delivery_ready))
+          {
+            id: {{ $quote->id }},
+            status: '{{ $quote->status }}',
+            delivery_ready: {{ $quote->delivery_ready ? 'true' : 'false' }}
+          },
+        @endif
+      @endforeach
+    ];
+
     // Toggle expandable card
     function toggleCard(id) {
       var header = document.querySelector('#qcard-' + id + ' .q-card-header');
@@ -719,6 +732,28 @@
         });
       }
     })();
+
+    // Poll status of quotations that are processing or completed but not ready
+    if (typeof pollingQuotations !== 'undefined' && pollingQuotations.length > 0) {
+      var pollInterval = setInterval(function() {
+        pollingQuotations.forEach(function(q) {
+          fetch('/api/purchase-quotation/' + q.id + '/status')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+              if (data.success) {
+                // If status changed or delivery is now ready, reload the page
+                if (data.status !== q.status || data.delivery_ready !== q.delivery_ready) {
+                  clearInterval(pollInterval);
+                  window.location.reload();
+                }
+              }
+            })
+            .catch(function(err) {
+              console.error('Error polling quotation ' + q.id + ':', err);
+            });
+        });
+      }, 10000); // Check every 10 seconds
+    }
   </script>
 </body>
 </html>

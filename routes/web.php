@@ -193,6 +193,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/purchase-quotation/store', [\App\Http\Controllers\PurchaseQuotationController::class, 'store'])->name('purchase_quotation.store');
     Route::get('/purchase-quotation/my', [\App\Http\Controllers\PurchaseQuotationController::class, 'my'])->name('purchase_quotation.my');
     Route::get('/api/purchase-quotation/{id}/download', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientDownload'])->name('purchase_quotation.download');
+    Route::get('/api/purchase-quotation/{id}/status', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientCheckStatus'])->name('purchase_quotation.status');
 
     // 🚀 SESSION-SYNC (v271): Moved from api.php to ensure stable session access for AJAX
     Route::get('/api/user/my-uploads', [ProjectController::class, 'index']);
