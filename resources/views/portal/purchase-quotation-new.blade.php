@@ -607,16 +607,35 @@
               viewer.scene.primitives.add(tileset);
 
               // Calculate exact center of the tileset dynamically
-              var center = tileset.boundingSphere.center;
-              var carto = C.Cartographic.fromCartesian(center);
+              var center = tileset.boundingSphere ? tileset.boundingSphere.center : null;
+              var position = null;
               
-              // Store the actual coordinates inside the location object for polygon selection
-              loc.longitude = C.Math.toDegrees(carto.longitude);
-              loc.latitude = C.Math.toDegrees(carto.latitude);
+              if (center && !(center.x === 0 && center.y === 0 && center.z === 0)) {
+                position = center;
+                var carto = C.Cartographic.fromCartesian(center);
+                loc.longitude = C.Math.toDegrees(carto.longitude);
+                loc.latitude = C.Math.toDegrees(carto.latitude);
+              } else {
+                // Fall back to database coordinates
+                position = C.Cartesian3.fromDegrees(loc.longitude, loc.latitude);
+              }
 
-              // Create text label and point indicator exactly over the 3D model center
+              // ── Premium Badge Design ──
+              
+              // 1. Radar Outer Glow Beacon
               viewer.entities.add({
-                position: center,
+                position: position,
+                point: {
+                  pixelSize: 18,
+                  color: C.Color.fromCssColorString('#696cff').withAlpha(0.25),
+                  disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                  distanceDisplayCondition: new C.DistanceDisplayCondition(200.0, 10000000.0)
+                }
+              });
+
+              // 2. High-contrast Core Center Point
+              viewer.entities.add({
+                position: position,
                 point: {
                   pixelSize: 8,
                   color: C.Color.fromCssColorString('#696cff'),
@@ -624,19 +643,24 @@
                   outlineWidth: 2,
                   disableDepthTestDistance: Number.POSITIVE_INFINITY,
                   distanceDisplayCondition: new C.DistanceDisplayCondition(200.0, 10000000.0)
-                },
+                }
+              });
+
+              // 3. Elegant Dark Glassmorphism Text Badge
+              viewer.entities.add({
+                position: position,
                 label: {
                   text: loc.name,
                   font: 'bold 12px "Public Sans", sans-serif',
                   fillColor: C.Color.WHITE,
-                  outlineColor: C.Color.BLACK,
-                  outlineWidth: 2,
+                  outlineColor: C.Color.fromCssColorString('#1a1a2e'),
+                  outlineWidth: 1,
                   style: C.LabelStyle.FILL_AND_OUTLINE,
                   showBackground: true,
-                  backgroundColor: C.Color.fromCssColorString('#1a1a2e').withAlpha(0.85),
-                  backgroundPadding: new C.Cartesian2(10, 6),
+                  backgroundColor: C.Color.fromCssColorString('#1a1a2e').withAlpha(0.9),
+                  backgroundPadding: new C.Cartesian2(12, 6),
                   verticalOrigin: C.VerticalOrigin.BOTTOM,
-                  pixelOffset: new C.Cartesian2(0, -12), // offset above the point
+                  pixelOffset: new C.Cartesian2(0, -15), // offset above the core point and glow
                   disableDepthTestDistance: Number.POSITIVE_INFINITY,
                   distanceDisplayCondition: new C.DistanceDisplayCondition(200.0, 10000000.0)
                 }
