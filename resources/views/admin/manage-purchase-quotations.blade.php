@@ -76,6 +76,12 @@
     /* Cesium map container */
     #adminCesiumMap { width: 100%; height: 350px; border-radius: 10px; overflow: hidden; background: #1a1a2e; }
     #adminCesiumMap:fullscreen { width: 100% !important; height: 100% !important; border-radius: 0; }
+    #adminCesiumMap .cesium-viewer-bottom, 
+    #adminCesiumMap .cesium-viewer-cesiumionContainer, 
+    #adminCesiumMap .cesium-credit-logoContainer, 
+    #adminCesiumMap .cesium-credit-textContainer, 
+    #adminCesiumMap .cesium-credit-expand-link, 
+    #adminCesiumMap .cesium-credit-imageContainer { display: none !important; }
 
     /* Form sections in modal */
     .admin-form-section { background: #f8fafc; border-radius: 10px; padding: 1rem 1.1rem; margin-top: 1rem; }
