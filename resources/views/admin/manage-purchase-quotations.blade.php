@@ -75,6 +75,7 @@
 
     /* Cesium map container */
     #adminCesiumMap { width: 100%; height: 350px; border-radius: 10px; overflow: hidden; background: #1a1a2e; }
+    #adminCesiumMap:fullscreen { width: 100% !important; height: 100% !important; border-radius: 0; }
 
     /* Form sections in modal */
     .admin-form-section { background: #f8fafc; border-radius: 10px; padding: 1rem 1.1rem; margin-top: 1rem; }
@@ -255,7 +256,12 @@
 
             <!-- Cesium Map -->
             <div class="detail-section">
-              <div class="ds-title">🗺️ Selected Area Preview</div>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="ds-title mb-0">🗺️ Selected Area Preview</div>
+                <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2" style="font-size:11px;" id="btnToggleMapFullscreen" onclick="toggleMapFullscreen()">
+                  <i class="bx bx-fullscreen me-1"></i> Full Screen
+                </button>
+              </div>
               <div id="adminCesiumMap"></div>
               <p class="text-muted small mt-2 mb-0"><i class="bx bx-info-circle me-1"></i>The highlighted polygon shows exactly the area the client has selected for data extraction.</p>
             </div>
@@ -571,6 +577,32 @@
     setTimeout(function () { initCesium(q); }, 400);
   };
 
+  window.toggleMapFullscreen = function () {
+    var mapContainer = document.getElementById('adminCesiumMap');
+    if (!mapContainer) return;
+    if (!document.fullscreenElement) {
+      mapContainer.requestFullscreen().catch(function (err) {
+        console.error("Fullscreen error:", err);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  document.addEventListener('fullscreenchange', function () {
+    var btn = document.getElementById('btnToggleMapFullscreen');
+    if (btn) {
+      if (document.fullscreenElement) {
+        btn.innerHTML = '<i class="bx bx-exit-fullscreen me-1"></i> Exit Full Screen';
+      } else {
+        btn.innerHTML = '<i class="bx bx-fullscreen me-1"></i> Full Screen';
+      }
+    }
+    if (cesiumViewer && !cesiumViewer.isDestroyed()) {
+      cesiumViewer.resize();
+    }
+  });
+
   function populateModal(q) {
     // Header
     document.getElementById('modalPurchaseId').textContent = q.purchase_id;
@@ -824,10 +856,19 @@
         cesiumViewer.entities.add({
           polygon: {
             hierarchy: new Cesium.PolygonHierarchy(positions),
-            material: Cesium.Color.fromCssColorString('#696cff').withAlpha(0.3),
-            outline: true,
-            outlineColor: Cesium.Color.fromCssColorString('#696cff'),
-            outlineWidth: 2,
+            material: Cesium.Color.fromCssColorString('#696cff').withAlpha(0.35),
+            classificationType: Cesium.ClassificationType.BOTH
+          }
+        });
+
+        // Draw outline draped over 3D Tiles/Terrain (since polygon outline doesn't drape)
+        var outlinePositions = positions.concat([positions[0]]);
+        cesiumViewer.entities.add({
+          polyline: {
+            positions: outlinePositions,
+            width: 3,
+            material: Cesium.Color.fromCssColorString('#696cff'),
+            classificationType: Cesium.ClassificationType.BOTH
           }
         });
         cesiumViewer.zoomTo(cesiumViewer.entities);
