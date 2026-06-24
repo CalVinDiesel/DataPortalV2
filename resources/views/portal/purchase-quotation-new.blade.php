@@ -74,6 +74,54 @@
       height: 1px;
       background: var(--bs-border-color);
     }
+
+    /* ── Page Hero ── */
+    .pq-hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 8rem 0 4.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    @media (max-width: 991px) {
+      .pq-hero {
+        padding-top: 7rem;
+      }
+    }
+    .pq-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .pq-hero h1 { color: #fff; font-weight: 800; font-size: 2rem; margin: 0; }
+    .pq-hero p  { color: rgba(255,255,255,.8); margin: .5rem 0 0; }
+    .pq-hero .btn-new { background: #fff; color: #764ba2; font-weight: 700; border: none; border-radius: 10px; padding: .6rem 1.4rem; text-decoration: none; display: inline-flex; align-items: center; gap:.4rem; transition: transform .2s, box-shadow .2s; }
+    .pq-hero .btn-new:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.15); }
+
+    /* ── Cards area ── */
+    .pq-content { margin-top: -2.5rem; padding-bottom: 4rem; }
+
+    /* ── Navbar Contrast Fix ── */
+    #navUserWrap .navbar-text,
+    .landing-navbar .navbar-text {
+      color: rgba(255, 255, 255, 0.9) !important;
+      transition: color 0.25s ease;
+    }
+    #navUserWrap .navbar-text:hover,
+    .landing-navbar .navbar-text:hover {
+      color: #ffffff !important;
+    }
+    #navLogoutBtn {
+      color: #ffffff !important;
+      border-color: rgba(255, 255, 255, 0.4) !important;
+      background-color: rgba(255, 255, 255, 0.08) !important;
+      transition: all 0.2s ease-in-out;
+    }
+    #navLogoutBtn:hover {
+      color: #ffffff !important;
+      border-color: #ffffff !important;
+      background-color: rgba(255, 255, 255, 0.2) !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body>
@@ -185,9 +233,24 @@
   </nav>
   <!-- Navbar: End -->
 
-  <!-- Sections: Start -->
-  <section class="section-py bg-body first-section-pt">
-    <div class="container py-5">
+  <!-- Hero -->
+  <div class="pq-hero">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3" style="position:relative;z-index:1">
+        <div>
+          <h1><i class="bx bx-file-blank me-2"></i>New Purchase Quotation</h1>
+          <p>Specify your required output formats and select your purchase area on the map</p>
+        </div>
+        <a href="{{ route('purchase_quotation.my') }}" class="btn-new">
+          <i class="bx bx-list-ul"></i> My Quotations
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="pq-content">
+    <div class="container">
       <div class="card shadow-sm border">
         <div class="card-header border-bottom d-flex justify-content-between align-items-center py-4 px-4 px-md-5">
           <h4 class="m-0 fw-bold"><i class="bx bx-file-blank me-2 text-primary"></i>Send Purchase Quotation</h4>
@@ -330,8 +393,7 @@
         </div>
       </div>
     </div>
-  </section>
-  <!-- Sections: End -->
+  </div>
 
   <!-- Confirm logout modal -->
   <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-hidden="true">

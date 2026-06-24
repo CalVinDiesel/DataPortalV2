@@ -180,6 +180,29 @@
     .empty-state .icon { font-size: 4rem; color: #d1d5db; margin-bottom: 1rem; display: block; }
     .empty-state h5 { font-weight: 700; color: #374151; margin-bottom: .5rem; }
     .empty-state p  { color: #9ca3af; margin-bottom: 1.5rem; }
+
+    /* ── Navbar Contrast Fix ── */
+    #navUserWrap .navbar-text,
+    .landing-navbar .navbar-text {
+      color: rgba(255, 255, 255, 0.9) !important;
+      transition: color 0.25s ease;
+    }
+    #navUserWrap .navbar-text:hover,
+    .landing-navbar .navbar-text:hover {
+      color: #ffffff !important;
+    }
+    #navLogoutBtn {
+      color: #ffffff !important;
+      border-color: rgba(255, 255, 255, 0.4) !important;
+      background-color: rgba(255, 255, 255, 0.08) !important;
+      transition: all 0.2s ease-in-out;
+    }
+    #navLogoutBtn:hover {
+      color: #ffffff !important;
+      border-color: #ffffff !important;
+      background-color: rgba(255, 255, 255, 0.2) !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body>
