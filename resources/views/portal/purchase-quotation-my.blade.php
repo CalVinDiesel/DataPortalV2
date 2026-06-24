@@ -427,6 +427,8 @@
                       @php
                         if ($currentIdx === -1) {
                           $cls = 'tl-pending';
+                        } elseif ($quote->status === 'completed') {
+                          $cls = 'tl-done';
                         } elseif ($si < $currentIdx) {
                           $cls = 'tl-done';
                         } elseif ($si === $currentIdx) {
@@ -437,7 +439,7 @@
                       @endphp
                       <div class="tl-step {{ $cls }}">
                         <div class="tl-dot">
-                          @if($si < $currentIdx) <i class="bx bx-check" style="font-size:14px;"></i>
+                          @if($quote->status === 'completed' || $si < $currentIdx) <i class="bx bx-check" style="font-size:14px;"></i>
                           @else {{ $si + 1 }}
                           @endif
                         </div>
