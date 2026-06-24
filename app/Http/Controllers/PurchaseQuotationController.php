@@ -203,32 +203,43 @@ class PurchaseQuotationController extends Controller
         if ($newStatus === 'processing' && $oldStatus !== 'processing') {
             $updateData['processing_started_at'] = now();
 
-            // Proactively create the SFTP delivery directory
+            // Proactively create the delivery directory (local-first, fallback to SFTP)
             try {
-                $disk = Storage::disk('sftp_delivery');
-                $dir = $quotation->getSftpDeliveryRelativePath();
-                if (!$disk->exists($dir)) {
-                    $disk->makeDirectory($dir);
+                $absolutePath = $quotation->getSftpDeliveryAbsolutePath();
+                if (!is_dir($absolutePath)) {
+                    if (!@mkdir($absolutePath, 0777, true)) {
+                        $disk = Storage::disk('sftp_delivery');
+                        $dir = $quotation->getSftpDeliveryRelativePath();
+                        if (!$disk->exists($dir)) {
+                            $disk->makeDirectory($dir);
+                        }
+                    }
                 }
             } catch (\Exception $e) {
-                Log::warning("Could not pre-create SFTP directory for processing PQ [{$quotation->purchase_id}]: " . $e->getMessage());
+                Log::warning("Could not pre-create directory for processing PQ [{$quotation->purchase_id}]: " . $e->getMessage());
             }
         }
         // When transitioning INTO completed, stamp the delivered_at timestamp
         if ($newStatus === 'completed' && $oldStatus !== 'completed') {
             $updateData['delivered_at'] = now();
 
-            // Ensure directory exists on SFTP
+            // Ensure directory exists (local-first, fallback to SFTP)
             try {
-                $disk = Storage::disk('sftp_delivery');
-                $dir = $quotation->getSftpDeliveryRelativePath();
-                if (!$disk->exists($dir)) {
-                    $disk->makeDirectory($dir);
+                $absolutePath = $quotation->getSftpDeliveryAbsolutePath();
+                if (!is_dir($absolutePath)) {
+                    if (!@mkdir($absolutePath, 0777, true)) {
+                        $disk = Storage::disk('sftp_delivery');
+                        $dir = $quotation->getSftpDeliveryRelativePath();
+                        if (!$disk->exists($dir)) {
+                            $disk->makeDirectory($dir);
+                        }
+                    }
                 }
             } catch (\Exception $e) {
-                Log::warning("Could not pre-create SFTP directory for completed PQ [{$quotation->purchase_id}]: " . $e->getMessage());
+                Log::warning("Could not pre-create directory for completed PQ [{$quotation->purchase_id}]: " . $e->getMessage());
             }
         }
+
 
         $quotation->update($updateData);
         $quotation->refresh()->load(['user', 'mapData']);
@@ -306,25 +317,31 @@ class PurchaseQuotationController extends Controller
 
         $markReady = (bool) $request->delivery_ready;
 
-        // If trying to mark as ready, verify files actually exist on SFTP
+        // If trying to mark as ready, verify files actually exist (local-first check, fallback to SFTP)
         if ($markReady) {
             try {
-                $disk = Storage::disk('sftp_delivery');
                 $relativePath = $quotation->getSftpDeliveryRelativePath();
-                
-                // Ensure directory exists on SFTP
-                if (!$disk->exists($relativePath)) {
-                    $disk->makeDirectory($relativePath);
-                }
-                
+                $absolutePath = $quotation->getSftpDeliveryAbsolutePath();
                 $exists = false;
 
-                // Check directory existence via listing
-                try {
-                    $contents = $disk->listContents($relativePath)->toArray();
-                    $exists = count($contents) > 0;
-                } catch (\Exception $e) {
-                    $exists = false;
+                if (is_dir($absolutePath)) {
+                    $localFiles = array_diff(scandir($absolutePath), ['.', '..']);
+                    $exists = count($localFiles) > 0;
+                } else {
+                    // Try to create local directory
+                    @mkdir($absolutePath, 0777, true);
+                    
+                    // Fallback to SFTP
+                    $disk = Storage::disk('sftp_delivery');
+                    if (!$disk->exists($relativePath)) {
+                        $disk->makeDirectory($relativePath);
+                    }
+                    try {
+                        $contents = $disk->listContents($relativePath)->toArray();
+                        $exists = count($contents) > 0;
+                    } catch (\Exception $e) {
+                        $exists = false;
+                    }
                 }
 
                 if (!$exists) {
@@ -334,8 +351,8 @@ class PurchaseQuotationController extends Controller
                     ], 422);
                 }
             } catch (\Exception $e) {
-                Log::warning('adminToggleDelivery: Could not verify SFTP files for ' . $quotation->purchase_id . ': ' . $e->getMessage());
-                // Allow marking ready even if SFTP check fails (network issue, etc.) — admin is responsible
+                Log::warning('adminToggleDelivery: Could not verify files for ' . $quotation->purchase_id . ': ' . $e->getMessage());
+                // Allow marking ready even if check fails (network/permission issue, etc.) — admin is responsible
             }
         }
 
@@ -378,27 +395,48 @@ class PurchaseQuotationController extends Controller
         $absolutePath  = $quotation->getSftpDeliveryAbsolutePath();
 
         try {
-            $disk     = Storage::disk('sftp_delivery');
-            // Ensure directory exists on SFTP
-            if (!$disk->exists($relativePath)) {
-                $disk->makeDirectory($relativePath);
-            }
-            $contents = $disk->listContents($relativePath, true)->toArray();
-
             $files = [];
             $totalSize = 0;
 
-            foreach ($contents as $item) {
-                if ($item->isFile()) {
-                    $size = 0;
-                    try { $size = $disk->size($item->path()); } catch (\Exception $e) {}
-                    $files[] = [
-                        'name' => basename($item->path()),
-                        'path' => $item->path(),
-                        'size' => $size,
-                        'size_human' => $this->formatBytes($size),
-                    ];
-                    $totalSize += $size;
+            // Local-first check
+            if (is_dir($absolutePath)) {
+                $localFiles = array_diff(scandir($absolutePath), ['.', '..']);
+                foreach ($localFiles as $file) {
+                    $filePath = $absolutePath . '/' . $file;
+                    if (is_file($filePath)) {
+                        $size = filesize($filePath);
+                        $files[] = [
+                            'name' => $file,
+                            'path' => $relativePath . '/' . $file,
+                            'size' => $size,
+                            'size_human' => $this->formatBytes($size),
+                        ];
+                        $totalSize += $size;
+                    }
+                }
+            } else {
+                // Try creating local directory first
+                @mkdir($absolutePath, 0777, true);
+
+                // Fallback to SFTP
+                $disk = Storage::disk('sftp_delivery');
+                if (!$disk->exists($relativePath)) {
+                    $disk->makeDirectory($relativePath);
+                }
+                $contents = $disk->listContents($relativePath, true)->toArray();
+
+                foreach ($contents as $item) {
+                    if ($item->isFile()) {
+                        $size = 0;
+                        try { $size = $disk->size($item->path()); } catch (\Exception $e) {}
+                        $files[] = [
+                            'name' => basename($item->path()),
+                            'path' => $item->path(),
+                            'size' => $size,
+                            'size_human' => $this->formatBytes($size),
+                        ];
+                        $totalSize += $size;
+                    }
                 }
             }
 
