@@ -373,13 +373,49 @@
                 </div>
 
                 <!-- WinSCP upload path -->
-                <div class="small fw-semibold text-muted mb-1 mt-2">📂 WinSCP Upload Path</div>
-                <div class="mb-2">
-                  <div class="text-muted small mb-1" style="font-size:11px;">If using <strong>Host SSH / root (Port 22)</strong>:</div>
-                  <div class="delivery-path-box mb-2" id="deliverySftpPathHost">—</div>
-                  
-                  <div class="text-muted small mb-1" style="font-size:11px;">If using <strong>SFTPGo Admin / User (Port 2222)</strong>:</div>
-                  <div class="delivery-path-box mb-2" id="deliverySftpPathVirtual" style="background:#1e293b; color:#38bdf8; border-color:#0f172a;">—</div>
+                <div class="small fw-semibold text-muted mb-1 mt-2">📂 WinSCP Upload Paths</div>
+                <div class="mb-3">
+                  <!-- Connection A: SSH Root -->
+                  <div class="card p-3 border shadow-none mb-3" style="background: rgba(105, 108, 255, 0.04); border-color: rgba(105, 108, 255, 0.15);">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <span class="badge bg-label-primary px-2 py-1" style="font-size: 10px;">Method A: Host SSH / Root (Port 22)</span>
+                      <button type="button" class="btn btn-xs btn-primary py-0 px-2" style="font-size: 11px;" onclick="launchWinSftp('host')">
+                        <i class="bx bx-link-external me-1"></i> Launch WinSCP
+                      </button>
+                    </div>
+                    <div class="small text-muted mb-2">
+                      Host: <strong><span class="text-dark" id="sftpHostHost">—</span></strong> · Port: <strong><span class="text-dark" id="sftpPortHost">22</span></strong> · User: <strong><span class="text-dark" id="sftpUserHost">—</span></strong>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="delivery-path-box mb-0 flex-grow-1" id="deliverySftpPathHost" style="background:#f1f5f9; color:#1e293b; border-color:#cbd5e1; font-size:12px; padding:0.5rem 0.75rem;">—</div>
+                      <button type="button" class="btn btn-sm btn-outline-secondary px-2 flex-shrink-0" onclick="copyPathToClipboard('deliverySftpPathHost', this)" title="Copy Path">
+                        <i class="bx bx-copy"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Connection B: SFTPGo Jail -->
+                  <div class="card p-3 border shadow-none mb-2" style="background: rgba(3, 195, 236, 0.04); border-color: rgba(3, 195, 236, 0.2);">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <span class="badge bg-label-info px-2 py-1" style="font-size: 10px;">Method B: SFTPGo User/Admin (Port 2222)</span>
+                      <button type="button" class="btn btn-xs btn-info py-0 px-2" style="font-size: 11px;" onclick="launchWinSftp('virtual')">
+                        <i class="bx bx-link-external me-1"></i> Launch WinSCP
+                      </button>
+                    </div>
+                    <div class="small text-muted mb-2">
+                      Host: <strong><span class="text-dark" id="sftpHostVirtual">—</span></strong> · Port: <strong><span class="text-dark" id="sftpPortVirtual">2222</span></strong> · User: <strong><span class="text-dark" id="sftpUserVirtual">—</span></strong>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="delivery-path-box mb-0 flex-grow-1" id="deliverySftpPathVirtual" style="background:#1e293b; color:#38bdf8; border-color:#0f172a; font-size:12px; padding:0.5rem 0.75rem;">—</div>
+                      <button type="button" class="btn btn-sm btn-outline-info px-2 flex-shrink-0" onclick="copyPathToClipboard('deliverySftpPathVirtual', this)" title="Copy Path" style="color: #03c3ec; border-color: #03c3ec;">
+                        <i class="bx bx-copy"></i>
+                      </button>
+                    </div>
+                    <div class="alert alert-warning p-2 mt-2 mb-0 small" style="font-size:11px; border:none; background: rgba(255, 171, 0, 0.1); color: #ffab00;">
+                      <i class="bx bx-error-circle me-1"></i>
+                      <strong>Important:</strong> If connecting to <strong>Port 2222</strong>, you MUST use the path starting with <code>/purchase_deliveries/</code>. Attempting to use the Method A absolute path will throw a <em>No such file or directory</em> error.
+                    </div>
+                  </div>
                 </div>
                 <p class="text-muted mb-2" style="font-size:11.5px;">
                   <i class="bx bx-info-circle me-1"></i>
@@ -1209,6 +1245,25 @@
 
   function updateDeliverySection(q) {
     if (!q) return;
+
+    var sftpHost = @json(config('filesystems.disks.sftp_delivery.host') ?: request()->getHost());
+    var sftpUserHost = @json(config('filesystems.disks.sftp_delivery.username') ?: 'root');
+    var sftpUserVirtual = @json(env('SFTPGO_ADMIN_USERNAME') ?: 'temadigital_admin');
+    var sftpPortVirtual = @json((int) env('CLIENT_SFTP_PORT', 2222));
+
+    // Fill connection details
+    var hostEl = document.getElementById('sftpHostHost');
+    if (hostEl) hostEl.textContent = sftpHost;
+    var userHostEl = document.getElementById('sftpUserHost');
+    if (userHostEl) userHostEl.textContent = sftpUserHost;
+
+    var hostVirtEl = document.getElementById('sftpHostVirtual');
+    if (hostVirtEl) hostVirtEl.textContent = sftpHost;
+    var userVirtEl = document.getElementById('sftpUserVirtual');
+    if (userVirtEl) userVirtEl.textContent = sftpUserVirtual;
+    var portVirtEl = document.getElementById('sftpPortVirtual');
+    if (portVirtEl) portVirtEl.textContent = sftpPortVirtual;
+
     // Update SFTP path display
     var pathHostEl = document.getElementById('deliverySftpPathHost');
     if (pathHostEl) pathHostEl.textContent = q.sftp_delivery_path || '—';
@@ -1230,6 +1285,49 @@
     }
     updateDeliveryToggleBtn(q);
   }
+
+  window.launchWinSftp = function (type) {
+    if (!currentQuotation) return;
+    var host = @json(config('filesystems.disks.sftp_delivery.host') ?: request()->getHost());
+    var path = '';
+    var user = '';
+    var port = 22;
+    if (type === 'host') {
+      path = currentQuotation.sftp_delivery_path || '';
+      user = @json(config('filesystems.disks.sftp_delivery.username') ?: 'root');
+      port = 22;
+    } else {
+      path = currentQuotation.sftp_delivery_relative ? '/' + currentQuotation.sftp_delivery_relative : '';
+      user = @json(env('SFTPGO_ADMIN_USERNAME') ?: 'temadigital_admin');
+      port = @json((int) env('CLIENT_SFTP_PORT', 2222));
+    }
+    
+    // WinSCP accepts sftp://username@host:port/path
+    var sftpUrl = 'sftp://' + encodeURIComponent(user) + '@' + host + ':' + port + path;
+    window.location.href = sftpUrl;
+  };
+
+  window.copyPathToClipboard = function (elementId, btn) {
+    var text = document.getElementById(elementId).textContent;
+    if (text === '—') return;
+    navigator.clipboard.writeText(text).then(function() {
+      var icon = btn.querySelector('i');
+      var originalClass = icon.className;
+      icon.className = 'bx bx-check';
+      btn.classList.remove('btn-outline-secondary');
+      btn.classList.remove('btn-outline-info');
+      btn.classList.add('btn-success');
+      setTimeout(function() {
+        icon.className = originalClass;
+        btn.classList.remove('btn-success');
+        if (elementId === 'deliverySftpPathVirtual') {
+          btn.classList.add('btn-outline-info');
+        } else {
+          btn.classList.add('btn-outline-secondary');
+        }
+      }, 2000);
+    });
+  };
 
   function updateDeliveryToggleBtn(q) {
     var btn = document.getElementById('btnToggleDelivery');
