@@ -168,7 +168,7 @@
               <h4 class="fw-bold mb-1"><i class="bx bx-receipt me-2 text-primary"></i>Manage Purchase Quotations</h4>
               <p class="text-muted mb-0 small">Review client requests, preview their selected area on the 3D map, and send formal quotations with pricing</p>
             </div>
-            <a href="{{ route('admin_dashboard') }}" class="btn btn-sm btn-outline-primary">← Back to Dashboard</a>
+            <a href="{{ route('admin_dashboard') }}" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
           </div>
 
           <!-- Global Alert -->
