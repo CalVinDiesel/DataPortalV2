@@ -430,7 +430,7 @@
                   <i class="bx bx-save me-1"></i> Update Status
                 </button>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button id="btnDeleteQuotation" type="button" class="btn btn-danger px-4 ms-auto" onclick="confirmDeleteQuotation()">
+                <button id="btnDeleteQuotation" type="button" class="btn btn-danger px-4" onclick="confirmDeleteQuotation()">
                   <i class="bx bx-trash me-1"></i> Delete Request
                 </button>
               </div>
