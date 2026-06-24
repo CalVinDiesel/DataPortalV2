@@ -799,6 +799,10 @@
     document.getElementById('sectionRejection').classList.toggle('visible', status === 'rejected');
     document.getElementById('sectionDelivery').classList.toggle('visible', status === 'completed');
 
+    if (status === 'completed' && currentQuotation) {
+      updateDeliverySection(currentQuotation);
+    }
+
     // Show "Save & Send" button only when status = quoted
     document.getElementById('btnSaveAndSend').classList.toggle('d-none', status !== 'quoted');
     document.getElementById('btnUpdateStatus').textContent =
@@ -1198,6 +1202,7 @@
   };
 
   function updateDeliverySection(q) {
+    if (!q) return;
     // Update SFTP path display
     var pathEl = document.getElementById('deliverySftpPath');
     if (pathEl) pathEl.textContent = q.sftp_delivery_path || '—';
