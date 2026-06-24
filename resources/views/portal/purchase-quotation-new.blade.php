@@ -100,16 +100,46 @@
     /* ── Cards area ── */
     .pq-content { margin-top: -2.5rem; padding-bottom: 4rem; }
 
-    /* ── Navbar Contrast Fix ── */
+    /* ── Navbar Contrast & Unified Color Fix ── */
+    /* Logo text */
+    .landing-navbar .app-brand-text {
+      color: rgba(255, 255, 255, 0.95) !important;
+    }
+    
+    /* Navigation links (Desktop only to prevent white-on-white in mobile drawer) */
+    @media (min-width: 1200px) {
+      .landing-navbar .navbar-nav .nav-link {
+        color: rgba(255, 255, 255, 0.85) !important;
+        transition: color 0.2s ease;
+      }
+      .landing-navbar .navbar-nav .nav-link:hover,
+      .landing-navbar .navbar-nav .nav-link:focus,
+      .landing-navbar .navbar-nav .nav-link.active,
+      .landing-navbar .navbar-nav .show > .nav-link {
+        color: #ffffff !important;
+      }
+    }
+    
+    /* Theme switcher icon */
+    .landing-navbar #nav-theme {
+      color: rgba(255, 255, 255, 0.85) !important;
+    }
+    .landing-navbar #nav-theme:hover {
+      color: #ffffff !important;
+    }
+
+    /* Email text */
     #navUserWrap .navbar-text,
     .landing-navbar .navbar-text {
-      color: rgba(255, 255, 255, 0.9) !important;
+      color: rgba(255, 255, 255, 0.85) !important;
       transition: color 0.25s ease;
     }
     #navUserWrap .navbar-text:hover,
     .landing-navbar .navbar-text:hover {
       color: #ffffff !important;
     }
+
+    /* Logout button */
     #navLogoutBtn {
       color: #ffffff !important;
       border-color: rgba(255, 255, 255, 0.4) !important;
@@ -121,6 +151,11 @@
       border-color: #ffffff !important;
       background-color: rgba(255, 255, 255, 0.2) !important;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* Mobile toggler icon */
+    .landing-navbar .navbar-toggler i {
+      color: rgba(255, 255, 255, 0.9) !important;
     }
   </style>
 </head>
