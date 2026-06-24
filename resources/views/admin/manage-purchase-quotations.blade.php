@@ -258,6 +258,8 @@
               <div class="ds-title">📍 3D Model & Area</div>
               <div class="info-pair"><span class="lbl">Model Title</span><br><strong id="dMapTitle"></strong></div>
               <div class="info-pair"><span class="lbl">Output Formats Requested</span><br><div id="dOutputCategories"></div></div>
+              <div class="info-pair"><span class="lbl">Calculated Area</span><br><strong id="dCalculatedArea">—</strong></div>
+              <div class="info-pair"><span class="lbl">Estimated Price (RM 20/m²)</span><br><strong id="dEstimatedPrice" class="text-success">—</strong></div>
             </div>
 
             <!-- Cesium Map -->
@@ -624,6 +626,29 @@
     }).join('');
     document.getElementById('dOutputCategories').innerHTML = fmts || '<span class="text-muted">—</span>';
 
+    // Calculate area and estimated price
+    var coords = q.area_coordinates;
+    var points = [];
+    if (coords && coords.type === "Polygon" && coords.coordinates && coords.coordinates[0]) {
+      points = coords.coordinates[0];
+    } else if (Array.isArray(coords) && coords.length >= 3) {
+      points = coords.map(function (c) {
+        var lng = c.longitude !== undefined ? c.longitude : c.lng || c[0];
+        var lat = c.latitude  !== undefined ? c.latitude  : c.lat || c[1];
+        return [lng, lat];
+      });
+    }
+
+    if (points.length >= 3) {
+      var areaM2 = calculatePolygonArea(points);
+      var estimatedPrice = areaM2 * 20.0;
+      document.getElementById('dCalculatedArea').textContent = areaM2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m²';
+      document.getElementById('dEstimatedPrice').textContent = 'RM ' + estimatedPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } else {
+      document.getElementById('dCalculatedArea').textContent = '—';
+      document.getElementById('dEstimatedPrice').textContent = '—';
+    }
+
     // Status timeline
     renderModalTimeline(q.status);
 
@@ -913,6 +938,25 @@
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
+  function calculatePolygonArea(points) {
+    if (points.length < 3) return 0;
+    var baseLat = points[0][1];
+    var cosLat = Math.cos(baseLat * Math.PI / 180.0);
+    var metersX = [];
+    var metersY = [];
+    for (var i = 0; i < points.length; i++) {
+      metersX.push(points[i][0] * 111320.0 * cosLat);
+      metersY.push(points[i][1] * 111320.0);
+    }
+    var area = 0.0;
+    var j = points.length - 1;
+    for (var i = 0; i < points.length; i++) {
+      area += (metersX[j] + metersX[i]) * (metersY[j] - metersY[i]);
+      j = i;
+    }
+    return Math.abs(area / 2.0);
+  }
+
   function esc(str) {
     if (str === null || str === undefined) return '';
     return String(str)
