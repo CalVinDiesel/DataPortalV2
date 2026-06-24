@@ -608,8 +608,25 @@
             }).catch(function(err) {
               console.error("Failed to load 3D Tileset for " + loc.name, err);
             });
+
+            // Create text label entity above the 3D model
+            viewer.entities.add({
+              position: C.Cartesian3.fromDegrees(loc.longitude, loc.latitude, 50.0),
+              label: {
+                text: loc.name,
+                font: 'bold 12px "Public Sans", sans-serif',
+                fillColor: C.Color.WHITE,
+                outlineColor: C.Color.BLACK,
+                outlineWidth: 3,
+                style: C.LabelStyle.FILL_AND_OUTLINE,
+                verticalOrigin: C.VerticalOrigin.BOTTOM,
+                pixelOffset: new C.Cartesian2(0, -9),
+                disableDepthTestDistance: Number.POSITIVE_INFINITY, // stay visible above tiles
+                distanceDisplayCondition: new C.DistanceDisplayCondition(200.0, 10000000.0) // hide when extremely close, show when far
+              }
+            });
           } catch(e) {
-            console.error("Error creating 3D Tileset for " + loc.name, e);
+            console.error("Error creating 3D Tileset or Label for " + loc.name, e);
           }
         });
 
