@@ -53,11 +53,12 @@ function initializeCesium(containerId = 'cesiumContainer') {
     // Lock camera if initializing in 3D to simulate 2D view
     if (viewerOptions.sceneMode === Cesium.SceneMode.SCENE3D) {
         var controller = cesiumViewer.scene.screenSpaceCameraController;
-        controller.rotateEventTypes = [];
+        controller.enableTilt = false;
+        controller.enableLook = false;
+        controller.rotateEventTypes = [Cesium.CameraEventType.LEFT_DRAG];
+        controller.zoomEventTypes = [Cesium.CameraEventType.WHEEL, Cesium.CameraEventType.PINCH];
         controller.tiltEventTypes = [];
         controller.lookEventTypes = [];
-        controller.translateEventTypes = [Cesium.CameraEventType.LEFT_DRAG];
-        controller.zoomEventTypes = [Cesium.CameraEventType.WHEEL, Cesium.CameraEventType.PINCH];
     }
 
     // High-visibility lighting

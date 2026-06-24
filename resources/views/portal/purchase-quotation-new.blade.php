@@ -521,6 +521,16 @@
       var draggedVertexEntity = null; // Entity of currently dragged vertex
 
       getViewer(function(viewer) {
+        // Set initial camera view to Kota Kinabalu where the 3D models are located
+        viewer.camera.setView({
+          destination: C.Cartesian3.fromDegrees(116.082, 5.975, 15000),
+          orientation: {
+            heading: 0.0,
+            pitch: C.Math.toRadians(-90),
+            roll: 0.0
+          }
+        });
+
                function calculatePolygonArea(coords) {
           if (coords.length < 3) return 0;
           var baseLat = coords[0][1];
@@ -932,7 +942,7 @@
               viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
             } catch (e) {}
             viewer.camera.setView({
-              destination: C.Cartesian3.fromDegrees(116.46905, 5.63444, 710000),
+              destination: C.Cartesian3.fromDegrees(116.082, 5.975, 15000),
               orientation: {
                 heading: 0.0,
                 pitch: C.Math.toRadians(-90),
