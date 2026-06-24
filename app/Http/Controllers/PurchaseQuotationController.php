@@ -278,38 +278,7 @@ class PurchaseQuotationController extends Controller
         ]);
     }
 
-    /**
-     * Admin: update a single note specifically bound to a status.
-     */
-    public function adminUpdateSingleNote(Request $request, $id)
-    {
-        $quotation = PurchaseQuotation::with(['user', 'mapData'])->findOrFail($id);
 
-        $request->validate([
-            'status'      => 'required|in:' . implode(',', PurchaseQuotation::STATUSES),
-            'admin_notes' => 'nullable|string|max:2000',
-        ]);
-
-        $statusKey = $request->status;
-        $noteText = $request->admin_notes;
-
-        $notes = $quotation->admin_notes;
-        if (!is_array($notes)) {
-            $notes = [];
-        }
-
-        $notes[$statusKey] = $noteText;
-
-        $quotation->update([
-            'admin_notes' => $notes,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Note updated successfully.',
-            'data'    => $this->formatQuotationForApi($quotation),
-        ]);
-    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // DELIVERY MANAGEMENT
