@@ -421,7 +421,7 @@
 
               <!-- Admin Notes History -->
               <div id="notesHistorySection" class="mt-3 d-none">
-                <h6 class="small text-muted mb-2" style="text-transform: uppercase; letter-spacing: 0.5px; font-size:11px;"><i class="bx bx-history me-1"></i>Saved Notes per Status</h6>
+                <h6 class="small text-muted mb-2" style="text-transform: uppercase; letter-spacing: 0.5px; font-size:11px;"><i class="bx bx-history me-1"></i>Saved Note for Selected Status</h6>
                 <div id="notesHistoryList" class="d-flex flex-column gap-2"></div>
               </div>
 
@@ -797,6 +797,11 @@
       // Load note for newly selected status from quotation data if exists
       var notesMap = (currentQuotation && currentQuotation.admin_notes) || {};
       document.getElementById('adminNotes').value = notesMap[this.value] || '';
+
+      // Refresh notes list to show only the selected status note
+      if (currentQuotation) {
+        renderNotesHistory(currentQuotation);
+      }
     });
   }
 
@@ -1051,9 +1056,10 @@
     var listContainer = document.getElementById('notesHistoryList');
     if (!sec || !listContainer) return;
 
+    var selectedStatus = document.getElementById('statusSelect').value;
     var notesMap = q.admin_notes || {};
     var statusesWithNotes = Object.keys(notesMap).filter(function (st) {
-      return notesMap[st] && notesMap[st].trim() !== '';
+      return st === selectedStatus && notesMap[st] && notesMap[st].trim() !== '';
     });
 
     if (statusesWithNotes.length > 0) {
