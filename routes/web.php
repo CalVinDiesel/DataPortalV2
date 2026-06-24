@@ -246,6 +246,7 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
     Route::get('/admin/purchase-quotations', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminIndex'])->name('admin.purchase_quotations');
     Route::get('/api/admin/purchase-quotations', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminList']);
     Route::get('/api/admin/purchase-quotations/{id}', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminShow']);
+    Route::delete('/api/admin/purchase-quotations/{id}', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminDestroy']);
     Route::patch('/api/admin/purchase-quotations/{id}/status', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminUpdateStatus']);
     Route::patch('/api/admin/purchase-quotations/{id}/delivery', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminToggleDelivery']);
     Route::get('/api/admin/purchase-quotations/{id}/check-delivery', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminCheckDelivery']);

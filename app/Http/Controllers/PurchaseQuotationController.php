@@ -443,6 +443,67 @@ class PurchaseQuotationController extends Controller
     }
 
     /**
+     * Admin: cleanly delete a purchase quotation.
+     * Deletes files from the SFTP/local directory, and deletes the database record.
+     */
+    public function adminDestroy($id)
+    {
+        $quotation = PurchaseQuotation::findOrFail($id);
+
+        $relativePath = $quotation->getSftpDeliveryRelativePath();
+        $absolutePath = $quotation->getSftpDeliveryAbsolutePath();
+
+        // 1. Delete local delivery files and folder (local-first)
+        try {
+            if (is_dir($absolutePath)) {
+                $this->deleteLocalDirRecursive($absolutePath);
+                Log::info("adminDestroy: Deleted local folder: " . $absolutePath);
+            }
+        } catch (\Exception $e) {
+            Log::warning("adminDestroy: Failed to delete local folder: " . $e->getMessage());
+        }
+
+        // 2. Delete SFTP files and folder (fallback / sync)
+        try {
+            $disk = Storage::disk('sftp_delivery');
+            if ($disk->exists($relativePath)) {
+                $disk->deleteDirectory($relativePath);
+                Log::info("adminDestroy: Deleted SFTP folder: " . $relativePath);
+            }
+        } catch (\Exception $e) {
+            Log::warning("adminDestroy: Failed to delete SFTP folder: " . $e->getMessage());
+        }
+
+        // 3. Delete database record
+        $quotation->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Purchase quotation and all associated files deleted successfully.',
+        ]);
+    }
+
+    /**
+     * Helper to recursively delete a local directory.
+     */
+    private function deleteLocalDirRecursive($dir)
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+        $files = array_diff(scandir($dir), ['.', '..']);
+        foreach ($files as $file) {
+            $filePath = $dir . '/' . $file;
+            if (is_dir($filePath)) {
+                $this->deleteLocalDirRecursive($filePath);
+            } else {
+                @unlink($filePath);
+            }
+        }
+        @rmdir($dir);
+    }
+
+    /**
      * Client: download the 3D model tiles for their completed quotation.
      * Streams the delivery folder as a zip (or a single file directly) from SFTP.
      */

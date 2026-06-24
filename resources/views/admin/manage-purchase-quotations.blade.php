@@ -433,6 +433,9 @@
                   <i class="bx bx-save me-1"></i> Update Status
                 </button>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="btnDeleteQuotation" type="button" class="btn btn-danger px-4 ms-auto" onclick="confirmDeleteQuotation()">
+                  <i class="bx bx-trash me-1"></i> Delete Request
+                </button>
               </div>
 
               <!-- Existing data section -->
@@ -1081,6 +1084,46 @@
     notesInput.focus();
     editBtn.classList.add('d-none');
   }
+
+  window.confirmDeleteQuotation = function () {
+    if (!currentQuotation) return;
+    if (!confirm("Are you sure you want to permanently delete this purchase quotation request? This will cleanly remove the record from the database and delete all associated delivery files from the SFTP/local storage. This action CANNOT be undone.")) {
+      return;
+    }
+
+    var btn = document.getElementById('btnDeleteQuotation');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Deleting…';
+    }
+
+    fetch(API + '/api/admin/purchase-quotations/' + currentQuotation.id, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+      credentials: 'include'
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.success) {
+        detailModal.hide();
+        showPageAlert(data.message, true);
+        loadQuotations();
+      } else {
+        showModalAlert(data.message || 'Delete failed.', false);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bx bx-trash me-1"></i> Delete Request';
+        }
+      }
+    })
+    .catch(function (err) {
+      showModalAlert('Network error: ' + err.message, false);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bx bx-trash me-1"></i> Delete Request';
+      }
+    });
+  };
 
   window.toggleDeliveryReady = function () {
     if (!currentQuotation) return;
