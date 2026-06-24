@@ -805,11 +805,12 @@
 
       // Load 3D tileset if available
       if (q.map_3d_tiles) {
-        var tileset = new Cesium.Cesium3DTileset({ url: q.map_3d_tiles });
-        cesiumViewer.scene.primitives.add(tileset);
-        tileset.readyPromise.then(function () {
+        Cesium.Cesium3DTileset.fromUrl(q.map_3d_tiles).then(function (tileset) {
+          cesiumViewer.scene.primitives.add(tileset);
           cesiumViewer.zoomTo(tileset);
-        }).otherwise(function () {});
+        }).catch(function (err) {
+          console.error('[CesiumTilesetError]', err);
+        });
       }
 
       // Draw polygon from area_coordinates
@@ -838,7 +839,8 @@
         });
       }
     } catch (e) {
-      container.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted small"><i class="bx bx-map-alt me-2"></i>Map preview unavailable</div>';
+      console.error('[CesiumInitError]', e);
+      container.innerHTML = '<div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted small"><i class="bx bx-map-alt me-2 fs-3"></i>Map preview unavailable<div class="text-danger mt-2 font-monospace" style="font-size:11px; max-width: 90%; word-break: break-all;">' + esc(e.message || e) + '</div></div>';
     }
   }
 
