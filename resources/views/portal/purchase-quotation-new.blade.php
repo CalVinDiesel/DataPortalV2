@@ -116,7 +116,7 @@
       .landing-navbar .navbar-nav .nav-link:focus,
       .landing-navbar .navbar-nav .nav-link.active,
       .landing-navbar .navbar-nav .show > .nav-link {
-        color: #ffffff !important;
+        color: #cbd5ff !important;
       }
     }
     
@@ -125,7 +125,7 @@
       color: rgba(255, 255, 255, 0.85) !important;
     }
     .landing-navbar #nav-theme:hover {
-      color: #ffffff !important;
+      color: #cbd5ff !important;
     }
 
     /* Email text */
@@ -136,7 +136,7 @@
     }
     #navUserWrap .navbar-text:hover,
     .landing-navbar .navbar-text:hover {
-      color: #ffffff !important;
+      color: #cbd5ff !important;
     }
 
     /* Logout button */
@@ -147,8 +147,8 @@
       transition: all 0.2s ease-in-out;
     }
     #navLogoutBtn:hover {
-      color: #ffffff !important;
-      border-color: #ffffff !important;
+      color: #cbd5ff !important;
+      border-color: #cbd5ff !important;
       background-color: rgba(255, 255, 255, 0.2) !important;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
