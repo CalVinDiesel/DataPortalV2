@@ -753,11 +753,18 @@
     var container  = document.getElementById('modalStatusSteps');
     container.innerHTML = STATUS_ORDER.map(function (step, i) {
       var cls;
-      if (isRejected) cls = '';
-      else if (i < currentIdx) cls = 'mss-done';
-      else if (i === currentIdx) cls = 'mss-active';
-      else cls = '';
-      var icon = (i < currentIdx) ? '✓' : (i + 1);
+      if (isRejected) {
+        cls = '';
+      } else if (status === 'completed') {
+        cls = 'mss-done';
+      } else if (i < currentIdx) {
+        cls = 'mss-done';
+      } else if (i === currentIdx) {
+        cls = 'mss-active';
+      } else {
+        cls = '';
+      }
+      var icon = (status === 'completed' || i < currentIdx) ? '✓' : (i + 1);
       return '<div class="mss-step ' + cls + '">' +
         '<div class="mss-dot">' + icon + '</div>' +
         '<div class="mss-lbl">' + STATUS_ICONS[step] + ' ' + STATUS_LABELS[step].split(' ')[0] + '</div>' +
