@@ -172,9 +172,18 @@ class PurchaseQuotationController extends Controller
         $newStatus = $request->status;
         $oldStatus = $quotation->status;
 
+        $notes = $quotation->admin_notes;
+        if (!is_array($notes)) {
+            $notes = [];
+        }
+
+        if ($request->has('admin_notes')) {
+            $notes[$newStatus] = $request->admin_notes;
+        }
+
         $updateData = [
             'status'               => $newStatus,
-            'admin_notes'          => $request->admin_notes,
+            'admin_notes'          => $notes,
             'rejection_reason'     => $request->rejection_reason,
         ];
 
@@ -215,6 +224,39 @@ class PurchaseQuotationController extends Controller
             'message'    => 'Quotation updated successfully.' . ($emailSent ? ' Quotation email sent to client.' : ''),
             'email_sent' => $emailSent,
             'data'       => $this->formatQuotationForApi($quotation),
+        ]);
+    }
+
+    /**
+     * Admin: update a single note specifically bound to a status.
+     */
+    public function adminUpdateSingleNote(Request $request, $id)
+    {
+        $quotation = PurchaseQuotation::with(['user', 'mapData'])->findOrFail($id);
+
+        $request->validate([
+            'status'      => 'required|in:' . implode(',', PurchaseQuotation::STATUSES),
+            'admin_notes' => 'nullable|string|max:2000',
+        ]);
+
+        $statusKey = $request->status;
+        $noteText = $request->admin_notes;
+
+        $notes = $quotation->admin_notes;
+        if (!is_array($notes)) {
+            $notes = [];
+        }
+
+        $notes[$statusKey] = $noteText;
+
+        $quotation->update([
+            'admin_notes' => $notes,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Note updated successfully.',
+            'data'    => $this->formatQuotationForApi($quotation),
         ]);
     }
 

@@ -122,10 +122,10 @@
             </div>
             @endif
 
-            @if($quotation->admin_notes)
+            @if($quotation->current_admin_note)
             <div class="notes-box">
                 <strong>📝 Notes from Our Team:</strong><br>
-                {{ $quotation->admin_notes }}
+                {{ $quotation->current_admin_note }}
             </div>
             @endif
 

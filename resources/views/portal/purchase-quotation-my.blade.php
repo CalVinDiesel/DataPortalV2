@@ -533,10 +533,39 @@
                 @endif
 
                 <!-- Admin Notes -->
-                @if($quote->admin_notes)
+                @if($quote->current_admin_note)
                   <div class="notes-box">
-                    <div class="label">📝 Notes from our team:</div>
-                    {{ $quote->admin_notes }}
+                    <div class="label">📝 Notes from our team ({{ \App\Models\PurchaseQuotation::STATUS_LABELS[$quote->status] ?? $quote->status }}):</div>
+                    {{ $quote->current_admin_note }}
+                  </div>
+                @endif
+
+                @php
+                  $allNotes = $quote->admin_notes ?: [];
+                  $pastNotes = [];
+                  if (is_array($allNotes)) {
+                    foreach ($allNotes as $st => $noteText) {
+                      if ($st !== $quote->status && !empty($noteText)) {
+                        $pastNotes[$st] = $noteText;
+                      }
+                    }
+                  }
+                @endphp
+                @if(!empty($pastNotes))
+                  <div class="mt-2 small mb-3">
+                    <a href="javascript:void(0);" onclick="togglePastNotes({{ $quote->id }})" class="text-primary fw-semibold" style="text-decoration: underline;">
+                      <i class="bx bx-history me-1"></i>View notes history from previous statuses
+                    </a>
+                    <div id="pastNotes-{{ $quote->id }}" class="d-none mt-2 p-3 rounded" style="background-color: #f8fafc; border: 1.5px solid #e5e7eb;">
+                      @foreach($pastNotes as $st => $noteText)
+                        <div class="mb-2 last-mb-0 border-bottom pb-2 last-pb-0 last-border-0">
+                          <strong class="text-dark d-block mb-1" style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            {{ \App\Models\PurchaseQuotation::STATUS_LABELS[$st] ?? ucfirst($st) }}:
+                          </strong>
+                          <div class="text-muted ps-2" style="font-size: 13px;">{{ $noteText }}</div>
+                        </div>
+                      @endforeach
+                    </div>
                   </div>
                 @endif
 
@@ -594,6 +623,14 @@
       if (!isOpen) {
         header.classList.add('open');
         body.classList.add('open');
+      }
+    }
+
+    // Toggle past status notes
+    function togglePastNotes(id) {
+      var el = document.getElementById('pastNotes-' + id);
+      if (el) {
+        el.classList.toggle('d-none');
       }
     }
 

@@ -84,6 +84,41 @@ class PurchaseQuotation extends Model
     }
 
     /**
+     * Custom Accessor for admin_notes: ensures it always returns an array/dictionary mapping status -> note text.
+     */
+    public function getAdminNotesAttribute($value)
+    {
+        if (empty($value)) {
+            return [];
+        }
+        $decoded = json_decode($value, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+        // Fallback: return as array mapping the current status to the string
+        return [
+            $this->status => $value
+        ];
+    }
+
+    /**
+     * Custom Mutator for admin_notes: serializes array to JSON before saving to the DB.
+     */
+    public function setAdminNotesAttribute($value)
+    {
+        $this->attributes['admin_notes'] = is_array($value) ? json_encode($value) : $value;
+    }
+
+    /**
+     * Get the note for the current status.
+     */
+    public function getCurrentAdminNoteAttribute(): ?string
+    {
+        $notes = $this->admin_notes;
+        return $notes[$this->status] ?? null;
+    }
+
+    /**
      * Scope to filter quotations for a specific user.
      */
     public function scopeForUser($query, $userId)

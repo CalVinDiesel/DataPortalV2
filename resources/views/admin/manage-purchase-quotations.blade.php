@@ -351,6 +351,12 @@
                 <textarea id="adminNotes" class="form-control" rows="3" placeholder="Any additional notes or instructions for the client…"></textarea>
               </div>
 
+              <!-- Admin Notes History -->
+              <div id="notesHistorySection" class="mt-3 d-none">
+                <h6 class="small text-muted mb-2" style="text-transform: uppercase; letter-spacing: 0.5px; font-size:11px;"><i class="bx bx-history me-1"></i>Saved Notes per Status</h6>
+                <div id="notesHistoryList" class="d-flex flex-column gap-2"></div>
+              </div>
+
               <!-- Action Buttons -->
               <div class="d-flex gap-2 mt-4 flex-wrap">
                 <button id="btnSaveAndSend" class="btn btn-save-send px-4 d-none">
@@ -654,7 +660,7 @@
 
     // Right panel — pre-fill form
     document.getElementById('statusSelect').value     = q.status;
-    document.getElementById('adminNotes').value       = q.admin_notes || '';
+    document.getElementById('adminNotes').value       = (q.admin_notes && q.admin_notes[q.status]) || '';
     document.getElementById('rejectionReason').value  = q.rejection_reason || '';
     document.getElementById('quotedPrice').value      = q.quoted_price || '';
     document.getElementById('bankName').value         = q.bank_name || '';
@@ -664,6 +670,7 @@
 
     updateConditionalSections(q.status);
     showExistingData(q);
+    renderNotesHistory(q);
     clearModalAlert();
   }
 
@@ -713,6 +720,10 @@
   function bindStatusSelect() {
     document.getElementById('statusSelect').addEventListener('change', function () {
       updateConditionalSections(this.value);
+      
+      // Load note for newly selected status from quotation data if exists
+      var notesMap = (currentQuotation && currentQuotation.admin_notes) || {};
+      document.getElementById('adminNotes').value = notesMap[this.value] || '';
     });
   }
 
@@ -956,6 +967,108 @@
     }
     return Math.abs(area / 2.0);
   }
+
+  function renderNotesHistory(q) {
+    var sec = document.getElementById('notesHistorySection');
+    var listContainer = document.getElementById('notesHistoryList');
+    if (!sec || !listContainer) return;
+
+    var notesMap = q.admin_notes || {};
+    var statusesWithNotes = Object.keys(notesMap).filter(function (st) {
+      return notesMap[st] && notesMap[st].trim() !== '';
+    });
+
+    if (statusesWithNotes.length > 0) {
+      sec.classList.remove('d-none');
+      listContainer.innerHTML = statusesWithNotes.map(function (st) {
+        var label = STATUS_LABELS[st] || st;
+        var noteContent = notesMap[st];
+        return '<div class="card p-2 border shadow-none" style="background:#f8fafc; margin-bottom: 0.25rem;" id="note-row-' + st + '">' +
+          '<div class="d-flex justify-content-between align-items-center mb-1">' +
+            '<span class="fw-bold text-dark small" style="font-size:12px;text-transform:uppercase;">' + esc(label) + '</span>' +
+            '<button type="button" class="btn btn-xs btn-outline-primary py-0 px-1" style="font-size:10px;" onclick="editPastNote(\'' + st + '\')">' +
+              '<i class="bx bx-edit-alt"></i> Edit' +
+            '</button>' +
+          '</div>' +
+          '<div class="text-muted small ps-1 note-text-display" style="white-space:pre-wrap;">' + esc(noteContent) + '</div>' +
+          '<div class="note-edit-area d-none mt-2">' +
+            '<textarea class="form-control form-control-sm mb-1 edit-textarea" rows="2">' + esc(noteContent) + '</textarea>' +
+            '<div class="d-flex gap-1 justify-content-end">' +
+              '<button type="button" class="btn btn-xs btn-success py-0 px-1" style="font-size:10px;" onclick="savePastNote(\'' + st + '\')">Save</button>' +
+              '<button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1" style="font-size:10px;" onclick="cancelEditPastNote(\'' + st + '\')">Cancel</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    } else {
+      sec.classList.add('d-none');
+      listContainer.innerHTML = '';
+    }
+  }
+
+  window.editPastNote = function (st) {
+    var row = document.getElementById('note-row-' + st);
+    if (!row) return;
+    row.querySelector('.note-text-display').classList.add('d-none');
+    row.querySelector('.note-edit-area').classList.remove('d-none');
+  };
+
+  window.cancelEditPastNote = function (st) {
+    var row = document.getElementById('note-row-' + st);
+    if (!row) return;
+    row.querySelector('.note-text-display').classList.remove('d-none');
+    row.querySelector('.note-edit-area').classList.add('d-none');
+    
+    var originalVal = currentQuotation.admin_notes[st] || '';
+    row.querySelector('.edit-textarea').value = originalVal;
+  };
+
+  window.savePastNote = function (st) {
+    if (!currentQuotation) return;
+    var row = document.getElementById('note-row-' + st);
+    if (!row) return;
+    var textarea = row.querySelector('.edit-textarea');
+    var newNoteVal = textarea.value.trim();
+
+    var payload = {
+      status: st,
+      admin_notes: newNoteVal,
+      _token: CSRF
+    };
+
+    var btnSave = row.querySelector('.btn-success');
+    btnSave.disabled = true;
+
+    fetch(API + '/api/admin/purchase-quotations/' + currentQuotation.id + '/notes', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+      body: JSON.stringify(payload)
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.success) {
+        var idx = allQuotations.findIndex(function (q) { return q.id === currentQuotation.id; });
+        if (idx !== -1) {
+          allQuotations[idx] = data.data;
+          currentQuotation = data.data;
+        }
+        
+        if (document.getElementById('statusSelect').value === st) {
+          document.getElementById('adminNotes').value = newNoteVal;
+        }
+        
+        renderNotesHistory(data.data);
+        showModalAlert('Note updated successfully.', true);
+      } else {
+        showModalAlert(data.message || 'Update note failed.', false);
+        btnSave.disabled = false;
+      }
+    })
+    .catch(function (err) {
+      showModalAlert('Error updating note: ' + err.message, false);
+      btnSave.disabled = false;
+    });
+  };
 
   function esc(str) {
     if (str === null || str === undefined) return '';

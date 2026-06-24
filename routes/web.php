@@ -245,6 +245,7 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
     Route::get('/api/admin/purchase-quotations', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminList']);
     Route::get('/api/admin/purchase-quotations/{id}', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminShow']);
     Route::patch('/api/admin/purchase-quotations/{id}/status', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminUpdateStatus']);
+    Route::patch('/api/admin/purchase-quotations/{id}/notes', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminUpdateSingleNote']);
 
     Route::post('/admin/client-uploads/check-sftp-status', [UploadController::class, 'checkSftpStatus'])
         ->name('admin.client_uploads.check_sftp_status');
