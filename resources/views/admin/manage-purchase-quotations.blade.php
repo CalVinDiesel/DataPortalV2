@@ -847,12 +847,24 @@
 
       // Draw polygon from area_coordinates
       var coords = q.area_coordinates;
-      if (coords && coords.length >= 3) {
-        var positions = coords.map(function (c) {
+      var positions = [];
+
+      if (coords && coords.type === "Polygon" && coords.coordinates && coords.coordinates[0]) {
+        // GeoJSON Polygon format: coordinates[0] is the outer ring array of [lng, lat] arrays
+        var points = coords.coordinates[0];
+        positions = points.map(function (pt) {
+          return Cesium.Cartesian3.fromDegrees(pt[0], pt[1]);
+        });
+      } else if (Array.isArray(coords) && coords.length >= 3) {
+        // Flat array fallback
+        positions = coords.map(function (c) {
           var lng = c.longitude !== undefined ? c.longitude : c.lng || c[0];
           var lat = c.latitude  !== undefined ? c.latitude  : c.lat || c[1];
           return Cesium.Cartesian3.fromDegrees(lng, lat);
         });
+      }
+
+      if (positions.length >= 3) {
         cesiumViewer.entities.add({
           polygon: {
             hierarchy: new Cesium.PolygonHierarchy(positions),
@@ -862,7 +874,7 @@
         });
 
         // Draw outline draped over 3D Tiles/Terrain (since polygon outline doesn't drape)
-        var outlinePositions = positions.concat([positions[0]]);
+        var outlinePositions = positions;
         cesiumViewer.entities.add({
           polyline: {
             positions: outlinePositions,
