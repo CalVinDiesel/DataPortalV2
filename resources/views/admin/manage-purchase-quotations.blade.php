@@ -374,10 +374,16 @@
 
                 <!-- WinSCP upload path -->
                 <div class="small fw-semibold text-muted mb-1 mt-2">📂 WinSCP Upload Path</div>
-                <div class="delivery-path-box" id="deliverySftpPath">—</div>
+                <div class="mb-2">
+                  <div class="text-muted small mb-1" style="font-size:11px;">If using <strong>Host SSH / root (Port 22)</strong>:</div>
+                  <div class="delivery-path-box mb-2" id="deliverySftpPathHost">—</div>
+                  
+                  <div class="text-muted small mb-1" style="font-size:11px;">If using <strong>SFTPGo Admin / User (Port 2222)</strong>:</div>
+                  <div class="delivery-path-box mb-2" id="deliverySftpPathVirtual" style="background:#1e293b; color:#38bdf8; border-color:#0f172a;">—</div>
+                </div>
                 <p class="text-muted mb-2" style="font-size:11.5px;">
                   <i class="bx bx-info-circle me-1"></i>
-                  Connect to the SFTP server with WinSCP and upload the 3D model tiles into the path above.
+                  Connect to the SFTP server with WinSCP and upload the 3D model tiles into one of the paths above depending on your connection method.
                   Then click <strong>Check Files</strong> to verify, and <strong>Mark as Ready</strong> to notify the client.
                 </p>
 
@@ -1204,8 +1210,10 @@
   function updateDeliverySection(q) {
     if (!q) return;
     // Update SFTP path display
-    var pathEl = document.getElementById('deliverySftpPath');
-    if (pathEl) pathEl.textContent = q.sftp_delivery_path || '—';
+    var pathHostEl = document.getElementById('deliverySftpPathHost');
+    if (pathHostEl) pathHostEl.textContent = q.sftp_delivery_path || '—';
+    var pathVirtualEl = document.getElementById('deliverySftpPathVirtual');
+    if (pathVirtualEl) pathVirtualEl.textContent = q.sftp_delivery_relative ? '/' + q.sftp_delivery_relative : '—';
     // Update badge
     var badge = document.getElementById('deliveryStatusBadge');
     if (badge) {
