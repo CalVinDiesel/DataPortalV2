@@ -605,25 +605,44 @@
               proxy: tilesetOptions.proxy
             })).then(function(tileset) {
               viewer.scene.primitives.add(tileset);
+
+              // Calculate exact center of the tileset dynamically
+              var center = tileset.boundingSphere.center;
+              var carto = C.Cartographic.fromCartesian(center);
+              
+              // Store the actual coordinates inside the location object for polygon selection
+              loc.longitude = C.Math.toDegrees(carto.longitude);
+              loc.latitude = C.Math.toDegrees(carto.latitude);
+
+              // Create text label and point indicator exactly over the 3D model center
+              viewer.entities.add({
+                position: center,
+                point: {
+                  pixelSize: 8,
+                  color: C.Color.fromCssColorString('#696cff'),
+                  outlineColor: C.Color.WHITE,
+                  outlineWidth: 2,
+                  disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                  distanceDisplayCondition: new C.DistanceDisplayCondition(200.0, 10000000.0)
+                },
+                label: {
+                  text: loc.name,
+                  font: 'bold 12px "Public Sans", sans-serif',
+                  fillColor: C.Color.WHITE,
+                  outlineColor: C.Color.BLACK,
+                  outlineWidth: 2,
+                  style: C.LabelStyle.FILL_AND_OUTLINE,
+                  showBackground: true,
+                  backgroundColor: C.Color.fromCssColorString('#1a1a2e').withAlpha(0.85),
+                  backgroundPadding: new C.Cartesian2(10, 6),
+                  verticalOrigin: C.VerticalOrigin.BOTTOM,
+                  pixelOffset: new C.Cartesian2(0, -12), // offset above the point
+                  disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                  distanceDisplayCondition: new C.DistanceDisplayCondition(200.0, 10000000.0)
+                }
+              });
             }).catch(function(err) {
               console.error("Failed to load 3D Tileset for " + loc.name, err);
-            });
-
-            // Create text label entity above the 3D model
-            viewer.entities.add({
-              position: C.Cartesian3.fromDegrees(loc.longitude, loc.latitude, 50.0),
-              label: {
-                text: loc.name,
-                font: 'bold 12px "Public Sans", sans-serif',
-                fillColor: C.Color.WHITE,
-                outlineColor: C.Color.BLACK,
-                outlineWidth: 3,
-                style: C.LabelStyle.FILL_AND_OUTLINE,
-                verticalOrigin: C.VerticalOrigin.BOTTOM,
-                pixelOffset: new C.Cartesian2(0, -9),
-                disableDepthTestDistance: Number.POSITIVE_INFINITY, // stay visible above tiles
-                distanceDisplayCondition: new C.DistanceDisplayCondition(200.0, 10000000.0) // hide when extremely close, show when far
-              }
             });
           } catch(e) {
             console.error("Error creating 3D Tileset or Label for " + loc.name, e);
