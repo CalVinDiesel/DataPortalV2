@@ -171,11 +171,7 @@ class PurchaseQuotationController extends Controller
             'status'               => 'required|in:' . implode(',', PurchaseQuotation::STATUSES),
             'admin_notes'          => 'nullable|string|max:2000',
             'rejection_reason'     => 'nullable|string|max:2000',
-            'quoted_price'         => 'nullable|numeric|min:0',
-            'bank_name'            => 'nullable|string|max:255',
-            'bank_account_number'  => 'nullable|string|max:100',
-            'bank_account_name'    => 'nullable|string|max:255',
-            'payment_deadline'     => 'nullable|date',
+            'quotation_pdf'        => 'nullable|file|mimes:pdf|max:20480', // max 20MB
         ]);
 
         $newStatus = $request->status;
@@ -196,12 +192,17 @@ class PurchaseQuotationController extends Controller
             'rejection_reason'     => $request->rejection_reason,
         ];
 
-        // Only update bank/price fields when provided
-        if ($request->has('quoted_price'))        $updateData['quoted_price']         = $request->quoted_price;
-        if ($request->has('bank_name'))            $updateData['bank_name']             = $request->bank_name;
-        if ($request->has('bank_account_number')) $updateData['bank_account_number']   = $request->bank_account_number;
-        if ($request->has('bank_account_name'))   $updateData['bank_account_name']     = $request->bank_account_name;
-        if ($request->has('payment_deadline'))    $updateData['payment_deadline']      = $request->payment_deadline;
+        // Handle quotation PDF upload (only relevant when status = quoted)
+        if ($request->hasFile('quotation_pdf') && $request->file('quotation_pdf')->isValid()) {
+            // Delete old PDF if it exists
+            if ($quotation->quotation_pdf_path && Storage::disk('local')->exists($quotation->quotation_pdf_path)) {
+                Storage::disk('local')->delete($quotation->quotation_pdf_path);
+            }
+            $file = $request->file('quotation_pdf');
+            $filename = 'quotation_' . $quotation->purchase_id . '_' . time() . '.pdf';
+            $path = $file->storeAs('quotation_pdfs/' . $quotation->purchase_id, $filename, 'local');
+            $updateData['quotation_pdf_path'] = $path;
+        }
 
         // Stamp timestamps on key transitions
         if ($newStatus === 'quoted' && $oldStatus !== 'quoted') {
@@ -247,7 +248,6 @@ class PurchaseQuotationController extends Controller
             }
         }
 
-
         $quotation->update($updateData);
         $quotation->refresh()->load(['user', 'mapData']);
 
@@ -257,16 +257,22 @@ class PurchaseQuotationController extends Controller
         }
 
         // Send email to user when admin sends a formal quotation
+        // Can be triggered either on first transition OR if admin explicitly requests email send
         $emailSent = false;
-        if ($newStatus === 'quoted' && $oldStatus !== 'quoted') {
-            try {
-                Mail::to($quotation->user_email)->send(new QuotationSentToUser($quotation));
-                $emailSent = true;
-            } catch (\Exception $e) {
-                Log::error('QuotationSentToUser mail failed', [
-                    'purchase_id' => $quotation->purchase_id,
-                    'error'       => $e->getMessage(),
-                ]);
+        $sendEmail = $request->boolean('send_email', false);
+
+        if ($newStatus === 'quoted' && ($sendEmail || $oldStatus !== 'quoted')) {
+            // Only auto-send on first transition; on re-send, require explicit send_email=true
+            if ($oldStatus !== 'quoted' || $sendEmail) {
+                try {
+                    Mail::to($quotation->user_email)->send(new QuotationSentToUser($quotation));
+                    $emailSent = true;
+                } catch (\Exception $e) {
+                    Log::error('QuotationSentToUser mail failed', [
+                        'purchase_id' => $quotation->purchase_id,
+                        'error'       => $e->getMessage(),
+                    ]);
+                }
             }
         }
 
@@ -275,6 +281,44 @@ class PurchaseQuotationController extends Controller
             'message'    => 'Quotation updated successfully.' . ($emailSent ? ' Quotation email sent to client.' : ''),
             'email_sent' => $emailSent,
             'data'       => $this->formatQuotationForApi($quotation),
+        ]);
+    }
+
+    /**
+     * Admin: stream/download the uploaded quotation PDF.
+     */
+    public function adminStreamQuotationPdf($id)
+    {
+        $quotation = PurchaseQuotation::findOrFail($id);
+
+        if (!$quotation->quotation_pdf_path || !Storage::disk('local')->exists($quotation->quotation_pdf_path)) {
+            abort(404, 'Quotation PDF not found.');
+        }
+
+        $filename = 'Quotation_' . $quotation->purchase_id . '.pdf';
+        return Storage::disk('local')->download($quotation->quotation_pdf_path, $filename, [
+            'Content-Type' => 'application/pdf',
+        ]);
+    }
+
+    /**
+     * Client: download the formal quotation PDF for their own quotation.
+     */
+    public function clientDownloadQuotationPdf(Request $request, $id)
+    {
+        $user = Auth::user();
+        $quotation = PurchaseQuotation::where('id', $id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        if (!$quotation->quotation_pdf_path || !Storage::disk('local')->exists($quotation->quotation_pdf_path)) {
+            abort(404, 'Quotation PDF not available yet.');
+        }
+
+        $filename = 'Quotation_' . $quotation->purchase_id . '.pdf';
+        return Storage::disk('local')->download($quotation->quotation_pdf_path, $filename, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
 
@@ -715,6 +759,13 @@ class PurchaseQuotationController extends Controller
             'rejection_reason'      => $q->rejection_reason,
             'quoted_price'          => $q->quoted_price,
             'quoted_at'             => $q->quoted_at?->format('d M Y, h:i A'),
+            'quotation_pdf_path'    => $q->quotation_pdf_path,
+            'quotation_pdf_url'     => $q->quotation_pdf_path
+                ? url('/api/admin/purchase-quotations/' . $q->id . '/quotation-pdf')
+                : null,
+            'quotation_pdf_client_url' => $q->quotation_pdf_path
+                ? url('/api/purchase-quotation/' . $q->id . '/quotation-pdf')
+                : null,
             'bank_name'             => $q->bank_name,
             'bank_account_number'   => $q->bank_account_number,
             'bank_account_name'     => $q->bank_account_name,

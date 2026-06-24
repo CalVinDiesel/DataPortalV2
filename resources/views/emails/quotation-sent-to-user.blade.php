@@ -47,7 +47,7 @@
         </div>
         <div class="body">
             <p>Hello <strong>{{ $quotation->user->name ?? $quotation->user_email }}</strong>,</p>
-            <p>We have reviewed your purchase quotation request and are pleased to present you with the following quotation. Please review the details carefully and proceed with the bank transfer to confirm your order.</p>
+            <p>We have reviewed your purchase quotation request and are pleased to present you with a formal quotation. Please see the attached PDF quotation for details including pricing, bank transfer information, and payment instructions.</p>
 
             <div style="text-align: center;">
                 <div class="badge-id">📋 {{ $quotation->purchase_id }}</div>
@@ -56,20 +56,20 @@
             <p class="section-title">📍 Order Details</p>
             <table class="info-table">
                 <tr>
-                    <td>3D Model / Location</td>
-                    <td><strong>{{ $quotation->mapData->title ?? $quotation->map_data_id }}</strong></td>
+                    <td style="padding: 10px 14px; font-size: 14px; color: #888; font-weight: 600; width: 40%;">3D Model / Location</td>
+                    <td style="padding: 10px 14px; font-size: 14px;"><strong>{{ $quotation->mapData->title ?? $quotation->map_data_id }}</strong></td>
                 </tr>
                 <tr>
-                    <td>Date Requested</td>
-                    <td>{{ $quotation->created_at->format('d M Y, h:i A') }}</td>
+                    <td style="padding: 10px 14px; font-size: 14px; color: #888; font-weight: 600;">Date Requested</td>
+                    <td style="padding: 10px 14px; font-size: 14px;">{{ $quotation->created_at->format('d M Y, h:i A') }}</td>
                 </tr>
                 <tr>
-                    <td>Quotation Date</td>
-                    <td>{{ $quotation->quoted_at ? $quotation->quoted_at->format('d M Y, h:i A') : now()->format('d M Y, h:i A') }}</td>
+                    <td style="padding: 10px 14px; font-size: 14px; color: #888; font-weight: 600;">Quotation Date</td>
+                    <td style="padding: 10px 14px; font-size: 14px;">{{ $quotation->quoted_at ? $quotation->quoted_at->format('d M Y, h:i A') : now()->format('d M Y, h:i A') }}</td>
                 </tr>
                 <tr>
-                    <td>Output Formats</td>
-                    <td>
+                    <td style="padding: 10px 14px; font-size: 14px; color: #888; font-weight: 600;">Output Formats</td>
+                    <td style="padding: 10px 14px; font-size: 14px;">
                         @if(is_array($quotation->output_categories))
                             @foreach($quotation->output_categories as $cat)
                                 <span class="tag">{{ $cat }}</span>
@@ -80,47 +80,6 @@
                     </td>
                 </tr>
             </table>
-
-            {{-- Quoted Price --}}
-            <div class="price-box">
-                <div>
-                    <span class="currency">RM</span><span class="amount">{{ number_format($quotation->quoted_price, 2) }}</span>
-                </div>
-                <div class="label">Total Quoted Price (inclusive of all formats selected)</div>
-            </div>
-
-            {{-- Bank Payment Details --}}
-            <div class="bank-box">
-                <h3>🏦 Bank Transfer Details</h3>
-                <div class="bank-row">
-                    <span class="bank-label">Bank Name</span>
-                    <span class="bank-value">{{ $quotation->bank_name ?? '—' }}</span>
-                </div>
-                <div class="bank-row">
-                    <span class="bank-label">Account Number</span>
-                    <span class="bank-value">{{ $quotation->bank_account_number ?? '—' }}</span>
-                </div>
-                <div class="bank-row">
-                    <span class="bank-label">Account Holder Name</span>
-                    <span class="bank-value">{{ $quotation->bank_account_name ?? '—' }}</span>
-                </div>
-                <div class="bank-row">
-                    <span class="bank-label">Amount to Transfer</span>
-                    <span class="bank-value" style="color: #059669;">RM {{ number_format($quotation->quoted_price, 2) }}</span>
-                </div>
-                @if($quotation->payment_deadline)
-                <div class="bank-row">
-                    <span class="bank-label">Payment Deadline</span>
-                    <span class="bank-value" style="color: #dc2626;">{{ $quotation->payment_deadline->format('d M Y') }}</span>
-                </div>
-                @endif
-            </div>
-
-            @if($quotation->payment_deadline)
-            <div class="deadline-box">
-                ⚠️ <strong>Payment Deadline: {{ $quotation->payment_deadline->format('d M Y') }}</strong> — Please ensure payment is made before this date to avoid cancellation of your quotation.
-            </div>
-            @endif
 
             @if($quotation->current_admin_note)
             <div class="notes-box">
@@ -145,15 +104,15 @@
             <ul class="steps-list">
                 <li>
                     <div class="step-num">1</div>
-                    <div>Transfer <strong>RM {{ number_format($quotation->quoted_price, 2) }}</strong> to the bank account listed above before the payment deadline.</div>
+                    <div>Open the attached <strong>PDF quotation</strong> to view pricing and payment bank details.</div>
                 </li>
                 <li>
                     <div class="step-num">2</div>
-                    <div>After making the transfer, please keep your <strong>payment receipt / screenshot</strong> as proof of payment.</div>
+                    <div>Follow the instructions inside the PDF to make your bank transfer.</div>
                 </li>
                 <li>
                     <div class="step-num">3</div>
-                    <div>Our team will verify your payment and begin processing your 3D model data. You will receive a notification once your order is being processed.</div>
+                    <div>After transfer, go to the portal and upload your <strong>payment receipt / screenshot</strong>.</div>
                 </li>
                 <li>
                     <div class="step-num">4</div>

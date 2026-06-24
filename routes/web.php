@@ -193,6 +193,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/purchase-quotation/store', [\App\Http\Controllers\PurchaseQuotationController::class, 'store'])->name('purchase_quotation.store');
     Route::get('/purchase-quotation/my', [\App\Http\Controllers\PurchaseQuotationController::class, 'my'])->name('purchase_quotation.my');
     Route::get('/api/purchase-quotation/{id}/download', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientDownload'])->name('purchase_quotation.download');
+    Route::get('/api/purchase-quotation/{id}/quotation-pdf', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientDownloadQuotationPdf'])->name('purchase_quotation.pdf');
     Route::get('/api/purchase-quotation/{id}/status', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientCheckStatus'])->name('purchase_quotation.status');
 
     // 🚀 SESSION-SYNC (v271): Moved from api.php to ensure stable session access for AJAX
@@ -248,8 +249,10 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
     Route::get('/api/admin/purchase-quotations/{id}', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminShow']);
     Route::delete('/api/admin/purchase-quotations/{id}', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminDestroy']);
     Route::patch('/api/admin/purchase-quotations/{id}/status', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminUpdateStatus']);
+    Route::post('/api/admin/purchase-quotations/{id}/status', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminUpdateStatus']);
     Route::patch('/api/admin/purchase-quotations/{id}/delivery', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminToggleDelivery']);
     Route::get('/api/admin/purchase-quotations/{id}/check-delivery', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminCheckDelivery']);
+    Route::get('/api/admin/purchase-quotations/{id}/quotation-pdf', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminStreamQuotationPdf']);
 
     Route::post('/admin/client-uploads/check-sftp-status', [UploadController::class, 'checkSftpStatus'])
         ->name('admin.client_uploads.check_sftp_status');

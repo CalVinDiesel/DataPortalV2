@@ -18,6 +18,7 @@ class PurchaseQuotation extends Model
         'rejection_reason',
         'quoted_price',
         'quoted_at',
+        'quotation_pdf_path',
         'bank_name',
         'bank_account_number',
         'bank_account_name',

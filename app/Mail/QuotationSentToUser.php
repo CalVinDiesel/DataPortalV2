@@ -9,6 +9,8 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use App\Models\PurchaseQuotation;
 
+use Illuminate\Mail\Mailables\Attachment;
+
 class QuotationSentToUser extends Mailable
 {
     use Queueable, SerializesModels;
@@ -36,6 +38,13 @@ class QuotationSentToUser extends Mailable
 
     public function attachments(): array
     {
+        if ($this->quotation->quotation_pdf_path) {
+            return [
+                Attachment::fromStorageDisk('local', $this->quotation->quotation_pdf_path)
+                    ->as('Quotation_' . $this->quotation->purchase_id . '.pdf')
+                    ->withMime('application/pdf'),
+            ];
+        }
         return [];
     }
 }

@@ -225,7 +225,7 @@
                     <th>3D Model</th>
                     <th>Output Formats</th>
                     <th>Date</th>
-                    <th>Quoted Price</th>
+                    <th>Quotation PDF</th>
                     <th>Status</th>
                     <th></th>
                   </tr>
@@ -322,37 +322,34 @@
                 <div class="form-text" id="statusHelpText"></div>
               </div>
 
-              <!-- Pricing section (shown when status = quoted) -->
-              <div class="admin-form-section cond-section" id="sectionPricing">
-                <h6>💰 Pricing</h6>
-                <div class="mb-2">
-                  <label class="form-label small fw-semibold">Quoted Price (RM) <span class="text-danger">*</span></label>
-                  <div class="input-group">
-                    <span class="input-group-text">RM</span>
-                    <input type="number" id="quotedPrice" class="form-control" min="0" step="0.01" placeholder="e.g. 500.00">
+              <!-- PDF Upload section (shown when status = quoted) -->
+              <div class="admin-form-section cond-section" id="sectionQuotationPdf">
+                <h6>📄 Upload Quotation PDF <span class="text-danger">*</span></h6>
+                <div class="mb-3">
+                  <div class="border border-dashed p-3 text-center rounded bg-light position-relative" id="pdfUploadZone" style="border-style: dashed !important; border-width: 2px !important; cursor: pointer;">
+                    <input type="file" id="quotationPdfInput" accept=".pdf" class="position-absolute w-100 h-100 top-0 start-0 opacity-0" style="cursor: pointer;">
+                    <div id="pdfUploadPrompt">
+                      <i class="bx bx-cloud-upload display-6 text-primary mb-2"></i>
+                      <p class="mb-1 fw-semibold">Click to upload or drag & drop</p>
+                      <p class="text-muted small mb-0">Only PDF files (max 20MB)</p>
+                    </div>
+                    <div id="pdfSelectedInfo" class="d-none">
+                      <i class="bx bxs-file-pdf display-6 text-danger mb-2"></i>
+                      <p id="pdfFileName" class="mb-1 fw-semibold text-truncate px-3"></p>
+                      <p id="pdfFileSize" class="text-muted small mb-2"></p>
+                      <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSelectedPdf(event)">Remove</button>
+                    </div>
                   </div>
+                  <div class="mt-2 text-danger small d-none" id="pdfUploadError"></div>
                 </div>
-              </div>
 
-              <!-- Bank Details section (shown when status = quoted) -->
-              <div class="admin-form-section cond-section" id="sectionBankDetails">
-                <h6>🏦 Bank Payment Details</h6>
-                <div class="row g-2">
-                  <div class="col-12">
-                    <label class="form-label small fw-semibold">Bank Name <span class="text-danger">*</span></label>
-                    <input type="text" id="bankName" class="form-control" placeholder="e.g. Maybank">
-                  </div>
-                  <div class="col-sm-6">
-                    <label class="form-label small fw-semibold">Account Number <span class="text-danger">*</span></label>
-                    <input type="text" id="bankAccountNumber" class="form-control" placeholder="e.g. 1234-5678-9012">
-                  </div>
-                  <div class="col-sm-6">
-                    <label class="form-label small fw-semibold">Account Holder Name <span class="text-danger">*</span></label>
-                    <input type="text" id="bankAccountName" class="form-control" placeholder="e.g. Tema Digital Sdn Bhd">
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label small fw-semibold">Payment Deadline</label>
-                    <input type="date" id="paymentDeadline" class="form-control">
+                <!-- Existing Quotation PDF if any -->
+                <div id="existingPdfContainer" class="d-none mt-2">
+                  <span class="small fw-semibold text-muted">Current Quotation PDF:</span>
+                  <div class="d-flex align-items-center gap-2 mt-1">
+                    <a id="btnDownloadQuotationPdf" href="#" target="_blank" class="btn btn-sm btn-outline-primary">
+                      <i class="bx bx-download me-1"></i> Download Quotation PDF
+                    </a>
                   </div>
                 </div>
               </div>
@@ -629,14 +626,16 @@
       var fmts = (q.output_categories || []).map(function (c) {
         return '<span class="fmt-tag">' + esc(c) + '</span>';
       }).join('');
-      var price = q.quoted_price ? 'RM ' + parseFloat(q.quoted_price).toFixed(2) : '<span class="text-muted">—</span>';
+      var pdfHtml = q.quotation_pdf_url 
+        ? '<a href="' + q.quotation_pdf_url + '" target="_blank" class="btn btn-xs btn-outline-danger py-0 px-2" style="font-size: 11px;" onclick="event.stopPropagation();"><i class="bx bxs-file-pdf me-1"></i>PDF</a>'
+        : '<span class="text-muted">—</span>';
       return '<tr data-id="' + q.id + '">' +
         '<td class="purchase-id-cell">' + esc(q.purchase_id) + '</td>' +
         '<td><div class="fw-semibold" style="font-size:13px;">' + esc(q.user_email) + '</div><div class="text-muted" style="font-size:11.5px;">' + esc(q.user_name) + '</div></td>' +
         '<td>' + esc(q.map_title) + '</td>' +
         '<td>' + (fmts || '<span class="text-muted">—</span>') + '</td>' +
         '<td style="white-space:nowrap;font-size:12px;">' + esc(q.created_at) + '</td>' +
-        '<td><strong>' + price + '</strong></td>' +
+        '<td><strong>' + pdfHtml + '</strong></td>' +
         '<td><span class="sb sb-' + esc(q.status) + '"><span class="dot"></span>' + esc(q.status_label) + '</span></td>' +
         '<td><button class="btn btn-sm btn-outline-primary" onclick="openDetail(' + q.id + ',event)"><i class="bx bx-edit me-1"></i>Manage</button></td>' +
       '</tr>';
@@ -732,11 +731,19 @@
     document.getElementById('statusSelect').value     = q.status;
     document.getElementById('adminNotes').value       = (q.admin_notes && q.admin_notes[q.status]) || '';
     document.getElementById('rejectionReason').value  = q.rejection_reason || '';
-    document.getElementById('quotedPrice').value      = q.quoted_price || '';
-    document.getElementById('bankName').value         = q.bank_name || '';
-    document.getElementById('bankAccountNumber').value= q.bank_account_number || '';
-    document.getElementById('bankAccountName').value  = q.bank_account_name || '';
-    document.getElementById('paymentDeadline').value  = q.payment_deadline || '';
+    // Reset PDF input & visual state
+    resetPdfUploadState();
+
+    // Check existing PDF
+    var existingPdfContainer = document.getElementById('existingPdfContainer');
+    var btnDownloadQuotationPdf = document.getElementById('btnDownloadQuotationPdf');
+    if (q.quotation_pdf_url) {
+      existingPdfContainer.classList.remove('d-none');
+      btnDownloadQuotationPdf.href = q.quotation_pdf_url;
+    } else {
+      existingPdfContainer.classList.add('d-none');
+      btnDownloadQuotationPdf.href = '#';
+    }
 
     updateConditionalSections(q.status);
     showExistingData(q);
@@ -781,14 +788,10 @@
   function showExistingData(q) {
     var sec = document.getElementById('existingDataSection');
     var con = document.getElementById('existingDataContent');
-    if (q.quoted_price || q.bank_name || q.payment_deadline || q.rejection_reason) {
+    if (q.quotation_pdf_path || q.rejection_reason || q.quoted_at || q.processing_started_at) {
       sec.classList.remove('d-none');
       var lines = [];
-      if (q.quoted_price)         lines.push('<strong>Quoted Price:</strong> RM ' + parseFloat(q.quoted_price).toFixed(2));
-      if (q.bank_name)            lines.push('<strong>Bank:</strong> ' + esc(q.bank_name));
-      if (q.bank_account_number)  lines.push('<strong>Account No:</strong> ' + esc(q.bank_account_number));
-      if (q.bank_account_name)    lines.push('<strong>Account Name:</strong> ' + esc(q.bank_account_name));
-      if (q.payment_deadline_fmt) lines.push('<strong>Payment Deadline:</strong> ' + esc(q.payment_deadline_fmt));
+      if (q.quotation_pdf_path)   lines.push('<strong>Quoted PDF:</strong> Uploaded');
       if (q.quoted_at)            lines.push('<strong>Quoted At:</strong> ' + esc(q.quoted_at));
       if (q.processing_started_at)lines.push('<strong>Processing Started:</strong> ' + esc(q.processing_started_at));
       if (q.rejection_reason)     lines.push('<strong>Rejection Reason:</strong> ' + esc(q.rejection_reason));
@@ -824,8 +827,7 @@
     document.getElementById('statusHelpText').textContent = helpTexts[status] || '';
 
     // Show/hide conditional sections
-    document.getElementById('sectionPricing').classList.toggle('visible', status === 'quoted');
-    document.getElementById('sectionBankDetails').classList.toggle('visible', status === 'quoted');
+    document.getElementById('sectionQuotationPdf').classList.toggle('visible', status === 'quoted');
     document.getElementById('sectionRejection').classList.toggle('visible', status === 'rejected');
     document.getElementById('sectionDelivery').classList.toggle('visible', status === 'completed');
 
@@ -853,40 +855,36 @@
     if (!currentQuotation) return;
     var status = document.getElementById('statusSelect').value;
 
-    // Validate quoted fields
+    // Validate quotation PDF upload
     if (status === 'quoted') {
-      var price = document.getElementById('quotedPrice').value;
-      var bName = document.getElementById('bankName').value.trim();
-      var bNum  = document.getElementById('bankAccountNumber').value.trim();
-      var bAcc  = document.getElementById('bankAccountName').value.trim();
-      if (!price || parseFloat(price) <= 0) {
-        showModalAlert('Please enter a valid quoted price.', false); return;
-      }
-      if (!bName || !bNum || !bAcc) {
-        showModalAlert('Please fill in all bank payment details.', false); return;
+      var hasExisting = !!currentQuotation.quotation_pdf_path;
+      var hasNew = document.getElementById('quotationPdfInput').files.length > 0;
+      if (!hasExisting && !hasNew) {
+        showModalAlert('Please upload a quotation PDF file.', false);
+        return;
       }
     }
 
-    var payload = {
-      status:               status,
-      admin_notes:          document.getElementById('adminNotes').value.trim(),
-      rejection_reason:     document.getElementById('rejectionReason').value.trim(),
-      quoted_price:         document.getElementById('quotedPrice').value || null,
-      bank_name:            document.getElementById('bankName').value.trim() || null,
-      bank_account_number:  document.getElementById('bankAccountNumber').value.trim() || null,
-      bank_account_name:    document.getElementById('bankAccountName').value.trim() || null,
-      payment_deadline:     document.getElementById('paymentDeadline').value || null,
-      _token:               CSRF,
-    };
+    var formData = new FormData();
+    formData.append('status', status);
+    formData.append('admin_notes', document.getElementById('adminNotes').value.trim());
+    formData.append('rejection_reason', document.getElementById('rejectionReason').value.trim());
+    formData.append('send_email', sendEmail ? '1' : '0');
+    formData.append('_token', CSRF);
+
+    var fileInput = document.getElementById('quotationPdfInput');
+    if (fileInput && fileInput.files.length > 0) {
+      formData.append('quotation_pdf', fileInput.files[0]);
+    }
 
     setButtonLoading(true);
     clearModalAlert();
 
     fetch(API + '/api/admin/purchase-quotations/' + currentQuotation.id + '/status', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': CSRF },
       credentials: 'include',
-      body: JSON.stringify(payload),
+      body: formData,
     })
     .then(function (r) { return r.json(); })
     .then(function (data) {
@@ -1316,6 +1314,67 @@
     return String(str)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;')
       .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Handle PDF file selection visual effects
+  document.addEventListener('DOMContentLoaded', function () {
+    var pdfInput = document.getElementById('quotationPdfInput');
+    if (pdfInput) {
+      pdfInput.addEventListener('change', function () {
+        var file = this.files[0];
+        if (file) {
+          if (file.type !== 'application/pdf') {
+            showPdfUploadError('Please select a valid PDF file.');
+            resetPdfUploadState();
+            return;
+          }
+          if (file.size > 20 * 1024 * 1024) {
+            showPdfUploadError('File size exceeds the 20MB limit.');
+            resetPdfUploadState();
+            return;
+          }
+          hidePdfUploadError();
+          document.getElementById('pdfUploadPrompt').classList.add('d-none');
+          document.getElementById('pdfSelectedInfo').classList.remove('d-none');
+          document.getElementById('pdfFileName').textContent = file.name;
+          document.getElementById('pdfFileSize').textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+      });
+    }
+  });
+
+  window.removeSelectedPdf = function (event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    resetPdfUploadState();
+  };
+
+  function resetPdfUploadState() {
+    var pdfInput = document.getElementById('quotationPdfInput');
+    if (pdfInput) pdfInput.value = '';
+    var prompt = document.getElementById('pdfUploadPrompt');
+    if (prompt) prompt.classList.remove('d-none');
+    var info = document.getElementById('pdfSelectedInfo');
+    if (info) info.classList.add('d-none');
+    hidePdfUploadError();
+  }
+
+  function showPdfUploadError(msg) {
+    var el = document.getElementById('pdfUploadError');
+    if (el) {
+      el.textContent = msg;
+      el.classList.remove('d-none');
+    }
+  }
+
+  function hidePdfUploadError() {
+    var el = document.getElementById('pdfUploadError');
+    if (el) {
+      el.classList.add('d-none');
+      el.textContent = '';
+    }
   }
 
 })();

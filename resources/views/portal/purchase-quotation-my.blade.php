@@ -253,6 +253,18 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
+    /* Download Quotation PDF button */
+    .btn-download-quotation {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff; font-weight: 700; border: none;
+      border-radius: 10px; padding: .65rem 1.5rem;
+      font-size: 14px; text-decoration: none;
+      transition: transform .2s, box-shadow .2s;
+      cursor: pointer;
+    }
+    .btn-download-quotation:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,.35); color: #fff; }
+
     /* Mobile toggler icon */
     .landing-navbar .navbar-toggler i {
       color: rgba(255, 255, 255, 0.9) !important;
@@ -481,52 +493,26 @@
                   </div>
                 </div>
 
-                <!-- Bank Payment Details (only when quoted/awaiting_payment/processing/completed) -->
-                @if(in_array($quote->status, ['quoted','awaiting_payment','processing','completed']) && $quote->quoted_price)
-                  <div class="bank-payment-box">
-                    <h6><i class="bx bx-money"></i> Payment Details</h6>
-                    <div class="bank-row">
-                      <span class="bl">Quoted Price</span>
-                      <span class="bv price">RM {{ number_format($quote->quoted_price, 2) }}</span>
-                    </div>
-                    @if($quote->bank_name)
-                    <div class="bank-row">
-                      <span class="bl">Bank Name</span>
-                      <span class="bv">{{ $quote->bank_name }}</span>
-                    </div>
-                    @endif
-                    @if($quote->bank_account_number)
-                    <div class="bank-row">
-                      <span class="bl">Account Number</span>
-                      <span class="bv" style="font-family:monospace;">{{ $quote->bank_account_number }}</span>
-                    </div>
-                    @endif
-                    @if($quote->bank_account_name)
-                    <div class="bank-row">
-                      <span class="bl">Account Holder</span>
-                      <span class="bv">{{ $quote->bank_account_name }}</span>
-                    </div>
-                    @endif
-                    @if($quote->payment_deadline)
-                    <div class="bank-row">
-                      <span class="bl">Payment Deadline</span>
-                      <span class="bv deadline">{{ $quote->payment_deadline->format('d M Y') }}</span>
-                    </div>
-                    @endif
-                    <div class="bank-row" style="padding-top:.75rem;">
-                      <span class="bl">Status</span>
-                      <span class="status-badge sb-{{ $quote->status }}">
-                        <span class="dot"></span>
-                        {{ \App\Models\PurchaseQuotation::STATUS_LABELS[$quote->status] ?? ucfirst($quote->status) }}
-                      </span>
-                    </div>
+                <!-- Quotation PDF Download (only when quoted / awaiting_payment / processing / completed) -->
+                @if(in_array($quote->status, ['quoted','awaiting_payment','processing','completed']) && $quote->quotation_pdf_path)
+                  <div class="bank-payment-box" style="background: linear-gradient(135deg, #f0f7ff, #e0f2fe); border-color: #7dd3fc;">
+                    <h6 style="color: #0369a1;"><i class="bx bxs-file-pdf"></i> Quotation Details</h6>
+                    <p class="small text-muted mb-3">Your formal quotation PDF is ready for review. Please download it to view price details, bank details, and payment instructions.</p>
+                    
+                    <a
+                      href="{{ route('purchase_quotation.pdf', $quote->id) }}"
+                      class="btn-download-quotation"
+                      target="_blank"
+                    >
+                      <i class="bx bx-download" style="font-size:18px;"></i>
+                      Download Quotation PDF
+                    </a>
                   </div>
 
                   @if(in_array($quote->status, ['quoted','awaiting_payment']))
                     <div class="alert alert-warning mt-3 mb-3 small" role="alert">
                       <i class="bx bx-info-circle me-1"></i>
-                      <strong>Action required:</strong> Please transfer <strong>RM {{ number_format($quote->quoted_price, 2) }}</strong> to the bank account above
-                      @if($quote->payment_deadline) before <strong>{{ $quote->payment_deadline->format('d M Y') }}</strong>@endif. Keep your payment receipt as proof.
+                      <strong>Action required:</strong> Please transfer the quoted price as specified in the PDF to the bank account listed inside. Upload your payment receipt to confirm your order.
                     </div>
 
                     <div class="alert alert-info p-3 mb-0 small" role="alert" style="background-color: rgba(105, 108, 255, 0.03); border: 1.5px solid rgba(105, 108, 255, 0.15); border-radius: 8px;">
