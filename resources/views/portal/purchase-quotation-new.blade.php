@@ -467,10 +467,14 @@
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
 
   <!-- Initialize Cesium map using common script files (matching overview map exactly) -->
+  <script>
+    window.cesiumDefaultSceneMode = Cesium.SceneMode.SCENE3D;
+  </script>
   <script src="{{ asset('assets') }}/js/cesium-map.js?v={{ time() }}"></script>
   <script src="{{ asset('assets') }}/js/cesium-map-controls.js?v={{ time() }}"></script>
   <script>
     (function() {
+      var C = Cesium;
       // Force initialization of Cesium map if it hasn't run yet (resolves timing issues with window load event)
       if (typeof initializeCesium === 'function' && !window.cesiumViewer) {
         try {

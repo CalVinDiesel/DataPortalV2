@@ -35,7 +35,7 @@ function initializeCesium(containerId = 'cesiumContainer') {
         selectionIndicator: false,
         timeline: false,
         navigationHelpButton: false,
-        sceneMode: Cesium.SceneMode.SCENE2D,
+        sceneMode: typeof window.cesiumDefaultSceneMode !== 'undefined' ? window.cesiumDefaultSceneMode : Cesium.SceneMode.SCENE2D,
         requestRenderMode: true,
         useDefaultRenderLoop: true,
         baseLayer: new Cesium.ImageryLayer(new Cesium.OpenStreetMapImageryProvider({
@@ -50,14 +50,32 @@ function initializeCesium(containerId = 'cesiumContainer') {
         return null;
     }
 
+    // Lock camera if initializing in 3D to simulate 2D view
+    if (viewerOptions.sceneMode === Cesium.SceneMode.SCENE3D) {
+        var controller = cesiumViewer.scene.screenSpaceCameraController;
+        controller.rotateEventTypes = [];
+        controller.tiltEventTypes = [];
+        controller.lookEventTypes = [];
+        controller.translateEventTypes = [Cesium.CameraEventType.LEFT_DRAG];
+        controller.zoomEventTypes = [Cesium.CameraEventType.WHEEL, Cesium.CameraEventType.PINCH];
+    }
+
     // High-visibility lighting
     cesiumViewer.scene.globe.enableLighting = false; // Off for 2D dashboard clarity
     cesiumViewer.scene.highDynamicRange = true;
 
     // Zoom to Sabah
-    cesiumViewer.camera.setView({
+    var setViewOptions = {
         destination: Cesium.Cartesian3.fromDegrees(116.46905, 5.63444, 710000)
-    });
+    };
+    if (viewerOptions.sceneMode === Cesium.SceneMode.SCENE3D) {
+        setViewOptions.orientation = {
+            heading: 0.0,
+            pitch: Cesium.Math.toRadians(-90),
+            roll: 0.0
+        };
+    }
+    cesiumViewer.camera.setView(setViewOptions);
 
     window.cesiumViewer = cesiumViewer;
     return cesiumViewer;
