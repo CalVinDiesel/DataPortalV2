@@ -15,8 +15,8 @@
   <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
 
   <!-- CesiumJS for embedded map preview -->
-  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/Cesium.js"></script>
 
   <style>
     /* === Admin Glass Nav === */
@@ -954,29 +954,47 @@
     }
 
     try {
+      // Use SCENE3D so 3D Tilesets render correctly, but lock the camera top-down
       cesiumViewer = new Cesium.Viewer('adminCesiumMap', {
         timeline: false, animation: false, baseLayerPicker: false,
         fullscreenButton: false, homeButton: false, sceneModePicker: false,
         navigationHelpButton: false, geocoder: false, vrButton: false,
         infoBox: false, selectionIndicator: false,
+        sceneMode: Cesium.SceneMode.SCENE3D,
+        requestRenderMode: true,
         terrainProvider: new Cesium.EllipsoidTerrainProvider(),
         baseLayer: new Cesium.ImageryLayer(new Cesium.OpenStreetMapImageryProvider({
           url: 'https://tile.openstreetmap.org/'
         }))
       });
       cesiumViewer.scene.globe.show = true;
+      cesiumViewer.scene.globe.enableLighting = false;
 
-      // Load 3D tileset if available
+      // ── Lock camera to pure top-down 2D view (no tilt, no orbit, no rotation) ──
+      var ctrl = cesiumViewer.scene.screenSpaceCameraController;
+      ctrl.enableTilt  = false;
+      ctrl.enableLook  = false;
+      ctrl.tiltEventTypes  = [];
+      ctrl.lookEventTypes  = [];
+      // Pan only via left drag; zoom via scroll/pinch
+      ctrl.rotateEventTypes = [Cesium.CameraEventType.LEFT_DRAG];
+      ctrl.zoomEventTypes   = [Cesium.CameraEventType.WHEEL, Cesium.CameraEventType.PINCH];
+
+      // ── Load 3D Tileset if available (add to scene, do NOT zoom to it) ──
       if (q.map_3d_tiles) {
-        Cesium.Cesium3DTileset.fromUrl(q.map_3d_tiles).then(function (tileset) {
+        var tilesetResource = new Cesium.Resource({
+          url: q.map_3d_tiles,
+          proxy: new Cesium.DefaultProxy('/proxy?url=')
+        });
+        Cesium.Cesium3DTileset.fromUrl(tilesetResource).then(function (tileset) {
           cesiumViewer.scene.primitives.add(tileset);
-          cesiumViewer.zoomTo(tileset);
+          // Do NOT zoomTo the tileset — we want the top-down polygon view
         }).catch(function (err) {
           console.error('[CesiumTilesetError]', err);
         });
       }
 
-      // Draw polygon from area_coordinates
+      // ── Draw polygon from area_coordinates ──
       var coords = q.area_coordinates;
       var positions = [];
 
@@ -1004,24 +1022,45 @@
           }
         });
 
-        // Draw outline draped over 3D Tiles/Terrain (since polygon outline doesn't drape)
-        var outlinePositions = positions;
+        // Polygon outline draped over 3D Tiles/Terrain
         cesiumViewer.entities.add({
           polyline: {
-            positions: outlinePositions,
+            positions: positions,
             width: 3,
             material: Cesium.Color.fromCssColorString('#696cff'),
             classificationType: Cesium.ClassificationType.BOTH
           }
         });
-        cesiumViewer.zoomTo(cesiumViewer.entities);
+
+        // Zoom to the polygon top-down (pitch = -90°, no tilt)
+        cesiumViewer.zoomTo(cesiumViewer.entities).then(function () {
+          cesiumViewer.camera.setView({
+            destination: cesiumViewer.camera.position,
+            orientation: {
+              heading: 0.0,
+              pitch: Cesium.Math.toRadians(-90),
+              roll: 0.0
+            }
+          });
+          cesiumViewer.scene.requestRender();
+        });
+
       } else if (q.map_x_axis && q.map_y_axis) {
+        // Fallback: set top-down view at the model's coordinates
         cesiumViewer.camera.setView({
           destination: Cesium.Cartesian3.fromDegrees(
-            parseFloat(q.map_x_axis), parseFloat(q.map_y_axis), 2000
-          )
+            parseFloat(q.map_x_axis), parseFloat(q.map_y_axis), 5000
+          ),
+          orientation: {
+            heading: 0.0,
+            pitch: Cesium.Math.toRadians(-90),
+            roll: 0.0
+          }
         });
       }
+
+      cesiumViewer.scene.requestRender();
+
     } catch (e) {
       console.error('[CesiumInitError]', e);
       container.innerHTML = '<div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted small"><i class="bx bx-map-alt me-2 fs-3"></i>Map preview unavailable<div class="text-danger mt-2 font-monospace" style="font-size:11px; max-width: 90%; word-break: break-all;">' + esc(e.message || e) + '</div></div>';
