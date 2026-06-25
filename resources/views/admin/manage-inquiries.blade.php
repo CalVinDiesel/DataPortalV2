@@ -1038,15 +1038,12 @@
           }
         });
 
-        cesiumViewer.zoomTo(cesiumViewer.entities).then(function () {
-          cesiumViewer.camera.setView({
-            destination: cesiumViewer.camera.position,
-            orientation: {
-              heading: 0.0,
-              pitch: Cesium.Math.toRadians(-90),
-              roll: 0.0
-            }
-          });
+        var boundingSphere = Cesium.BoundingSphere.fromPoints(positions);
+        var radius = boundingSphere.radius;
+        var zoomRange = Math.max(radius * 3.0, 500.0);
+        var offset = new Cesium.HeadingPitchRange(0.0, Cesium.Math.toRadians(-90), zoomRange);
+
+        cesiumViewer.zoomTo(cesiumViewer.entities, offset).then(function () {
           cesiumViewer.scene.requestRender();
         });
 
