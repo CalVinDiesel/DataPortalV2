@@ -719,7 +719,7 @@
     var points = [];
     if (coords && coords.type === "Polygon" && coords.coordinates && coords.coordinates[0]) {
       var points = coords.coordinates[0];
-      positions = points.map(function (pt) {
+      var positions = points.map(function (pt) {
         return Cesium.Cartesian3.fromDegrees(pt[0], pt[1]);
       });
       points = coords.coordinates[0];
