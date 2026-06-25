@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Your Purchase Quotation – {{ $quotation->purchase_id }}</title>
+    <title>Your Inquiry Quotation - {{ $inquiry->inquiry_id }}</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 0; line-height: 1.7; }
         .wrapper { max-width: 640px; margin: 40px auto; }
@@ -46,45 +46,45 @@
             <p>Please review the details below and proceed with payment</p>
         </div>
         <div class="body">
-            <p>Hello <strong>{{ $quotation->user->name ?? $quotation->user_email }}</strong>,</p>
-            <p>We have reviewed your purchase quotation request and are pleased to present you with a formal quotation. Please see the attached PDF quotation for details including pricing, bank transfer information, and payment instructions.</p>
+            <p>Hello <strong>{{ $inquiry->user->name ?? $inquiry->user_email }}</strong>,</p>
+            <p>We have reviewed your inquiry request and are pleased to present you with a formal quotation. Please see the attached PDF quotation for details including pricing, bank transfer information, and payment instructions.</p>
 
             <div style="text-align: center;">
-                <div class="badge-id">📋 {{ $quotation->purchase_id }}</div>
+                <div class="badge-id">📋 {{ $inquiry->inquiry_id }}</div>
             </div>
 
             <p class="section-title">📍 Order Details</p>
             <table class="info-table">
                 <tr>
                     <td style="padding: 10px 14px; font-size: 14px; color: #888; font-weight: 600; width: 40%;">3D Model / Location</td>
-                    <td style="padding: 10px 14px; font-size: 14px;"><strong>{{ $quotation->mapData->title ?? $quotation->map_data_id }}</strong></td>
+                    <td style="padding: 10px 14px; font-size: 14px;"><strong>{{ $inquiry->mapData->title ?? $inquiry->map_data_id }}</strong></td>
                 </tr>
                 <tr>
                     <td style="padding: 10px 14px; font-size: 14px; color: #888; font-weight: 600;">Date Requested</td>
-                    <td style="padding: 10px 14px; font-size: 14px;">{{ $quotation->created_at->format('d M Y, h:i A') }}</td>
+                    <td style="padding: 10px 14px; font-size: 14px;">{{ $inquiry->created_at->format('d M Y, h:i A') }}</td>
                 </tr>
                 <tr>
                     <td style="padding: 10px 14px; font-size: 14px; color: #888; font-weight: 600;">Quotation Date</td>
-                    <td style="padding: 10px 14px; font-size: 14px;">{{ $quotation->quoted_at ? $quotation->quoted_at->format('d M Y, h:i A') : now()->format('d M Y, h:i A') }}</td>
+                    <td style="padding: 10px 14px; font-size: 14px;">{{ $inquiry->quoted_at ? $inquiry->quoted_at->format('d M Y, h:i A') : now()->format('d M Y, h:i A') }}</td>
                 </tr>
                 <tr>
                     <td style="padding: 10px 14px; font-size: 14px; color: #888; font-weight: 600;">Output Formats</td>
                     <td style="padding: 10px 14px; font-size: 14px;">
-                        @if(is_array($quotation->output_categories))
-                            @foreach($quotation->output_categories as $cat)
+                        @if(is_array($inquiry->output_categories))
+                            @foreach($inquiry->output_categories as $cat)
                                 <span class="tag">{{ $cat }}</span>
                             @endforeach
                         @else
-                            {{ $quotation->output_categories }}
+                            {{ $inquiry->output_categories }}
                         @endif
                     </td>
                 </tr>
             </table>
 
-            @if($quotation->current_admin_note)
+            @if($inquiry->current_admin_note)
             <div class="notes-box">
                 <strong>📝 Notes from Our Team:</strong><br>
-                {{ $quotation->current_admin_note }}
+                {{ $inquiry->current_admin_note }}
             </div>
             @endif
 
@@ -120,13 +120,13 @@
                 </li>
             </ul>
 
-            <a href="{{ url('/purchase-quotation/my') }}" class="cta-btn">View My Quotations</a>
+            <a href="{{ url('/inquiry/my') }}" class="cta-btn">View My Inquiries</a>
 
-            <p style="margin-top: 30px; color: #888; font-size: 13px;">If you have any questions about this quotation, please contact us at <a href="mailto:{{ config('support.email', env('SUPPORT_EMAIL', 'support@3dhub.com')) }}" style="color: #059669;">{{ config('support.email', env('SUPPORT_EMAIL', 'support@3dhub.com')) }}</a>, quoting your Purchase ID <strong>{{ $quotation->purchase_id }}</strong>.</p>
+            <p style="margin-top: 30px; color: #888; font-size: 13px;">If you have any questions about this quotation, please contact us at <a href="mailto:{{ config('support.email', env('SUPPORT_EMAIL', 'support@3dhub.com')) }}" style="color: #059669;">{{ config('support.email', env('SUPPORT_EMAIL', 'support@3dhub.com')) }}</a>, quoting your Inquiry ID <strong>{{ $inquiry->inquiry_id }}</strong>.</p>
         </div>
         <div class="footer">
             &copy; {{ date('Y') }} 3DHub Data Portal. All rights reserved.<br>
-            This email was sent regarding Purchase Quotation {{ $quotation->purchase_id }}.
+            This email was sent regarding Inquiry {{ $inquiry->inquiry_id }}.
         </div>
     </div>
 </body>

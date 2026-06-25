@@ -188,16 +188,16 @@ Route::middleware('auth')->group(function () {
         return view('portal.user-profile');
     })->name('profile');
 
-    // Purchase Quotation Routes
-    Route::get('/purchase-quotation/new', [\App\Http\Controllers\PurchaseQuotationController::class, 'create'])->name('purchase_quotation.new');
-    Route::post('/purchase-quotation/store', [\App\Http\Controllers\PurchaseQuotationController::class, 'store'])->name('purchase_quotation.store');
-    Route::get('/purchase-quotation/my', [\App\Http\Controllers\PurchaseQuotationController::class, 'my'])->name('purchase_quotation.my');
-    Route::get('/api/purchase-quotation/{id}/download', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientDownload'])->name('purchase_quotation.download');
-    Route::get('/api/purchase-quotation/{id}/quotation-pdf', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientDownloadQuotationPdf'])->name('purchase_quotation.pdf');
-    Route::post('/api/purchase-quotation/{id}/payment-receipt', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientUploadReceipt'])->name('purchase_quotation.upload_receipt');
-    Route::get('/api/purchase-quotation/{id}/payment-receipt', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientDownloadPaymentReceipt'])->name('purchase_quotation.receipt');
-    Route::get('/api/purchase-quotation/{id}/status', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientCheckStatus'])->name('purchase_quotation.status');
-    Route::post('/api/purchase-quotation/{id}/accept-disclaimer', [\App\Http\Controllers\PurchaseQuotationController::class, 'acceptDisclaimer'])->name('purchase_quotation.accept_disclaimer');
+    // Inquiry Routes
+    Route::get('/inquiry/new', [\App\Http\Controllers\InquiryController::class, 'create'])->name('inquiry.new');
+    Route::post('/inquiry/store', [\App\Http\Controllers\InquiryController::class, 'store'])->name('inquiry.store');
+    Route::get('/inquiry/my', [\App\Http\Controllers\InquiryController::class, 'my'])->name('inquiry.my');
+    Route::get('/api/inquiry/{id}/download', [\App\Http\Controllers\InquiryController::class, 'clientDownload'])->name('inquiry.download');
+    Route::get('/api/inquiry/{id}/quotation-pdf', [\App\Http\Controllers\InquiryController::class, 'clientDownloadQuotationPdf'])->name('inquiry.pdf');
+    Route::post('/api/inquiry/{id}/payment-receipt', [\App\Http\Controllers\InquiryController::class, 'clientUploadReceipt'])->name('inquiry.upload_receipt');
+    Route::get('/api/inquiry/{id}/payment-receipt', [\App\Http\Controllers\InquiryController::class, 'clientDownloadPaymentReceipt'])->name('inquiry.receipt');
+    Route::get('/api/inquiry/{id}/status', [\App\Http\Controllers\InquiryController::class, 'clientCheckStatus'])->name('inquiry.status');
+    Route::post('/api/inquiry/{id}/accept-disclaimer', [\App\Http\Controllers\InquiryController::class, 'acceptDisclaimer'])->name('inquiry.accept_disclaimer');
 
     // 🚀 SESSION-SYNC (v271): Moved from api.php to ensure stable session access for AJAX
     Route::get('/api/user/my-uploads', [ProjectController::class, 'index']);
@@ -246,17 +246,17 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
         return view('admin.manage-users');
     })->name('admin.manage_users');
 
-    // Purchase Quotation Admin Routes
-    Route::get('/admin/purchase-quotations', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminIndex'])->name('admin.purchase_quotations');
-    Route::get('/api/admin/purchase-quotations', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminList']);
-    Route::get('/api/admin/purchase-quotations/{id}', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminShow']);
-    Route::delete('/api/admin/purchase-quotations/{id}', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminDestroy']);
-    Route::patch('/api/admin/purchase-quotations/{id}/status', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminUpdateStatus']);
-    Route::post('/api/admin/purchase-quotations/{id}/status', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminUpdateStatus']);
-    Route::patch('/api/admin/purchase-quotations/{id}/delivery', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminToggleDelivery']);
-    Route::get('/api/admin/purchase-quotations/{id}/check-delivery', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminCheckDelivery']);
-    Route::get('/api/admin/purchase-quotations/{id}/quotation-pdf', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminStreamQuotationPdf']);
-    Route::get('/api/admin/purchase-quotations/{id}/payment-receipt', [\App\Http\Controllers\PurchaseQuotationController::class, 'adminStreamPaymentReceipt']);
+    // Inquiry Admin Routes
+    Route::get('/admin/inquiries', [\App\Http\Controllers\InquiryController::class, 'adminIndex'])->name('admin.inquiries');
+    Route::get('/api/admin/inquiries', [\App\Http\Controllers\InquiryController::class, 'adminList']);
+    Route::get('/api/admin/inquiries/{id}', [\App\Http\Controllers\InquiryController::class, 'adminShow']);
+    Route::delete('/api/admin/inquiries/{id}', [\App\Http\Controllers\InquiryController::class, 'adminDestroy']);
+    Route::patch('/api/admin/inquiries/{id}/status', [\App\Http\Controllers\InquiryController::class, 'adminUpdateStatus']);
+    Route::post('/api/admin/inquiries/{id}/status', [\App\Http\Controllers\InquiryController::class, 'adminUpdateStatus']);
+    Route::patch('/api/admin/inquiries/{id}/delivery', [\App\Http\Controllers\InquiryController::class, 'adminToggleDelivery']);
+    Route::get('/api/admin/inquiries/{id}/check-delivery', [\App\Http\Controllers\InquiryController::class, 'adminCheckDelivery']);
+    Route::get('/api/admin/inquiries/{id}/quotation-pdf', [\App\Http\Controllers\InquiryController::class, 'adminStreamQuotationPdf']);
+    Route::get('/api/admin/inquiries/{id}/payment-receipt', [\App\Http\Controllers\InquiryController::class, 'adminStreamPaymentReceipt']);
 
     Route::post('/admin/client-uploads/check-sftp-status', [UploadController::class, 'checkSftpStatus'])
         ->name('admin.client_uploads.check_sftp_status');

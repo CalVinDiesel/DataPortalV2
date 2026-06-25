@@ -7,23 +7,23 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use App\Models\PurchaseQuotation;
+use App\Models\Inquiry;
 
 class TilesReadyNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public PurchaseQuotation $quotation;
+    public Inquiry $inquiry;
 
-    public function __construct(PurchaseQuotation $quotation)
+    public function __construct(Inquiry $inquiry)
     {
-        $this->quotation = $quotation;
+        $this->inquiry = $inquiry;
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[3DHub] Your 3D Model Tiles Are Ready - ' . $this->quotation->purchase_id,
+            subject: '[3DHub] Your 3D Model Tiles Are Ready - ' . $this->inquiry->inquiry_id,
         );
     }
 

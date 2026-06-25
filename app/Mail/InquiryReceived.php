@@ -7,30 +7,30 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use App\Models\PurchaseQuotation;
+use App\Models\Inquiry;
 
-class AdminNewQuotationAlert extends Mailable
+class InquiryReceived extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public PurchaseQuotation $quotation;
+    public Inquiry $inquiry;
 
-    public function __construct(PurchaseQuotation $quotation)
+    public function __construct(Inquiry $inquiry)
     {
-        $this->quotation = $quotation;
+        $this->inquiry = $inquiry;
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[3DHub Admin] New Purchase Quotation – ' . $this->quotation->purchase_id,
+            subject: '[3DHub] Inquiry Request Received - ' . $this->inquiry->inquiry_id,
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.admin-new-quotation-alert',
+            view: 'emails.inquiry-received',
         );
     }
 

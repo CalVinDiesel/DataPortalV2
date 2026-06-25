@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>New Purchase Quotation – Admin Alert</title>
+    <title>New Inquiry - Admin Alert</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 0; line-height: 1.7; }
         .wrapper { max-width: 620px; margin: 40px auto; }
@@ -23,51 +23,51 @@
 <body>
     <div class="wrapper">
         <div class="header">
-            <h1>🔔 New Purchase Quotation Submitted</h1>
-            <p>A client has submitted a new quotation request</p>
+            <h1>🔔 New Inquiry Submitted</h1>
+            <p>A client has submitted a new inquiry request</p>
         </div>
         <div class="body">
             <p>Hello Admin,</p>
-            <p>A new purchase quotation request has been submitted and is waiting for your review.</p>
+            <p>A new inquiry request has been submitted and is waiting for your review.</p>
 
             <div style="text-align: center;">
-                <div class="badge-id">{{ $quotation->purchase_id }}</div>
+                <div class="badge-id">{{ $inquiry->inquiry_id }}</div>
             </div>
 
             <table class="info-table">
                 <tr>
                     <td>Client Email</td>
-                    <td><strong>{{ $quotation->user_email }}</strong></td>
+                    <td><strong>{{ $inquiry->user_email }}</strong></td>
                 </tr>
                 <tr>
                     <td>Client Name</td>
-                    <td>{{ $quotation->user->name ?? '—' }}</td>
+                    <td>{{ $inquiry->user->name ?? '—' }}</td>
                 </tr>
                 <tr>
                     <td>3D Model</td>
-                    <td><strong>{{ $quotation->mapData->title ?? $quotation->map_data_id }}</strong></td>
+                    <td><strong>{{ $inquiry->mapData->title ?? $inquiry->map_data_id }}</strong></td>
                 </tr>
                 <tr>
                     <td>Output Formats</td>
                     <td>
-                        @if(is_array($quotation->output_categories))
-                            @foreach($quotation->output_categories as $cat)
+                        @if(is_array($inquiry->output_categories))
+                            @foreach($inquiry->output_categories as $cat)
                                 <span class="tag">{{ $cat }}</span>
                             @endforeach
                         @else
-                            {{ $quotation->output_categories }}
+                            {{ $inquiry->output_categories }}
                         @endif
                     </td>
                 </tr>
                 <tr>
                     <td>Date Submitted</td>
-                    <td>{{ $quotation->created_at->format('d M Y, h:i A') }}</td>
+                    <td>{{ $inquiry->created_at->format('d M Y, h:i A') }}</td>
                 </tr>
             </table>
 
-            <p>Please log in to the Admin Panel to review this quotation, preview the area the client has selected on the 3D map, and send a formal quotation with pricing details.</p>
+            <p>Please log in to the Admin Panel to review this inquiry, preview the area the client has selected on the 3D map, and send a formal quotation with pricing details.</p>
 
-            <a href="{{ url('/admin/purchase-quotations') }}" class="cta-btn">Open Admin Panel →</a>
+            <a href="{{ url('/admin/inquiries') }}" class="cta-btn">Open Admin Panel →</a>
         </div>
         <div class="footer">
             &copy; {{ date('Y') }} 3DHub Data Portal — Admin Notification

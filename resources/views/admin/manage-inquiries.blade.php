@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manage Purchase Quotations - Admin | 3DHub</title>
+  <title>Manage Inquiries - Admin | 3DHub</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <script src="{{ asset('assets') }}/js/theme-init.js"></script>
   <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
@@ -62,7 +62,7 @@
     .q-table td { padding: .8rem 1rem; vertical-align: middle; }
     .q-table tr { cursor: pointer; transition: background .15s; }
     .q-table tr:hover td { background: #f5f3ff !important; }
-    .purchase-id-cell { font-family: monospace; font-weight: 700; color: #4f46e5; font-size: 13px; }
+    .inquiry-id-cell { font-family: monospace; font-weight: 700; color: #4f46e5; font-size: 13px; }
 
     /* === Detail Modal === */
     .modal-xxl { max-width: 1100px; }
@@ -147,7 +147,7 @@
         <a href="{{ route('admin.add_3d_model') }}" class="admin-nav-link">Add 3D Model</a>
         <a href="{{ route('admin.manage_map_pins') }}" class="admin-nav-link">Manage Map Pins</a>
         <a href="{{ route('admin.manage_showcases') }}" class="admin-nav-link">Manage Showcase</a>
-        <a href="{{ route('admin.purchase_quotations') }}" class="admin-nav-link active">Purchase Quotations</a>
+        <a href="{{ route('admin.inquiries') }}" class="admin-nav-link active">Inquiries</a>
         <a href="{{ route('admin.manage_users') }}" class="admin-nav-link">Manage Users</a>
         <a href="{{ route('landing') }}" class="admin-nav-link" target="_blank">View Portal</a>
       </div>
@@ -183,7 +183,7 @@
           <!-- Page Header -->
           <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
-              <h4 class="fw-bold mb-1">Manage Purchase Quotations</h4>
+              <h4 class="fw-bold mb-1">Manage Inquiries</h4>
               <p class="text-muted mb-0 small">Review client requests, preview their selected area on the 3D map, and send formal quotations with pricing</p>
             </div>
             <a href="{{ route('admin_dashboard') }}" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
@@ -220,7 +220,7 @@
               <table class="table q-table mb-0">
                 <thead class="table-light">
                   <tr>
-                    <th>Purchase ID</th>
+                    <th>Inquiry ID</th>
                     <th>Client</th>
                     <th>3D Model</th>
                     <th>Output Formats</th>
@@ -252,7 +252,7 @@
       <div class="modal-header border-bottom">
         <h5 class="modal-title fw-bold" id="quotationDetailModalLabel">
           <i class="bx bx-receipt me-2 text-primary"></i>
-          <span id="modalPurchaseId">—</span>
+          <span id="modalInquiryId">—</span>
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -264,8 +264,8 @@
           <div class="col-lg-5 p-4 border-end">
 
             <div class="detail-section">
-              <div class="ds-title">📋 Quotation Info</div>
-              <div class="info-pair"><span class="lbl">Purchase ID</span><br><strong id="dPurchaseId" style="font-family:monospace;color:#4f46e5;"></strong></div>
+              <div class="ds-title">📋 Inquiry Info</div>
+              <div class="info-pair"><span class="lbl">Inquiry ID</span><br><strong id="dInquiryId" style="font-family:monospace;color:#4f46e5;"></strong></div>
               <div class="info-pair"><span class="lbl">Client Email</span><br><strong id="dUserEmail"></strong></div>
               <div class="info-pair"><span class="lbl">Client Name</span><br><span id="dUserName"></span></div>
               <div class="info-pair"><span class="lbl">Date Submitted</span><br><span id="dCreatedAt"></span></div>
@@ -303,7 +303,7 @@
           <div class="col-lg-7 p-4">
 
             <div class="detail-section">
-              <div class="ds-title">⚙️ Update Quotation Status</div>
+              <div class="ds-title">⚙️ Update Inquiry Status</div>
 
               <div id="modalAlert" class="alert d-none mb-3" role="alert"></div>
 
@@ -382,7 +382,6 @@
                 <!-- WinSCP upload path -->
                 <div class="small fw-semibold text-muted mb-1 mt-2">📂 WinSCP Upload Path</div>
                 <div class="mb-3">
-                  <!-- Connection A: SSH Root -->
                   <div class="card p-3 border shadow-none mb-2" style="background: rgba(105, 108, 255, 0.04); border-color: rgba(105, 108, 255, 0.15);">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                       <span class="badge bg-label-primary px-2 py-1" style="font-size: 10px;">Host SSH / Root (Port 22)</span>
@@ -395,7 +394,7 @@
                     </div>
                     <div class="d-flex align-items-center gap-2">
                       <div class="delivery-path-box mb-0 flex-grow-1" id="deliverySftpPathHost" style="background:#f1f5f9; color:#1e293b; border-color:#cbd5e1; font-size:12px; padding:0.5rem 0.75rem;">—</div>
-                      <button type="button" class="btn btn-sm btn-outline-secondary px-2 flex-shrink-0" onclick="copyPathToClipboard('deliverySftpPathHost', this)" title="Copy Path">
+                      <button type="button" class="btn btn-xs btn-outline-secondary px-2 flex-shrink-0" onclick="copyPathToClipboard('deliverySftpPathHost', this)" title="Copy Path">
                         <i class="bx bx-copy"></i>
                       </button>
                     </div>
@@ -417,7 +416,7 @@
               <!-- Rejection reason (shown when status = rejected) -->
               <div class="admin-form-section cond-section" id="sectionRejection">
                 <h6>❌ Rejection Reason</h6>
-                <textarea id="rejectionReason" class="form-control" rows="3" placeholder="Explain why this quotation is being rejected…"></textarea>
+                <textarea id="rejectionReason" class="form-control" rows="3" placeholder="Explain why this inquiry is being rejected…"></textarea>
               </div>
 
               <!-- Admin Notes (always visible) -->
@@ -448,7 +447,7 @@
               <!-- Existing data section -->
               <div id="existingDataSection" class="mt-4 d-none">
                 <hr>
-                <div class="ds-title mb-2">📌 Current Quotation Data</div>
+                <div class="ds-title mb-2">📌 Current Inquiry Data</div>
                 <div id="existingDataContent" class="small text-muted"></div>
               </div>
             </div>
@@ -487,7 +486,7 @@
   var API   = window.location.origin;
 
   // ─── State ───────────────────────────────────────────────────────────────
-  var allQuotations = [];
+  var allInquiries = [];
   var currentFilter = 'all';
   var currentSearch = '';
   var currentQuotation = null;
@@ -535,18 +534,18 @@
     });
   });
 
-  // ─── Load Quotations ─────────────────────────────────────────────────────
+  // ─── Load Inquiries ─────────────────────────────────────────────────────
   function loadQuotations() {
-    fetch(API + '/api/admin/purchase-quotations', { credentials: 'include' })
+    fetch(API + '/api/admin/inquiries', { credentials: 'include' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (data) {
-        allQuotations = data;
+        allInquiries = data;
         renderStats(data);
         renderTable(data);
       })
       .catch(function (err) {
         document.getElementById('quotationsTableBody').innerHTML =
-          '<tr><td colspan="8" class="text-danger text-center py-4">Failed to load quotations. ' + err.message + '</td></tr>';
+          '<tr><td colspan="8" class="text-danger text-center py-4">Failed to load inquiries. ' + err.message + '</td></tr>';
       });
   }
 
@@ -614,10 +613,10 @@
   }
 
   function applyFilters() {
-    var filtered = allQuotations.filter(function (q) {
+    var filtered = allInquiries.filter(function (q) {
       var matchStatus = currentFilter === 'all' || q.status === currentFilter;
       var matchSearch = !currentSearch ||
-        q.purchase_id.toLowerCase().includes(currentSearch) ||
+        q.inquiry_id.toLowerCase().includes(currentSearch) ||
         q.user_email.toLowerCase().includes(currentSearch) ||
         (q.user_name || '').toLowerCase().includes(currentSearch);
       return matchStatus && matchSearch;
@@ -629,7 +628,7 @@
   function renderTable(data) {
     var tbody = document.getElementById('quotationsTableBody');
     if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-5"><i class="bx bx-inbox display-6 d-block mb-2"></i>No quotations found</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-5"><i class="bx bx-inbox display-6 d-block mb-2"></i>No inquiries found</td></tr>';
       return;
     }
     tbody.innerHTML = data.map(function (q) {
@@ -644,7 +643,7 @@
         statusBadge += '<span class="badge bg-label-success ms-1" style="font-size:10px;" title="Payment receipt uploaded"><i class="bx bx-receipt"></i> Paid</span>';
       }
       return '<tr data-id="' + q.id + '">' +
-        '<td class="purchase-id-cell">' + esc(q.purchase_id) + '</td>' +
+        '<td class="inquiry-id-cell">' + esc(q.inquiry_id) + '</td>' +
         '<td><div class="fw-semibold" style="font-size:13px;">' + esc(q.user_email) + '</div><div class="text-muted" style="font-size:11.5px;">' + esc(q.user_name) + '</div></td>' +
         '<td>' + esc(q.map_title) + '</td>' +
         '<td>' + (fmts || '<span class="text-muted">—</span>') + '</td>' +
@@ -666,7 +665,7 @@
   // ─── Open Detail Modal ────────────────────────────────────────────────────
   window.openDetail = function (id, e) {
     if (e) e.stopPropagation();
-    var q = allQuotations.find(function (x) { return x.id === id; });
+    var q = allInquiries.find(function (x) { return x.id === id; });
     if (!q) return;
     currentQuotation = q;
     populateModal(q);
@@ -702,9 +701,9 @@
 
   function populateModal(q) {
     // Header
-    document.getElementById('modalPurchaseId').textContent = q.purchase_id;
+    document.getElementById('modalInquiryId').textContent = q.inquiry_id;
     // Left panel
-    document.getElementById('dPurchaseId').textContent  = q.purchase_id;
+    document.getElementById('dInquiryId').textContent  = q.inquiry_id;
     document.getElementById('dUserEmail').textContent   = q.user_email;
     document.getElementById('dUserName').textContent    = q.user_name;
     document.getElementById('dCreatedAt').textContent   = q.created_at;
@@ -719,6 +718,10 @@
     var coords = q.area_coordinates;
     var points = [];
     if (coords && coords.type === "Polygon" && coords.coordinates && coords.coordinates[0]) {
+      var points = coords.coordinates[0];
+      positions = points.map(function (pt) {
+        return Cesium.Cartesian3.fromDegrees(pt[0], pt[1]);
+      });
       points = coords.coordinates[0];
     } else if (Array.isArray(coords) && coords.length >= 3) {
       points = coords.map(function (c) {
@@ -742,7 +745,6 @@
     document.getElementById('statusSelect').value     = q.status;
     document.getElementById('adminNotes').value       = (q.admin_notes && q.admin_notes[q.status]) || '';
     document.getElementById('rejectionReason').value  = q.rejection_reason || '';
-    // Reset PDF input & visual state
     resetPdfUploadState();
 
     // Check existing PDF
@@ -772,7 +774,6 @@
     freezeOrUnfreezeAdminNotes();
     clearModalAlert();
 
-    // Populate delivery section if status is completed
     if (q.status === 'completed') {
       updateDeliverySection(q);
     }
@@ -828,11 +829,8 @@
   function bindStatusSelect() {
     document.getElementById('statusSelect').addEventListener('change', function () {
       updateConditionalSections(this.value);
-      
-      // Load note for newly selected status from quotation data if exists
       var notesMap = (currentQuotation && currentQuotation.admin_notes) || {};
       document.getElementById('adminNotes').value = notesMap[this.value] || '';
-
       freezeOrUnfreezeAdminNotes();
     });
   }
@@ -849,7 +847,6 @@
     };
     document.getElementById('statusHelpText').textContent = helpTexts[status] || '';
 
-    // Show/hide conditional sections
     document.getElementById('sectionQuotationPdf').classList.toggle('visible', status === 'quoted');
     document.getElementById('sectionRejection').classList.toggle('visible', status === 'rejected');
     document.getElementById('sectionDelivery').classList.toggle('visible', status === 'completed');
@@ -858,7 +855,6 @@
       updateDeliverySection(currentQuotation);
     }
 
-    // Show "Save & Send" button only when status = quoted
     document.getElementById('btnSaveAndSend').classList.toggle('d-none', status !== 'quoted');
     document.getElementById('btnUpdateStatus').textContent =
       status === 'quoted' ? 'Save Without Sending Email' : 'Update Status';
@@ -878,7 +874,6 @@
     if (!currentQuotation) return;
     var status = document.getElementById('statusSelect').value;
 
-    // Validate quotation PDF upload
     if (status === 'quoted') {
       var hasExisting = !!currentQuotation.quotation_pdf_path;
       var hasNew = document.getElementById('quotationPdfInput').files.length > 0;
@@ -903,7 +898,7 @@
     setButtonLoading(true);
     clearModalAlert();
 
-    fetch(API + '/api/admin/purchase-quotations/' + currentQuotation.id + '/status', {
+    fetch(API + '/api/admin/inquiries/' + currentQuotation.id + '/status', {
       method: 'POST',
       headers: { 'X-CSRF-TOKEN': CSRF },
       credentials: 'include',
@@ -913,10 +908,9 @@
     .then(function (data) {
       if (data.success) {
         showModalAlert(data.message, true);
-        // Update local state
-        var idx = allQuotations.findIndex(function (q) { return q.id === currentQuotation.id; });
-        if (idx !== -1) { allQuotations[idx] = data.data; currentQuotation = data.data; }
-        renderStats(allQuotations);
+        var idx = allInquiries.findIndex(function (q) { return q.id === currentQuotation.id; });
+        if (idx !== -1) { allInquiries[idx] = data.data; currentQuotation = data.data; }
+        renderStats(allInquiries);
         applyFilters();
         populateModal(data.data);
         renderModalTimeline(data.data.status);
@@ -975,7 +969,6 @@
     }
 
     try {
-      // Use SCENE3D so 3D Tilesets render correctly, but lock the camera top-down
       cesiumViewer = new Cesium.Viewer('adminCesiumMap', {
         timeline: false, animation: false, baseLayerPicker: false,
         fullscreenButton: false, homeButton: false, sceneModePicker: false,
@@ -991,17 +984,14 @@
       cesiumViewer.scene.globe.show = true;
       cesiumViewer.scene.globe.enableLighting = false;
 
-      // ── Lock camera to pure top-down 2D view (no tilt, no orbit, no rotation) ──
       var ctrl = cesiumViewer.scene.screenSpaceCameraController;
       ctrl.enableTilt  = false;
       ctrl.enableLook  = false;
       ctrl.tiltEventTypes  = [];
       ctrl.lookEventTypes  = [];
-      // Pan only via left drag; zoom via scroll/pinch
       ctrl.rotateEventTypes = [Cesium.CameraEventType.LEFT_DRAG];
       ctrl.zoomEventTypes   = [Cesium.CameraEventType.WHEEL, Cesium.CameraEventType.PINCH];
 
-      // ── Load 3D Tileset if available (add to scene, do NOT zoom to it) ──
       if (q.map_3d_tiles) {
         var tilesetResource = new Cesium.Resource({
           url: q.map_3d_tiles,
@@ -1009,24 +999,20 @@
         });
         Cesium.Cesium3DTileset.fromUrl(tilesetResource).then(function (tileset) {
           cesiumViewer.scene.primitives.add(tileset);
-          // Do NOT zoomTo the tileset — we want the top-down polygon view
         }).catch(function (err) {
           console.error('[CesiumTilesetError]', err);
         });
       }
 
-      // ── Draw polygon from area_coordinates ──
       var coords = q.area_coordinates;
       var positions = [];
 
       if (coords && coords.type === "Polygon" && coords.coordinates && coords.coordinates[0]) {
-        // GeoJSON Polygon format: coordinates[0] is the outer ring array of [lng, lat] arrays
         var points = coords.coordinates[0];
         positions = points.map(function (pt) {
           return Cesium.Cartesian3.fromDegrees(pt[0], pt[1]);
         });
       } else if (Array.isArray(coords) && coords.length >= 3) {
-        // Flat array fallback
         positions = coords.map(function (c) {
           var lng = c.longitude !== undefined ? c.longitude : c.lng || c[0];
           var lat = c.latitude  !== undefined ? c.latitude  : c.lat || c[1];
@@ -1043,7 +1029,6 @@
           }
         });
 
-        // Polygon outline draped over 3D Tiles/Terrain
         cesiumViewer.entities.add({
           polyline: {
             positions: positions,
@@ -1053,7 +1038,6 @@
           }
         });
 
-        // Zoom to the polygon top-down (pitch = -90°, no tilt)
         cesiumViewer.zoomTo(cesiumViewer.entities).then(function () {
           cesiumViewer.camera.setView({
             destination: cesiumViewer.camera.position,
@@ -1067,7 +1051,6 @@
         });
 
       } else if (q.map_x_axis && q.map_y_axis) {
-        // Fallback: set top-down view at the model's coordinates
         cesiumViewer.camera.setView({
           destination: Cesium.Cartesian3.fromDegrees(
             parseFloat(q.map_x_axis), parseFloat(q.map_y_axis), 5000
@@ -1147,7 +1130,7 @@
 
   window.confirmDeleteQuotation = function () {
     if (!currentQuotation) return;
-    if (!confirm("Are you sure you want to permanently delete this purchase quotation request? This will cleanly remove the record from the database and delete all associated delivery files from the SFTP/local storage. This action CANNOT be undone.")) {
+    if (!confirm("Are you sure you want to permanently delete this inquiry request? This will cleanly remove the record from the database and delete all associated delivery files from the SFTP/local storage. This action CANNOT be undone.")) {
       return;
     }
 
@@ -1157,7 +1140,7 @@
       btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Deleting…';
     }
 
-    fetch(API + '/api/admin/purchase-quotations/' + currentQuotation.id, {
+    fetch(API + '/api/admin/inquiries/' + currentQuotation.id, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
       credentials: 'include'
@@ -1193,7 +1176,7 @@
     var btn = document.getElementById('btnToggleDelivery');
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…'; }
 
-    fetch(API + '/api/admin/purchase-quotations/' + currentQuotation.id + '/delivery', {
+    fetch(API + '/api/admin/inquiries/' + currentQuotation.id + '/delivery', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
       credentials: 'include',
@@ -1202,9 +1185,9 @@
     .then(function (r) { return r.json(); })
     .then(function (data) {
       if (data.success) {
-        var idx = allQuotations.findIndex(function (q) { return q.id === currentQuotation.id; });
-        if (idx !== -1) { allQuotations[idx] = data.data; currentQuotation = data.data; }
-        renderStats(allQuotations);
+        var idx = allInquiries.findIndex(function (q) { return q.id === currentQuotation.id; });
+        if (idx !== -1) { allInquiries[idx] = data.data; currentQuotation = data.data; }
+        renderStats(allInquiries);
         applyFilters();
         updateDeliverySection(data.data);
         showModalAlert(data.message, true);
@@ -1228,7 +1211,7 @@
     resultEl.className = 'mt-2';
     resultEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Checking SFTP server…';
 
-    fetch(API + '/api/admin/purchase-quotations/' + currentQuotation.id + '/check-delivery', {
+    fetch(API + '/api/admin/inquiries/' + currentQuotation.id + '/check-delivery', {
       credentials: 'include',
     })
     .then(function (r) { return r.json(); })
@@ -1263,17 +1246,14 @@
     var sftpHost = @json(config('filesystems.disks.sftp_delivery.host') ?: request()->getHost());
     var sftpUserHost = @json(config('filesystems.disks.sftp_delivery.username') ?: 'root');
 
-    // Fill connection details
     var hostEl = document.getElementById('sftpHostHost');
     if (hostEl) hostEl.textContent = sftpHost;
     var userHostEl = document.getElementById('sftpUserHost');
     if (userHostEl) userHostEl.textContent = sftpUserHost;
 
-    // Update SFTP path display
     var pathHostEl = document.getElementById('deliverySftpPathHost');
     if (pathHostEl) pathHostEl.textContent = q.sftp_delivery_path || '—';
 
-    // Update badge
     var badge = document.getElementById('deliveryStatusBadge');
     if (badge) {
       if (q.delivery_ready) {
@@ -1297,7 +1277,6 @@
     var user = @json(config('filesystems.disks.sftp_delivery.username') ?: 'root');
     var port = 22;
     
-    // WinSCP accepts sftp://username@host:port/path
     var sftpUrl = 'sftp://' + encodeURIComponent(user) + '@' + host + ':' + port + path;
     window.location.href = sftpUrl;
   };
@@ -1339,7 +1318,6 @@
       .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // Handle PDF file selection visual effects
   document.addEventListener('DOMContentLoaded', function () {
     var pdfInput = document.getElementById('quotationPdfInput');
     if (pdfInput) {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-  <title>New Purchase Quotation | 3DHub Data Portal</title>
+  <title>New Inquiry | 3DHub Data Portal</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
   <!-- Favicon -->
@@ -36,7 +36,7 @@
   <style>
     /* Dropdown hover behavior for desktop navigation links */
     @media (min-width: 1200px) {
-      #navPurchaseQuotation:hover .dropdown-menu,
+      #navInquiry:hover .dropdown-menu,
       #navUpload:hover .dropdown-menu {
         display: block;
         margin-top: 0;
@@ -190,26 +190,26 @@
               <a class="nav-link fw-medium" href="{{ route('landing') }}#landingShowCase">ShowCase</a>
             </li>
             @auth
-            <!-- PurchaseQuotation Dropdown for Desktop -->
-            <li class="nav-item dropdown d-none d-xl-block" id="navPurchaseQuotation">
+            <!-- Inquiry Dropdown for Desktop -->
+            <li class="nav-item dropdown d-none d-xl-block" id="navInquiry">
               <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
-                PurchaseQuotation
+                Inquiry
               </a>
               <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{{ route('purchase_quotation.new') }}">New PurchaseQuotation</a></li>
+                <li><a class="dropdown-item" href="{{ route('inquiry.new') }}">New Inquiry</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="{{ route('purchase_quotation.my') }}">My PurchaseQuotation</a></li>
+                <li><a class="dropdown-item" href="{{ route('inquiry.my') }}">My Inquiry</a></li>
               </ul>
             </li>
-            <!-- PurchaseQuotation Dropdown for Mobile -->
-            <li class="nav-item d-xl-none navPurchaseQuotation-mobile">
-              <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navPurchaseQuotationCollapse" aria-expanded="false" aria-controls="navPurchaseQuotationCollapse" id="navPurchaseQuotationMobileToggle">
-                PurchaseQuotation
+            <!-- Inquiry Dropdown for Mobile -->
+            <li class="nav-item d-xl-none navInquiry-mobile">
+              <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navInquiryCollapse" aria-expanded="false" aria-controls="navInquiryCollapse" id="navInquiryMobileToggle">
+                Inquiry
               </a>
-              <div class="collapse nav-upload-mobile-sub" id="navPurchaseQuotationCollapse">
-                <a class="nav-link fw-medium" href="{{ route('purchase_quotation.new') }}">New PurchaseQuotation</a>
+              <div class="collapse nav-upload-mobile-sub" id="navInquiryCollapse">
+                <a class="nav-link fw-medium" href="{{ route('inquiry.new') }}">New Inquiry</a>
                 <hr class="dropdown-divider">
-                <a class="nav-link fw-medium" href="{{ route('purchase_quotation.my') }}">My PurchaseQuotation</a>
+                <a class="nav-link fw-medium" href="{{ route('inquiry.my') }}">My Inquiry</a>
               </div>
             </li>
             @endauth
@@ -273,11 +273,11 @@
     <div class="container">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-3" style="position:relative;z-index:1">
         <div>
-          <h1><i class="bx bx-file-blank me-2"></i>New Purchase Quotation</h1>
-          <p>Specify your required output formats and select your purchase area on the map</p>
+          <h1><i class="bx bx-file-blank me-2"></i>New Inquiry</h1>
+          <p>Specify your required output formats and select your inquiry area on the map</p>
         </div>
-        <a href="{{ route('purchase_quotation.my') }}" class="btn-new">
-          <i class="bx bx-list-ul"></i> My Quotations
+        <a href="{{ route('inquiry.my') }}" class="btn-new">
+          <i class="bx bx-list-ul"></i> My Inquiries
         </a>
       </div>
     </div>
@@ -288,8 +288,8 @@
     <div class="container">
       <div class="card shadow-sm border">
         <div class="card-header border-bottom d-flex justify-content-between align-items-center py-4 px-4 px-md-5">
-          <h4 class="m-0 fw-bold"><i class="bx bx-file-blank me-2 text-primary"></i>Send Purchase Quotation</h4>
-          <span class="badge bg-label-primary">New Quotation</span>
+          <h4 class="m-0 fw-bold"><i class="bx bx-file-blank me-2 text-primary"></i>Send Inquiry</h4>
+          <span class="badge bg-label-primary">New Inquiry</span>
         </div>
         <div class="card-body p-4 p-md-5">
           
@@ -297,24 +297,24 @@
             <div class="d-flex">
               <i class="bx bx-check-circle me-2 fs-4"></i>
               <div>
-                <h6 class="alert-heading mb-1 fw-bold">Quotation Sent Successfully!</h6>
-                <span>Your purchase quotation request has been recorded. We will review the details and get back to you shortly.</span>
+                <h6 class="alert-heading mb-1 fw-bold">Inquiry Sent Successfully!</h6>
+                <span>Your inquiry request has been recorded. We will review the details and get back to you shortly.</span>
               </div>
             </div>
           </div>
 
-          <form id="purchaseQuoteForm" novalidate>
+          <form id="inquiryForm" novalidate>
             <div class="row">
               <!-- Left Form Column -->
               <div class="col-lg-5">
-                <div class="form-section-title mt-0">Quotation Details</div>
+                <div class="form-section-title mt-0">Inquiry Details</div>
                 
-                <!-- Field 1: Auto Generated Purchase ID -->
+                <!-- Field 1: Auto Generated Inquiry ID -->
                 <div class="mb-4">
-                  <label class="form-label fw-semibold" for="purchase_id">Purchase ID</label>
+                  <label class="form-label fw-semibold" for="inquiry_id">Inquiry ID</label>
                   <div class="input-group input-group-merge">
                     <span class="input-group-text"><i class="bx bx-hash"></i></span>
-                    <input type="text" id="purchase_id" name="purchase_id" class="form-control fw-bold text-primary" value="{{ $purchaseId }}" readonly style="background-color: var(--bs-tertiary-bg);">
+                    <input type="text" id="inquiry_id" name="inquiry_id" class="form-control fw-bold text-primary" value="{{ $inquiryId }}" readonly style="background-color: var(--bs-tertiary-bg);">
                   </div>
                   <div class="form-text">This unique ID is auto-generated and will be saved upon submission.</div>
                 </div>
@@ -371,8 +371,8 @@
 
               <!-- Right Map Column -->
               <div class="col-lg-7">
-                <div class="form-section-title mt-0 mt-lg-0">Select Purchase Area</div>
-                <div class="form-text mb-2">Use the Cesium map viewer to specify the area coordinates for your purchase quotation.</div>
+                <div class="form-section-title mt-0 mt-lg-0">Select Inquiry Area</div>
+                <div class="form-text mb-2">Use the Cesium map viewer to specify the area coordinates for your inquiry.</div>
                 
                 <!-- Field 3: Cesium Ion Map -->
                 <div id="heroMapContainer" style="position: relative;">
@@ -380,7 +380,7 @@
                   <!-- Drawing Toolbar (always visible) -->
                   <div id="drawingToolbar" style="position: absolute; top: 12px; left: 12px; z-index: 1000; display: flex; gap: 8px;">
                     <button type="button" id="btnDrawPolygon" class="btn btn-sm btn-primary shadow-sm fw-bold d-flex align-items-center gap-1" style="border-radius: 8px; padding: 8px 14px; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                      <i class="bx bx-pencil me-1"></i> Draw Purchase Area
+                      <i class="bx bx-pencil me-1"></i> Draw Inquiry Area
                     </button>
                     <button type="button" id="btnClearPolygon" class="btn btn-sm btn-danger shadow-sm fw-bold d-flex align-items-center gap-1" style="border-radius: 8px; padding: 8px 14px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                       <i class="bx bx-trash me-1"></i> Clear Area
@@ -391,7 +391,7 @@
                     <div class="navigation-container"></div>
                     <div id="controls">
                       <div id="zoom-item" class="scale-item">
-                        <div class="el-tooltip__trigger" id="purchaseResetViewBtn" title="Reset View">
+                        <div class="el-tooltip__trigger" id="inquiryResetViewBtn" title="Reset View">
                           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M13.75 2.5H17.5V6.25" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
                             <path d="M17.5 13.75V17.5H13.75" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -429,9 +429,9 @@
             <div class="row mt-4">
               <div class="col-12 d-flex justify-content-between align-items-center">
                 <a href="{{ route('landing') }}" class="btn btn-outline-secondary px-4">Cancel</a>
-                <!-- Send Purchase Quotation Button on the bottom right -->
+                <!-- Send Inquiry Button on the bottom right -->
                 <button type="submit" id="btnSubmitQuotation" class="btn btn-primary px-5 fw-bold">
-                  <i class="bx bx-send me-1"></i> Send Purchase Quotation
+                  <i class="bx bx-send me-1"></i> Send Inquiry
                 </button>
               </div>
             </div>
@@ -461,7 +461,7 @@
   <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
 
-  <!-- Initialize Cesium map using common script files (matching overview map exactly) -->
+  <!-- Initialize Cesium map using common script files -->
   <script>
     window.cesiumDefaultSceneMode = Cesium.SceneMode.SCENE3D;
   </script>
@@ -470,7 +470,6 @@
   <script>
     (function() {
       var C = Cesium;
-      // Force initialization of Cesium map if it hasn't run yet (resolves timing issues with window load event)
       if (typeof initializeCesium === 'function' && !window.cesiumViewer) {
         try {
           initializeCesium();
@@ -479,7 +478,6 @@
         }
       }
 
-      // Helper function to poll/wait for cesiumViewer to be defined by cesium-map.js
       function getViewer(cb) {
         if (window.cesiumViewer) {
           cb(window.cesiumViewer);
@@ -497,26 +495,23 @@
         }, 50);
       }
 
-      // State shared across map logic and form submission
-      var selectedModel = null; // Currently selected MapData item
-      var dataSource = null; // Cesium CustomDataSource for pins/clusters
+      var selectedModel = null;
+      var dataSource = null;
 
-      // Drawing state
       var isDrawing = false;
-      var polygonPoints = []; // Array of C.Cartesian3 positions
-      var drawingEntities = []; // Array of C.Entity (temp vertices, lines, preview polygon)
-      var finalPolygonEntity = null; // The confirmed polygon entity
-      var editVertexEntities = []; // Array of C.Entity for vertex grab handles
-      var activeDrawingPreview = null; // The CallbackProperty preview entity
-      var mousePosition = null; // Current mouse Cartesian3
+      var polygonPoints = [];
+      var drawingEntities = [];
+      var finalPolygonEntity = null;
+      var editVertexEntities = [];
+      var activeDrawingPreview = null;
+      var mousePosition = null;
       
-      var drawingHandler = null; // ScreenSpaceEventHandler for drawing
-      var editHandler = null; // ScreenSpaceEventHandler for editing (dragging vertices)
-      var draggedVertexIndex = null; // Index of currently dragged vertex
-      var draggedVertexEntity = null; // Entity of currently dragged vertex
+      var drawingHandler = null;
+      var editHandler = null;
+      var draggedVertexIndex = null;
+      var draggedVertexEntity = null;
 
       getViewer(function(viewer) {
-        // Set initial camera view to Kota Kinabalu where the 3D models are located
         viewer.camera.setView({
           destination: C.Cartesian3.fromDegrees(116.082, 5.975, 15000),
           orientation: {
@@ -526,7 +521,7 @@
           }
         });
 
-               function calculatePolygonArea(coords) {
+        function calculatePolygonArea(coords) {
           if (coords.length < 3) return 0;
           var baseLat = coords[0][1];
           var cosLat = Math.cos(baseLat * Math.PI / 180.0);
@@ -569,7 +564,6 @@
           if (areaVal) areaVal.textContent = areaM2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m²';
         };
 
-        // Filter and map locations to only valid 3D models
         var rawLocations = @json($mapLocations);
         var locations = rawLocations.map(function(loc) {
           return {
@@ -584,7 +578,6 @@
           return tilesetUrl && typeof tilesetUrl === 'string' && tilesetUrl.trim() !== '' && tilesetUrl.indexOf('example.com') === -1;
         });
 
-        // Load all 3D Tilesets directly at start (rendered in top-down 2D mode)
         locations.forEach(function(loc) {
           var tilesetUrl = loc.originalData['3dTiles'];
           var tilesetOptions = {};
@@ -598,7 +591,6 @@
             })).then(function(tileset) {
               viewer.scene.primitives.add(tileset);
 
-              // Calculate exact center of the tileset dynamically
               var center = tileset.boundingSphere ? tileset.boundingSphere.center : null;
               var position = null;
               
@@ -608,13 +600,9 @@
                 loc.longitude = C.Math.toDegrees(carto.longitude);
                 loc.latitude = C.Math.toDegrees(carto.latitude);
               } else {
-                // Fall back to database coordinates
                 position = C.Cartesian3.fromDegrees(loc.longitude, loc.latitude);
               }
 
-              // ── Premium Badge Design ──
-              
-              // 1. Radar Outer Glow Beacon
               viewer.entities.add({
                 position: position,
                 point: {
@@ -625,7 +613,6 @@
                 }
               });
 
-              // 2. High-contrast Core Center Point
               viewer.entities.add({
                 position: position,
                 point: {
@@ -638,7 +625,6 @@
                 }
               });
 
-              // 3. Elegant Dark Glassmorphism Text Badge
               viewer.entities.add({
                 position: position,
                 label: {
@@ -652,7 +638,7 @@
                   backgroundColor: C.Color.fromCssColorString('#1a1a2e').withAlpha(0.9),
                   backgroundPadding: new C.Cartesian2(12, 6),
                   verticalOrigin: C.VerticalOrigin.BOTTOM,
-                  pixelOffset: new C.Cartesian2(0, -15), // offset above the core point and glow
+                  pixelOffset: new C.Cartesian2(0, -15),
                   disableDepthTestDistance: Number.POSITIVE_INFINITY,
                   distanceDisplayCondition: new C.DistanceDisplayCondition(200.0, 10000000.0)
                 }
@@ -665,7 +651,6 @@
           }
         });
 
-        // Function to resolve the closest 3D model automatically based on the drawn area's centroid
         function updateSelectedModelFromPolygon() {
           if (polygonPoints.length < 3) {
             selectedModel = null;
@@ -701,10 +686,8 @@
           }
         }
 
-        // Dummy function to prevent any errors if referenced elsewhere
         function cancelOrbit() {}
 
-        // --- Interactive Polygon Drawing & Vertex Editing Logic ---
         function startDrawing() {
           cancelOrbit();
           clearPolygon();
@@ -736,7 +719,6 @@
 
             polygonPoints.push(pickedPosition);
 
-            // Place vertex helper dot
             var pointEntity = viewer.entities.add({
               position: pickedPosition,
               point: {
@@ -749,7 +731,6 @@
             });
             drawingEntities.push(pointEntity);
 
-            // On first point, draw the live preview polyline and polygon fill
             if (polygonPoints.length === 1) {
               var dynamicPositions = new C.CallbackProperty(function() {
                 var pts = [].concat(polygonPoints);
@@ -784,7 +765,6 @@
 
           drawingHandler.setInputAction(function() {
             if (polygonPoints.length >= 3) {
-              // Truncate double click noise (extra click triggers)
               if (polygonPoints.length > 3) {
                 polygonPoints.pop();
               }
@@ -802,19 +782,16 @@
             drawingHandler = null;
           }
 
-          // Clear temporary drawing helper lines and dots
           drawingEntities.forEach(function(ent) {
             viewer.entities.remove(ent);
           });
           drawingEntities = [];
 
-          // Hide draw button, show clear button
           var drawBtn = document.getElementById('btnDrawPolygon');
           if (drawBtn) drawBtn.style.display = 'none';
           var clearBtn = document.getElementById('btnClearPolygon');
           if (clearBtn) clearBtn.style.display = 'flex';
 
-          // 1. Create premium final polygon with CallbackProperty hierarchy
           finalPolygonEntity = viewer.entities.add({
             polygon: {
               hierarchy: new C.CallbackProperty(function() {
@@ -832,10 +809,8 @@
             window.updateCalculatedArea();
           }
 
-          // Resolve the closest 3D model automatically based on the drawn area's centroid
           updateSelectedModelFromPolygon();
 
-          // 2. Create editable grab handle entities at each vertex
           polygonPoints.forEach(function(pos, idx) {
             var handle = viewer.entities.add({
               position: pos,
@@ -852,7 +827,6 @@
             editVertexEntities.push(handle);
           });
 
-          // 3. Set up interactive vertex dragging
           editHandler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
 
           editHandler.setInputAction(function(click) {
@@ -860,7 +834,7 @@
             if (C.defined(picked) && picked.id && picked.id.isVertex) {
               draggedVertexIndex = picked.id.vertexIndex;
               draggedVertexEntity = picked.id;
-              viewer.scene.screenSpaceCameraController.enableInputs = false; // lock camera
+              viewer.scene.screenSpaceCameraController.enableInputs = false;
             }
           }, C.ScreenSpaceEventType.LEFT_DOWN);
 
@@ -888,7 +862,6 @@
               if (typeof window.updateCalculatedArea === 'function') {
                 window.updateCalculatedArea();
               }
-              // Resolve the closest 3D model automatically during/after dragging
               updateSelectedModelFromPolygon();
             }
           }, C.ScreenSpaceEventType.MOUSE_MOVE);
@@ -897,7 +870,7 @@
             if (draggedVertexIndex !== null) {
               draggedVertexIndex = null;
               draggedVertexEntity = null;
-              viewer.scene.screenSpaceCameraController.enableInputs = true; // unlock camera
+              viewer.scene.screenSpaceCameraController.enableInputs = true;
             }
           }, C.ScreenSpaceEventType.LEFT_UP);
 
@@ -931,17 +904,16 @@
           }
 
           polygonPoints = [];
-          selectedModel = null; // Clear selected model
+          selectedModel = null;
           isDrawing = false;
           viewer.canvas.style.cursor = '';
           var calcBox = document.getElementById('areaCalcBox');
           if (calcBox) calcBox.classList.add('d-none');
 
-          // Reset buttons
           var drawBtn = document.getElementById('btnDrawPolygon');
           if (drawBtn) {
             drawBtn.style.display = 'flex';
-            drawBtn.innerHTML = '<i class="bx bx-pencil me-1"></i> Draw Purchase Area';
+            drawBtn.innerHTML = '<i class="bx bx-pencil me-1"></i> Draw Inquiry Area';
             drawBtn.className = 'btn btn-sm btn-primary shadow-sm fw-bold d-flex align-items-center gap-1';
           }
           var clearBtn = document.getElementById('btnClearPolygon');
@@ -952,7 +924,6 @@
           viewer.scene.requestRender();
         }
 
-        // Wire toolbar buttons
         var drawBtn = document.getElementById('btnDrawPolygon');
         if (drawBtn) {
           drawBtn.addEventListener('click', function() {
@@ -971,25 +942,21 @@
           });
         }
 
-        // Cancel drawing with Escape key
         window.addEventListener('keydown', function(e) {
           if (e.key === 'Escape' && isDrawing) {
             clearPolygon();
           }
         });
 
-        // Intercept Reset View button click to clean up drawing and reset camera
-        var resetBtn = document.getElementById('purchaseResetViewBtn');
+        var resetBtn = document.getElementById('inquiryResetViewBtn');
         if (resetBtn) {
           resetBtn.addEventListener('click', function() {
             try {
               viewer.camera.cancelFlight();
             } catch (e) {}
 
-            // Clear drawing polygon
             clearPolygon();
 
-            // Reset camera orientation
             try {
               viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
             } catch (e) {}
@@ -1006,7 +973,6 @@
         }
       });
 
-      // 2. Handle Logout Form submit
       function doLogout() {
         document.querySelector('form[action*="logout"]').submit();
       }
@@ -1019,8 +985,7 @@
         });
       }
 
-      // 3. Form Submit handling (Store Quotation)
-      document.getElementById('purchaseQuoteForm').addEventListener('submit', async function(e) {
+      document.getElementById('inquiryForm').addEventListener('submit', async function(e) {
         e.preventDefault();
 
         if (!selectedModel) {
@@ -1029,7 +994,7 @@
         }
 
         if (polygonPoints.length < 3) {
-          alert("Please outline the area you wish to purchase. Click 'Draw Purchase Area' and click on the 3D model to draw a polygon. Double-click to complete.");
+          alert("Please outline the area you wish to purchase. Click 'Draw Inquiry Area' and click on the 3D model to draw a polygon. Double-click to complete.");
           return;
         }
 
@@ -1038,7 +1003,6 @@
         btnSubmit.disabled = true;
         btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
 
-        // Convert Cartesian3 points to standard WGS84 degree coordinates for GeoJSON Polygon format
         var C = Cesium;
         var coords = polygonPoints.map(function(pos) {
           var carto = C.Cartographic.fromCartesian(pos);
@@ -1048,7 +1012,6 @@
           ];
         });
 
-        // Close the ring (GeoJSON exterior rings must end at the starting coordinate)
         if (coords.length > 0) {
           coords.push([coords[0][0], coords[0][1]]);
         }
@@ -1058,7 +1021,6 @@
           coordinates: [coords]
         };
 
-        // Check if at least one checkbox is checked
         var checkedCategories = ["3D Tiles", "OSGB"];
         document.querySelectorAll('input[name="output_categories[]"]:checked').forEach(function(cb) {
           if (!checkedCategories.includes(cb.value)) {
@@ -1067,14 +1029,14 @@
         });
 
         var payload = {
-          purchase_id: document.getElementById('purchase_id').value,
+          inquiry_id: document.getElementById('inquiry_id').value,
           map_data_id: selectedModel.mapDataID,
           output_categories: checkedCategories,
           area_coordinates: areaCoordinatesPayload
         };
 
         try {
-          var res = await fetch('{{ route('purchase_quotation.store') }}', {
+          var res = await fetch('{{ route('inquiry.store') }}', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1087,19 +1049,19 @@
           var data = await res.json();
           if (data.success) {
             document.getElementById('successAlert').classList.remove('d-none');
-            document.getElementById('purchaseQuoteForm').reset();
+            document.getElementById('inquiryForm').reset();
             
-            document.querySelectorAll('#purchaseQuoteForm input, #purchaseQuoteForm button').forEach(function(el) {
+            document.querySelectorAll('#inquiryForm input, #inquiryForm button').forEach(function(el) {
               el.disabled = true;
             });
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
             setTimeout(function() {
-              window.location.href = '{{ route('purchase_quotation.my') }}';
+              window.location.href = '{{ route('inquiry.my') }}';
             }, 3000);
           } else {
-            alert('Error: ' + (data.message || 'Failed to submit quotation.'));
+            alert('Error: ' + (data.message || 'Failed to submit inquiry.'));
             btnSubmit.disabled = false;
             btnSubmit.innerHTML = originalHtml;
           }

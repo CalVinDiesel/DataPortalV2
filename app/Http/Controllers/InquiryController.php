@@ -3,28 +3,28 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\PurchaseQuotation;
+use App\Models\Inquiry;
 use App\Models\MapData;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use App\Mail\QuotationReceived;
-use App\Mail\AdminNewQuotationAlert;
-use App\Mail\QuotationSentToUser;
+use App\Mail\InquiryReceived;
+use App\Mail\AdminNewInquiryAlert;
+use App\Mail\InquirySentToUser;
 use App\Mail\TilesReadyNotification;
 
-class PurchaseQuotationController extends Controller
+class InquiryController extends Controller
 {
     /**
-     * Show the form for creating a new purchase quotation.
+     * Show the form for creating a new inquiry.
      */
     public function create()
     {
         do {
-            $purchaseId = 'PQ-' . date('Ymd') . '-' . strtoupper(Str::random(6));
-        } while (PurchaseQuotation::where('purchase_id', $purchaseId)->exists());
+            $inquiryId = 'INQ-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+        } while (Inquiry::where('inquiry_id', $inquiryId)->exists());
 
         $mapLocations = MapData::orderBy('title', 'asc')->get();
 
@@ -33,16 +33,16 @@ class PurchaseQuotationController extends Controller
             return $item;
         });
 
-        return view('portal.purchase-quotation-new', compact('purchaseId', 'mapLocations'));
+        return view('portal.inquiry-new', compact('inquiryId', 'mapLocations'));
     }
 
     /**
-     * Store a newly created purchase quotation in storage.
+     * Store a newly created inquiry in storage.
      */
     public function store(Request $request)
     {
         $request->validate([
-            'purchase_id'       => 'required|string|unique:purchase_quotations,purchase_id',
+            'inquiry_id'        => 'required|string|unique:inquiries,inquiry_id',
             'map_data_id'       => 'required|string|exists:map_data,mapDataID',
             'output_categories' => 'required|array',
             'output_categories.*' => 'string',
@@ -51,8 +51,8 @@ class PurchaseQuotationController extends Controller
 
         $user = Auth::user();
 
-        $quotation = PurchaseQuotation::create([
-            'purchase_id'       => $request->purchase_id,
+        $inquiry = Inquiry::create([
+            'inquiry_id'        => $request->inquiry_id,
             'user_id'           => $user->id,
             'user_email'        => $user->email,
             'map_data_id'       => $request->map_data_id,
@@ -62,54 +62,54 @@ class PurchaseQuotationController extends Controller
         ]);
 
         // Load relations for mail
-        $quotation->load(['user', 'mapData']);
+        $inquiry->load(['user', 'mapData']);
 
         // Send confirmation to user
         try {
-            Mail::to($user->email)->send(new QuotationReceived($quotation));
+            Mail::to($user->email)->send(new InquiryReceived($inquiry));
         } catch (\Exception $e) {
-            Log::error('QuotationReceived mail failed', [
-                'purchase_id' => $quotation->purchase_id,
-                'error'       => $e->getMessage(),
+            Log::error('InquiryReceived mail failed', [
+                'inquiry_id' => $inquiry->inquiry_id,
+                'error'      => $e->getMessage(),
             ]);
         }
 
         // Alert admin
         try {
             $adminEmail = env('SUPER_ADMIN_EMAIL', 'mosestiquan23@gmail.com');
-            Mail::to($adminEmail)->send(new AdminNewQuotationAlert($quotation));
+            Mail::to($adminEmail)->send(new AdminNewInquiryAlert($inquiry));
         } catch (\Exception $e) {
-            Log::error('AdminNewQuotationAlert mail failed', [
-                'purchase_id' => $quotation->purchase_id,
-                'error'       => $e->getMessage(),
+            Log::error('AdminNewInquiryAlert mail failed', [
+                'inquiry_id' => $inquiry->inquiry_id,
+                'error'      => $e->getMessage(),
             ]);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Purchase quotation request sent successfully.',
-            'data'    => $quotation,
+            'message' => 'Inquiry request sent successfully.',
+            'data'    => $inquiry,
         ]);
     }
 
     /**
-     * Display a listing of the user's own purchase quotations.
+     * Display a listing of the user's own inquiries.
      */
     public function my()
     {
-        $quotations = PurchaseQuotation::with(['mapData'])
+        $inquiries = Inquiry::with(['mapData'])
             ->where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Auto-check and heal delivery_ready status for any completed quotations
-        foreach ($quotations as $quotation) {
-            if ($quotation->status === 'completed' && !$quotation->delivery_ready) {
-                $this->autoCheckAndMarkDeliveryReady($quotation);
+        // Auto-check and heal delivery_ready status for any completed inquiries
+        foreach ($inquiries as $inquiry) {
+            if ($inquiry->status === 'completed' && !$inquiry->delivery_ready) {
+                $this->autoCheckAndMarkDeliveryReady($inquiry);
             }
         }
 
-        return view('portal.purchase-quotation-my', compact('quotations'));
+        return view('portal.inquiry-my', compact('inquiries'));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -117,19 +117,19 @@ class PurchaseQuotationController extends Controller
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Admin: show the manage purchase quotations page.
+     * Admin: show the manage inquiries page.
      */
     public function adminIndex()
     {
-        return view('admin.manage-purchase-quotations');
+        return view('admin.manage-inquiries');
     }
 
     /**
-     * Admin: return all quotations as JSON (optionally filtered by status).
+     * Admin: return all inquiries as JSON (optionally filtered by status).
      */
     public function adminList(Request $request)
     {
-        $query = PurchaseQuotation::with(['user', 'mapData'])
+        $query = Inquiry::with(['user', 'mapData'])
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('status') && $request->status !== 'all') {
@@ -139,53 +139,53 @@ class PurchaseQuotationController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('purchase_id', 'ilike', "%{$search}%")
+                $q->where('inquiry_id', 'ilike', "%{$search}%")
                   ->orWhere('user_email', 'ilike', "%{$search}%");
             });
         }
 
-        $quotations = $query->get()->map(function ($q) {
-            return $this->formatQuotationForApi($q);
+        $inquiries = $query->get()->map(function ($i) {
+            return $this->formatInquiryForApi($i);
         });
 
-        return response()->json($quotations);
+        return response()->json($inquiries);
     }
 
     /**
-     * Admin: return a single quotation as JSON.
+     * Admin: return a single inquiry as JSON.
      */
     public function adminShow($id)
     {
-        $quotation = PurchaseQuotation::with(['user', 'mapData'])->findOrFail($id);
-        return response()->json($this->formatQuotationForApi($quotation));
+        $inquiry = Inquiry::with(['user', 'mapData'])->findOrFail($id);
+        return response()->json($this->formatInquiryForApi($inquiry));
     }
 
     /**
-     * Admin: update quotation status and optional fields.
+     * Admin: update inquiry status and optional fields.
      */
     public function adminUpdateStatus(Request $request, $id)
     {
-        $quotation = PurchaseQuotation::with(['user', 'mapData'])->findOrFail($id);
+        $inquiry = Inquiry::with(['user', 'mapData'])->findOrFail($id);
 
         $request->validate([
-            'status'               => 'required|in:' . implode(',', PurchaseQuotation::STATUSES),
-            'admin_notes'          => 'nullable|string|max:2000',
-            'rejection_reason'     => 'nullable|string|max:2000',
-            'quotation_pdf'        => 'nullable|file|mimes:pdf|max:20480', // max 20MB
+            'status'           => 'required|in:' . implode(',', Inquiry::STATUSES),
+            'admin_notes'      => 'nullable|string|max:2000',
+            'rejection_reason' => 'nullable|string|max:2000',
+            'quotation_pdf'    => 'nullable|file|mimes:pdf|max:20480', // max 20MB
         ]);
 
         $newStatus = $request->status;
-        $oldStatus = $quotation->status;
+        $oldStatus = $inquiry->status;
 
         // Enforce payment receipt exists before admin can move to processing or completed status
-        if (in_array($newStatus, ['processing', 'completed']) && !$quotation->payment_receipt_path) {
+        if (in_array($newStatus, ['processing', 'completed']) && !$inquiry->payment_receipt_path) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cannot update status. The client has not uploaded a payment receipt yet.',
             ], 422);
         }
 
-        $notes = $quotation->admin_notes;
+        $notes = $inquiry->admin_notes;
         if (!is_array($notes)) {
             $notes = [];
         }
@@ -195,20 +195,20 @@ class PurchaseQuotationController extends Controller
         }
 
         $updateData = [
-            'status'               => $newStatus,
-            'admin_notes'          => $notes,
-            'rejection_reason'     => $request->rejection_reason,
+            'status'           => $newStatus,
+            'admin_notes'      => $notes,
+            'rejection_reason' => $request->rejection_reason,
         ];
 
         // Handle quotation PDF upload (only relevant when status = quoted)
         if ($request->hasFile('quotation_pdf') && $request->file('quotation_pdf')->isValid()) {
             // Delete old PDF if it exists
-            if ($quotation->quotation_pdf_path && Storage::disk('local')->exists($quotation->quotation_pdf_path)) {
-                Storage::disk('local')->delete($quotation->quotation_pdf_path);
+            if ($inquiry->quotation_pdf_path && Storage::disk('local')->exists($inquiry->quotation_pdf_path)) {
+                Storage::disk('local')->delete($inquiry->quotation_pdf_path);
             }
             $file = $request->file('quotation_pdf');
-            $filename = 'quotation_' . $quotation->purchase_id . '_' . time() . '.pdf';
-            $path = $file->storeAs('quotation_pdfs/' . $quotation->purchase_id, $filename, 'local');
+            $filename = 'quotation_' . $inquiry->inquiry_id . '_' . time() . '.pdf';
+            $path = $file->storeAs('quotation_pdfs/' . $inquiry->inquiry_id, $filename, 'local');
             $updateData['quotation_pdf_path'] = $path;
         }
 
@@ -221,18 +221,18 @@ class PurchaseQuotationController extends Controller
 
             // Proactively create the delivery directory (local-first, fallback to SFTP)
             try {
-                $absolutePath = $quotation->getSftpDeliveryAbsolutePath();
+                $absolutePath = $inquiry->getSftpDeliveryAbsolutePath();
                 if (!is_dir($absolutePath)) {
                     if (!@mkdir($absolutePath, 0777, true)) {
                         $disk = Storage::disk('sftp_delivery');
-                        $dir = $quotation->getSftpDeliveryRelativePath();
+                        $dir = $inquiry->getSftpDeliveryRelativePath();
                         if (!$disk->exists($dir)) {
                             $disk->makeDirectory($dir);
                         }
                     }
                 }
             } catch (\Exception $e) {
-                Log::warning("Could not pre-create directory for processing PQ [{$quotation->purchase_id}]: " . $e->getMessage());
+                Log::warning("Could not pre-create directory for processing Inquiry [{$inquiry->inquiry_id}]: " . $e->getMessage());
             }
         }
         // When transitioning INTO completed, stamp the delivered_at timestamp
@@ -241,44 +241,42 @@ class PurchaseQuotationController extends Controller
 
             // Ensure directory exists (local-first, fallback to SFTP)
             try {
-                $absolutePath = $quotation->getSftpDeliveryAbsolutePath();
+                $absolutePath = $inquiry->getSftpDeliveryAbsolutePath();
                 if (!is_dir($absolutePath)) {
                     if (!@mkdir($absolutePath, 0777, true)) {
                         $disk = Storage::disk('sftp_delivery');
-                        $dir = $quotation->getSftpDeliveryRelativePath();
+                        $dir = $inquiry->getSftpDeliveryRelativePath();
                         if (!$disk->exists($dir)) {
                             $disk->makeDirectory($dir);
                         }
                     }
                 }
             } catch (\Exception $e) {
-                Log::warning("Could not pre-create directory for completed PQ [{$quotation->purchase_id}]: " . $e->getMessage());
+                Log::warning("Could not pre-create directory for completed Inquiry [{$inquiry->inquiry_id}]: " . $e->getMessage());
             }
         }
 
-        $quotation->update($updateData);
-        $quotation->refresh()->load(['user', 'mapData']);
+        $inquiry->update($updateData);
+        $inquiry->refresh()->load(['user', 'mapData']);
 
         // Auto-check if delivery files exist immediately when status is updated to completed
-        if ($quotation->status === 'completed' && !$quotation->delivery_ready) {
-            $this->autoCheckAndMarkDeliveryReady($quotation);
+        if ($inquiry->status === 'completed' && !$inquiry->delivery_ready) {
+            $this->autoCheckAndMarkDeliveryReady($inquiry);
         }
 
         // Send email to user when admin sends a formal quotation
-        // Can be triggered either on first transition OR if admin explicitly requests email send
         $emailSent = false;
         $sendEmail = $request->boolean('send_email', false);
 
         if ($newStatus === 'quoted' && ($sendEmail || $oldStatus !== 'quoted')) {
-            // Only auto-send on first transition; on re-send, require explicit send_email=true
             if ($oldStatus !== 'quoted' || $sendEmail) {
                 try {
-                    Mail::to($quotation->user_email)->send(new QuotationSentToUser($quotation));
+                    Mail::to($inquiry->user_email)->send(new InquirySentToUser($inquiry));
                     $emailSent = true;
                 } catch (\Exception $e) {
-                    Log::error('QuotationSentToUser mail failed', [
-                        'purchase_id' => $quotation->purchase_id,
-                        'error'       => $e->getMessage(),
+                    Log::error('InquirySentToUser mail failed', [
+                        'inquiry_id' => $inquiry->inquiry_id,
+                        'error'      => $e->getMessage(),
                     ]);
                 }
             }
@@ -286,9 +284,9 @@ class PurchaseQuotationController extends Controller
 
         return response()->json([
             'success'    => true,
-            'message'    => 'Quotation updated successfully.' . ($emailSent ? ' Quotation email sent to client.' : ''),
+            'message'    => 'Inquiry updated successfully.' . ($emailSent ? ' Quotation email sent to client.' : ''),
             'email_sent' => $emailSent,
-            'data'       => $this->formatQuotationForApi($quotation),
+            'data'       => $this->formatInquiryForApi($inquiry),
         ]);
     }
 
@@ -297,34 +295,34 @@ class PurchaseQuotationController extends Controller
      */
     public function adminStreamQuotationPdf($id)
     {
-        $quotation = PurchaseQuotation::findOrFail($id);
+        $inquiry = Inquiry::findOrFail($id);
 
-        if (!$quotation->quotation_pdf_path || !Storage::disk('local')->exists($quotation->quotation_pdf_path)) {
+        if (!$inquiry->quotation_pdf_path || !Storage::disk('local')->exists($inquiry->quotation_pdf_path)) {
             abort(404, 'Quotation PDF not found.');
         }
 
-        $filename = 'Quotation_' . $quotation->purchase_id . '.pdf';
-        return Storage::disk('local')->download($quotation->quotation_pdf_path, $filename, [
+        $filename = 'Quotation_' . $inquiry->inquiry_id . '.pdf';
+        return Storage::disk('local')->download($inquiry->quotation_pdf_path, $filename, [
             'Content-Type' => 'application/pdf',
         ]);
     }
 
     /**
-     * Client: download the formal quotation PDF for their own quotation.
+     * Client: download the formal quotation PDF for their own inquiry.
      */
     public function clientDownloadQuotationPdf(Request $request, $id)
     {
         $user = Auth::user();
-        $quotation = PurchaseQuotation::where('id', $id)
+        $inquiry = Inquiry::where('id', $id)
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        if (!$quotation->quotation_pdf_path || !Storage::disk('local')->exists($quotation->quotation_pdf_path)) {
+        if (!$inquiry->quotation_pdf_path || !Storage::disk('local')->exists($inquiry->quotation_pdf_path)) {
             abort(404, 'Quotation PDF not available yet.');
         }
 
-        $filename = 'Quotation_' . $quotation->purchase_id . '.pdf';
-        return Storage::disk('local')->download($quotation->quotation_pdf_path, $filename, [
+        $filename = 'Quotation_' . $inquiry->inquiry_id . '.pdf';
+        return Storage::disk('local')->download($inquiry->quotation_pdf_path, $filename, [
             'Content-Type'        => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
@@ -336,12 +334,12 @@ class PurchaseQuotationController extends Controller
     public function clientUploadReceipt(Request $request, $id)
     {
         $user = Auth::user();
-        $quotation = PurchaseQuotation::where('id', $id)
+        $inquiry = Inquiry::where('id', $id)
             ->where('user_id', $user->id)
             ->firstOrFail();
 
         // Enforce status is awaiting_payment
-        if ($quotation->status !== 'awaiting_payment') {
+        if ($inquiry->status !== 'awaiting_payment') {
             return response()->json([
                 'success' => false,
                 'message' => 'Receipts can only be uploaded when status is Awaiting Payment.',
@@ -354,23 +352,23 @@ class PurchaseQuotationController extends Controller
 
         if ($request->hasFile('payment_receipt') && $request->file('payment_receipt')->isValid()) {
             // Delete old receipt if it exists
-            if ($quotation->payment_receipt_path && Storage::disk('local')->exists($quotation->payment_receipt_path)) {
-                Storage::disk('local')->delete($quotation->payment_receipt_path);
+            if ($inquiry->payment_receipt_path && Storage::disk('local')->exists($inquiry->payment_receipt_path)) {
+                Storage::disk('local')->delete($inquiry->payment_receipt_path);
             }
 
             $file = $request->file('payment_receipt');
             $extension = $file->getClientOriginalExtension();
-            $filename = 'receipt_' . $quotation->purchase_id . '_' . time() . '.' . $extension;
-            $path = $file->storeAs('payment_receipts/' . $quotation->purchase_id, $filename, 'local');
+            $filename = 'receipt_' . $inquiry->inquiry_id . '_' . time() . '.' . $extension;
+            $path = $file->storeAs('payment_receipts/' . $inquiry->inquiry_id, $filename, 'local');
 
-            $quotation->update([
+            $inquiry->update([
                 'payment_receipt_path' => $path,
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Payment receipt uploaded successfully.',
-                'data'    => $this->formatQuotationForApi($quotation->fresh(['user', 'mapData'])),
+                'data'    => $this->formatInquiryForApi($inquiry->fresh(['user', 'mapData'])),
             ]);
         }
 
@@ -386,16 +384,16 @@ class PurchaseQuotationController extends Controller
     public function clientDownloadPaymentReceipt($id)
     {
         $user = Auth::user();
-        $quotation = PurchaseQuotation::where('id', $id)
+        $inquiry = Inquiry::where('id', $id)
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        if (!$quotation->payment_receipt_path || !Storage::disk('local')->exists($quotation->payment_receipt_path)) {
+        if (!$inquiry->payment_receipt_path || !Storage::disk('local')->exists($inquiry->payment_receipt_path)) {
             abort(404, 'Payment receipt not found.');
         }
 
-        $extension = pathinfo($quotation->payment_receipt_path, PATHINFO_EXTENSION);
-        $filename = 'Receipt_' . $quotation->purchase_id . '.' . $extension;
+        $extension = pathinfo($inquiry->payment_receipt_path, PATHINFO_EXTENSION);
+        $filename = 'Receipt_' . $inquiry->inquiry_id . '.' . $extension;
 
         $mime = 'application/octet-stream';
         if (in_array(strtolower($extension), ['jpg', 'jpeg', 'png'])) {
@@ -404,7 +402,7 @@ class PurchaseQuotationController extends Controller
             $mime = 'application/pdf';
         }
 
-        return Storage::disk('local')->download($quotation->payment_receipt_path, $filename, [
+        return Storage::disk('local')->download($inquiry->payment_receipt_path, $filename, [
             'Content-Type' => $mime,
         ]);
     }
@@ -414,15 +412,15 @@ class PurchaseQuotationController extends Controller
      */
     public function adminStreamPaymentReceipt($id)
     {
-        $quotation = PurchaseQuotation::findOrFail($id);
+        $inquiry = Inquiry::findOrFail($id);
 
-        if (!$quotation->payment_receipt_path || !Storage::disk('local')->exists($quotation->payment_receipt_path)) {
+        if (!$inquiry->payment_receipt_path || !Storage::disk('local')->exists($inquiry->payment_receipt_path)) {
             abort(404, 'Payment receipt not found.');
         }
 
-        $extension = pathinfo($quotation->payment_receipt_path, PATHINFO_EXTENSION);
-        $filename = 'Receipt_' . $quotation->purchase_id . '.' . $extension;
-        
+        $extension = pathinfo($inquiry->payment_receipt_path, PATHINFO_EXTENSION);
+        $filename = 'Receipt_' . $inquiry->inquiry_id . '.' . $extension;
+
         $mime = 'application/octet-stream';
         if (in_array(strtolower($extension), ['jpg', 'jpeg', 'png'])) {
             $mime = 'image/' . (strtolower($extension) === 'jpg' ? 'jpeg' : strtolower($extension));
@@ -430,24 +428,22 @@ class PurchaseQuotationController extends Controller
             $mime = 'application/pdf';
         }
 
-        return Storage::disk('local')->download($quotation->payment_receipt_path, $filename, [
+        return Storage::disk('local')->download($inquiry->payment_receipt_path, $filename, [
             'Content-Type' => $mime,
         ]);
     }
-
-
 
     // ─────────────────────────────────────────────────────────────────────────
     // DELIVERY MANAGEMENT
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Admin: toggle the delivery_ready flag on a completed quotation.
+     * Admin: toggle the delivery_ready flag on a completed inquiry.
      * Before marking ready, verifies at least one file exists in the SFTP delivery folder.
      */
     public function adminToggleDelivery(Request $request, $id)
     {
-        $quotation = PurchaseQuotation::with(['user', 'mapData'])->findOrFail($id);
+        $inquiry = Inquiry::with(['user', 'mapData'])->findOrFail($id);
 
         $request->validate([
             'delivery_ready' => 'required|boolean',
@@ -455,11 +451,10 @@ class PurchaseQuotationController extends Controller
 
         $markReady = (bool) $request->delivery_ready;
 
-        // If trying to mark as ready, verify files actually exist (local-first check, fallback to SFTP)
         if ($markReady) {
             try {
-                $relativePath = $quotation->getSftpDeliveryRelativePath();
-                $absolutePath = $quotation->getSftpDeliveryAbsolutePath();
+                $relativePath = $inquiry->getSftpDeliveryRelativePath();
+                $absolutePath = $inquiry->getSftpDeliveryAbsolutePath();
                 $exists = false;
                 $hasTempFiles = false;
 
@@ -468,10 +463,8 @@ class PurchaseQuotationController extends Controller
                     $exists = $res['has_files'] && !$res['has_temp_files'];
                     $hasTempFiles = $res['has_temp_files'];
                 } else {
-                    // Try to create local directory
                     @mkdir($absolutePath, 0777, true);
-                    
-                    // Fallback to SFTP
+
                     $disk = Storage::disk('sftp_delivery');
                     if (!$disk->exists($relativePath)) {
                         $disk->makeDirectory($relativePath);
@@ -507,45 +500,41 @@ class PurchaseQuotationController extends Controller
                 if (!$exists) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'No files found in the delivery folder. Please upload the 3D model tiles via WinSCP first. Path: ' . $quotation->getSftpDeliveryAbsolutePath(),
+                        'message' => 'No files found in the delivery folder. Please upload the 3D model tiles via WinSCP first. Path: ' . $inquiry->getSftpDeliveryAbsolutePath(),
                     ], 422);
                 }
             } catch (\Exception $e) {
-                Log::warning('adminToggleDelivery: Could not verify files for ' . $quotation->purchase_id . ': ' . $e->getMessage());
-                // Allow marking ready even if check fails (network/permission issue, etc.) — admin is responsible
+                Log::warning('adminToggleDelivery: Could not verify files for ' . $inquiry->inquiry_id . ': ' . $e->getMessage());
             }
         }
 
         $updateData = ['delivery_ready' => $markReady];
-        if ($markReady && !$quotation->delivered_at) {
+        if ($markReady && !$inquiry->delivered_at) {
             $updateData['delivered_at'] = now();
         }
 
-        $quotation->update($updateData);
-        $quotation->refresh()->load(['user', 'mapData']);
+        $inquiry->update($updateData);
+        $inquiry->refresh()->load(['user', 'mapData']);
 
-        // Send notification email to client when delivery is marked as ready
         if ($markReady) {
             try {
-                $recipient = $quotation->user_email;
-                Mail::to($recipient)->send(new TilesReadyNotification($quotation));
-                Log::info('TilesReadyNotification sent to ' . $recipient . ' for ' . $quotation->purchase_id);
+                $recipient = $inquiry->user_email;
+                Mail::to($recipient)->send(new TilesReadyNotification($inquiry));
+                Log::info('TilesReadyNotification sent to ' . $recipient . ' for ' . $inquiry->inquiry_id);
             } catch (\Exception $e) {
-                // Never let a mail failure block the status update
-                Log::error('Failed to send TilesReadyNotification for ' . $quotation->purchase_id . ': ' . $e->getMessage());
+                Log::error('Failed to send TilesReadyNotification for ' . $inquiry->inquiry_id . ': ' . $e->getMessage());
             }
         }
 
         return response()->json([
-            'success'  => true,
-            'message'  => $markReady ? 'Delivery marked as ready. Client has been notified by email.' : 'Delivery marked as not ready. Client download disabled.',
-            'data'     => $this->formatQuotationForApi($quotation),
+            'success' => true,
+            'message' => $markReady ? 'Delivery marked as ready. Client has been notified by email.' : 'Delivery marked as not ready. Client download disabled.',
+            'data'    => $this->formatInquiryForApi($inquiry),
         ]);
     }
 
     /**
      * Recursively check if a directory has any files, and ensure none of them are temporary (.filepart, .tmp).
-     * Returns an array: ['has_files' => bool, 'has_temp_files' => bool]
      */
     protected function checkDirectoryFilesRecursive($dir): array
     {
@@ -580,21 +569,19 @@ class PurchaseQuotationController extends Controller
     }
 
     /**
-     * Admin: check what files exist on SFTP for a given quotation's delivery folder.
-     * Returns file list, total count, and total size.
+     * Admin: check what files exist on SFTP for a given inquiry's delivery folder.
      */
     public function adminCheckDelivery($id)
     {
-        $quotation = PurchaseQuotation::findOrFail($id);
+        $inquiry = Inquiry::findOrFail($id);
 
-        $relativePath  = $quotation->getSftpDeliveryRelativePath();
-        $absolutePath  = $quotation->getSftpDeliveryAbsolutePath();
+        $relativePath  = $inquiry->getSftpDeliveryRelativePath();
+        $absolutePath  = $inquiry->getSftpDeliveryAbsolutePath();
 
         try {
             $files = [];
             $totalSize = 0;
 
-            // Local-first check
             if (is_dir($absolutePath)) {
                 $localFiles = array_diff(scandir($absolutePath), ['.', '..']);
                 foreach ($localFiles as $file) {
@@ -611,10 +598,8 @@ class PurchaseQuotationController extends Controller
                     }
                 }
             } else {
-                // Try creating local directory first
                 @mkdir($absolutePath, 0777, true);
 
-                // Fallback to SFTP
                 $disk = Storage::disk('sftp_delivery');
                 if (!$disk->exists($relativePath)) {
                     $disk->makeDirectory($relativePath);
@@ -637,16 +622,16 @@ class PurchaseQuotationController extends Controller
             }
 
             return response()->json([
-                'success'        => true,
-                'sftp_path'      => $absolutePath,
-                'file_count'     => count($files),
-                'total_size'     => $totalSize,
+                'success'          => true,
+                'sftp_path'        => $absolutePath,
+                'file_count'       => count($files),
+                'total_size'       => $totalSize,
                 'total_size_human' => $this->formatBytes($totalSize),
-                'files'          => $files,
+                'files'            => $files,
             ]);
 
         } catch (\Exception $e) {
-            Log::error('adminCheckDelivery failed for ' . $quotation->purchase_id . ': ' . $e->getMessage());
+            Log::error('adminCheckDelivery failed for ' . $inquiry->inquiry_id . ': ' . $e->getMessage());
             return response()->json([
                 'success'   => false,
                 'sftp_path' => $absolutePath,
@@ -658,17 +643,15 @@ class PurchaseQuotationController extends Controller
     }
 
     /**
-     * Admin: cleanly delete a purchase quotation.
-     * Deletes files from the SFTP/local directory, and deletes the database record.
+     * Admin: cleanly delete an inquiry.
      */
     public function adminDestroy($id)
     {
-        $quotation = PurchaseQuotation::findOrFail($id);
+        $inquiry = Inquiry::findOrFail($id);
 
-        $relativePath = $quotation->getSftpDeliveryRelativePath();
-        $absolutePath = $quotation->getSftpDeliveryAbsolutePath();
+        $relativePath = $inquiry->getSftpDeliveryRelativePath();
+        $absolutePath = $inquiry->getSftpDeliveryAbsolutePath();
 
-        // 1. Delete local delivery files and folder (local-first)
         try {
             if (is_dir($absolutePath)) {
                 $this->deleteLocalDirRecursive($absolutePath);
@@ -678,7 +661,6 @@ class PurchaseQuotationController extends Controller
             Log::warning("adminDestroy: Failed to delete local folder: " . $e->getMessage());
         }
 
-        // 2. Delete SFTP files and folder (fallback / sync)
         try {
             $disk = Storage::disk('sftp_delivery');
             if ($disk->exists($relativePath)) {
@@ -689,12 +671,11 @@ class PurchaseQuotationController extends Controller
             Log::warning("adminDestroy: Failed to delete SFTP folder: " . $e->getMessage());
         }
 
-        // 3. Delete database record
-        $quotation->delete();
+        $inquiry->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Purchase quotation and all associated files deleted successfully.',
+            'message' => 'Inquiry and all associated files deleted successfully.',
         ]);
     }
 
@@ -728,11 +709,11 @@ class PurchaseQuotationController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        $quotation = PurchaseQuotation::where('id', $id)
+        $inquiry = Inquiry::where('id', $id)
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        $quotation->update([
+        $inquiry->update([
             'disclaimer_accepted_at' => now(),
             'disclaimer_ip_address'   => $request->ip(),
             'disclaimer_user_agent'   => $request->userAgent(),
@@ -742,46 +723,42 @@ class PurchaseQuotationController extends Controller
     }
 
     /**
-     * Client: download the 3D model tiles for their completed quotation.
-     * Streams the delivery folder as a zip (or a single file directly) from SFTP.
+     * Client: download the 3D model tiles for their completed inquiry.
      */
     public function clientDownload($id)
     {
         $user      = Auth::user();
-        $quotation = PurchaseQuotation::where('id', $id)
+        $inquiry   = Inquiry::where('id', $id)
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        if (!$quotation->disclaimer_accepted_at) {
+        if (!$inquiry->disclaimer_accepted_at) {
             return response()->json(['error' => 'You must accept the disclaimer before downloading.'], 403);
         }
 
-        if ($quotation->status !== 'completed') {
+        if ($inquiry->status !== 'completed') {
             return response()->json(['error' => 'Your 3D model is not yet ready for download.'], 403);
         }
 
-        if (!$quotation->delivery_ready) {
+        if (!$inquiry->delivery_ready) {
             return response()->json(['error' => 'Your 3D model tiles are still being prepared. Please check back soon.'], 403);
         }
 
-        // Release session lock early for large file streaming
         session_write_close();
         ignore_user_abort(true);
         if (function_exists('ini_set')) { ini_set('memory_limit', '-1'); }
         set_time_limit(0);
 
-        $relativePath = $quotation->getSftpDeliveryRelativePath();
-        $absolutePath = $quotation->getSftpDeliveryAbsolutePath();
+        $relativePath = $inquiry->getSftpDeliveryRelativePath();
+        $absolutePath = $inquiry->getSftpDeliveryAbsolutePath();
         $disk         = Storage::disk('sftp_delivery');
-        $zipName      = $quotation->purchase_id . '_3d_tiles.zip';
+        $zipName      = $inquiry->inquiry_id . '_3d_tiles.zip';
         $safeZipName  = preg_replace('/[^a-zA-Z0-9._-]/', '_', $zipName);
 
-        // LOCAL-FIRST: if the SFTP server is mounted locally, stream directly
         if (file_exists($absolutePath) && is_readable($absolutePath)) {
             return $this->streamLocalDelivery($absolutePath, $safeZipName);
         }
 
-        // SFTP fallback: list, download, zip on-the-fly
         try {
             $contents = $disk->listContents($relativePath, true)->toArray();
 
@@ -789,7 +766,6 @@ class PurchaseQuotationController extends Controller
                 return response()->json(['error' => 'No delivery files found. Please contact support.'], 404);
             }
 
-            // If exactly one file and it is a zip — stream it directly without re-zipping
             $fileItems = array_filter($contents, fn($c) => $c->isFile());
             if (count($fileItems) === 1) {
                 $singleItem = reset($fileItems);
@@ -818,8 +794,7 @@ class PurchaseQuotationController extends Controller
                 ]);
             }
 
-            // Multiple files — download all from SFTP, zip, stream
-            $tempDir = storage_path('app/temp_downloads/' . uniqid('pq_dl_'));
+            $tempDir = storage_path('app/temp_downloads/' . uniqid('inq_dl_'));
             mkdir($tempDir, 0777, true);
 
             try {
@@ -849,7 +824,6 @@ class PurchaseQuotationController extends Controller
                 $zip->close();
 
             } finally {
-                // Clean up temp dir regardless
                 $deleteFolder = function ($dir) use (&$deleteFolder) {
                     if (!file_exists($dir)) return;
                     foreach (array_diff(scandir($dir), ['.', '..']) as $f) {
@@ -868,7 +842,7 @@ class PurchaseQuotationController extends Controller
             ])->deleteFileAfterSend(true);
 
         } catch (\Exception $e) {
-            Log::error('clientDownload failed for quotation ' . $quotation->purchase_id . ': ' . $e->getMessage());
+            Log::error('clientDownload failed for inquiry ' . $inquiry->inquiry_id . ': ' . $e->getMessage());
             return response()->json(['error' => 'Download failed. Please try again or contact support.'], 500);
         }
     }
@@ -901,7 +875,6 @@ class PurchaseQuotationController extends Controller
             ]);
         }
 
-        // Directory — zip on-the-fly
         $tempZipPath = storage_path('app/temp_downloads/' . uniqid('dl_') . '.zip');
         @mkdir(dirname($tempZipPath), 0777, true);
         $zip = new \ZipArchive();
@@ -933,81 +906,77 @@ class PurchaseQuotationController extends Controller
     }
 
     /**
-     * Format a quotation model as an array for API responses.
+     * Format an inquiry model as an array for API responses.
      */
-    private function formatQuotationForApi(PurchaseQuotation $q): array
+    private function formatInquiryForApi(Inquiry $q): array
     {
         return [
-            'id'                    => $q->id,
-            'purchase_id'           => $q->purchase_id,
-            'user_id'               => $q->user_id,
-            'user_email'            => $q->user_email,
-            'user_name'             => $q->user->name ?? '—',
-            'map_data_id'           => $q->map_data_id,
-            'map_title'             => $q->mapData->title ?? $q->map_data_id,
-            'map_3d_tiles'          => $q->mapData->{'3dTiles'} ?? null,
-            'map_x_axis'            => $q->mapData->xAxis ?? null,
-            'map_y_axis'            => $q->mapData->yAxis ?? null,
-            'output_categories'     => $q->output_categories,
-            'area_coordinates'      => $q->area_coordinates,
-            'status'                => $q->status,
-            'status_label'          => $q->status_label,
-            'status_color'          => $q->status_color,
-            'admin_notes'           => $q->admin_notes,
-            'rejection_reason'      => $q->rejection_reason,
-            'quoted_price'          => $q->quoted_price,
-            'quoted_at'             => $q->quoted_at?->format('d M Y, h:i A'),
-            'quotation_pdf_path'    => $q->quotation_pdf_path,
-            'quotation_pdf_url'     => $q->quotation_pdf_path
-                ? url('/api/admin/purchase-quotations/' . $q->id . '/quotation-pdf')
+            'id'                       => $q->id,
+            'inquiry_id'               => $q->inquiry_id,
+            'user_id'                  => $q->user_id,
+            'user_email'               => $q->user_email,
+            'user_name'                => $q->user->name ?? '—',
+            'map_data_id'              => $q->map_data_id,
+            'map_title'                => $q->mapData->title ?? $q->map_data_id,
+            'map_3d_tiles'             => $q->mapData->{'3dTiles'} ?? null,
+            'map_x_axis'               => $q->mapData->xAxis ?? null,
+            'map_y_axis'               => $q->mapData->yAxis ?? null,
+            'output_categories'        => $q->output_categories,
+            'area_coordinates'         => $q->area_coordinates,
+            'status'                   => $q->status,
+            'status_label'             => $q->status_label,
+            'status_color'             => $q->status_color,
+            'admin_notes'              => $q->admin_notes,
+            'rejection_reason'         => $q->rejection_reason,
+            'quoted_price'             => $q->quoted_price,
+            'quoted_at'                => $q->quoted_at?->format('d M Y, h:i A'),
+            'quotation_pdf_path'       => $q->quotation_pdf_path,
+            'quotation_pdf_url'        => $q->quotation_pdf_path
+                ? url('/api/admin/inquiries/' . $q->id . '/quotation-pdf')
                 : null,
             'quotation_pdf_client_url' => $q->quotation_pdf_path
-                ? url('/api/purchase-quotation/' . $q->id . '/quotation-pdf')
+                ? url('/api/inquiry/' . $q->id . '/quotation-pdf')
                 : null,
-            'payment_receipt_path'  => $q->payment_receipt_path,
-            'payment_receipt_url'   => $q->payment_receipt_path
-                ? url('/api/admin/purchase-quotations/' . $q->id . '/payment-receipt')
+            'payment_receipt_path'     => $q->payment_receipt_path,
+            'payment_receipt_url'      => $q->payment_receipt_path
+                ? url('/api/admin/inquiries/' . $q->id . '/payment-receipt')
                 : null,
             'payment_receipt_client_url' => $q->payment_receipt_path
-                ? url('/api/purchase-quotation/' . $q->id . '/payment-receipt')
+                ? url('/api/inquiry/' . $q->id . '/payment-receipt')
                 : null,
-            'bank_name'             => $q->bank_name,
-            'bank_account_number'   => $q->bank_account_number,
-            'bank_account_name'     => $q->bank_account_name,
-            'payment_deadline'      => $q->payment_deadline?->format('Y-m-d'),
-            'payment_deadline_fmt'  => $q->payment_deadline?->format('d M Y'),
-            'processing_started_at' => $q->processing_started_at?->format('d M Y, h:i A'),
-            // Delivery fields
-            'delivery_ready'        => (bool) $q->delivery_ready,
-            'delivered_at'          => $q->delivered_at?->format('d M Y, h:i A'),
-            'sftp_delivery_path'    => $q->getSftpDeliveryAbsolutePath(),
-            'sftp_delivery_relative'=> $q->getSftpDeliveryRelativePath(),
-            // Timestamps
-            'created_at'            => $q->created_at->format('d M Y, h:i A'),
-            'updated_at'            => $q->updated_at->format('d M Y, h:i A'),
+            'bank_name'                => $q->bank_name,
+            'bank_account_number'      => $q->bank_account_number,
+            'bank_account_name'        => $q->bank_account_name,
+            'payment_deadline'         => $q->payment_deadline?->format('Y-m-d'),
+            'payment_deadline_fmt'     => $q->payment_deadline?->format('d M Y'),
+            'processing_started_at'    => $q->processing_started_at?->format('d M Y, h:i A'),
+            'delivery_ready'           => (bool) $q->delivery_ready,
+            'delivered_at'             => $q->delivered_at?->format('d M Y, h:i A'),
+            'sftp_delivery_path'       => $q->getSftpDeliveryAbsolutePath(),
+            'sftp_delivery_relative'   => $q->getSftpDeliveryRelativePath(),
+            'created_at'               => $q->created_at->format('d M Y, h:i A'),
+            'updated_at'               => $q->updated_at->format('d M Y, h:i A'),
         ];
     }
 
     /**
      * Proactively checks if the delivery directory contains files.
-     * If files exist and status is completed, automatically updates delivery_ready to true.
      */
-    protected function autoCheckAndMarkDeliveryReady(PurchaseQuotation $quotation): bool
+    protected function autoCheckAndMarkDeliveryReady(Inquiry $inquiry): bool
     {
-        if ($quotation->status !== 'completed' || $quotation->delivery_ready) {
-            return (bool) $quotation->delivery_ready;
+        if ($inquiry->status !== 'completed' || $inquiry->delivery_ready) {
+            return (bool) $inquiry->delivery_ready;
         }
 
         try {
-            $relativePath = $quotation->getSftpDeliveryRelativePath();
-            $absolutePath = $quotation->getSftpDeliveryAbsolutePath();
+            $relativePath = $inquiry->getSftpDeliveryRelativePath();
+            $absolutePath = $inquiry->getSftpDeliveryAbsolutePath();
             $exists = false;
 
             if (is_dir($absolutePath)) {
                 $localFiles = array_diff(scandir($absolutePath), ['.', '..']);
                 $exists = count($localFiles) > 0;
             } else {
-                // Try fallback to SFTP
                 $disk = Storage::disk('sftp_delivery');
                 if ($disk->exists($relativePath)) {
                     $contents = $disk->listContents($relativePath)->toArray();
@@ -1017,48 +986,48 @@ class PurchaseQuotationController extends Controller
 
             if ($exists) {
                 $updateData = ['delivery_ready' => true];
-                if (!$quotation->delivered_at) {
+                if (!$inquiry->delivered_at) {
                     $updateData['delivered_at'] = now();
                 }
-                $quotation->update($updateData);
-                $quotation->refresh();
+                $inquiry->update($updateData);
+                $inquiry->refresh();
 
                 // Send email notification to user
                 try {
-                    $recipient = $quotation->user_email;
-                    Mail::to($recipient)->send(new TilesReadyNotification($quotation));
-                    Log::info('TilesReadyNotification sent via autocheck to ' . $recipient . ' for ' . $quotation->purchase_id);
+                    $recipient = $inquiry->user_email;
+                    Mail::to($recipient)->send(new TilesReadyNotification($inquiry));
+                    Log::info('TilesReadyNotification sent via autocheck to ' . $recipient . ' for ' . $inquiry->inquiry_id);
                 } catch (\Exception $e) {
-                    Log::error('Failed to send TilesReadyNotification via autocheck for ' . $quotation->purchase_id . ': ' . $e->getMessage());
+                    Log::error('Failed to send TilesReadyNotification via autocheck for ' . $inquiry->inquiry_id . ': ' . $e->getMessage());
                 }
 
                 return true;
             }
         } catch (\Exception $e) {
-            Log::warning('autoCheckAndMarkDeliveryReady failed for ' . $quotation->purchase_id . ': ' . $e->getMessage());
+            Log::warning('autoCheckAndMarkDeliveryReady failed for ' . $inquiry->inquiry_id . ': ' . $e->getMessage());
         }
 
         return false;
     }
 
     /**
-     * Client: check the status of a given quotation.
+     * Client: check the status of a given inquiry.
      */
     public function clientCheckStatus($id)
     {
         $user = Auth::user();
-        $quotation = PurchaseQuotation::where('id', $id)
+        $inquiry = Inquiry::where('id', $id)
             ->where('user_id', $user->id)
             ->firstOrFail();
 
         // Perform auto check to detect uploaded files on status request
-        $this->autoCheckAndMarkDeliveryReady($quotation);
+        $this->autoCheckAndMarkDeliveryReady($inquiry);
 
         return response()->json([
             'success'        => true,
-            'status'         => $quotation->status,
-            'delivery_ready' => (bool) $quotation->delivery_ready,
-            'delivered_at'   => $quotation->delivered_at ? $quotation->delivered_at->format('d M Y, h:i A') : null,
+            'status'         => $inquiry->status,
+            'delivery_ready' => (bool) $inquiry->delivery_ready,
+            'delivered_at'   => $inquiry->delivered_at ? $inquiry->delivered_at->format('d M Y, h:i A') : null,
         ]);
     }
 

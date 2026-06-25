@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Purchase Quotation Received</title>
+    <title>Inquiry Received</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 0; line-height: 1.7; }
         .wrapper { max-width: 620px; margin: 40px auto; }
@@ -26,35 +26,35 @@
 <body>
     <div class="wrapper">
         <div class="header">
-            <h1>✅ Quotation Request Received</h1>
-            <p>We have received your purchase quotation request</p>
+            <h1>✅ Inquiry Request Received</h1>
+            <p>We have received your inquiry request</p>
         </div>
         <div class="body">
-            <p>Hello <strong>{{ $quotation->user->name ?? $quotation->user_email }}</strong>,</p>
-            <p>Thank you for submitting your purchase quotation request to <strong>3DHub Data Portal</strong>. We have successfully received your request and our team will review it shortly.</p>
+            <p>Hello <strong>{{ $inquiry->user->name ?? $inquiry->user_email }}</strong>,</p>
+            <p>Thank you for submitting your inquiry request to <strong>3DHub Data Portal</strong>. We have successfully received your request and our team will review it shortly.</p>
 
             <div style="text-align: center;">
-                <div class="badge-id">📋 {{ $quotation->purchase_id }}</div>
+                <div class="badge-id">📋 {{ $inquiry->inquiry_id }}</div>
             </div>
 
             <table class="info-table">
                 <tr>
                     <td>3D Model</td>
-                    <td><strong>{{ $quotation->mapData->title ?? $quotation->map_data_id }}</strong></td>
+                    <td><strong>{{ $inquiry->mapData->title ?? $inquiry->map_data_id }}</strong></td>
                 </tr>
                 <tr>
                     <td>Date Submitted</td>
-                    <td>{{ $quotation->created_at->format('d M Y, h:i A') }}</td>
+                    <td>{{ $inquiry->created_at->format('d M Y, h:i A') }}</td>
                 </tr>
                 <tr>
                     <td>Output Formats</td>
                     <td>
-                        @if(is_array($quotation->output_categories))
-                            @foreach($quotation->output_categories as $cat)
+                        @if(is_array($inquiry->output_categories))
+                            @foreach($inquiry->output_categories as $cat)
                                 <span class="tag">{{ $cat }}</span>
                             @endforeach
                         @else
-                            {{ $quotation->output_categories }}
+                            {{ $inquiry->output_categories }}
                         @endif
                     </td>
                 </tr>
@@ -69,7 +69,7 @@
                 Our team will review your request and calculate a quotation based on the area you have selected and the output formats requested. You will receive another email with the quotation details, including pricing and payment instructions.
             </div>
 
-            <a href="{{ url('/purchase-quotation/my') }}" class="cta-btn">View My Quotations</a>
+            <a href="{{ url('/inquiry/my') }}" class="cta-btn">View My Inquiries</a>
 
             <p style="margin-top: 30px; color: #888; font-size: 13px;">If you have any questions, feel free to reach out to us at <a href="mailto:{{ config('support.email', env('SUPPORT_EMAIL', 'support@3dhub.com')) }}" style="color: #696cff;">{{ config('support.email', env('SUPPORT_EMAIL', 'support@3dhub.com')) }}</a>.</p>
         </div>

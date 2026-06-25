@@ -95,7 +95,7 @@
           <a href="{{ route('admin.add_3d_model') }}" class="admin-nav-link">Add 3D Model</a>
           <a href="{{ route('admin.manage_map_pins') }}" class="admin-nav-link">Manage Map Pins</a>
           <a href="{{ route('admin.manage_showcases') }}" class="admin-nav-link active">Manage Showcase</a>
-          <a href="{{ route('admin.purchase_quotations') }}" class="admin-nav-link">Purchase Quotations</a>
+          <a href="{{ route('admin.inquiries') }}" class="admin-nav-link">Inquiries</a>
           <a href="{{ route('admin.manage_users') }}" class="admin-nav-link">Manage Users</a>
           <a href="{{ route('landing') }}" class="admin-nav-link" target="_blank">View Portal</a>
         </div>

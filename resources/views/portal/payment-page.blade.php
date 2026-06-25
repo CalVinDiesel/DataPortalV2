@@ -104,7 +104,7 @@
       
       /* Dropdown hover behavior for desktop navigation links */
       @media (min-width: 992px) {
-        #navPurchaseQuotation:hover .dropdown-menu,
+        #navInquiry:hover .dropdown-menu,
         #navUpload:hover .dropdown-menu {
           display: block;
           margin-top: 0;
@@ -170,18 +170,18 @@
           if (emailEl && d.email) emailEl.textContent = d.email;
           var navUpload = document.getElementById('navUpload');
           var navUploadMobile = document.querySelectorAll('.navUpload-mobile');
-          var navPurchaseQuotation = document.getElementById('navPurchaseQuotation');
-          var navPurchaseQuotationMobile = document.querySelectorAll('.navPurchaseQuotation-mobile');
+          var navInquiry = document.getElementById('navInquiry');
+          var navInquiryMobile = document.querySelectorAll('.navInquiry-mobile');
           if (d.role === 'registered' || d.role === 'trusted' || d.role === 'admin' || d.role === 'superadmin') {
             if (navUpload) navUpload.style.display = '';
             navUploadMobile.forEach(function (el) { el.style.display = ''; });
-            if (navPurchaseQuotation) navPurchaseQuotation.style.display = '';
-            navPurchaseQuotationMobile.forEach(function (el) { el.style.display = ''; });
+            if (navInquiry) navInquiry.style.display = '';
+            navInquiryMobile.forEach(function (el) { el.style.display = ''; });
           } else {
             if (navUpload) navUpload.style.display = 'none';
             navUploadMobile.forEach(function (el) { el.style.display = 'none'; });
-            if (navPurchaseQuotation) navPurchaseQuotation.style.display = 'none';
-            navPurchaseQuotationMobile.forEach(function (el) { el.style.display = 'none'; });
+            if (navInquiry) navInquiry.style.display = 'none';
+            navInquiryMobile.forEach(function (el) { el.style.display = 'none'; });
           }
           var navAdmin = document.getElementById('navAdmin');
           if (navAdmin) navAdmin.style.display = (d.role === 'admin' || d.role === 'superadmin') ? '' : 'none';
@@ -264,26 +264,26 @@
           <li class="nav-item">
             <a class="nav-link fw-medium" href="{{ route('landing') }}#landingShowCase">ShowCase</a>
           </li>
-          <!-- PurchaseQuotation Dropdown for Desktop -->
-          <li class="nav-item dropdown d-none d-lg-block" id="navPurchaseQuotation" style="display:none;">
+          <!-- Inquiry Dropdown for Desktop -->
+          <li class="nav-item dropdown d-none d-lg-block" id="navInquiry" style="display:none;">
             <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
-              PurchaseQuotation
+              Inquiry
             </a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{{ route('purchase_quotation.new') }}">New PurchaseQuotation</a></li>
+              <li><a class="dropdown-item" href="{{ route('inquiry.new') }}">New Inquiry</a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="{{ route('purchase_quotation.my') }}">My PurchaseQuotation</a></li>
+              <li><a class="dropdown-item" href="{{ route('inquiry.my') }}">My Inquiry</a></li>
             </ul>
           </li>
-          <!-- PurchaseQuotation Dropdown for Mobile -->
-          <li class="nav-item d-lg-none navPurchaseQuotation-mobile" style="display:none;">
-            <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navPurchaseQuotationCollapsePayment" aria-expanded="false" aria-controls="navPurchaseQuotationCollapsePayment">
-              PurchaseQuotation
+          <!-- Inquiry Dropdown for Mobile -->
+          <li class="nav-item d-lg-none navInquiry-mobile" style="display:none;">
+            <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navInquiryCollapsePayment" aria-expanded="false" aria-controls="navInquiryCollapsePayment">
+              Inquiry
             </a>
-            <div class="collapse nav-upload-mobile-sub" id="navPurchaseQuotationCollapsePayment">
-              <a class="nav-link fw-medium" href="{{ route('purchase_quotation.new') }}">New PurchaseQuotation</a>
+            <div class="collapse nav-upload-mobile-sub" id="navInquiryCollapsePayment">
+              <a class="nav-link fw-medium" href="{{ route('inquiry.new') }}">New Inquiry</a>
               <hr class="dropdown-divider">
-              <a class="nav-link fw-medium" href="{{ route('purchase_quotation.my') }}">My PurchaseQuotation</a>
+              <a class="nav-link fw-medium" href="{{ route('inquiry.my') }}">My Inquiry</a>
             </div>
           </li>
           {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (3D MODEL SALES FIRST)

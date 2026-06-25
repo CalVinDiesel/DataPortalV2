@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class PurchaseQuotation extends Model
+class Inquiry extends Model
 {
+    protected $table = 'inquiries';
+
     protected $fillable = [
-        'purchase_id',
+        'inquiry_id',
         'user_id',
         'user_email',
         'map_data_id',
@@ -134,12 +136,12 @@ class PurchaseQuotation extends Model
 
     /**
      * Returns the relative SFTP path (relative to the sftp_delivery disk root)
-     * where admin should upload 3D model tiles for this purchase order.
-     * Path: purchase_deliveries/<purchase_id>
+     * where admin should upload 3D model tiles for this inquiry order.
+     * Path: inquiry_deliveries/<inquiry_id>
      */
     public function getSftpDeliveryRelativePath(): string
     {
-        return 'purchase_deliveries/' . $this->purchase_id;
+        return 'inquiry_deliveries/' . $this->inquiry_id;
     }
 
     /**
@@ -154,7 +156,7 @@ class PurchaseQuotation extends Model
     }
 
     /**
-     * Scope to filter quotations for a specific user.
+     * Scope to filter inquiries for a specific user.
      */
     public function scopeForUser($query, $userId)
     {

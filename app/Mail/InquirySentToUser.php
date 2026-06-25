@@ -7,41 +7,40 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use App\Models\PurchaseQuotation;
-
+use App\Models\Inquiry;
 use Illuminate\Mail\Mailables\Attachment;
 
-class QuotationSentToUser extends Mailable
+class InquirySentToUser extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public PurchaseQuotation $quotation;
+    public Inquiry $inquiry;
 
-    public function __construct(PurchaseQuotation $quotation)
+    public function __construct(Inquiry $inquiry)
     {
-        $this->quotation = $quotation;
+        $this->inquiry = $inquiry;
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[3DHub] Your Purchase Quotation - ' . $this->quotation->purchase_id,
+            subject: '[3DHub] Your Inquiry Quotation - ' . $this->inquiry->inquiry_id,
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.quotation-sent-to-user',
+            view: 'emails.inquiry-sent-to-user',
         );
     }
 
     public function attachments(): array
     {
-        if ($this->quotation->quotation_pdf_path) {
+        if ($this->inquiry->quotation_pdf_path) {
             return [
-                Attachment::fromStorageDisk('local', $this->quotation->quotation_pdf_path)
-                    ->as('Quotation_' . $this->quotation->purchase_id . '.pdf')
+                Attachment::fromStorageDisk('local', $this->inquiry->quotation_pdf_path)
+                    ->as('Quotation_' . $this->inquiry->inquiry_id . '.pdf')
                     ->withMime('application/pdf'),
             ];
         }

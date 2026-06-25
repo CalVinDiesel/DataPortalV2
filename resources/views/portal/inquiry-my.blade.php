@@ -3,39 +3,39 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-  <title>My Purchase Quotations | 3DHub Data Portal</title>
-  <meta name="description" content="View and track all your purchase quotation requests on the 3DHub Data Portal.">
+  <title>My Inquiries | 3DHub Data Portal</title>
+  <meta name="description" content="View and track all your inquiry requests on the 3DHub Data Portal.">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
+  <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
   <link rel="stylesheet" href="{{ asset('assets') }}/vendor/fonts/iconify-icons.css">
+
+  <!-- Core CSS -->
   <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/core.css">
   <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css">
   <link rel="stylesheet" href="{{ asset('assets') }}/css/client-responsive.css">
   <link rel="stylesheet" href="{{ asset('assets') }}/vendor/css/pages/front-page.css">
+
+  <!-- Helpers and front-config -->
   <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
   <script src="{{ asset('assets') }}/js/front-config.js"></script>
 
   <style>
-    :root {
-      --status-pending:   #f59e0b;
-      --status-reviewed:  #0ea5e9;
-      --status-quoted:    #696cff;
-      --status-awaiting:  #f97316;
-      --status-processing:#8b5cf6;
-      --status-completed: #10b981;
-      --status-rejected:  #ef4444;
-    }
-
-    body { font-family: 'Inter', sans-serif; }
-
-    /* Navbar hover dropdowns */
+    /* Dropdown hover behavior for desktop navigation links */
     @media (min-width: 1200px) {
-      #navPurchaseQuotation:hover .dropdown-menu,
-      #navUpload:hover .dropdown-menu { display: block; margin-top: 0; }
+      #navInquiry:hover .dropdown-menu,
+      #navUpload:hover .dropdown-menu {
+        display: block;
+        margin-top: 0;
+      }
     }
 
     /* ── Page Hero ── */
@@ -61,152 +61,326 @@
     .pq-hero .btn-new:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.15); }
 
     /* ── Cards area ── */
-    .pq-content { margin-top: -2.5rem; padding-bottom: 4rem; }
+    .pq-content { margin-top: -2.5rem; padding-bottom: 5rem; }
 
-    /* ── Status badges ── */
-    .status-badge {
-      display: inline-flex; align-items: center; gap: .35rem;
-      padding: .28rem .75rem; border-radius: 20px; font-size: 12px; font-weight: 700;
-      white-space: nowrap;
-    }
-    .status-badge .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-    .sb-pending    { background: #fffbeb; color: #92400e; border: 1.5px solid #fcd34d; }
-    .sb-pending .dot    { background: var(--status-pending); }
-    .sb-reviewed   { background: #f0f9ff; color: #0c4a6e; border: 1.5px solid #7dd3fc; }
-    .sb-reviewed .dot   { background: var(--status-reviewed); }
-    .sb-quoted     { background: #f0f0ff; color: #3730a3; border: 1.5px solid #c7d2fe; }
-    .sb-quoted .dot     { background: var(--status-quoted); }
-    .sb-awaiting_payment { background: #fff7ed; color: #7c2d12; border: 1.5px solid #fed7aa; }
-    .sb-awaiting_payment .dot { background: var(--status-awaiting); }
-    .sb-processing { background: #f5f3ff; color: #4c1d95; border: 1.5px solid #ddd6fe; }
-    .sb-processing .dot { background: var(--status-processing); }
-    .sb-completed  { background: #f0fdf4; color: #065f46; border: 1.5px solid #6ee7b7; }
-    .sb-completed .dot  { background: var(--status-completed); }
-    .sb-rejected   { background: #fef2f2; color: #7f1d1d; border: 1.5px solid #fca5a5; }
-    .sb-rejected .dot   { background: var(--status-rejected); }
-
-    /* ── Quotation Card ── */
+    /* Expandable list card design */
     .q-card {
       background: #fff;
-      border: 1.5px solid #e5e7eb;
-      border-radius: 14px;
+      border: 1px solid var(--bs-border-color);
+      border-radius: 12px;
       margin-bottom: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
       overflow: hidden;
-      transition: box-shadow .2s, border-color .2s;
+      transition: box-shadow .2s;
     }
-    .q-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.08); border-color: #c4b5fd; }
+    .q-card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
     .q-card-header {
-      padding: 1.1rem 1.4rem;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       cursor: pointer;
-      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-      user-select: none;
-      position: relative;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
-    .q-card-header .purchase-id {
-      font-weight: 700; color: #4f46e5; font-size: 14px; font-family: 'Courier New', monospace;
-      background: #f0f0ff; padding: .2rem .6rem; border-radius: 6px;
+    .q-card-header .inquiry-id {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 14px;
+      color: #696cff;
+      background: rgba(105,108,255,0.08);
+      padding: .35rem .75rem;
+      border-radius: 6px;
     }
-    .q-card-header .meta { flex: 1; min-width: 0; }
-    .q-card-header .meta .model-name { font-weight: 600; color: #111; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .q-card-header .meta .date-info  { font-size: 12px; color: #888; margin-top: 2px; }
-    .q-card-header .chevron { color: #aaa; transition: transform .3s; flex-shrink: 0; font-size: 18px; }
-    .q-card-header.open .chevron { transform: rotate(180deg); }
+    .q-card-header .meta {
+      flex: 1;
+      min-width: 200px;
+    }
+    .q-card-header .meta .model-name {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--bs-heading-color);
+    }
+    .q-card-header .meta .date-info {
+      font-size: 12px;
+      color: var(--bs-secondary-color);
+      margin-top: .15rem;
+    }
+    .q-card-header .chevron {
+      font-size: 20px;
+      transition: transform .25s ease-out;
+      color: var(--bs-secondary-color);
+    }
+    .q-card-header.open .chevron {
+      transform: rotate(180deg);
+    }
 
-    /* ── Detail panel ── */
-    .q-card-body { display: none; border-top: 1.5px solid #f0f0f0; }
-    .q-card-body.open { display: block; }
-    .q-card-body-inner { padding: 1.4rem; }
+    .q-card-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .3s ease-out;
+    }
+    .q-card-body.open {
+      max-height: 1500px; /* high limit to accommodate content */
+      border-top: 1px solid var(--bs-border-color);
+    }
+    .q-card-body-inner {
+      padding: 1.5rem;
+    }
 
-    /* Timeline */
+    /* Formats tags */
+    .fmt-tag {
+      display: inline-block;
+      background: rgba(105,108,255,0.06);
+      color: #696cff;
+      border: 1px solid rgba(105,108,255,0.15);
+      border-radius: 20px;
+      padding: .1rem .6rem;
+      font-size: 11px;
+      font-weight: 600;
+      margin-right: .2rem;
+    }
+
+    /* Status Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      padding: .3rem .8rem;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .status-badge .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+    .sb-pending          { background: #fffbeb; color: #92400e; border: 1.5px solid #fcd34d; } .sb-pending .dot          { background: #f59e0b; }
+    .sb-reviewed         { background: #f0f9ff; color: #0c4a6e; border: 1.5px solid #7dd3fc; } .sb-reviewed .dot         { background: #0ea5e9; }
+    .sb-quoted           { background: #f0f0ff; color: #3730a3; border: 1.5px solid #c7d2fe; } .sb-quoted .dot           { background: #696cff; }
+    .sb-awaiting_payment { background: #fff7ed; color: #7c2d12; border: 1.5px solid #fed7aa; } .sb-awaiting_payment .dot { background: #f97316; }
+    .sb-processing       { background: #f5f3ff; color: #4c1d95; border: 1.5px solid #ddd6fe; } .sb-processing .dot       { background: #8b5cf6; }
+    .sb-completed        { background: #f0fdf4; color: #065f46; border: 1.5px solid #6ee7b7; } .sb-completed .dot        { background: #10b981; }
+    .sb-rejected         { background: #fef2f2; color: #7f1d1d; border: 1.5px solid #fca5a5; } .sb-rejected .dot         { background: #ef4444; }
+
+    /* Info Grid inside card */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .detail-block {
+      background: var(--bs-tertiary-bg);
+      padding: .85rem 1.1rem;
+      border-radius: 8px;
+    }
+    .detail-block .db-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--bs-secondary-color);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: .25rem;
+    }
+    .detail-block .db-value {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--bs-heading-color);
+    }
+
+    /* Timeline Stepper */
     .status-timeline {
-      display: flex; align-items: center; gap: 0; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: .5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.75rem;
+      padding: 0 .5rem;
+      overflow-x: auto;
+      gap: 1rem;
     }
     .tl-step {
-      display: flex; flex-direction: column; align-items: center; min-width: 80px; position: relative; flex: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      min-width: 80px;
     }
-    .tl-step .tl-dot {
-      width: 28px; height: 28px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
-      z-index: 1; position: relative;
-    }
-    .tl-step .tl-label { font-size: 10px; font-weight: 600; color: #aaa; margin-top: 6px; text-align: center; }
     .tl-step::before {
-      content: ''; position: absolute; top: 14px; left: calc(-50% + 14px); right: calc(50% + 14px);
-      height: 2px; background: #e5e7eb;
+      content: '';
+      position: absolute;
+      top: 15px;
+      left: -50%;
+      right: 50%;
+      height: 2px;
+      background: var(--bs-border-color);
+      z-index: 1;
     }
-    .tl-step:first-child::before { display: none; }
-    .tl-step.tl-done .tl-dot   { background: #10b981; color: #fff; }
-    .tl-step.tl-done::before   { background: #10b981; }
-    .tl-step.tl-done .tl-label { color: #10b981; }
-    .tl-step.tl-active .tl-dot { background: #696cff; color: #fff; box-shadow: 0 0 0 4px rgba(105,108,255,.18); }
-    .tl-step.tl-active .tl-label { color: #696cff; font-weight: 700; }
-    .tl-step.tl-rejected .tl-dot { background: #ef4444; color: #fff; }
-    .tl-step.tl-rejected .tl-label { color: #ef4444; }
-    .tl-step.tl-pending .tl-dot { background: #e5e7eb; color: #aaa; }
+    .tl-step:first-child::before {
+      display: none;
+    }
+    .tl-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--bs-tertiary-bg);
+      border: 2px solid var(--bs-border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--bs-secondary-color);
+      z-index: 2;
+    }
+    .tl-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--bs-secondary-color);
+      margin-top: .5rem;
+      text-align: center;
+      white-space: nowrap;
+    }
 
-    /* Info grid */
-    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-    @media(max-width: 576px) { .detail-grid { grid-template-columns: 1fr; } }
-    .detail-block { background: #f8fafc; border-radius: 10px; padding: .85rem 1rem; }
-    .detail-block .db-label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .7px; margin-bottom: .3rem; }
-    .detail-block .db-value { font-size: 14px; font-weight: 600; color: #111; }
+    /* Timeline Active states */
+    .tl-step.tl-done .tl-dot {
+      background: #10b981;
+      border-color: #10b981;
+      color: #fff;
+    }
+    .tl-step.tl-done::before {
+      background: #10b981;
+    }
+    .tl-step.tl-done .tl-label {
+      color: #10b981;
+    }
 
-    /* Bank box */
+    .tl-step.tl-active .tl-dot {
+      background: #696cff;
+      border-color: #696cff;
+      color: #fff;
+      box-shadow: 0 0 0 5px rgba(105,108,255,0.15);
+    }
+    .tl-step.tl-active::before {
+      background: #696cff;
+    }
+    .tl-step.tl-active .tl-label {
+      color: #696cff;
+    }
+
+    /* Bank info box */
     .bank-payment-box {
-      background: linear-gradient(135deg, #fffbeb, #fefce8);
-      border: 2px solid #fcd34d; border-radius: 12px; padding: 1.25rem 1.4rem; margin-top: 1rem;
+      border: 1px solid var(--bs-border-color);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
     }
-    .bank-payment-box h6 { font-weight: 700; color: #92400e; margin: 0 0 .75rem; display: flex; align-items: center; gap:.4rem; }
-    .bank-row { display: flex; justify-content: space-between; align-items: center; padding: .55rem 0; border-bottom: 1px solid #fde68a; font-size: 13.5px; }
-    .bank-row:last-child { border-bottom: none; }
-    .bank-row .bl { color: #b45309; font-weight: 600; }
-    .bank-row .bv { font-weight: 700; color: #1a1a1a; }
-    .bank-row .bv.price { color: #059669; font-size: 16px; }
-    .bank-row .bv.deadline { color: #dc2626; }
+    .bank-payment-box h6 {
+      font-weight: 700;
+      margin-bottom: .75rem;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
+    
+    .btn-download-quotation {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background: #0284c7;
+      color: #fff !important;
+      border: none;
+      border-radius: 8px;
+      padding: .6rem 1.4rem;
+      font-weight: 700;
+      font-size: 13.5px;
+      text-decoration: none;
+      box-shadow: 0 2px 4px rgba(2,132,199,0.25);
+      transition: background .2s;
+    }
+    .btn-download-quotation:hover {
+      background: #0369a1;
+    }
 
-    /* Rejection box */
-    .rejection-box { background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 0 8px 8px 0; padding: .85rem 1rem; margin-top: 1rem; font-size: 13.5px; color: #7f1d1d; }
-    .rejection-box .label { font-weight: 700; margin-bottom: .25rem; }
-
-    /* Admin notes box */
-    .notes-box { background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 0 8px 8px 0; padding: .85rem 1rem; margin-top: .75rem; font-size: 13.5px; color: #0c4a6e; }
-    .notes-box .label { font-weight: 700; margin-bottom: .25rem; }
-
-    /* Format tags */
-    .fmt-tag { display: inline-block; background: #ede9fe; color: #6d28d9; border-radius: 20px; padding: .2rem .7rem; font-size: 12px; font-weight: 600; margin: .15rem .2rem .15rem 0; }
-
-    /* Empty state */
-    .empty-state { text-align: center; padding: 4rem 2rem; }
-    .empty-state .icon { font-size: 4rem; color: #d1d5db; margin-bottom: 1rem; display: block; }
-    .empty-state h5 { font-weight: 700; color: #374151; margin-bottom: .5rem; }
-    .empty-state p  { color: #9ca3af; margin-bottom: 1.5rem; }
-
-    /* Download button */
     .btn-download-tiles {
-      display: inline-flex; align-items: center; gap: .5rem;
-      background: linear-gradient(135deg, #059669, #0d9488);
-      color: #fff; font-weight: 700; border: none;
-      border-radius: 10px; padding: .65rem 1.5rem;
-      font-size: 14px; text-decoration: none;
-      transition: transform .2s, box-shadow .2s;
-      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background: #10b981;
+      color: #fff !important;
+      border: none;
+      border-radius: 8px;
+      padding: .75rem 1.75rem;
+      font-weight: 700;
+      font-size: 14.5px;
+      text-decoration: none;
+      box-shadow: 0 3px 8px rgba(16,185,129,0.3);
+      transition: transform .2s, background .2s;
     }
-    .btn-download-tiles:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(5,150,105,.35); color: #fff; }
-    .btn-download-tiles:disabled { opacity: .6; pointer-events: none; }
+    .btn-download-tiles:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+
+    .notes-box, .rejection-box {
+      background: var(--bs-tertiary-bg);
+      border-left: 4px solid #696cff;
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      font-size: 13.5px;
+    }
+    .rejection-box {
+      border-left-color: #ef4444;
+      background: rgba(239,68,68,0.02);
+    }
+    .notes-box .label, .rejection-box .label {
+      font-weight: 700;
+      margin-bottom: .25rem;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
     .delivery-preparing {
-      display: flex; align-items: center; gap: .75rem;
-      background: #f5f3ff; border: 1.5px solid #ddd6fe;
-      border-radius: 10px; padding: .85rem 1.1rem;
-      color: #4c1d95; font-size: 13.5px;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      background: rgba(139,92,246,0.05);
+      border: 1px solid rgba(139,92,246,0.2);
+      border-radius: 10px;
+      padding: 1.25rem;
+      color: #7c3aed;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+    .empty-state .icon {
+      font-size: 4rem;
+      color: var(--bs-secondary-color);
+      margin-bottom: 1rem;
+      opacity: .5;
+    }
+    .empty-state h5 {
+      font-weight: 700;
+      margin-bottom: .5rem;
+    }
+    .empty-state p {
+      color: var(--bs-secondary-color);
+      margin-bottom: 1.5rem;
     }
 
     /* ── Navbar Contrast & Unified Color Fix ── */
-    /* Logo text */
     .landing-navbar .app-brand-text {
       color: rgba(255, 255, 255, 0.95) !important;
     }
-    
-    /* Navigation links (Desktop only to prevent white-on-white in mobile drawer) */
     @media (min-width: 1200px) {
       .landing-navbar .navbar-nav .nav-link {
         color: rgba(255, 255, 255, 0.85) !important;
@@ -219,16 +393,12 @@
         color: #cbd5ff !important;
       }
     }
-    
-    /* Theme switcher icon */
     .landing-navbar #nav-theme {
       color: rgba(255, 255, 255, 0.85) !important;
     }
     .landing-navbar #nav-theme:hover {
       color: #cbd5ff !important;
     }
-
-    /* Email text */
     #navUserWrap .navbar-text,
     .landing-navbar .navbar-text {
       color: rgba(255, 255, 255, 0.85) !important;
@@ -238,8 +408,6 @@
     .landing-navbar .navbar-text:hover {
       color: #cbd5ff !important;
     }
-
-    /* Logout button */
     #navLogoutBtn {
       color: #ffffff !important;
       border-color: rgba(255, 255, 255, 0.4) !important;
@@ -252,20 +420,6 @@
       background-color: rgba(255, 255, 255, 0.2) !important;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-
-    /* Download Quotation PDF button */
-    .btn-download-quotation {
-      display: inline-flex; align-items: center; gap: .5rem;
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      color: #fff; font-weight: 700; border: none;
-      border-radius: 10px; padding: .65rem 1.5rem;
-      font-size: 14px; text-decoration: none;
-      transition: transform .2s, box-shadow .2s;
-      cursor: pointer;
-    }
-    .btn-download-quotation:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,.35); color: #fff; }
-
-    /* Mobile toggler icon */
     .landing-navbar .navbar-toggler i {
       color: rgba(255, 255, 255, 0.9) !important;
     }
@@ -273,7 +427,7 @@
 </head>
 <body>
 
-  <!-- Navbar -->
+  <!-- Navbar: Start -->
   <nav class="layout-navbar shadow-none py-0">
     <div class="container">
       <div class="navbar navbar-expand-xl landing-navbar px-3 px-md-8">
@@ -282,7 +436,7 @@
             <i class="icon-base bx bx-menu icon-lg align-middle text-heading fw-medium"></i>
           </button>
           <a href="{{ route('landing') }}" class="app-brand-link">
-            <img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub Logo" style="height:80px;width:auto;max-height:80px;object-fit:contain;display:block;" />
+            <img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub Logo" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;" />
             <span class="app-brand-text demo menu-text fw-bold ms-2 ps-1">3DHub</span>
           </a>
         </div>
@@ -295,20 +449,20 @@
             <li class="nav-item"><a class="nav-link fw-medium" href="{{ route('landing') }}#landingHero">Home</a></li>
             <li class="nav-item"><a class="nav-link fw-medium" href="{{ route('landing') }}#landingShowCase">ShowCase</a></li>
             @auth
-            <li class="nav-item dropdown d-none d-xl-block" id="navPurchaseQuotation">
-              <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" data-bs-toggle="dropdown">PurchaseQuotation</a>
+            <li class="nav-item dropdown d-none d-xl-block" id="navInquiry">
+              <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" data-bs-toggle="dropdown">Inquiry</a>
               <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{{ route('purchase_quotation.new') }}">New PurchaseQuotation</a></li>
+                <li><a class="dropdown-item" href="{{ route('inquiry.new') }}">New Inquiry</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item fw-bold text-primary" href="{{ route('purchase_quotation.my') }}">My PurchaseQuotation</a></li>
+                <li><a class="dropdown-item fw-bold text-primary" href="{{ route('inquiry.my') }}">My Inquiry</a></li>
               </ul>
             </li>
             <li class="nav-item d-xl-none">
-              <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navPQCollapse">PurchaseQuotation</a>
-              <div class="collapse nav-upload-mobile-sub" id="navPQCollapse">
-                <a class="nav-link fw-medium" href="{{ route('purchase_quotation.new') }}">New PurchaseQuotation</a>
+              <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navInquiryCollapse">Inquiry</a>
+              <div class="collapse nav-upload-mobile-sub" id="navInquiryCollapse">
+                <a class="nav-link fw-medium" href="{{ route('inquiry.new') }}">New Inquiry</a>
                 <hr class="dropdown-divider">
-                <a class="nav-link fw-medium" href="{{ route('purchase_quotation.my') }}">My PurchaseQuotation</a>
+                <a class="nav-link fw-medium" href="{{ route('inquiry.my') }}">My Inquiry</a>
               </div>
             </li>
             @endauth
@@ -349,11 +503,11 @@
     <div class="container">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-3" style="position:relative;z-index:1">
         <div>
-          <h1><i class="bx bx-receipt me-2"></i>My Purchase Quotations</h1>
-          <p>Track all your 3D model data purchase requests and their current status</p>
+          <h1><i class="bx bx-receipt me-2"></i>My Inquiries</h1>
+          <p>Track all your 3D model data inquiry requests and their current status</p>
         </div>
-        <a href="{{ route('purchase_quotation.new') }}" class="btn-new">
-          <i class="bx bx-plus"></i> New Quotation
+        <a href="{{ route('inquiry.new') }}" class="btn-new">
+          <i class="bx bx-plus"></i> New Inquiry
         </a>
       </div>
     </div>
@@ -383,53 +537,53 @@
         ];
       @endphp
 
-      @if($quotations->isEmpty())
+      @if($inquiries->isEmpty())
         <div class="card shadow-sm">
           <div class="card-body empty-state">
             <i class="bx bx-file-blank icon"></i>
-            <h5>No purchase quotations yet</h5>
-            <p>You have not submitted any purchase quotation requests.<br>Get started by creating your first one.</p>
-            <a href="{{ route('purchase_quotation.new') }}" class="btn btn-primary px-4"><i class="bx bx-plus me-1"></i>New Purchase Quotation</a>
+            <h5>No inquiries yet</h5>
+            <p>You have not submitted any inquiry requests.<br>Get started by creating your first one.</p>
+            <a href="{{ route('inquiry.new') }}" class="btn btn-primary px-4"><i class="bx bx-plus me-1"></i>New Inquiry</a>
           </div>
         </div>
       @else
         <div class="mb-3 d-flex justify-content-between align-items-center">
-          <p class="text-muted mb-0 small">Showing <strong>{{ $quotations->count() }}</strong> quotation{{ $quotations->count() !== 1 ? 's' : '' }} — click any row to view details</p>
+          <p class="text-muted mb-0 small">Showing <strong>{{ $inquiries->count() }}</strong> inquir{{ $inquiries->count() !== 1 ? 'ies' : 'y' }} — click any row to view details</p>
         </div>
 
-        @foreach($quotations as $quote)
+        @foreach($inquiries as $inquiry)
           @php
-            $isRejected = $quote->status === 'rejected';
-            $currentIdx = $isRejected ? -1 : array_search($quote->status, $statusOrder);
+            $isRejected = $inquiry->status === 'rejected';
+            $currentIdx = $isRejected ? -1 : array_search($inquiry->status, $statusOrder);
           @endphp
 
-          <div class="q-card" id="qcard-{{ $quote->id }}">
+          <div class="q-card" id="qcard-{{ $inquiry->id }}">
             <!-- Card Header (clickable) -->
-            <div class="q-card-header" onclick="toggleCard({{ $quote->id }})">
+            <div class="q-card-header" onclick="toggleCard({{ $inquiry->id }})">
               <div>
-                <span class="purchase-id">{{ $quote->purchase_id }}</span>
+                <span class="purchase-id">{{ $inquiry->inquiry_id }}</span>
               </div>
               <div class="meta">
-                <div class="model-name">{{ $quote->mapData->title ?? $quote->map_data_id }}</div>
+                <div class="model-name">{{ $inquiry->mapData->title ?? $inquiry->map_data_id }}</div>
                 <div class="date-info">
-                  <i class="bx bx-calendar me-1"></i>{{ $quote->created_at->format('d M Y, h:i A') }}
+                  <i class="bx bx-calendar me-1"></i>{{ $inquiry->created_at->format('d M Y, h:i A') }}
                   &nbsp;·&nbsp;
-                  @foreach(is_array($quote->output_categories) ? $quote->output_categories : [] as $cat)
+                  @foreach(is_array($inquiry->output_categories) ? $inquiry->output_categories : [] as $cat)
                     <span class="fmt-tag">{{ $cat }}</span>
                   @endforeach
                 </div>
               </div>
               <div>
-                <span class="status-badge sb-{{ $quote->status }}">
+                <span class="status-badge sb-{{ $inquiry->status }}">
                   <span class="dot"></span>
-                  {{ \App\Models\PurchaseQuotation::STATUS_LABELS[$quote->status] ?? ucfirst($quote->status) }}
+                  {{ \App\Models\Inquiry::STATUS_LABELS[$inquiry->status] ?? ucfirst($inquiry->status) }}
                 </span>
               </div>
               <i class="bx bx-chevron-down chevron"></i>
             </div>
 
             <!-- Card Body (expandable) -->
-            <div class="q-card-body" id="qbody-{{ $quote->id }}">
+            <div class="q-card-body" id="qbody-{{ $inquiry->id }}">
               <div class="q-card-body-inner">
 
                 <!-- Status Timeline -->
@@ -439,7 +593,7 @@
                       @php
                         if ($currentIdx === -1) {
                           $cls = 'tl-pending';
-                        } elseif ($quote->status === 'completed') {
+                        } elseif ($inquiry->status === 'completed') {
                           $cls = 'tl-done';
                         } elseif ($si < $currentIdx) {
                           $cls = 'tl-done';
@@ -451,7 +605,7 @@
                       @endphp
                       <div class="tl-step {{ $cls }}">
                         <div class="tl-dot">
-                          @if($quote->status === 'completed' || $si < $currentIdx) <i class="bx bx-check" style="font-size:14px;"></i>
+                          @if($inquiry->status === 'completed' || $si < $currentIdx) <i class="bx bx-check" style="font-size:14px;"></i>
                           @else {{ $si + 1 }}
                           @endif
                         </div>
@@ -463,7 +617,7 @@
                   <div class="d-flex align-items-center gap-2 mb-3 p-2 rounded-3" style="background:#fef2f2;border:1.5px solid #fca5a5;">
                     <span style="font-size:20px;">❌</span>
                     <div>
-                      <div style="font-weight:700;color:#7f1d1d;">This quotation has been rejected</div>
+                      <div style="font-weight:700;color:#7f1d1d;">This inquiry has been rejected</div>
                       <div style="font-size:13px;color:#991b1b;">Please contact us if you have any questions</div>
                     </div>
                   </div>
@@ -472,35 +626,35 @@
                 <!-- Info Grid -->
                 <div class="detail-grid">
                   <div class="detail-block">
-                    <div class="db-label">📋 Purchase ID</div>
-                    <div class="db-value" style="font-family:monospace;">{{ $quote->purchase_id }}</div>
+                    <div class="db-label">📋 Inquiry ID</div>
+                    <div class="db-value" style="font-family:monospace;">{{ $inquiry->inquiry_id }}</div>
                   </div>
                   <div class="detail-block">
                     <div class="db-label">📍 3D Model</div>
-                    <div class="db-value">{{ $quote->mapData->title ?? $quote->map_data_id }}</div>
+                    <div class="db-value">{{ $inquiry->mapData->title ?? $inquiry->map_data_id }}</div>
                   </div>
                   <div class="detail-block">
                     <div class="db-label">📅 Date Submitted</div>
-                    <div class="db-value">{{ $quote->created_at->format('d M Y, h:i A') }}</div>
+                    <div class="db-value">{{ $inquiry->created_at->format('d M Y, h:i A') }}</div>
                   </div>
                   <div class="detail-block">
                     <div class="db-label">🗂️ Output Formats</div>
                     <div class="db-value">
-                      @foreach(is_array($quote->output_categories) ? $quote->output_categories : [] as $cat)
+                      @foreach(is_array($inquiry->output_categories) ? $inquiry->output_categories : [] as $cat)
                         <span class="fmt-tag">{{ $cat }}</span>
                       @endforeach
                     </div>
                   </div>
                 </div>
 
-                <!-- Quotation PDF Download (only when quoted / awaiting_payment / processing / completed) -->
-                @if(in_array($quote->status, ['quoted','awaiting_payment','processing','completed']) && $quote->quotation_pdf_path)
+                <!-- Quotation PDF Download -->
+                @if(in_array($inquiry->status, ['quoted','awaiting_payment','processing','completed']) && $inquiry->quotation_pdf_path)
                   <div class="bank-payment-box" style="background: linear-gradient(135deg, #f0f7ff, #e0f2fe); border-color: #7dd3fc;">
                     <h6 style="color: #0369a1;"><i class="bx bxs-file-pdf"></i> Quotation Details</h6>
                     <p class="small text-muted mb-3">Your formal quotation PDF is ready for review. Please download it to view price details, bank details, and payment instructions.</p>
                     
                     <a
-                      href="{{ route('purchase_quotation.pdf', $quote->id) }}"
+                      href="{{ route('inquiry.pdf', $inquiry->id) }}"
                       class="btn-download-quotation"
                       target="_blank"
                     >
@@ -509,7 +663,7 @@
                     </a>
                   </div>
 
-                  @if(in_array($quote->status, ['quoted','awaiting_payment']))
+                  @if(in_array($inquiry->status, ['quoted','awaiting_payment']))
                     <div class="alert alert-warning mt-3 mb-3 small" role="alert">
                       <i class="bx bx-info-circle me-1"></i>
                       <strong>Action required:</strong> Please transfer the quoted price as specified in the PDF to the bank account listed inside. Upload your payment receipt to confirm your order.
@@ -530,39 +684,39 @@
                     </div>
                   @endif
 
-                  @if($quote->status === 'awaiting_payment')
+                  @if($inquiry->status === 'awaiting_payment')
                     <!-- Payment Receipt Upload form -->
                     <div class="mt-3 p-3 rounded-3 border" style="background-color: #fafafa;">
                       <h6 class="fw-bold mb-2 small text-uppercase" style="letter-spacing: 0.5px; font-size:12px;"><i class="bx bx-receipt text-primary me-1"></i> Upload Payment Receipt</h6>
                       
-                      @if($quote->payment_receipt_path)
+                      @if($inquiry->payment_receipt_path)
                         <!-- If receipt already uploaded -->
                         <div class="alert alert-success py-2 px-3 mb-2 small d-flex align-items-center justify-content-between">
                           <span><i class="bx bx-check-circle me-1"></i> Receipt uploaded successfully. Waiting for verification.</span>
-                          <a href="{{ route('purchase_quotation.receipt', $quote->id) }}" target="_blank" class="btn btn-xs btn-outline-success">
+                          <a href="{{ route('inquiry.receipt', $inquiry->id) }}" target="_blank" class="btn btn-xs btn-outline-success">
                             <i class="bx bx-download me-1"></i> View Receipt
                           </a>
                         </div>
                       @endif
 
-                      <form action="javascript:void(0);" id="uploadReceiptForm-{{ $quote->id }}" onsubmit="uploadReceipt({{ $quote->id }}, this)">
+                      <form action="javascript:void(0);" id="uploadReceiptForm-{{ $inquiry->id }}" onsubmit="uploadReceipt({{ $inquiry->id }}, this)">
                         @csrf
                         <div class="input-group input-group-sm">
                           <input type="file" name="payment_receipt" class="form-control" accept="image/*,application/pdf" required>
-                          <button class="btn btn-primary" type="submit" id="btnUploadReceipt-{{ $quote->id }}">
-                            <i class="bx bx-upload me-1"></i> {{ $quote->payment_receipt_path ? 'Replace Receipt' : 'Upload Receipt' }}
+                          <button class="btn btn-primary" type="submit" id="btnUploadReceipt-{{ $inquiry->id }}">
+                            <i class="bx bx-upload me-1"></i> {{ $inquiry->payment_receipt_path ? 'Replace Receipt' : 'Upload Receipt' }}
                           </button>
                         </div>
                         <div class="form-text small" style="font-size: 11px;">Supported formats: PDF, JPG, JPEG, PNG (max 20MB)</div>
-                        <div class="mt-2 text-danger small d-none" id="errorReceipt-{{ $quote->id }}"></div>
+                        <div class="mt-2 text-danger small d-none" id="errorReceipt-{{ $inquiry->id }}"></div>
                       </form>
                     </div>
-                  @elseif($quote->payment_receipt_path)
+                  @elseif($inquiry->payment_receipt_path)
                     <!-- If status is not awaiting_payment but receipt exists, allow viewing it -->
                     <div class="mt-3 p-3 rounded-3 border" style="background-color: #fafafa;">
                       <div class="small d-flex align-items-center justify-content-between">
                         <span><i class="bx bx-check-circle text-success me-1"></i> Payment Receipt:</span>
-                        <a href="{{ route('purchase_quotation.receipt', $quote->id) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                        <a href="{{ route('inquiry.receipt', $inquiry->id) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                           <i class="bx bx-download me-1"></i> View Uploaded Receipt
                         </a>
                       </div>
@@ -571,31 +725,29 @@
                 @endif
 
                 <!-- Rejection Reason -->
-                @if($isRejected && $quote->rejection_reason)
+                @if($isRejected && $inquiry->rejection_reason)
                   <div class="rejection-box">
                     <div class="label">❌ Reason for Rejection:</div>
-                    {{ $quote->rejection_reason }}
+                    {{ $inquiry->rejection_reason }}
                   </div>
                 @endif
 
                 <!-- Admin Notes -->
-                @if($quote->current_admin_note)
+                @if($inquiry->current_admin_note)
                   <div class="notes-box">
-                    <div class="label">📝 Notes from our team ({{ \App\Models\PurchaseQuotation::STATUS_LABELS[$quote->status] ?? $quote->status }}):</div>
-                    {{ $quote->current_admin_note }}
+                    <div class="label">📝 Notes from our team ({{ \App\Models\Inquiry::STATUS_LABELS[$inquiry->status] ?? $inquiry->status }}):</div>
+                    {{ $inquiry->current_admin_note }}
                   </div>
                 @endif
 
-
                 <!-- Processing / Completed status info -->
-                @if($quote->status === 'processing')
+                @if($inquiry->status === 'processing')
                   <div class="alert alert-info mt-3 mb-0 small">
                     <i class="bx bx-loader-alt bx-spin me-1"></i>
                     <strong>Your payment has been confirmed</strong> — our team is currently processing and preparing your 3D model data. You will be notified once it is ready for delivery.
                   </div>
-                @elseif($quote->status === 'completed')
-                  @if($quote->delivery_ready)
-                    {{-- Delivery is ready — show download button --}}
+                @elseif($inquiry->status === 'completed')
+                  @if($inquiry->delivery_ready)
                     <div class="mt-3 p-4 rounded-3" style="background: linear-gradient(135deg,#f0fdf4,#ecfdf5); border: 2px solid #6ee7b7;">
                       <div class="d-flex align-items-center gap-2 mb-2">
                         <span style="font-size:22px;">✅</span>
@@ -604,21 +756,20 @@
                           <div style="font-size:12.5px;color:#047857;">Click the button below to download your 3D model tile files.</div>
                         </div>
                       </div>
-                      @if($quote->delivered_at)
-                        <div class="small text-muted mb-3"><i class="bx bx-calendar me-1"></i>Made available on {{ $quote->delivered_at->format('d M Y, h:i A') }}</div>
+                      @if($inquiry->delivered_at)
+                        <div class="small text-muted mb-3"><i class="bx bx-calendar me-1"></i>Made available on {{ $inquiry->delivered_at->format('d M Y, h:i A') }}</div>
                       @endif
                       <button
                         type="button"
                         class="btn-download-tiles"
-                        id="btnDownload-{{ $quote->id }}"
-                        onclick="initiateDownloadWithDisclaimer({{ $quote->id }})"
+                        id="btnDownload-{{ $inquiry->id }}"
+                        onclick="initiateDownloadWithDisclaimer({{ $inquiry->id }})"
                       >
                         <i class="bx bx-download" style="font-size:18px;"></i>
                         Download 3D Model Tiles
                       </button>
                     </div>
                   @else
-                    {{-- Delivery not yet ready --}}
                     <div class="delivery-preparing mt-3">
                       <span class="spinner-border spinner-border-sm flex-shrink-0" style="color:#8b5cf6;"></span>
                       <div>
@@ -655,7 +806,7 @@
     </div>
   </div>
 
-  <!-- 🚀 3D Data Download Disclaimer Modal -->
+  <!-- 3D Data Download Disclaimer Modal -->
   <div class="modal fade" id="disclaimerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content border-0 shadow-lg">
@@ -709,26 +860,23 @@
   <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
   <script>
-    // Initial state of quotations requiring polling (processing, or completed but not ready)
     var pollingQuotations = [
-      @foreach($quotations as $quote)
-        @if($quote->status === 'processing' || ($quote->status === 'completed' && !$quote->delivery_ready))
+      @foreach($inquiries as $inquiry)
+        @if($inquiry->status === 'processing' || ($inquiry->status === 'completed' && !$inquiry->delivery_ready))
           {
-            id: {{ $quote->id }},
-            status: '{{ $quote->status }}',
-            delivery_ready: {{ $quote->delivery_ready ? 'true' : 'false' }}
+            id: {{ $inquiry->id }},
+            status: '{{ $inquiry->status }}',
+            delivery_ready: {{ $inquiry->delivery_ready ? 'true' : 'false' }}
           },
         @endif
       @endforeach
     ];
 
-    // Toggle expandable card
     function toggleCard(id) {
       var header = document.querySelector('#qcard-' + id + ' .q-card-header');
       var body   = document.getElementById('qbody-' + id);
       if (!header || !body) return;
       var isOpen = body.classList.contains('open');
-      // Close all
       document.querySelectorAll('.q-card-header').forEach(function(h) { h.classList.remove('open'); });
       document.querySelectorAll('.q-card-body').forEach(function(b) { b.classList.remove('open'); });
       if (!isOpen) {
@@ -737,11 +885,9 @@
       }
     }
 
-    // 🚀 DISCLAIMER LOGIC (v176)
-    function initiateDownloadWithDisclaimer(quotationId) {
-      document.getElementById('disclaimerQuotationId').value = quotationId;
+    function initiateDownloadWithDisclaimer(inquiryId) {
+      document.getElementById('disclaimerQuotationId').value = inquiryId;
       
-      // Reset modal state fully — including button label, in case a previous session left it in a loading state
       const agreeBtn = document.getElementById('agreeDownloadBtn');
       document.getElementById('disclaimerCheckbox').checked = false;
       agreeBtn.disabled = true;
@@ -757,14 +903,13 @@
     }
 
     function handleDisclaimerAgreement() {
-      const quotationId = document.getElementById('disclaimerQuotationId').value;
+      const inquiryId = document.getElementById('disclaimerQuotationId').value;
       const btn = document.getElementById('agreeDownloadBtn');
       
       btn.disabled = true;
       btn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Logging Agreement...';
 
-      // 1. Log agreement to database for legal proof
-      fetch('/api/purchase-quotation/' + quotationId + '/accept-disclaimer', {
+      fetch('/api/inquiry/' + inquiryId + '/accept-disclaimer', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -775,17 +920,14 @@
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          // 2. Restore button state before hiding modal so next open is always clean
           btn.disabled = true;
           btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
 
-          // 3. Hide modal
           const modalEl = document.getElementById('disclaimerModal');
           const modalInstance = bootstrap.Modal.getInstance(modalEl);
           if (modalInstance) modalInstance.hide();
           
-          // 4. Trigger Download
-          executeDownloadTiles(quotationId);
+          executeDownloadTiles(inquiryId);
         } else {
           alert('Could not log your agreement. Please try again.');
           btn.disabled = false;
@@ -800,31 +942,27 @@
       });
     }
 
-    function executeDownloadTiles(quotationId) {
-      var btn = document.getElementById('btnDownload-' + quotationId);
+    function executeDownloadTiles(inquiryId) {
+      var btn = document.getElementById('btnDownload-' + inquiryId);
       if (!btn) return;
 
-      // Show loading state
       var origHTML = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Preparing Download\u2026';
 
-      // Trigger download via a hidden anchor (preserves button feedback)
       var a = document.createElement('a');
-      a.href = '/api/purchase-quotation/' + quotationId + '/download';
+      a.href = '/api/inquiry/' + inquiryId + '/download';
       a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
 
-      // Re-enable button after delay (download starts in browser)
       setTimeout(function () {
         btn.disabled = false;
         btn.innerHTML = origHTML;
       }, 4000);
     }
 
-    // Logout confirm
     (function() {
       var navLogoutBtn = document.getElementById('navLogoutBtn');
       if (navLogoutBtn) {
@@ -837,15 +975,13 @@
       }
     })();
 
-    // Poll status of quotations that are processing or completed but not ready
     if (typeof pollingQuotations !== 'undefined' && pollingQuotations.length > 0) {
       var pollInterval = setInterval(function() {
         pollingQuotations.forEach(function(q) {
-          fetch('/api/purchase-quotation/' + q.id + '/status')
+          fetch('/api/inquiry/' + q.id + '/status')
             .then(function(res) { return res.json(); })
             .then(function(data) {
               if (data.success) {
-                // If status changed or delivery is now ready, reload the page
                 if (data.status !== q.status || data.delivery_ready !== q.delivery_ready) {
                   clearInterval(pollInterval);
                   window.location.reload();
@@ -853,10 +989,10 @@
               }
             })
             .catch(function(err) {
-              console.error('Error polling quotation ' + q.id + ':', err);
+              console.error('Error polling inquiry ' + q.id + ':', err);
             });
         });
-      }, 10000); // Check every 10 seconds
+      }, 10000);
     }
     function uploadReceipt(id, form) {
       var btn = document.getElementById('btnUploadReceipt-' + id);
@@ -873,7 +1009,7 @@
 
       var fd = new FormData(form);
 
-      fetch('/api/purchase-quotation/' + id + '/payment-receipt', {
+      fetch('/api/inquiry/' + id + '/payment-receipt', {
         method: 'POST',
         headers: {
           'X-Requested-With': 'XMLHttpRequest'

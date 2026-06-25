@@ -111,7 +111,7 @@
       
       /* Dropdown hover behavior for desktop navigation links */
       @media (min-width: 1200px) {
-        #navPurchaseQuotation:hover .dropdown-menu,
+        #navInquiry:hover .dropdown-menu,
         #navUpload:hover .dropdown-menu {
           display: block;
           margin-top: 0;
@@ -207,26 +207,26 @@
             <a class="nav-link fw-medium" href="{{ route('landing') }}#landingShowCase">ShowCase</a>
           </li>
           @auth
-          <!-- PurchaseQuotation Dropdown for Desktop -->
-          <li class="nav-item dropdown d-none d-xl-block" id="navPurchaseQuotation">
+          <!-- Inquiry Dropdown for Desktop -->
+          <li class="nav-item dropdown d-none d-xl-block" id="navInquiry">
             <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
-              PurchaseQuotation
+              Inquiry
             </a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{{ route('purchase_quotation.new') }}">New PurchaseQuotation</a></li>
+              <li><a class="dropdown-item" href="{{ route('inquiry.new') }}">New Inquiry</a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="{{ route('purchase_quotation.my') }}">My PurchaseQuotation</a></li>
+              <li><a class="dropdown-item" href="{{ route('inquiry.my') }}">My Inquiry</a></li>
             </ul>
           </li>
-          <!-- PurchaseQuotation Dropdown for Mobile -->
-          <li class="nav-item d-xl-none navPurchaseQuotation-mobile">
-            <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navPurchaseQuotationCollapse" aria-expanded="false" aria-controls="navPurchaseQuotationCollapse" id="navPurchaseQuotationMobileToggle">
-              PurchaseQuotation
+          <!-- Inquiry Dropdown for Mobile -->
+          <li class="nav-item d-xl-none navInquiry-mobile">
+            <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navInquiryCollapse" aria-expanded="false" aria-controls="navInquiryCollapse" id="navInquiryMobileToggle">
+              Inquiry
             </a>
-            <div class="collapse nav-upload-mobile-sub" id="navPurchaseQuotationCollapse">
-              <a class="nav-link fw-medium" href="{{ route('purchase_quotation.new') }}">New PurchaseQuotation</a>
+            <div class="collapse nav-upload-mobile-sub" id="navInquiryCollapse">
+              <a class="nav-link fw-medium" href="{{ route('inquiry.new') }}">New Inquiry</a>
               <hr class="dropdown-divider">
-              <a class="nav-link fw-medium" href="{{ route('purchase_quotation.my') }}">My PurchaseQuotation</a>
+              <a class="nav-link fw-medium" href="{{ route('inquiry.my') }}">My Inquiry</a>
             </div>
           </li>
           {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (3D MODEL SALES FIRST)
