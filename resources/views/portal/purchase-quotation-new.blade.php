@@ -346,15 +346,10 @@
                   </div>
                 </div>
 
-                <!-- Real-time Area and Estimated Price calculation -->
                 <div id="areaCalcBox" class="mb-4 p-3 rounded d-none" style="background-color: rgba(105, 108, 255, 0.05); border: 1.5px solid rgba(105, 108, 255, 0.2);">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
+                  <div class="d-flex justify-content-between align-items-center">
                     <span class="small fw-semibold text-muted">Drawn Area:</span>
                     <strong class="text-primary" id="calcAreaVal" style="font-size: 13.5px;">0.00 m²</strong>
-                  </div>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <span class="small fw-semibold text-muted">Estimated Base Price (RM 10/m²):</span>
-                    <strong class="text-primary" id="calcPriceVal" style="font-size: 14.5px;">RM 0.00</strong>
                   </div>
                 </div>
 
@@ -566,15 +561,12 @@
           });
           
           var areaM2 = calculatePolygonArea(coords);
-          var priceRM = areaM2 * 10.0;
           
           var calcBox = document.getElementById('areaCalcBox');
           var areaVal = document.getElementById('calcAreaVal');
-          var priceVal = document.getElementById('calcPriceVal');
           
           if (calcBox) calcBox.classList.remove('d-none');
           if (areaVal) areaVal.textContent = areaM2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m²';
-          if (priceVal) priceVal.textContent = 'RM ' + priceRM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
 
         // Filter and map locations to only valid 3D models
