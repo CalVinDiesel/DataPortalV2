@@ -427,6 +427,7 @@
                 </div>
 
                 <!-- Pricing Guidance and Important Notes -->
+                {{--
                 <div class="alert alert-info border-info p-3" role="alert" style="background-color: rgba(105, 108, 255, 0.03); border: 1.5px solid rgba(105, 108, 255, 0.15); border-radius: 8px;">
                   <h6 class="alert-heading mb-2 fw-bold text-primary" style="display: flex; align-items: center; gap: 0.4rem; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
                     <i class="bx bx-info-circle fs-5"></i> 3D Model Pricing Notice
@@ -440,6 +441,7 @@
                     </li>
                   </ul>
                 </div>
+                --}}
               </div>
 
               <!-- Right Map Column -->
