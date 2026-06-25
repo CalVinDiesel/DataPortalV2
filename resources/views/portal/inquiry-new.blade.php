@@ -43,6 +43,49 @@
       }
     }
     
+    /* Hover descriptions for output formats */
+    .format-option-wrapper {
+      position: relative;
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      margin-bottom: 0.75rem !important;
+      border: 1px solid transparent;
+      transition: all 0.2s ease-in-out;
+    }
+    .format-option-wrapper:hover {
+      background-color: rgba(105, 108, 255, 0.04);
+      border-color: rgba(105, 108, 255, 0.08);
+    }
+    .format-desc-text {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: var(--bs-secondary-color);
+      transition: max-height 0.3s ease-out, opacity 0.3s ease-out, margin-top 0.2s ease-out;
+      margin-top: 0;
+      background-color: var(--bs-body-bg);
+      border-radius: 6px;
+      padding: 0;
+    }
+    .format-option-wrapper:hover .format-desc-text {
+      max-height: 150px;
+      opacity: 1;
+      margin-top: 0.5rem;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid rgba(105, 108, 255, 0.15);
+      background-color: rgba(105, 108, 255, 0.03);
+    }
+    .format-option-wrapper:hover .info-icon {
+      color: #696cff !important;
+      transform: scale(1.15);
+    }
+    .info-icon {
+      transition: all 0.2s ease;
+      cursor: help;
+    }
+    
     #heroMapContainer {
       border-radius: 12px;
       overflow: hidden;
@@ -324,25 +367,54 @@
                   <label class="form-label fw-semibold d-block">Required Output Formats <span class="text-danger">*</span></label>
                   <div class="form-text mb-2">Select the 3D model formats you would like to include in your quotation.</div>
                   
-                  <div class="form-check mb-2">
+                  <div class="form-check format-option-wrapper">
                     <input class="form-check-input" type="checkbox" id="cat3dTiles" value="3D Tiles" checked disabled>
-                    <label class="form-check-label fw-medium" for="cat3dTiles">3D Tiles (Default)</label>
+                    <label class="form-check-label fw-semibold text-heading d-inline-flex align-items-center" for="cat3dTiles">
+                      3D Tiles (Default) <i class="bx bx-info-circle text-muted ms-1.5 fs-6 info-icon"></i>
+                    </label>
+                    <div class="format-desc-text">
+                      <strong>Best for websites.</strong> It streams massive 3D maps smoothly in your web browser without lagging or crashing your computer.
+                    </div>
                   </div>
-                  <div class="form-check mb-2">
+                  
+                  <div class="form-check format-option-wrapper">
                     <input class="form-check-input" type="checkbox" id="catOSGB" value="OSGB" checked disabled>
-                    <label class="form-check-label fw-medium" for="catOSGB">OSGB (Default)</label>
+                    <label class="form-check-label fw-semibold text-heading d-inline-flex align-items-center" for="catOSGB">
+                      OSGB (Default) <i class="bx bx-info-circle text-muted ms-1.5 fs-6 info-icon"></i>
+                    </label>
+                    <div class="format-desc-text">
+                      <strong>High-precision 3D mesh models.</strong> It acts as a highly detailed digital twin of real-world environments, perfect for professional engineering and surveying software.
+                    </div>
                   </div>
-                  <div class="form-check mb-2">
+                  
+                  <div class="form-check format-option-wrapper">
                     <input class="form-check-input" type="checkbox" name="output_categories[]" id="catDSM" value="DSM">
-                    <label class="form-check-label" for="catDSM">DSM</label>
+                    <label class="form-check-label fw-semibold text-heading d-inline-flex align-items-center" for="catDSM">
+                      DSM <i class="bx bx-info-circle text-muted ms-1.5 fs-6 info-icon"></i>
+                    </label>
+                    <div class="format-desc-text">
+                      <strong>Digital Surface Model.</strong> A top-down height map. It captures the exact elevation of everything on the ground, including the tops of buildings and trees.
+                    </div>
                   </div>
-                  <div class="form-check mb-2">
+                  
+                  <div class="form-check format-option-wrapper">
                     <input class="form-check-input" type="checkbox" name="output_categories[]" id="cat3DGS" value="3DGS">
-                    <label class="form-check-label" for="cat3DGS">3DGS</label>
+                    <label class="form-check-label fw-semibold text-heading d-inline-flex align-items-center" for="cat3DGS">
+                      3DGS <i class="bx bx-info-circle text-muted ms-1.5 fs-6 info-icon"></i>
+                    </label>
+                    <div class="format-desc-text">
+                      <strong>3D Gaussian Splatting.</strong> Next-generation, hyper-realistic 3D viewing. It captures reflections, lighting, and complex details to make the 3D scene look exactly like a real photo.
+                    </div>
                   </div>
-                  <div class="form-check mb-2">
+                  
+                  <div class="form-check format-option-wrapper">
                     <input class="form-check-input" type="checkbox" name="output_categories[]" id="catOrthophoto" value="Orthophoto">
-                    <label class="form-check-label" for="catOrthophoto">Orthophoto</label>
+                    <label class="form-check-label fw-semibold text-heading d-inline-flex align-items-center" for="catOrthophoto">
+                      Orthophoto <i class="bx bx-info-circle text-muted ms-1.5 fs-6 info-icon"></i>
+                    </label>
+                    <div class="format-desc-text">
+                      <strong>Orthophoto.</strong> A perfectly flattened, distortion-free top-down map. Every measurement on this aerial photo is 100% accurate to real-world dimensions.
+                    </div>
                   </div>
                 </div>
 
