@@ -529,6 +529,45 @@
                       </ul>
                     </div>
                   @endif
+
+                  @if($quote->status === 'awaiting_payment')
+                    <!-- Payment Receipt Upload form -->
+                    <div class="mt-3 p-3 rounded-3 border" style="background-color: #fafafa;">
+                      <h6 class="fw-bold mb-2 small text-uppercase" style="letter-spacing: 0.5px; font-size:12px;"><i class="bx bx-receipt text-primary me-1"></i> Upload Payment Receipt</h6>
+                      
+                      @if($quote->payment_receipt_path)
+                        <!-- If receipt already uploaded -->
+                        <div class="alert alert-success py-2 px-3 mb-2 small d-flex align-items-center justify-content-between">
+                          <span><i class="bx bx-check-circle me-1"></i> Receipt uploaded successfully. Waiting for verification.</span>
+                          <a href="{{ route('purchase_quotation.receipt', $quote->id) }}" target="_blank" class="btn btn-xs btn-outline-success">
+                            <i class="bx bx-download me-1"></i> View Receipt
+                          </a>
+                        </div>
+                      @endif
+
+                      <form action="javascript:void(0);" id="uploadReceiptForm-{{ $quote->id }}" onsubmit="uploadReceipt({{ $quote->id }}, this)">
+                        @csrf
+                        <div class="input-group input-group-sm">
+                          <input type="file" name="payment_receipt" class="form-control" accept="image/*,application/pdf" required>
+                          <button class="btn btn-primary" type="submit" id="btnUploadReceipt-{{ $quote->id }}">
+                            <i class="bx bx-upload me-1"></i> {{ $quote->payment_receipt_path ? 'Replace Receipt' : 'Upload Receipt' }}
+                          </button>
+                        </div>
+                        <div class="form-text small" style="font-size: 11px;">Supported formats: PDF, JPG, JPEG, PNG (max 20MB)</div>
+                        <div class="mt-2 text-danger small d-none" id="errorReceipt-{{ $quote->id }}"></div>
+                      </form>
+                    </div>
+                  @elseif($quote->payment_receipt_path)
+                    <!-- If status is not awaiting_payment but receipt exists, allow viewing it -->
+                    <div class="mt-3 p-3 rounded-3 border" style="background-color: #fafafa;">
+                      <div class="small d-flex align-items-center justify-content-between">
+                        <span><i class="bx bx-check-circle text-success me-1"></i> Payment Receipt:</span>
+                        <a href="{{ route('purchase_quotation.receipt', $quote->id) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                          <i class="bx bx-download me-1"></i> View Uploaded Receipt
+                        </a>
+                      </div>
+                    </div>
+                  @endif
                 @endif
 
                 <!-- Rejection Reason -->
@@ -705,6 +744,47 @@
             });
         });
       }, 10000); // Check every 10 seconds
+    }
+    function uploadReceipt(id, form) {
+      var btn = document.getElementById('btnUploadReceipt-' + id);
+      var err = document.getElementById('errorReceipt-' + id);
+      if (!btn || !err) return;
+
+      var fileInput = form.querySelector('input[type="file"]');
+      if (!fileInput || fileInput.files.length === 0) return;
+
+      btn.disabled = true;
+      var origHTML = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Uploading\u2026';
+      err.classList.add('d-none');
+
+      var fd = new FormData(form);
+
+      fetch('/api/purchase-quotation/' + id + '/payment-receipt', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: fd
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.success) {
+          window.location.reload();
+        } else {
+          err.textContent = data.message || 'Failed to upload receipt.';
+          err.classList.remove('d-none');
+          btn.disabled = false;
+          btn.innerHTML = origHTML;
+        }
+      })
+      .catch(function(error) {
+        console.error('Error uploading receipt:', error);
+        err.textContent = 'Network error occurred. Please try again.';
+        err.classList.remove('d-none');
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
+      });
     }
   </script>
 </body>

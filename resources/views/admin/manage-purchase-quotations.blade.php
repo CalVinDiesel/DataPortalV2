@@ -354,6 +354,17 @@
                 </div>
               </div>
 
+              <!-- Payment Receipt section (shown when receipt exists) -->
+              <div class="admin-form-section d-none" id="sectionPaymentReceipt">
+                <h6>🧾 Client Payment Receipt</h6>
+                <div class="alert alert-info py-2 px-3 mb-0 small d-flex align-items-center justify-content-between">
+                  <span><i class="bx bx-check-circle me-1"></i> A payment receipt has been uploaded by the client.</span>
+                  <a id="btnDownloadPaymentReceipt" href="#" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="bx bx-download me-1"></i> View Receipt
+                  </a>
+                </div>
+              </div>
+
               <!-- Delivery Section (shown when status = completed) -->
               <div class="admin-form-section cond-section" id="sectionDelivery">
                 <h6>📦 3D Model Tiles Delivery</h6>
@@ -629,6 +640,10 @@
       var pdfHtml = q.quotation_pdf_url 
         ? '<a href="' + q.quotation_pdf_url + '" target="_blank" class="btn btn-xs btn-outline-danger py-0 px-2" style="font-size: 11px;" onclick="event.stopPropagation();"><i class="bx bxs-file-pdf me-1"></i>PDF</a>'
         : '<span class="text-muted">—</span>';
+      var statusBadge = '<span class="sb sb-' + esc(q.status) + '"><span class="dot"></span>' + esc(q.status_label) + '</span>';
+      if (q.payment_receipt_path) {
+        statusBadge += '<span class="badge bg-label-success ms-1" style="font-size:10px;" title="Payment receipt uploaded"><i class="bx bx-receipt"></i> Paid</span>';
+      }
       return '<tr data-id="' + q.id + '">' +
         '<td class="purchase-id-cell">' + esc(q.purchase_id) + '</td>' +
         '<td><div class="fw-semibold" style="font-size:13px;">' + esc(q.user_email) + '</div><div class="text-muted" style="font-size:11.5px;">' + esc(q.user_name) + '</div></td>' +
@@ -636,7 +651,7 @@
         '<td>' + (fmts || '<span class="text-muted">—</span>') + '</td>' +
         '<td style="white-space:nowrap;font-size:12px;">' + esc(q.created_at) + '</td>' +
         '<td><strong>' + pdfHtml + '</strong></td>' +
-        '<td><span class="sb sb-' + esc(q.status) + '"><span class="dot"></span>' + esc(q.status_label) + '</span></td>' +
+        '<td>' + statusBadge + '</td>' +
         '<td><button class="btn btn-sm btn-outline-primary" onclick="openDetail(' + q.id + ',event)"><i class="bx bx-edit me-1"></i>Manage</button></td>' +
       '</tr>';
     }).join('');
@@ -745,6 +760,17 @@
       btnDownloadQuotationPdf.href = '#';
     }
 
+    // Check payment receipt
+    var sectionPaymentReceipt = document.getElementById('sectionPaymentReceipt');
+    var btnDownloadPaymentReceipt = document.getElementById('btnDownloadPaymentReceipt');
+    if (q.payment_receipt_path) {
+      sectionPaymentReceipt.classList.remove('d-none');
+      btnDownloadPaymentReceipt.href = q.payment_receipt_url;
+    } else {
+      sectionPaymentReceipt.classList.add('d-none');
+      btnDownloadPaymentReceipt.href = '#';
+    }
+
     updateConditionalSections(q.status);
     showExistingData(q);
     freezeOrUnfreezeAdminNotes();
@@ -788,10 +814,11 @@
   function showExistingData(q) {
     var sec = document.getElementById('existingDataSection');
     var con = document.getElementById('existingDataContent');
-    if (q.quotation_pdf_path || q.rejection_reason || q.quoted_at || q.processing_started_at) {
+    if (q.quotation_pdf_path || q.payment_receipt_path || q.rejection_reason || q.quoted_at || q.processing_started_at) {
       sec.classList.remove('d-none');
       var lines = [];
       if (q.quotation_pdf_path)   lines.push('<strong>Quoted PDF:</strong> Uploaded');
+      if (q.payment_receipt_path) lines.push('<strong>Payment Receipt:</strong> Uploaded');
       if (q.quoted_at)            lines.push('<strong>Quoted At:</strong> ' + esc(q.quoted_at));
       if (q.processing_started_at)lines.push('<strong>Processing Started:</strong> ' + esc(q.processing_started_at));
       if (q.rejection_reason)     lines.push('<strong>Rejection Reason:</strong> ' + esc(q.rejection_reason));

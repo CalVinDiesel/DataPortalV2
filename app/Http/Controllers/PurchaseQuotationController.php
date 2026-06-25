@@ -177,6 +177,14 @@ class PurchaseQuotationController extends Controller
         $newStatus = $request->status;
         $oldStatus = $quotation->status;
 
+        // Enforce payment receipt exists before admin can move to processing or completed status
+        if (in_array($newStatus, ['processing', 'completed']) && !$quotation->payment_receipt_path) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot update status. The client has not uploaded a payment receipt yet.',
+            ], 422);
+        }
+
         $notes = $quotation->admin_notes;
         if (!is_array($notes)) {
             $notes = [];
@@ -319,6 +327,111 @@ class PurchaseQuotationController extends Controller
         return Storage::disk('local')->download($quotation->quotation_pdf_path, $filename, [
             'Content-Type'        => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
+     * Client: upload a payment receipt (image or PDF).
+     */
+    public function clientUploadReceipt(Request $request, $id)
+    {
+        $user = Auth::user();
+        $quotation = PurchaseQuotation::where('id', $id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        // Enforce status is awaiting_payment
+        if ($quotation->status !== 'awaiting_payment') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Receipts can only be uploaded when status is Awaiting Payment.',
+            ], 422);
+        }
+
+        $request->validate([
+            'payment_receipt' => 'required|file|mimes:pdf,jpeg,png,jpg|max:20480', // max 20MB
+        ]);
+
+        if ($request->hasFile('payment_receipt') && $request->file('payment_receipt')->isValid()) {
+            // Delete old receipt if it exists
+            if ($quotation->payment_receipt_path && Storage::disk('local')->exists($quotation->payment_receipt_path)) {
+                Storage::disk('local')->delete($quotation->payment_receipt_path);
+            }
+
+            $file = $request->file('payment_receipt');
+            $extension = $file->getClientOriginalExtension();
+            $filename = 'receipt_' . $quotation->purchase_id . '_' . time() . '.' . $extension;
+            $path = $file->storeAs('payment_receipts/' . $quotation->purchase_id, $filename, 'local');
+
+            $quotation->update([
+                'payment_receipt_path' => $path,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment receipt uploaded successfully.',
+                'data'    => $this->formatQuotationForApi($quotation->fresh(['user', 'mapData'])),
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid file uploaded.',
+        ], 400);
+    }
+
+    /**
+     * Client: download/stream their own uploaded payment receipt.
+     */
+    public function clientDownloadPaymentReceipt($id)
+    {
+        $user = Auth::user();
+        $quotation = PurchaseQuotation::where('id', $id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        if (!$quotation->payment_receipt_path || !Storage::disk('local')->exists($quotation->payment_receipt_path)) {
+            abort(404, 'Payment receipt not found.');
+        }
+
+        $extension = pathinfo($quotation->payment_receipt_path, PATHINFO_EXTENSION);
+        $filename = 'Receipt_' . $quotation->purchase_id . '.' . $extension;
+
+        $mime = 'application/octet-stream';
+        if (in_array(strtolower($extension), ['jpg', 'jpeg', 'png'])) {
+            $mime = 'image/' . (strtolower($extension) === 'jpg' ? 'jpeg' : strtolower($extension));
+        } elseif (strtolower($extension) === 'pdf') {
+            $mime = 'application/pdf';
+        }
+
+        return Storage::disk('local')->download($quotation->payment_receipt_path, $filename, [
+            'Content-Type' => $mime,
+        ]);
+    }
+
+    /**
+     * Admin: download/stream the client's uploaded payment receipt.
+     */
+    public function adminStreamPaymentReceipt($id)
+    {
+        $quotation = PurchaseQuotation::findOrFail($id);
+
+        if (!$quotation->payment_receipt_path || !Storage::disk('local')->exists($quotation->payment_receipt_path)) {
+            abort(404, 'Payment receipt not found.');
+        }
+
+        $extension = pathinfo($quotation->payment_receipt_path, PATHINFO_EXTENSION);
+        $filename = 'Receipt_' . $quotation->purchase_id . '.' . $extension;
+        
+        $mime = 'application/octet-stream';
+        if (in_array(strtolower($extension), ['jpg', 'jpeg', 'png'])) {
+            $mime = 'image/' . (strtolower($extension) === 'jpg' ? 'jpeg' : strtolower($extension));
+        } elseif (strtolower($extension) === 'pdf') {
+            $mime = 'application/pdf';
+        }
+
+        return Storage::disk('local')->download($quotation->payment_receipt_path, $filename, [
+            'Content-Type' => $mime,
         ]);
     }
 
@@ -765,6 +878,13 @@ class PurchaseQuotationController extends Controller
                 : null,
             'quotation_pdf_client_url' => $q->quotation_pdf_path
                 ? url('/api/purchase-quotation/' . $q->id . '/quotation-pdf')
+                : null,
+            'payment_receipt_path'  => $q->payment_receipt_path,
+            'payment_receipt_url'   => $q->payment_receipt_path
+                ? url('/api/admin/purchase-quotations/' . $q->id . '/payment-receipt')
+                : null,
+            'payment_receipt_client_url' => $q->payment_receipt_path
+                ? url('/api/purchase-quotation/' . $q->id . '/payment-receipt')
                 : null,
             'bank_name'             => $q->bank_name,
             'bank_account_number'   => $q->bank_account_number,

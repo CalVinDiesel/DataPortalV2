@@ -19,6 +19,7 @@ class PurchaseQuotation extends Model
         'quoted_price',
         'quoted_at',
         'quotation_pdf_path',
+        'payment_receipt_path',
         'bank_name',
         'bank_account_number',
         'bank_account_name',
