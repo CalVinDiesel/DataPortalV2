@@ -47,7 +47,7 @@
     .format-option-wrapper {
       position: relative;
       border-radius: 8px;
-      padding: 0.5rem 0.75rem;
+      padding: 0.5rem 0.75rem 0.5rem 2.25rem;
       margin-bottom: 0.75rem !important;
       border: 1px solid transparent;
       transition: all 0.2s ease-in-out;
@@ -68,6 +68,7 @@
       background-color: var(--bs-body-bg);
       border-radius: 6px;
       padding: 0;
+      margin-left: -1.5rem;
     }
     .format-option-wrapper:hover .format-desc-text {
       max-height: 150px;
