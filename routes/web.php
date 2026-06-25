@@ -197,6 +197,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/api/purchase-quotation/{id}/payment-receipt', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientUploadReceipt'])->name('purchase_quotation.upload_receipt');
     Route::get('/api/purchase-quotation/{id}/payment-receipt', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientDownloadPaymentReceipt'])->name('purchase_quotation.receipt');
     Route::get('/api/purchase-quotation/{id}/status', [\App\Http\Controllers\PurchaseQuotationController::class, 'clientCheckStatus'])->name('purchase_quotation.status');
+    Route::post('/api/purchase-quotation/{id}/accept-disclaimer', [\App\Http\Controllers\PurchaseQuotationController::class, 'acceptDisclaimer'])->name('purchase_quotation.accept_disclaimer');
 
     // 🚀 SESSION-SYNC (v271): Moved from api.php to ensure stable session access for AJAX
     Route::get('/api/user/my-uploads', [ProjectController::class, 'index']);

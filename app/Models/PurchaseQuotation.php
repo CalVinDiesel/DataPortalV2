@@ -27,6 +27,9 @@ class PurchaseQuotation extends Model
         'processing_started_at',
         'delivery_ready',
         'delivered_at',
+        'disclaimer_accepted_at',
+        'disclaimer_ip_address',
+        'disclaimer_user_agent',
     ];
 
     protected $casts = [
@@ -38,6 +41,7 @@ class PurchaseQuotation extends Model
         'processing_started_at' => 'datetime',
         'delivery_ready'        => 'boolean',
         'delivered_at'          => 'datetime',
+        'disclaimer_accepted_at' => 'datetime',
     ];
 
     /**

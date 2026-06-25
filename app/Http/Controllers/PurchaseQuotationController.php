@@ -719,6 +719,29 @@ class PurchaseQuotationController extends Controller
     }
 
     /**
+     * Client: accept the 3D model download disclaimer.
+     */
+    public function acceptDisclaimer(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $quotation = PurchaseQuotation::where('id', $id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $quotation->update([
+            'disclaimer_accepted_at' => now(),
+            'disclaimer_ip_address'   => $request->ip(),
+            'disclaimer_user_agent'   => $request->userAgent(),
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Client: download the 3D model tiles for their completed quotation.
      * Streams the delivery folder as a zip (or a single file directly) from SFTP.
      */
@@ -728,6 +751,10 @@ class PurchaseQuotationController extends Controller
         $quotation = PurchaseQuotation::where('id', $id)
             ->where('user_id', $user->id)
             ->firstOrFail();
+
+        if (!$quotation->disclaimer_accepted_at) {
+            return response()->json(['error' => 'You must accept the disclaimer before downloading.'], 403);
+        }
 
         if ($quotation->status !== 'completed') {
             return response()->json(['error' => 'Your 3D model is not yet ready for download.'], 403);

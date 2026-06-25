@@ -611,7 +611,7 @@
                         type="button"
                         class="btn-download-tiles"
                         id="btnDownload-{{ $quote->id }}"
-                        onclick="downloadTiles({{ $quote->id }}, '{{ $quote->purchase_id }}')"
+                        onclick="initiateDownloadWithDisclaimer({{ $quote->id }})"
                       >
                         <i class="bx bx-download" style="font-size:18px;"></i>
                         Download 3D Model Tiles
@@ -655,6 +655,57 @@
     </div>
   </div>
 
+  <!-- 🚀 3D Data Download Disclaimer Modal -->
+  <div class="modal fade" id="disclaimerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header py-3 bg-light">
+          <h5 class="modal-title fw-bold text-dark"><i class="bx bx-shield-quarter me-2 text-primary"></i> 3D Data Download & Usage Disclaimer</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4 p-md-5">
+          <div class="disclaimer-content mb-4 p-3 border rounded bg-lighter" style="max-height: 400px; overflow-y: auto; font-size: 0.9rem; line-height: 1.6;">
+            <p class="fw-bold text-danger">IMPORTANT: PLEASE READ CAREFULLY BEFORE DOWNLOADING.</p>
+            <p>By clicking "<strong>I AGREE</strong>" or downloading the 3D processed model (the "Data"), you acknowledge that you have read, understood, and agreed to be bound by the following terms:</p>
+            
+            <h6 class="fw-bold mt-4">1. For Reference Purposes Only</h6>
+            <p>This 3D processed model is provided solely for <strong>self-referencing and informational purposes</strong>. It is a digital representation generated through automated processing techniques and may not reflect the actual, physical dimensions, specifications, or conditions of the subject with absolute precision.</p>
+
+            <h6 class="fw-bold mt-4">2. No Warranty of Accuracy</h6>
+            <p>The Data is provided on an <strong>"AS IS"</strong> and <strong>"AS AVAILABLE"</strong> basis. <strong>3D Hub</strong> makes no representations or warranties of any kind, express or implied, regarding the accuracy, completeness, reliability, or suitability of the 3D model. Users are warned that digital artifacts, interpolation errors, or processing limitations may exist.</p>
+
+            <h6 class="fw-bold mt-4">3. Limitation of Liability</h6>
+            <p>In no event shall <strong>3D Hub</strong> or its parent company be held liable for any direct, indirect, incidental, special, or consequential <strong>losses or damages</strong> (including, but not limited to, financial loss, personal injury, or property damage) arising out of the use, inability to use, or reliance upon this 3D model.</p>
+
+            <h6 class="fw-bold mt-4">4. User Responsibility</h6>
+            <p>The user assumes <strong>full responsibility</strong> for verifying the accuracy of any measurements, designs, or calculations derived from this Data. If the Data is to be used for construction, manufacturing, or professional engineering, the user is advised to perform independent field verification.</p>
+
+            <h6 class="fw-bold mt-4">5. No Modification or Redistribution</h6>
+            <p>Unless otherwise stated, this Data is intended for the recipient’s personal or internal use only. Unauthorized redistribution, modification, or commercial resale of the processed model is strictly prohibited.</p>
+            
+            <hr>
+            <p class="small text-muted italic">Note: This record of agreement will be logged with your User ID and IP address for compliance purposes.</p>
+          </div>
+
+          <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" id="disclaimerCheckbox" onchange="toggleDisclaimerBtn()">
+            <label class="form-check-label fw-bold text-dark" for="disclaimerCheckbox">
+              I have read and agree to the 3D Data Disclaimer
+            </label>
+          </div>
+          
+          <input type="hidden" id="disclaimerQuotationId">
+        </div>
+        <div class="modal-footer border-top-0 pt-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary px-5 fw-bold" id="agreeDownloadBtn" disabled onclick="handleDisclaimerAgreement()">
+            <i class="bx bx-download me-1"></i> I Agree & Download
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
   <script>
@@ -686,8 +737,70 @@
       }
     }
 
-    // Download 3D model tiles
-    function downloadTiles(quotationId, purchaseId) {
+    // 🚀 DISCLAIMER LOGIC (v176)
+    function initiateDownloadWithDisclaimer(quotationId) {
+      document.getElementById('disclaimerQuotationId').value = quotationId;
+      
+      // Reset modal state fully — including button label, in case a previous session left it in a loading state
+      const agreeBtn = document.getElementById('agreeDownloadBtn');
+      document.getElementById('disclaimerCheckbox').checked = false;
+      agreeBtn.disabled = true;
+      agreeBtn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
+      
+      const modal = new bootstrap.Modal(document.getElementById('disclaimerModal'));
+      modal.show();
+    }
+
+    function toggleDisclaimerBtn() {
+      const checkbox = document.getElementById('disclaimerCheckbox');
+      document.getElementById('agreeDownloadBtn').disabled = !checkbox.checked;
+    }
+
+    function handleDisclaimerAgreement() {
+      const quotationId = document.getElementById('disclaimerQuotationId').value;
+      const btn = document.getElementById('agreeDownloadBtn');
+      
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Logging Agreement...';
+
+      // 1. Log agreement to database for legal proof
+      fetch('/api/purchase-quotation/' + quotationId + '/accept-disclaimer', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ agreed: true })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // 2. Restore button state before hiding modal so next open is always clean
+          btn.disabled = true;
+          btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
+
+          // 3. Hide modal
+          const modalEl = document.getElementById('disclaimerModal');
+          const modalInstance = bootstrap.Modal.getInstance(modalEl);
+          if (modalInstance) modalInstance.hide();
+          
+          // 4. Trigger Download
+          executeDownloadTiles(quotationId);
+        } else {
+          alert('Could not log your agreement. Please try again.');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('An error occurred. Please refresh the page.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
+      });
+    }
+
+    function executeDownloadTiles(quotationId) {
       var btn = document.getElementById('btnDownload-' + quotationId);
       if (!btn) return;
 
