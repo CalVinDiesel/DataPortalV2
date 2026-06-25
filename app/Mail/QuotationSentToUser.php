@@ -25,7 +25,7 @@ class QuotationSentToUser extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[3DHub] Your Purchase Quotation – ' . $this->quotation->purchase_id,
+            subject: '[3DHub] Your Purchase Quotation - ' . $this->quotation->purchase_id,
         );
     }
 

@@ -23,7 +23,7 @@ class TilesReadyNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[3DHub] Your 3D Model Tiles Are Ready – ' . $this->quotation->purchase_id,
+            subject: '[3DHub] Your 3D Model Tiles Are Ready - ' . $this->quotation->purchase_id,
         );
     }
 
