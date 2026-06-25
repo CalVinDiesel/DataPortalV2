@@ -775,7 +775,7 @@
                     return pts.length >= 3 ? new C.PolygonHierarchy(pts) : undefined;
                   }, false),
                   material: C.Color.CYAN.withAlpha(0.3),
-                  classificationType: C.ClassificationType.CESIUM_3D_TILE
+                  classificationType: C.ClassificationType.BOTH
                 }
               });
               drawingEntities.push(activeDrawingPreview);
@@ -824,7 +824,7 @@
               outline: true,
               outlineColor: C.Color.WHITE,
               outlineWidth: 2,
-              classificationType: C.ClassificationType.CESIUM_3D_TILE
+              classificationType: C.ClassificationType.BOTH
             }
           });
 
