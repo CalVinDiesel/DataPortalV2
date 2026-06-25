@@ -461,10 +461,12 @@ class PurchaseQuotationController extends Controller
                 $relativePath = $quotation->getSftpDeliveryRelativePath();
                 $absolutePath = $quotation->getSftpDeliveryAbsolutePath();
                 $exists = false;
+                $hasTempFiles = false;
 
                 if (is_dir($absolutePath)) {
-                    $localFiles = array_diff(scandir($absolutePath), ['.', '..']);
-                    $exists = count($localFiles) > 0;
+                    $res = $this->checkDirectoryFilesRecursive($absolutePath);
+                    $exists = $res['has_files'] && !$res['has_temp_files'];
+                    $hasTempFiles = $res['has_temp_files'];
                 } else {
                     // Try to create local directory
                     @mkdir($absolutePath, 0777, true);
@@ -475,11 +477,31 @@ class PurchaseQuotationController extends Controller
                         $disk->makeDirectory($relativePath);
                     }
                     try {
-                        $contents = $disk->listContents($relativePath)->toArray();
-                        $exists = count($contents) > 0;
+                        $contents = $disk->listContents($relativePath, true)->toArray();
+                        $hasFiles = false;
+                        $hasTemp = false;
+                        foreach ($contents as $item) {
+                            if ($item['type'] === 'file') {
+                                $hasFiles = true;
+                                $filename = basename($item['path']);
+                                $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                                if ($ext === 'filepart' || $ext === 'tmp' || $ext === 'temp' || str_ends_with(strtolower($filename), '.filepart')) {
+                                    $hasTemp = true;
+                                }
+                            }
+                        }
+                        $exists = $hasFiles && !$hasTemp;
+                        $hasTempFiles = $hasTemp;
                     } catch (\Exception $e) {
                         $exists = false;
                     }
+                }
+
+                if ($hasTempFiles) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'The 3D model upload is still in progress (temporary files detected). Please wait for WinSCP upload to complete before marking as ready.',
+                    ], 422);
                 }
 
                 if (!$exists) {
@@ -519,6 +541,42 @@ class PurchaseQuotationController extends Controller
             'message'  => $markReady ? 'Delivery marked as ready. Client has been notified by email.' : 'Delivery marked as not ready. Client download disabled.',
             'data'     => $this->formatQuotationForApi($quotation),
         ]);
+    }
+
+    /**
+     * Recursively check if a directory has any files, and ensure none of them are temporary (.filepart, .tmp).
+     * Returns an array: ['has_files' => bool, 'has_temp_files' => bool]
+     */
+    protected function checkDirectoryFilesRecursive($dir): array
+    {
+        $hasFiles = false;
+        $hasTempFiles = false;
+
+        if (!is_dir($dir)) {
+            return ['has_files' => false, 'has_temp_files' => false];
+        }
+
+        $files = array_diff(scandir($dir), ['.', '..']);
+        foreach ($files as $file) {
+            $path = $dir . '/' . $file;
+            if (is_dir($path)) {
+                $sub = $this->checkDirectoryFilesRecursive($path);
+                if ($sub['has_files']) {
+                    $hasFiles = true;
+                }
+                if ($sub['has_temp_files']) {
+                    $hasTempFiles = true;
+                }
+            } else {
+                $hasFiles = true;
+                $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                if ($ext === 'filepart' || $ext === 'tmp' || $ext === 'temp' || str_ends_with(strtolower($file), '.filepart')) {
+                    $hasTempFiles = true;
+                }
+            }
+        }
+
+        return ['has_files' => $hasFiles, 'has_temp_files' => $hasTempFiles];
     }
 
     /**
