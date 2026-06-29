@@ -773,7 +773,10 @@ class InquiryController extends Controller
                 $singleItem = reset($fileItems);
                 $singlePath = $singleItem->path();
                 $origName   = basename($singlePath);
-                $safeName   = preg_replace('/[^a-zA-Z0-9._-]/', '_', $origName);
+                $ext        = pathinfo($origName, PATHINFO_EXTENSION);
+                $downloadName = $ext && strtolower($ext) !== 'zip'
+                    ? preg_replace('/\.zip$/i', '.' . $ext, $safeZipName)
+                    : $safeZipName;
                 $size       = null;
                 try { $size = $disk->size($singlePath); } catch (\Exception $e) {}
                 $mime = Str::endsWith(strtolower($origName), '.zip') ? 'application/zip' : 'application/octet-stream';
@@ -787,7 +790,7 @@ class InquiryController extends Controller
                     }
                 }, 200, [
                     'Content-Type'        => $mime,
-                    'Content-Disposition' => 'attachment; filename="' . $safeName . '"',
+                    'Content-Disposition' => 'attachment; filename="' . $downloadName . '"',
                     'Content-Length'      => $size,
                     'Cache-Control'       => 'no-cache, no-store, must-revalidate',
                     'Pragma'              => 'no-cache',
@@ -871,6 +874,43 @@ class InquiryController extends Controller
             }, 200, [
                 'Content-Type'        => $mime,
                 'Content-Disposition' => 'attachment; filename="' . $safeName . '"',
+                'Content-Length'      => $size,
+                'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+                'X-Accel-Buffering'   => 'no',
+            ]);
+        }
+
+        // If it is a directory, check if it contains exactly one file to prevent double-zipping
+        $files = [];
+        if (is_dir($absolutePath)) {
+            $iter = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($absolutePath),
+                \RecursiveIteratorIterator::LEAVES_ONLY
+            );
+            foreach ($iter as $f) {
+                if ($f->isFile()) {
+                    $files[] = $f->getRealPath();
+                }
+            }
+        }
+
+        if (count($files) === 1) {
+            $singleFile = $files[0];
+            $origName   = basename($singleFile);
+            $ext        = pathinfo($origName, PATHINFO_EXTENSION);
+            $downloadName = $ext && strtolower($ext) !== 'zip'
+                ? preg_replace('/\.zip$/i', '.' . $ext, $zipName)
+                : $zipName;
+            $size = filesize($singleFile);
+            $mime = Str::endsWith(strtolower($origName), '.zip') ? 'application/zip' : 'application/octet-stream';
+
+            return response()->stream(function () use ($singleFile) {
+                while (ob_get_level() > 0) ob_end_clean();
+                $f = fopen($singleFile, 'rb');
+                if ($f) { fpassthru($f); fclose($f); }
+            }, 200, [
+                'Content-Type'        => $mime,
+                'Content-Disposition' => 'attachment; filename="' . $downloadName . '"',
                 'Content-Length'      => $size,
                 'Cache-Control'       => 'no-cache, no-store, must-revalidate',
                 'X-Accel-Buffering'   => 'no',
