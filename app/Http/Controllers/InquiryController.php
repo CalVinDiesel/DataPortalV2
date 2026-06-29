@@ -1085,4 +1085,87 @@ class InquiryController extends Controller
 
         return '';
     }
+
+    /**
+     * Download the selected area coordinates of an inquiry as a KML file.
+     * Accessible by admins.
+     */
+    public function adminDownloadKml($id)
+    {
+        $inquiry = Inquiry::findOrFail($id);
+        $coordsPayload = $inquiry->area_coordinates;
+
+        $coordinatesArray = [];
+        if (!empty($coordsPayload) && isset($coordsPayload['type']) && $coordsPayload['type'] === 'Polygon') {
+            $coordinatesArray = $coordsPayload['coordinates'][0] ?? [];
+        } elseif (is_array($coordsPayload)) {
+            $coordinatesArray = $coordsPayload;
+        }
+
+        if (empty($coordinatesArray)) {
+            return redirect()->back()->with('error', 'No coordinates found for this inquiry.');
+        }
+
+        // Ensure the polygon closes (last point equals first point)
+        $first = reset($coordinatesArray);
+        $last = end($coordinatesArray);
+
+        $firstLng = $first[0] ?? $first['lng'] ?? $first['longitude'] ?? null;
+        $firstLat = $first[1] ?? $first['lat'] ?? $first['latitude'] ?? null;
+        $lastLng = $last[0] ?? $last['lng'] ?? $last['longitude'] ?? null;
+        $lastLat = $last[1] ?? $last['lat'] ?? $last['latitude'] ?? null;
+
+        if ($firstLng !== $lastLng || $firstLat !== $lastLat) {
+            $coordinatesArray[] = $first;
+        }
+
+        // Build the coordinates text string for KML
+        $kmlCoordinates = '';
+        foreach ($coordinatesArray as $point) {
+            $lng = $point[0] ?? $point['lng'] ?? $point['longitude'] ?? null;
+            $lat = $point[1] ?? $point['lat'] ?? $point['latitude'] ?? null;
+            if ($lng !== null && $lat !== null) {
+                $kmlCoordinates .= "{$lng},{$lat},0 ";
+            }
+        }
+        $kmlCoordinates = trim($kmlCoordinates);
+
+        // Build KML XML content
+        $kmlContent = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $kmlContent .= '<kml xmlns="http://www.opengis.net/kml/2.2">' . "\n";
+        $kmlContent .= '  <Document>' . "\n";
+        $kmlContent .= "    <name>Inquiry_#{$inquiry->inquiry_id}</name>\n";
+        
+        // Translucent Purple Styling Block (#696cff at 35% opacity)
+        // KML Color syntax is AABBGGRR (Alpha, Blue, Green, Red)
+        // #696cff -> R=69 (105), G=6c (108), B=ff (255)
+        // Alpha: 35% -> 0.35 * 255 = ~89 -> 59 in hex
+        // Border: solid -> 100% -> ff in hex
+        // Color border: fffff6c69 (solid purpleish)
+        // Color polygon: 59ff6c69 (translucent purpleish)
+        $kmlContent .= '    <Style id="purpleArea">' . "\n";
+        $kmlContent .= '      <LineStyle><color>ffff6c69</color><width>2</width></LineStyle>' . "\n"; 
+        $kmlContent .= '      <PolyStyle><color>59ff6c69</color><fill>1</fill><outline>1</outline></PolyStyle>' . "\n";
+        $kmlContent .= '    </Style>' . "\n";
+        
+        // Placemark
+        $kmlContent .= '    <Placemark>' . "\n";
+        $kmlContent .= "      <name>User Selected Area (Inquiry ID: {$inquiry->inquiry_id})</name>\n";
+        $kmlContent .= '      <styleUrl>#purpleArea</styleUrl>' . "\n";
+        $kmlContent .= '      <Polygon>' . "\n";
+        $kmlContent .= '        <outerBoundaryIs><LinearRing><coordinates>' . "\n";
+        $kmlContent .= "          {$kmlCoordinates}\n";
+        $kmlContent .= '        </coordinates></LinearRing></outerBoundaryIs>' . "\n";
+        $kmlContent .= '      </Polygon>' . "\n";
+        $kmlContent .= '    </Placemark>' . "\n";
+        $kmlContent .= '  </Document>' . "\n";
+        $kmlContent .= '</kml>';
+
+        $fileName = "inquiry_{$inquiry->inquiry_id}_boundary.kml";
+
+        return response($kmlContent)
+            ->header('Content-Type', 'application/vnd.google-earth.kml+xml')
+            ->header('Content-Disposition', "attachment; filename=\"{$fileName}\"")
+            ->header('Cache-Control', 'max-age=0');
+    }
 }

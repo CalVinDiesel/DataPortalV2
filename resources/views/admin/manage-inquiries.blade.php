@@ -276,7 +276,15 @@
               <div class="ds-title">📍 3D Model & Area</div>
               <div class="info-pair"><span class="lbl">Model Title</span><br><strong id="dMapTitle"></strong></div>
               <div class="info-pair"><span class="lbl">Output Formats Requested</span><br><div id="dOutputCategories"></div></div>
-              <div class="info-pair"><span class="lbl">Calculated Area</span><br><strong id="dCalculatedArea">—</strong></div>
+              <div class="info-pair d-flex justify-content-between align-items-center mb-0">
+                <div>
+                  <span class="lbl">Calculated Area</span><br>
+                  <strong id="dCalculatedArea">—</strong>
+                </div>
+                <a id="btnDownloadKml" href="#" class="btn btn-sm btn-outline-secondary py-1 px-2 mt-1" style="font-size:11px;">
+                  <i class="bx bx-download me-1"></i> Download KML
+                </a>
+              </div>
             </div>
 
             <!-- Cesium Map -->
@@ -771,6 +779,12 @@
     showExistingData(q);
     freezeOrUnfreezeAdminNotes();
     clearModalAlert();
+
+    // Dynamic KML download link binding
+    var kmlBtn = document.getElementById('btnDownloadKml');
+    if (kmlBtn) {
+      kmlBtn.href = '/api/admin/inquiries/' + q.id + '/download-kml';
+    }
 
     if (q.status === 'completed') {
       updateDeliverySection(q);
