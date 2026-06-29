@@ -139,11 +139,11 @@
     <script>
       (function() {
         var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
-        var LANDING = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/{{ route('landing') }}';
+        var LANDING = '{{ route('landing') }}';
         fetch(AUTH_API + '/api/auth/me', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(d) {
           if (d && (d.account_removed || d.removal_reason)) {
             alert(d.message || ('Your account has been removed.' + (d.removal_reason ? (' Reason: ' + d.removal_reason) : '')));
-            window.location.href = '/html/front-pages/{{ route('login') }}';
+            window.location.href = '{{ route('login') }}';
             return;
           }
           if (!d.loggedIn || (d.role !== 'registered' && d.role !== 'trusted' && d.role !== 'admin' && d.role !== 'superadmin')) {
@@ -520,7 +520,7 @@
   <script>
     (function () {
       var API = window.TemaDataPortal_API_BASE || (window.location.protocol + '//' + window.location.host);
-      var LANDING_URL = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/{{ route('landing') }}';
+      var LANDING_URL = '{{ route('landing') }}';
   
       document.addEventListener('DOMContentLoaded', function () {
         var logoutBtn = document.getElementById('navLogoutBtn');

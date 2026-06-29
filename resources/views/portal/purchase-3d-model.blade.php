@@ -23,7 +23,7 @@
   <script>
     (function() {
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
-      var LANDING = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/{{ route('landing') }}';
+      var LANDING = '{{ route('landing') }}';
       var removalHandled = false;
       function checkRemoval() {
         return fetch(AUTH_API + '/api/auth/me', { credentials: 'include' })
@@ -34,7 +34,7 @@
                 removalHandled = true;
                 alert(d.message || ('Your account has been removed.' + (d.removal_reason ? (' Reason: ' + d.removal_reason) : '')));
               }
-              window.location.href = '/html/front-pages/{{ route('login') }}';
+              window.location.href = '{{ route('login') }}';
               return false;
             }
             return d;

@@ -540,7 +540,7 @@
     function logout() {
       if (!confirm('Are you sure you want to log out?')) return;
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
-      var LANDING_URL = window.location.origin + '/html/front-pages/{{ route('landing') }}';
+      var LANDING_URL = '{{ route('landing') }}';
       fetch(AUTH_API + '/api/auth/logout', { method: 'POST', credentials: 'include' })
         .then(function () { window.location.href = AUTH_API + '/api/auth/sign-out?callbackURL=' + encodeURIComponent(LANDING_URL); })
         .catch(function () { window.location.href = LANDING_URL; });

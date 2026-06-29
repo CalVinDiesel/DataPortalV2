@@ -35,7 +35,7 @@
   <script>
     (function () {
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
-      var LANDING_URL = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/{{ route('landing') }}';
+      var LANDING_URL = '{{ route('landing') }}';
       var removalHandled = false;
 
       function checkAccountRemoved() {
@@ -47,7 +47,7 @@
                 removalHandled = true;
                 alert(d.message || ('Your account has been removed.' + (d.removal_reason ? (' Reason: ' + d.removal_reason) : '')));
               }
-              window.location.href = '/html/front-pages/{{ route('login') }}';
+              window.location.href = '{{ route('login') }}';
               return null;
             }
             return d;
@@ -57,7 +57,7 @@
       checkAccountRemoved().then(function (d) {
         if (!d) return;
         if (!d.loggedIn) {
-          window.location.href = '/html/front-pages/{{ route('login') }}?redirect=' + encodeURIComponent(window.location.pathname);
+          window.location.href = '{{ route('login') }}?redirect=' + encodeURIComponent(window.location.pathname);
           return;
         }
       }).catch(function () { });
@@ -370,7 +370,7 @@
   <script>
     (function () {
       var AUTH_API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
-      var LOGIN_URL = (window.location.origin || 'http://localhost:3000') + '/html/front-pages/{{ route('login') }}';
+      var LOGIN_URL = '{{ route('login') }}';
 
       function showMessage(elId, text, isError) {
         var el = document.getElementById(elId);
