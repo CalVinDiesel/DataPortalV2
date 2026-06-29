@@ -96,6 +96,28 @@ class AuthController extends Controller
         return response()->json(['success' => true, 'message' => 'Contact number updated.']);
     }
 
+    public function updateEmail(Request $request)
+    {
+        $request->validate([
+            'newEmail' => 'required|email|max:255|unique:portal_users,email,' . $request->user()->id,
+        ]);
+
+        $user = $request->user();
+        $user->email = $request->newEmail;
+        $user->save();
+
+        // Invalidate session and logout to secure identity change
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Email updated. Please log in with your new email.',
+            'requireRelogin' => true
+        ]);
+    }
+
     public function updatePassword(Request $request)
     {
         $user = $request->user();

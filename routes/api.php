@@ -33,6 +33,7 @@ Route::middleware('web')->group(function () {
         Route::get('/profile', [\App\Http\Controllers\AuthController::class, 'profile']);
         Route::put('/profile/name', [\App\Http\Controllers\AuthController::class, 'updateName']);
         Route::put('/profile/contact', [\App\Http\Controllers\AuthController::class, 'updateContact']);
+        Route::put('/profile/email', [\App\Http\Controllers\AuthController::class, 'updateEmail']);
         Route::put('/profile/password', [\App\Http\Controllers\AuthController::class, 'updatePassword']);
         Route::get('/profile/sftp', [\App\Http\Controllers\AuthController::class, 'sftp']);
         Route::put('/profile/sftp-password', [\App\Http\Controllers\AuthController::class, 'updateSftpPassword']);
