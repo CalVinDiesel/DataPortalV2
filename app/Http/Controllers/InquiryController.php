@@ -61,6 +61,17 @@ class InquiryController extends Controller
             'status'            => 'pending',
         ]);
 
+        // Auto-create the SFTP delivery folder as soon as the inquiry is created
+        try {
+            $disk = \Illuminate\Support\Facades\Storage::disk('sftp_delivery');
+            $relativePath = $inquiry->getSftpDeliveryRelativePath();
+            if (!$disk->exists($relativePath)) {
+                $disk->makeDirectory($relativePath);
+            }
+        } catch (\Exception $sftpEx) {
+            \Illuminate\Support\Facades\Log::warning('Could not auto-create SFTP delivery directory during inquiry creation: ' . $sftpEx->getMessage());
+        }
+
         // Load relations for mail
         $inquiry->load(['user', 'mapData']);
 
