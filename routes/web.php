@@ -262,8 +262,6 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
 
     Route::post('/admin/client-uploads/retry-sftp', [UploadController::class, 'retrySftpHandover'])
         ->name('admin.client_uploads.retry_sftp');
-
-    Route::get('/admin/debug-logs', [\App\Http\Controllers\InquiryController::class, 'debugLogs']);
 });
 Route::post('/upload/pin-image', [UploadController::class, 'uploadPinImage'])
 
