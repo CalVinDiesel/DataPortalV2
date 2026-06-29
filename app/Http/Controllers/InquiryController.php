@@ -177,13 +177,15 @@ class InquiryController extends Controller
         $newStatus = $request->status;
         $oldStatus = $inquiry->status;
 
-        // Enforce payment receipt exists before admin can move to processing or completed status
+        // Enforce payment receipt exists before admin can move to processing or completed status (Bypassed for FOC pre-launch)
+        /*
         if (in_array($newStatus, ['processing', 'completed']) && !$inquiry->payment_receipt_path) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cannot update status. The client has not uploaded a payment receipt yet.',
             ], 422);
         }
+        */
 
         $notes = $inquiry->admin_notes;
         if (!is_array($notes)) {

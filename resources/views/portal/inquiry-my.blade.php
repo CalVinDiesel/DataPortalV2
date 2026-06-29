@@ -518,20 +518,16 @@
     <div class="container">
 
       @php
-        $statusOrder = ['pending','reviewed','quoted','awaiting_payment','processing','completed'];
+        $statusOrder = ['pending','reviewed','processing','completed'];
         $statusLabels = [
-          'pending'          => 'Pending',
-          'reviewed'         => 'Reviewed',
-          'quoted'           => 'Quoted',
-          'awaiting_payment' => 'Awaiting Payment',
+          'pending'          => 'Pending Review',
+          'reviewed'         => 'Under Review',
           'processing'       => 'Processing',
           'completed'        => 'Completed',
         ];
         $statusIcons = [
           'pending'          => '⏳',
           'reviewed'         => '🔍',
-          'quoted'           => '💼',
-          'awaiting_payment' => '🏦',
           'processing'       => '⚙️',
           'completed'        => '✅',
         ];
@@ -555,6 +551,9 @@
           @php
             $isRejected = $inquiry->status === 'rejected';
             $currentIdx = $isRejected ? -1 : array_search($inquiry->status, $statusOrder);
+            if ($currentIdx === false && !$isRejected) {
+                $currentIdx = 1; // Default fallback to Under Review
+            }
           @endphp
 
           <div class="q-card" id="qcard-{{ $inquiry->id }}">

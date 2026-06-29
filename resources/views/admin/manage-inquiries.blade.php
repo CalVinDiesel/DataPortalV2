@@ -203,8 +203,8 @@
               <button class="filter-tab active" data-status="all">All</button>
               <button class="filter-tab" data-status="pending">⏳ Pending</button>
               <button class="filter-tab" data-status="reviewed">🔍 Reviewed</button>
-              <button class="filter-tab" data-status="quoted">💼 Quoted</button>
-              <button class="filter-tab" data-status="awaiting_payment">🏦 Awaiting Payment</button>
+              <!-- <button class="filter-tab" data-status="quoted">💼 Quoted</button> -->
+              <!-- <button class="filter-tab" data-status="awaiting_payment">🏦 Awaiting Payment</button> -->
               <button class="filter-tab" data-status="processing">⚙️ Processing</button>
               <button class="filter-tab" data-status="completed">✅ Completed</button>
               <button class="filter-tab" data-status="rejected">❌ Rejected</button>
@@ -312,8 +312,8 @@
                 <select id="statusSelect" class="form-select">
                   <option value="pending">⏳ Pending Review</option>
                   <option value="reviewed">🔍 Under Review</option>
-                  <option value="quoted">💼 Quotation Sent</option>
-                  <option value="awaiting_payment">🏦 Awaiting Payment</option>
+                  <!-- <option value="quoted">💼 Quotation Sent</option> -->
+                  <!-- <option value="awaiting_payment">🏦 Awaiting Payment</option> -->
                   <option value="processing">⚙️ Processing</option>
                   <option value="completed">✅ Completed</option>
                   <option value="rejected">❌ Rejected</option>
@@ -493,7 +493,7 @@
   var cesiumViewer   = null;
   var detailModal    = null;
 
-  var STATUS_ORDER = ['pending','reviewed','quoted','awaiting_payment','processing','completed'];
+  var STATUS_ORDER = ['pending','reviewed','processing','completed'];
   var STATUS_LABELS = {
     pending:          'Pending Review',
     reviewed:         'Under Review',
@@ -560,13 +560,11 @@
     var items = [
       { label: 'Total',          key: 'all',              icon: 'bx-file', color: 'primary' },
       { label: 'Pending',        key: 'pending',          icon: 'bx-time-five', color: 'warning' },
-      { label: 'Quoted',         key: 'quoted',           icon: 'bx-money', color: 'info' },
-      { label: 'Awaiting Pay',   key: 'awaiting_payment', icon: 'bx-credit-card', color: 'warning' },
       { label: 'Processing',     key: 'processing',       icon: 'bx-loader-alt', color: 'purple' },
       { label: 'Completed',      key: 'completed',        icon: 'bx-check-circle', color: 'success' },
     ];
     statsEl.innerHTML = items.map(function (item) {
-      return '<div class="col-6 col-sm-4 col-lg-2 mb-2">' +
+      return '<div class="col-6 col-sm-4 col-lg-3 mb-2">' +
         '<div class="card text-center p-3 h-100" style="border-radius:12px;">' +
           '<div class="fs-4 fw-bold text-' + item.color + '">' + (counts[item.key] || 0) + '</div>' +
           '<div class="small text-muted fw-semibold">' + item.label + '</div>' +
