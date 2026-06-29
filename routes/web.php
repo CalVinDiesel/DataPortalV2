@@ -257,14 +257,14 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
     Route::get('/api/admin/inquiries/{id}/check-delivery', [\App\Http\Controllers\InquiryController::class, 'adminCheckDelivery']);
     Route::get('/api/admin/inquiries/{id}/quotation-pdf', [\App\Http\Controllers\InquiryController::class, 'adminStreamQuotationPdf']);
     Route::get('/api/admin/inquiries/{id}/payment-receipt', [\App\Http\Controllers\InquiryController::class, 'adminStreamPaymentReceipt']);
-
     Route::post('/admin/client-uploads/check-sftp-status', [UploadController::class, 'checkSftpStatus'])
         ->name('admin.client_uploads.check_sftp_status');
 
     Route::post('/admin/client-uploads/retry-sftp', [UploadController::class, 'retrySftpHandover'])
         ->name('admin.client_uploads.retry_sftp');
-});
 
+    Route::get('/admin/debug-logs', [\App\Http\Controllers\InquiryController::class, 'debugLogs']);
+});
 Route::post('/upload/pin-image', [UploadController::class, 'uploadPinImage'])
 
     ->name('upload.pin-image');

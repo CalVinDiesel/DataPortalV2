@@ -1085,4 +1085,18 @@ class InquiryController extends Controller
 
         return '';
     }
+
+    /**
+     * Debug logs helper for inspection of remote container errors.
+     */
+    public function debugLogs()
+    {
+        $logPath = storage_path('logs/laravel.log');
+        if (!file_exists($logPath)) {
+            return response('No log file found.', 404);
+        }
+        $lines = file($logPath);
+        $last150 = array_slice($lines, -150);
+        return response(implode('', $last150), 200, ['Content-Type' => 'text/plain']);
+    }
 }
