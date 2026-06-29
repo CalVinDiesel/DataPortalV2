@@ -48,7 +48,7 @@
           <span class="app-brand-logo demo">
             <img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;">
           </span>
-          <span class="app-brand-text demo menu-text fw-bold ms-2 ps-1">3DHub</span>
+          <span class="app-brand-text demo menu-text fw-bold ms-2 ps-1">3DHub Beta</span>
         </a>
         <div class="ms-auto d-flex align-items-center gap-2">
           <!-- Style Switcher -->
