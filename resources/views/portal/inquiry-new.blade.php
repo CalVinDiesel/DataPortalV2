@@ -677,7 +677,6 @@
               } else {
                 position = C.Cartesian3.fromDegrees(loc.longitude, loc.latitude);
               }
-              }
             }).catch(function(err) {
               console.error("Failed to load 3D Tileset for " + loc.name, err);
             });
