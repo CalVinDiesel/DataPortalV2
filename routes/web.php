@@ -42,65 +42,18 @@ Route::get('/', function () {
 })->name('landing');
 
 Route::get('/request-access', function () {
-    return view('portal.request-access');
+    return redirect()->route('landing');
 })->name('request_access');
 
-Route::post('/request-access', function (Request $request) {
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|email|max:255',
-        'company_name' => 'nullable|string|max:255',
-        'reason_for_access' => 'nullable|string|max:1000',
-    ]);
-
-    // Check if user already exists in main portal DB
-    if (\App\Models\User::where('email', $request->email)->exists()) {
-        return back()->withErrors(['email' => 'An account with this email already exists. Please log in.'])->withInput();
-    }
-
-    // Check if they already have any request in the access_requests table
-    $existingRequest = \App\Models\AccessRequest::where('email', $request->email)->first();
-    if ($existingRequest) {
-        if ($existingRequest->status === 'pending') {
-            return back()->withErrors(['email' => 'You already have a pending access request. Please wait for approval.'])->withInput();
-        } elseif ($existingRequest->status === 'approved') {
-            return back()->withErrors(['email' => 'Your request has already been approved. Please check your email for the setup link or log in.'])->withInput();
-        } else {
-            return back()->withErrors(['email' => 'A request for this email has already been processed. Please contact support if you need further assistance.'])->withInput();
-        }
-    }
-
-    \App\Models\AccessRequest::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'company_name' => $request->company_name,
-        'reason_for_access' => $request->reason_for_access,
-        'status' => 'pending',
-    ]);
-
-    // Send confirmation to User
-    try {
-        Mail::to($request->email)->send(new RequestReceived($request->name));
-        
-        // Send alert to Admin
-        $adminEmail = env('SUPER_ADMIN_EMAIL', 'mosestiquan23@gmail.com');
-        Mail::to($adminEmail)->send(new NewRequestAlert(
-            $request->name, 
-            $request->email, 
-            $request->company_name, 
-            $request->reason_for_access
-        ));
-    } catch (\Exception $e) {
-        \Log::error('Mail sending failed on Request Access', ['error' => $e->getMessage()]);
-        // We continue anyway as the DB record was saved
-    }
-
-    return back()->with('success', 'Your request has been received. Our team will review it shortly, and you will receive an email if your access is approved.');
+Route::post('/request-access', function () {
+    return redirect()->route('landing');
 });
 
 use App\Http\Controllers\SetupController;
 Route::get('/setup', [SetupController::class, 'index'])->name('setup.index');
 Route::post('/setup', [SetupController::class, 'process'])->name('setup.process');
+Route::get('/activate', [SetupController::class, 'index'])->name('activate.index');
+Route::post('/activate', [SetupController::class, 'process'])->name('activate.process');
 
 use App\Http\Controllers\ProxyController;
 

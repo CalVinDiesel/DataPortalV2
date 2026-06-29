@@ -128,10 +128,7 @@
             </form>
 
 
-            <hr class="my-4">
-            <div class="text-center small">
-              Don't have an account? <a href="{{ route('request_access') }}" class="fw-medium">Request access</a>
-            </div>
+
           </div>
         </div>
       </div>

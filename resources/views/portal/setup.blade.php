@@ -85,15 +85,26 @@
                 <input type="hidden" name="token" value="{{ $token }}">
                 <input type="hidden" name="action" id="authAction" value="{{ old('action', 'password') }}">
 
-                <div class="mb-4">
-                  <label for="contact_number" class="form-label fw-bold text-dark">Contact Number <span class="text-danger">*</span></label>
-                  <input type="tel" class="form-control form-control-lg" id="contact_number" name="contact_number" placeholder="e.g. +1 234 567 890" value="{{ old('contact_number', $user->contact_number) }}" autocomplete="tel" required>
-                  <div class="form-text mt-2"><i class="bx bx-info-circle me-1"></i> A contact number is required before proceeding.</div>
+                <div class="mb-3 bg-light p-3 rounded border">
+                  <h6 class="fw-bold mb-2 text-dark">Your Registration Details:</h6>
+                  <div class="small text-muted mb-1"><strong>Name:</strong> {{ $user->name }}</div>
+                  <div class="small text-muted mb-1"><strong>Email:</strong> {{ $user->email }}</div>
+                  <div class="small text-muted mb-0"><strong>Contact Number:</strong> {{ $user->contact_number }}</div>
+                </div>
+
+                <div class="alert alert-warning mb-3">
+                  <i class="bx bx-info-circle me-1"></i>
+                  <strong>Email Match Reminder:</strong> If you choose Google or Microsoft below, your login email <strong>must match exactly</strong> with your registered email (<strong>{{ $user->email }}</strong>).
+                </div>
+
+                <div class="alert alert-danger mb-4">
+                  <i class="bx bx-lock-alt me-1"></i>
+                  <strong>Lock Mechanism:</strong> Whichever method you choose now will be your permanent login method. You cannot change this later.
                 </div>
 
                 <hr class="my-4">
                 
-                <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.8rem;">Select Account Type</h6>
+                <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.8rem;">Select Your Permanent Login Method</h6>
 
                 <!-- Google Auth -->
                 <button type="button" class="btn btn-outline-dark w-100 auth-btn" onclick="submitAuth('google')">
@@ -164,12 +175,6 @@
     });
 
     function submitAuth(provider) {
-      if (!document.getElementById('contact_number').value.trim()) {
-        alert('Please enter your Contact Number before continuing.');
-        document.getElementById('contact_number').focus();
-        return;
-      }
-      
       if (provider === 'password') {
         var passwordInput = document.getElementsByName('password')[0];
         var confirmInput = document.getElementsByName('password_confirmation')[0];

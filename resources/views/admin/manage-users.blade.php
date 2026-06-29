@@ -131,26 +131,31 @@
         <div class="content-wrapper content-wrapper-premium">
           <div class="container-xxl flex-grow-1 container-p-y">
             <div class="d-flex justify-content-between align-items-center mb-4">
-              <h4 class="fw-bold mb-0">Waitlist & Pending Requests</h4>
+              <h4 class="fw-bold mb-0">Register New User</h4>
               <a href="{{ route('admin_dashboard') }}" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
             </div>
-            <div id="requestsAlert" class="alert d-none mb-4"></div>
+            <div id="registerUserAlert" class="alert d-none mb-4"></div>
             <div class="card mb-5">
-              <div class="table-responsive">
-                <table class="table table-hover">
-                  <thead>
-                    <tr>
-                      <th>Email</th>
-                      <th>Name</th>
-                      <th>Company</th>
-                      <th>Reason</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody id="requestsTableBody">
-                    <tr><td colspan="5" class="text-muted text-center py-4">Loading…</td></tr>
-                  </tbody>
-                </table>
+              <div class="card-body">
+                <form id="registerUserForm" class="row g-3">
+                  <div class="col-md-4">
+                    <label for="reg_name" class="form-label fw-bold">Full Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="reg_name" name="name" placeholder="e.g. John Doe" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="reg_email" class="form-label fw-bold">Email Address <span class="text-danger">*</span></label>
+                    <input type="email" class="form-control" id="reg_email" name="email" placeholder="e.g. john@example.com" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="reg_contact" class="form-label fw-bold">Contact Number <span class="text-danger">*</span></label>
+                    <input type="tel" class="form-control" id="reg_contact" name="contact_number" placeholder="e.g. +60123456789" required>
+                  </div>
+                  <div class="col-12 mt-3">
+                    <button type="submit" class="btn btn-primary" id="btnRegisterUser">
+                      <i class="bx bx-user-plus me-1"></i> Register & Send Activation Link
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
 
@@ -217,98 +222,59 @@
         alertEl.classList.remove('d-none');
       }
 
-      var reqTbody = document.getElementById('requestsTableBody');
-      var reqAlertEl = document.getElementById('requestsAlert');
-      function showReqAlert(msg, isSuccess) {
-        if (!reqAlertEl) return;
-        reqAlertEl.textContent = msg;
-        reqAlertEl.className = 'alert ' + (isSuccess ? 'alert-success' : 'alert-danger') + ' mb-4';
-        reqAlertEl.classList.remove('d-none');
+      var registerAlertEl = document.getElementById('registerUserAlert');
+      function showRegisterAlert(msg, isSuccess) {
+        if (!registerAlertEl) return;
+        registerAlertEl.textContent = msg;
+        registerAlertEl.className = 'alert ' + (isSuccess ? 'alert-success' : 'alert-danger') + ' mb-4';
+        registerAlertEl.classList.remove('d-none');
       }
 
-      function loadAccessRequests() {
-        if (!reqTbody) return;
-        fetch(API + '/api/admin/access-requests', { credentials: 'include' })
+      var registerForm = document.getElementById('registerUserForm');
+      if (registerForm) {
+        registerForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          var btn = document.getElementById('btnRegisterUser');
+          btn.disabled = true;
+          var oldHtml = btn.innerHTML;
+          btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Registering…';
+
+          var name = document.getElementById('reg_name').value.trim();
+          var email = document.getElementById('reg_email').value.trim();
+          var contact = document.getElementById('reg_contact').value.trim();
+
+          fetch(API + '/api/admin/users/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': csrfToken
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              name: name,
+              email: email,
+              contact_number: contact
+            })
+          })
           .then(function(r) { return r.json(); })
-          .then(function(reqs) {
-            if (!reqs || reqs.length === 0) {
-              reqTbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">No pending requests in the waitlist.</td></tr>';
-              return;
+          .then(function(data) {
+            if (data.success) {
+              showRegisterAlert('User registered successfully! Activation link sent.', true);
+              registerForm.reset();
+              loadUsers();
+            } else {
+              showRegisterAlert(data.message || 'Failed to register user.', false);
             }
-            reqTbody.innerHTML = reqs.map(function(r) {
-              var status = r.status || 'pending';
-              var statusBadge = '';
-              if (status === 'rejected') {
-                statusBadge = ' <span class="badge bg-label-danger ms-1">Rejected</span>';
-              } else {
-                statusBadge = ' <span class="badge bg-label-warning ms-1">Pending</span>';
-              }
-
-              var actions = '<div class="d-flex flex-wrap gap-2">' +
-                '<button type="button" class="btn btn-sm btn-success approve-req-btn" data-id="' + r.id + '">Approve</button>';
-              if (status === 'pending') {
-                actions += '<button type="button" class="btn btn-sm btn-danger reject-req-btn" data-id="' + r.id + '">Reject</button>';
-              }
-              actions += '<button type="button" class="btn btn-sm btn-outline-danger remove-req-btn" data-id="' + r.id + '">Remove</button>' +
-                '</div>';
-              return '<tr><td>' + (r.email || '') + statusBadge + '</td><td>' + (r.name || '') + '</td><td>' + (r.company_name || '—') + '</td><td>' + (r.reason_for_access || '—') + '</td><td>' + actions + '</td></tr>';
-            }).join('');
-            
-            reqTbody.querySelectorAll('.approve-req-btn').forEach(function(btn) {
-              btn.addEventListener('click', function() {
-                var id = this.getAttribute('data-id');
-                if (!confirm('Approve this request? This will generate an invite and email the user.')) return;
-                this.disabled = true;
-                fetch(API + '/api/admin/access-requests/' + id + '/approve', {
-                  method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, credentials: 'include'
-                }).then(r => r.json()).then(data => {
-                  if (data.success) { showReqAlert('Approved & Invite Sent!', true); loadAccessRequests(); loadUsers(); } 
-                  else { showReqAlert('Failed: ' + data.message, false); btn.disabled = false; }
-                });
-              });
-            });
-
-            reqTbody.querySelectorAll('.reject-req-btn').forEach(function(btn) {
-              btn.addEventListener('click', function() {
-                var id = this.getAttribute('data-id');
-                if (!confirm('Reject and discard this waitlist request?')) return;
-                this.disabled = true;
-                fetch(API + '/api/admin/access-requests/' + id + '/reject', {
-                  method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, credentials: 'include'
-                }).then(r => r.json()).then(data => {
-                  if (data.success) { showReqAlert('Request Rejected.', true); loadAccessRequests(); } 
-                  else { showReqAlert('Failed: ' + data.message, false); btn.disabled = false; }
-                });
-              });
-            });
-
-            reqTbody.querySelectorAll('.remove-req-btn').forEach(function(btn) {
-              btn.addEventListener('click', function() {
-                var id = this.getAttribute('data-id');
-                if (!confirm('Permanently remove this access request from the database? This cannot be undone.')) return;
-                this.disabled = true;
-                fetch(API + '/api/admin/access-requests/' + id, {
-                  method: 'DELETE',
-                  headers: { 'X-CSRF-TOKEN': csrfToken },
-                  credentials: 'include'
-                }).then(r => r.json()).then(data => {
-                  if (data.success) {
-                    showReqAlert('Request permanently removed.', true);
-                    loadAccessRequests();
-                    loadUsers();
-                  } else {
-                    showReqAlert('Failed: ' + data.message, false);
-                    btn.disabled = false;
-                  }
-                }).catch(() => {
-                  showReqAlert('Network error. Failed to remove request.', false);
-                  btn.disabled = false;
-                });
-              });
-            });
+          })
+          .catch(function() {
+            showRegisterAlert('Network error. Failed to register user.', false);
+          })
+          .finally(function() {
+            btn.disabled = false;
+            btn.innerHTML = oldHtml;
           });
+        });
       }
-      loadAccessRequests();
 
       function loadUsers() {
           fetch(API + '/api/auth/me', { credentials: 'include' })
@@ -342,7 +308,7 @@
               var role = (u.role || 'registered');
               var isAdmin = role === 'admin';
               var isSuperAdmin = role === 'superadmin';
-              var isPending = role === 'pending';
+              var isPending = u.status === 'pending';
               var isTrusted = role === 'trusted';
               var isRemoved = !!u.removedAt;
 

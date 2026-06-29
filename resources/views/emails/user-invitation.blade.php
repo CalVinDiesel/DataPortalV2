@@ -67,8 +67,8 @@
         </div>
         <div class="body-content">
             <p>Hello {{ $name }},</p>
-            <p>Great news! Your request for access has been approved by the administrator. You are invited to join the exclusive Data Portal.</p>
-            <p>Please click the button below to verify your email, set up your account contact information, and choose how you would like to sign in.</p>
+            <p>Your admin has created an account for you on the 3D Hub Data Portal.</p>
+            <p>Please click the button below to activate your account and choose your preferred login method (Google, Microsoft, or Password).</p>
             
             <div class="btn-wrapper">
                 <a href="{{ $setupUrl }}" class="btn">Complete Account Setup</a>

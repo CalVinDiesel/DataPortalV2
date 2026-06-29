@@ -18,7 +18,7 @@
 
     @guest
     <div style="position: absolute; top: 20px; right: 20px; z-index: 9999;">
-        <a href="{{ route('request_access') }}" style="
+        <a href="{{ route('login') }}" style="
             display: flex;
             align-items: center;
             gap: 10px;
@@ -33,8 +33,8 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             font-size: 14px;
         " onmouseover="this.style.transform='scale(1.05)'; this.style.box_shadow='0 6px 20px rgba(105, 108, 255, 0.6)';" onmouseout="this.style.transform='scale(1)'; this.style.box_shadow='0 4px 15px rgba(105, 108, 255, 0.4)';">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: -2px;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-            Request Access
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: -2px;"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+            Login to Data Portal
         </a>
     </div>
     @endguest

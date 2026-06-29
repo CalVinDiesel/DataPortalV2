@@ -9,16 +9,62 @@ class AdminUserController extends Controller
 {
     public function index()
     {
-        $users = User::select('id', 'name', 'email', 'username', 'role', 'is_active')->orderBy('id', 'asc')->get();
+        $users = User::select('id', 'name', 'email', 'username', 'role', 'is_active', 'status')->orderBy('id', 'asc')->get();
         
         $mapped = $users->map(function ($u) {
             $data = $u->toArray();
             // A user is removed only if they are not active AND not pending setup
-            $data['removedAt'] = (!$u->is_active && $u->role !== 'pending') ? now()->toIso8601String() : null;
+            $data['removedAt'] = ($u->status !== 'active' && $u->status !== 'pending') ? now()->toIso8601String() : null;
             return $data;
         });
 
         return response()->json($mapped);
+    }
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'contact_number' => 'required|string|min:8|max:20',
+        ]);
+
+        if (User::where('email', $request->email)->exists()) {
+            return response()->json(['success' => false, 'message' => 'An account with this email already exists.']);
+        }
+
+        // Generate activation token
+        $token = \Illuminate\Support\Str::random(60);
+        $expiresAt = now()->addHours(48);
+
+        $namePrefix = \Illuminate\Support\Str::replace(' ', '', $request->name);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'username' => $namePrefix . '_' . \Illuminate\Support\Str::random(8),
+            'contact_number' => $request->contact_number,
+            'role' => 'registered', // Default role
+            'status' => 'pending',
+            'login_method' => null,
+            'provider' => 'pending', // compatibility mapping
+            'is_active' => false,   // compatibility mapping
+            'invitation_token' => $token,
+            'invitation_expires_at' => $expiresAt,
+            'sftp_username' => null,
+            'sftp_password' => null,
+        ]);
+
+        // Send Email
+        $activateUrl = url("/activate?token={$token}");
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\UserInvitation($user->name, $activateUrl));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Send activation mail failed: ' . $e->getMessage());
+            return response()->json(['success' => true, 'message' => 'User registered in database, but activation email failed: ' . $e->getMessage()]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'User registered and activation link sent successfully.']);
     }
 
     public function promote(Request $request)
@@ -175,26 +221,26 @@ class AdminUserController extends Controller
             return response()->json(['success' => false, 'message' => 'User not found.']);
         }
 
-        if ($user->role !== 'pending') {
+        if ($user->status !== 'pending') {
             return response()->json(['success' => false, 'message' => 'User is not in pending status.']);
         }
 
-        // Regenerate invitation token and expiry
+        // Regenerate activation token and expiry
         $token = \Illuminate\Support\Str::random(60);
         $user->invitation_token = $token;
         $user->invitation_expires_at = now()->addHours(48);
         $user->save();
 
         // Send Email
-        $setupUrl = url("/setup?token={$token}");
+        $activateUrl = url("/activate?token={$token}");
         try {
-            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\UserInvitation($user->name, $setupUrl));
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\UserInvitation($user->name, $activateUrl));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Resend invitation mail failed: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Invitation regenerated, but failed to send email: ' . $e->getMessage()]);
+            \Illuminate\Support\Facades\Log::error('Resend activation mail failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Activation regenerated, but failed to send email: ' . $e->getMessage()]);
         }
 
-        return response()->json(['success' => true, 'message' => 'Invitation email resent successfully.']);
+        return response()->json(['success' => true, 'message' => 'Activation email resent successfully.']);
     }
 
     public function downgradeAdmin(Request $request)

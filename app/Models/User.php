@@ -75,7 +75,7 @@ class User extends Authenticatable
         'name', 'email', 'password', 'username', 'contact_number', 'role', 
         'provider', 'stripe_customer_id', 'is_active', 'invitation_token', 
         'invitation_expires_at', 'oauth_id', 'sftp_username', 'sftp_password',
-        'viewable_password', 'previous_role'
+        'viewable_password', 'previous_role', 'status', 'login_method', 'provider_id'
     ];
 
     protected $hidden = [
@@ -179,6 +179,66 @@ class User extends Authenticatable
             },
             set: fn ($value) => $value ? \Illuminate\Support\Facades\Crypt::encryptString($value) : null,
         );
+    }
+
+    /**
+     * Accessor for is_active.
+     */
+    public function getIsActiveAttribute($value)
+    {
+        return $this->status === 'active';
+    }
+
+    /**
+     * Mutator for is_active.
+     */
+    public function setIsActiveAttribute($value)
+    {
+        $isActive = (bool)$value;
+        $this->attributes['is_active'] = $isActive;
+        $this->attributes['status'] = $isActive ? 'active' : 'pending';
+    }
+
+    /**
+     * Accessor for provider.
+     */
+    public function getProviderAttribute($value)
+    {
+        $method = $this->login_method;
+        if ($method === 'password') {
+            return 'local';
+        }
+        return $method ?: $value;
+    }
+
+    /**
+     * Mutator for provider.
+     */
+    public function setProviderAttribute($value)
+    {
+        $this->attributes['provider'] = $value;
+        if ($value === 'local') {
+            $this->attributes['login_method'] = 'password';
+        } else {
+            $this->attributes['login_method'] = $value;
+        }
+    }
+
+    /**
+     * Accessor for oauth_id.
+     */
+    public function getOauthIdAttribute($value)
+    {
+        return $this->provider_id ?: $value;
+    }
+
+    /**
+     * Mutator for oauth_id.
+     */
+    public function setOauthIdAttribute($value)
+    {
+        $this->attributes['oauth_id'] = $value;
+        $this->attributes['provider_id'] = $value;
     }
 
     /**

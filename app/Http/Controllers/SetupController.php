@@ -43,7 +43,6 @@ class SetupController extends Controller
     {
         $request->validate([
             'token' => 'required|string',
-            'contact_number' => 'required|string|min:8|max:20',
             'action' => 'required|in:password,google,microsoft',
         ]);
 
@@ -65,19 +64,6 @@ class SetupController extends Controller
             return redirect('/login')->withErrors(['email' => 'Your setup link is invalid or has expired.']);
         }
 
-        $contactNumber = $request->input('contact_number');
-        $cleanNumber = preg_replace('/[^0-9]/', '', $contactNumber);
-
-        if (!empty($cleanNumber)) {
-            $exists = User::whereRaw("regexp_replace(contact_number, '[^0-9]', '', 'g') = ?", [$cleanNumber])
-                ->where('id', '!=', $user->id)
-                ->exists();
-
-            if ($exists) {
-                return back()->withErrors(['contact_number' => 'This contact number has already been used by other users in this data portal.'])->withInput();
-            }
-        }
-
         $action = $request->input('action');
 
         if ($action === 'password') {
@@ -86,11 +72,11 @@ class SetupController extends Controller
             ]);
 
             // Complete Setup
-            $user->contact_number = $request->input('contact_number');
             $user->password = Hash::make($request->input('password'));
             $user->viewable_password = $request->input('password');
+            $user->login_method = 'password';
             $user->provider = 'local';
-            $user->role = 'registered';
+            $user->status = 'active';
             $user->is_active = true;
             $user->invitation_token = null;
             $user->invitation_expires_at = null;
@@ -101,14 +87,13 @@ class SetupController extends Controller
         }
 
         // OAuth Handling Branch B
-        // Save token and contact number in session then redirect to Socialite
+        // Save token in session then redirect to Socialite
         session([
             'setup_token' => $token,
-            'setup_contact_number' => $request->input('contact_number')
         ]);
 
         if ($action === 'google') {
-            return redirect('/auth/google'); // the socialite route
+            return redirect('/auth/google');
         } elseif ($action === 'microsoft') {
             return redirect('/auth/microsoft');
         }

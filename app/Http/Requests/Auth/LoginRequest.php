@@ -89,16 +89,17 @@ class LoginRequest extends FormRequest
         $user = \App\Models\User::where('email', $this->email)->first();
 
         if ($user) {
-            if (!$user->is_active) {
+            if ($user->status === 'pending') {
                 RateLimiter::hit($this->throttleKey());
                 throw ValidationException::withMessages([
-                    'email' => 'Your account is pending setup. Please check your email inbox for the original setup link.',
+                    'email' => 'Your account is pending activation. Please check your email inbox for the activation link.',
                 ]);
             }
-            if ($user->provider !== 'local') {
+            if ($user->login_method && $user->login_method !== 'password') {
                 RateLimiter::hit($this->throttleKey());
+                $methodName = ucfirst($user->login_method);
                 throw ValidationException::withMessages([
-                    'email' => 'You registered this account with ' . ucfirst($user->provider) . '. Please click "Sign in with ' . ucfirst($user->provider) . '" to access your account.',
+                    'email' => 'You registered this account with ' . $methodName . '. Please click "Sign in with ' . $methodName . '" to access your account.',
                 ]);
             }
         }

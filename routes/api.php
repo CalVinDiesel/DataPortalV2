@@ -71,6 +71,7 @@ Route::middleware('web')->group(function () {
 
     // Admin Users Routes
     Route::get('/admin/users', [AdminUserController::class, 'index']);
+    Route::post('/admin/users/register', [AdminUserController::class, 'register']);
     Route::post('/admin/users/promote', [AdminUserController::class, 'promote']);
     Route::post('/admin/users/upgrade-trusted', [AdminUserController::class, 'upgradeTrusted']);
     Route::post('/admin/users/downgrade-registered', [AdminUserController::class, 'downgradeRegistered']);
