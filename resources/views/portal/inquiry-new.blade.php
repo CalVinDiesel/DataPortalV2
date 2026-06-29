@@ -677,47 +677,7 @@
               } else {
                 position = C.Cartesian3.fromDegrees(loc.longitude, loc.latitude);
               }
-
-              viewer.entities.add({
-                position: position,
-                point: {
-                  pixelSize: 18,
-                  color: C.Color.fromCssColorString('#696cff').withAlpha(0.25),
-                  disableDepthTestDistance: Number.POSITIVE_INFINITY,
-                  distanceDisplayCondition: new C.DistanceDisplayCondition(200.0, 10000000.0)
-                }
-              });
-
-              viewer.entities.add({
-                position: position,
-                point: {
-                  pixelSize: 8,
-                  color: C.Color.fromCssColorString('#696cff'),
-                  outlineColor: C.Color.WHITE,
-                  outlineWidth: 2,
-                  disableDepthTestDistance: Number.POSITIVE_INFINITY,
-                  distanceDisplayCondition: new C.DistanceDisplayCondition(200.0, 10000000.0)
-                }
-              });
-
-              viewer.entities.add({
-                position: position,
-                label: {
-                  text: loc.name,
-                  font: 'bold 12px "Public Sans", sans-serif',
-                  fillColor: C.Color.WHITE,
-                  outlineColor: C.Color.fromCssColorString('#1a1a2e'),
-                  outlineWidth: 1,
-                  style: C.LabelStyle.FILL_AND_OUTLINE,
-                  showBackground: true,
-                  backgroundColor: C.Color.fromCssColorString('#1a1a2e').withAlpha(0.9),
-                  backgroundPadding: new C.Cartesian2(12, 6),
-                  verticalOrigin: C.VerticalOrigin.BOTTOM,
-                  pixelOffset: new C.Cartesian2(0, -15),
-                  disableDepthTestDistance: Number.POSITIVE_INFINITY,
-                  distanceDisplayCondition: new C.DistanceDisplayCondition(200.0, 10000000.0)
-                }
-              });
+              }
             }).catch(function(err) {
               console.error("Failed to load 3D Tileset for " + loc.name, err);
             });
