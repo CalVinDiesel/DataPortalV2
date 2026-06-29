@@ -864,19 +864,11 @@ class InquiryController extends Controller
         if (is_file($absolutePath)) {
             $origName  = basename($absolutePath);
             $safeName  = preg_replace('/[^a-zA-Z0-9._-]/', '_', $origName);
-            $size      = filesize($absolutePath);
             $mime      = Str::endsWith(strtolower($origName), '.zip') ? 'application/zip' : 'application/octet-stream';
 
-            return response()->stream(function () use ($absolutePath) {
-                while (ob_get_level() > 0) ob_end_clean();
-                $f = fopen($absolutePath, 'rb');
-                if ($f) { fpassthru($f); fclose($f); }
-            }, 200, [
-                'Content-Type'        => $mime,
-                'Content-Disposition' => 'attachment; filename="' . $safeName . '"',
-                'Content-Length'      => $size,
-                'Cache-Control'       => 'no-cache, no-store, must-revalidate',
-                'X-Accel-Buffering'   => 'no',
+            return response()->download($absolutePath, $safeName, [
+                'Content-Type'  => $mime,
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
             ]);
         }
 
@@ -901,19 +893,11 @@ class InquiryController extends Controller
             $downloadName = $ext && strtolower($ext) !== 'zip'
                 ? preg_replace('/\.zip$/i', '.' . $ext, $zipName)
                 : $zipName;
-            $size = filesize($singleFile);
             $mime = Str::endsWith(strtolower($origName), '.zip') ? 'application/zip' : 'application/octet-stream';
 
-            return response()->stream(function () use ($singleFile) {
-                while (ob_get_level() > 0) ob_end_clean();
-                $f = fopen($singleFile, 'rb');
-                if ($f) { fpassthru($f); fclose($f); }
-            }, 200, [
-                'Content-Type'        => $mime,
-                'Content-Disposition' => 'attachment; filename="' . $downloadName . '"',
-                'Content-Length'      => $size,
-                'Cache-Control'       => 'no-cache, no-store, must-revalidate',
-                'X-Accel-Buffering'   => 'no',
+            return response()->download($singleFile, $downloadName, [
+                'Content-Type'  => $mime,
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
             ]);
         }
 
