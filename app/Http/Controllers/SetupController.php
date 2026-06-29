@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class SetupController extends Controller
 {
@@ -14,12 +15,24 @@ class SetupController extends Controller
         $token = $request->query('token');
 
         if (!$token) {
+            Log::warning('Setup index accessed without token.');
             return redirect('/')->withErrors(['token' => 'Missing setup token.']);
         }
 
         $user = User::where('invitation_token', $token)->first();
 
-        if (!$user || $user->invitation_expires_at < now()) {
+        if (!$user) {
+            Log::warning('Setup index accessed with invalid token.', ['token' => $token]);
+            return redirect('/')->withErrors(['email' => 'Your setup link is invalid or has expired. Please contact an administrator to request a new one.']);
+        }
+
+        if ($user->invitation_expires_at < now()) {
+            Log::warning('Setup index accessed with expired token.', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'expires_at' => $user->invitation_expires_at ? $user->invitation_expires_at->toIso8601String() : null,
+                'now' => now()->toIso8601String()
+            ]);
             return redirect('/')->withErrors(['email' => 'Your setup link is invalid or has expired. Please contact an administrator to request a new one.']);
         }
 
@@ -37,7 +50,18 @@ class SetupController extends Controller
         $token = $request->input('token');
         $user = User::where('invitation_token', $token)->first();
 
-        if (!$user || $user->invitation_expires_at < now()) {
+        if (!$user) {
+            Log::warning('Setup process accessed with invalid token.', ['token' => $token]);
+            return redirect('/login')->withErrors(['email' => 'Your setup link is invalid or has expired.']);
+        }
+
+        if ($user->invitation_expires_at < now()) {
+            Log::warning('Setup process accessed with expired token.', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'expires_at' => $user->invitation_expires_at ? $user->invitation_expires_at->toIso8601String() : null,
+                'now' => now()->toIso8601String()
+            ]);
             return redirect('/login')->withErrors(['email' => 'Your setup link is invalid or has expired.']);
         }
 
