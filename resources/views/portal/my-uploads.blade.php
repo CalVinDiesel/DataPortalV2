@@ -790,7 +790,6 @@
                     ${downloadHtml}
                     ${statusVal === 'sent' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="javascript:void(0);" onclick="confirmReceived(' + item.id + ')"><i class="bx bx-check-circle"></i> Confirm Received</a></li>' : ''}
                     ${(item.upload_type && item.upload_type.includes('sftp')) ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="javascript:void(0);" onclick="syncSftpMetadata(' + item.id + ')"><i class="bx bx-refresh"></i> Sync Data Info</a></li>' : ''}
-                    ${(item.upload_type === 'google_drive') ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="javascript:void(0);" onclick="syncGoogleDriveMetadata(' + item.id + ')"><i class="bx bx-refresh"></i> Sync Data Info</a></li>' : ''}
                     ${(item.upload_type === 'onedrive') ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="javascript:void(0);" onclick="syncOneDriveMetadata(' + item.id + ')"><i class="bx bx-refresh"></i> Sync Data Info</a></li>' : ''}
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showProjectDetails(${item.id})"><i class="bx bx-info-circle text-info"></i> View Details</a></li>
                     <li><a class="dropdown-item btn-dropdown-link" href="javascript:void(0);" onclick="showEditModal(${item.id})"><i class="bx bx-edit text-secondary"></i> Edit Metadata</a></li>
@@ -807,9 +806,7 @@
             if (item.upload_type && item.upload_type.includes('sftp') && (parseInt(item.file_count) === 0 || !item.file_count)) {
                 setTimeout(() => syncSftpMetadata(item.id, true), 1000);
             }
-            if (item.upload_type === 'google_drive' && needsSync) {
-                setTimeout(() => syncGoogleDriveMetadata(item.id, true), 1500);
-            }
+
             if (item.upload_type === 'onedrive' && needsSync) {
                 setTimeout(() => syncOneDriveMetadata(item.id, true), 1500);
             }
@@ -1008,40 +1005,6 @@
       });
     }
 
-    function syncGoogleDriveMetadata(uploadId, isSilent = false) {
-      if (syncingProjects.has(uploadId)) return;
-      syncingProjects.add(uploadId);
-      
-      fetch('/api/user/my-uploads/' + uploadId + '/sync-gdrive', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          const countEl = document.getElementById('photoCount-' + uploadId);
-          if (countEl) {
-            countEl.textContent = data.count + ' Photos';
-            // Update the size text which is usually the previous text node or element
-            const sizeEl = document.getElementById('photoCount-' + uploadId).previousSibling;
-            if (sizeEl) {
-               // Update the text node directly if possible
-               let sizeText = data.formattedSize + ' \u2022 ';
-               if (sizeEl.nodeType === Node.TEXT_NODE) {
-                   sizeEl.textContent = sizeText;
-               }
-            }
-          }
-        }
-      })
-      .catch(err => console.error("GDrive Sync Error:", err))
-      .finally(() => {
-         setTimeout(() => syncingProjects.delete(uploadId), 30000); 
-      });
-    }
 
     function syncOneDriveMetadata(uploadId, isSilent = false) {
       if (syncingProjects.has(uploadId)) return;

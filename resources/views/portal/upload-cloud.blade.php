@@ -146,6 +146,18 @@
               <input type="url" id="googleDriveLink" name="googleDriveLink" class="form-control" placeholder="https://drive.google.com/drive/folders/..." required>
               <div class="form-text mt-1"><i class="bx bx-info-circle"></i> Must be set to <strong>"Anyone with the link"</strong></div>
             </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label" for="googleDriveSize">Total Size (Bytes) <span class="text-danger">*</span></label>
+                <input type="number" id="googleDriveSize" name="googleDriveSize" class="form-control" placeholder="e.g. 5368709120" min="1" required>
+                <div class="form-text mt-1">Please enter the exact size in <strong>Bytes</strong>.</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label" for="googleDriveCount">Photo Count <span class="text-danger">*</span></label>
+                <input type="number" id="googleDriveCount" name="googleDriveCount" class="form-control" placeholder="e.g. 1200" min="1" required>
+              </div>
+            </div>
           </div>
 
           <div id="onedriveSection" style="display: none;">
@@ -331,6 +343,8 @@
             document.getElementById('gdriveSection').style.display = 'block';
             document.getElementById('onedriveSection').style.display = 'none';
             document.getElementById('googleDriveLink').required = true;
+            document.getElementById('googleDriveSize').required = true;
+            document.getElementById('googleDriveCount').required = true;
             document.getElementById('onedriveLink').required = false;
             document.getElementById('onedriveSize').required = false;
             document.getElementById('onedriveCount').required = false;
@@ -338,6 +352,8 @@
             document.getElementById('gdriveSection').style.display = 'none';
             document.getElementById('onedriveSection').style.display = 'block';
             document.getElementById('googleDriveLink').required = false;
+            document.getElementById('googleDriveSize').required = false;
+            document.getElementById('googleDriveCount').required = false;
             document.getElementById('onedriveLink').required = true;
             document.getElementById('onedriveSize').required = true;
             document.getElementById('onedriveCount').required = true;
@@ -398,12 +414,19 @@
       }
 
       const gLink = document.getElementById('googleDriveLink').value.trim();
+      const gSize = document.getElementById('googleDriveSize').value;
+      const gCount = document.getElementById('googleDriveCount').value;
       const oLink = document.getElementById('onedriveLink').value.trim();
       const oSize = document.getElementById('onedriveSize').value;
       const oCount = document.getElementById('onedriveCount').value;
 
       if (currentProvider === 'google_drive') {
           if (!gLink) missing.push("Google Drive Shared Link");
+          if (!gSize) missing.push("Total Size (Bytes)");
+          else if (gSize.includes('.') || parseInt(gSize, 10) <= 0 || isNaN(parseInt(gSize, 10))) {
+              return alert('Invalid Size: Total Size (Bytes) must be a whole number (e.g. 5368709120).\n\nDo NOT enter decimal values like "1.1" - please enter the exact byte count.');
+          }
+          if (!gCount) missing.push("Photo Count");
       } else if (currentProvider === 'onedrive') {
           if (!oLink) missing.push("OneDrive Shared Link");
           if (!oSize) missing.push("Total Size (Bytes)");
@@ -424,18 +447,20 @@
         if (quotaData.success) {
           const used = Number(quotaData.used_bytes) || 0;
           const limit = Number(quotaData.limit_bytes) || 0;
-          const additionalBytes = (currentProvider === 'onedrive') ? (parseInt(oSize, 10) || 0) : 0;
+          const additionalBytes = (currentProvider === 'google_drive') ? (parseInt(gSize, 10) || 0) : (parseInt(oSize, 10) || 0);
           
           if (used + additionalBytes > limit) {
             const usedGB = (used / (1024 * 1024 * 1024)).toFixed(2);
             const limitGB = (limit / (1024 * 1024 * 1024)).toFixed(0);
             
-            if (currentProvider === 'onedrive') {
+            if (currentProvider === 'google_drive') {
+              const uploadGB = (additionalBytes / (1024 * 1024 * 1024)).toFixed(2);
+              const remainingGB = Math.max(0, (limit - used) / (1024 * 1024 * 1024)).toFixed(2);
+              alert(`Storage Quota Exceeded!\n\nThis Google Drive upload is ${uploadGB} GB, but you only have ${remainingGB} GB remaining (used ${usedGB} GB of ${limitGB} GB limit).\n\nPlease delete some old projects in your dashboard to free up space.`);
+            } else if (currentProvider === 'onedrive') {
               const uploadGB = (additionalBytes / (1024 * 1024 * 1024)).toFixed(2);
               const remainingGB = Math.max(0, (limit - used) / (1024 * 1024 * 1024)).toFixed(2);
               alert(`Storage Quota Exceeded!\n\nThis OneDrive upload is ${uploadGB} GB, but you only have ${remainingGB} GB remaining (used ${usedGB} GB of ${limitGB} GB limit).\n\nPlease delete some old projects in your dashboard to free up space.`);
-            } else {
-              alert(`Storage Quota Exceeded!\n\nYou have already used ${usedGB} GB of your ${limitGB} GB available storage.\n\nPlease delete some old projects in your dashboard to free up space before creating new Google Drive datasets.`);
             }
             return;
           }
@@ -478,6 +503,8 @@
 
       if (currentProvider === 'google_drive') {
         payload.googleDriveLink = gLink;
+        payload.googleDriveSize = parseInt(gSize, 10) || 0;
+        payload.googleDriveCount = parseInt(gCount, 10) || 0;
       } else {
         payload.onedriveLink = oLink;
         // 🛠️ SIZE CAST FIX: Parse as integer — decimals (e.g. "1.1") cause a bigint DB error.

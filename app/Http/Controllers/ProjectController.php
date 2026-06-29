@@ -295,11 +295,12 @@ class ProjectController extends Controller
 
     public function storeGoogleDrive(Request $request)
     {
+        $gdriveSize = intval($request->googleDriveSize ?? 0);
         // 🚀 STORAGE QUOTA CHECK (v310)
-        if (ClientUpload::hasExceededStorageLimit(Auth::user()->email)) {
+        if (ClientUpload::hasExceededStorageLimit(Auth::user()->email, $gdriveSize)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Storage Quota Exceeded. You have already used 100% of your 100 GB limit. Please delete old projects to free up space.'
+                'message' => 'Storage Quota Exceeded. Registering this project would exceed your 100 GB limit. Please delete old projects to free up space.'
             ], 422);
         }
 
@@ -308,6 +309,8 @@ class ProjectController extends Controller
             'projectDescription' => 'required|string',
             'cameraConfiguration' => 'required|string',
             'googleDriveLink' => 'required|url',
+            'googleDriveSize' => 'required|integer|min:1',
+            'googleDriveCount' => 'required|integer|min:1',
             'latitude' => 'nullable',
             'longitude' => 'nullable',
             'category' => 'required|string',
@@ -363,18 +366,10 @@ class ProjectController extends Controller
             'created_by_email' => Auth::user()->email,
             'request_status' => 'pending',
             'delivered_file_path' => $link,
+            'total_size_bytes' => $gdriveSize,
+            'file_count' => intval($request->googleDriveCount ?? 0),
             'gdrive_delivery_folder_id' => $this->extractGoogleDriveFolderId($link), // 📂 Save ID to DB
         ]);
-
-        // 🚀 AUTO-DETECTION (v150): Try to count files and size immediately
-        try {
-            $folderId = $this->extractGoogleDriveFolderId($link);
-            if ($folderId) {
-                $this->syncGoogleDriveMetadataInternal($upload, $folderId);
-            }
-        } catch (\Exception $e) {
-            \Log::warning("GDrive Immediate Sync Failed: " . $e->getMessage());
-        }
 
         return response()->json([
             'success' => true,
@@ -809,28 +804,12 @@ class ProjectController extends Controller
         }
         $upload = $query->firstOrFail();
 
-        if ($upload->upload_type !== 'google_drive' || !$upload->google_drive_link) {
-            return response()->json(['success' => false, 'message' => 'Not a Google Drive project.']);
-        }
-
-        $folderId = $this->extractGoogleDriveFolderId($upload->google_drive_link);
-        if (!$folderId) {
-            return response()->json(['success' => false, 'message' => 'Could not extract Folder ID from link.']);
-        }
-
-        try {
-            $upload->update(['gdrive_delivery_folder_id' => $folderId]); // 🚀 BACKFILL (v151): Save missing ID during sync
-            $this->syncGoogleDriveMetadataInternal($upload, $folderId);
-            
-            return response()->json([
-                'success' => true,
-                'size' => $upload->total_size_bytes,
-                'count' => $upload->file_count,
-                'formattedSize' => $this->formatBytes($upload->total_size_bytes)
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Sync failed: ' . $e->getMessage()]);
-        }
+        return response()->json([
+            'success' => true,
+            'size' => $upload->total_size_bytes,
+            'count' => $upload->file_count,
+            'formattedSize' => $this->formatBytes($upload->total_size_bytes)
+        ]);
     }
 
     public function syncOneDriveMetadata($id)
@@ -1043,128 +1022,6 @@ class ProjectController extends Controller
         }
     }
 
-    private function syncGoogleDriveMetadataInternal($upload, $folderId)
-    {
-        try {
-            $config = config('filesystems.disks.google_drive');
-            $client = new \Google\Client();
-            $client->setClientId($config['clientId']);
-            $client->setClientSecret($config['clientSecret']);
-            // 🚀 SCOPE-FIRST (v291): Add scopes BEFORE fetching the token to ensure the request is authorized correctly
-            $client->addScope(\Google\Service\Drive::DRIVE_READONLY);
-            $client->addScope(\Google\Service\Drive::DRIVE);
-            
-            $refreshToken = trim($config['refreshToken'] ?? '');
-            // 🚀 TOKEN REPAIR (v294): Handle multi-line tokens that might have been mangled in .env
-            $refreshToken = str_replace(["\r", "\n", " "], '', $refreshToken);
-            
-            $token = $client->fetchAccessTokenWithRefreshToken($refreshToken);
-            if (isset($token['error'])) {
-                \Log::error("GDrive Token Error [{$upload->project_id}]: " . ($token['error_description'] ?? $token['error']));
-                throw new \Exception("Google Drive authentication failed. Please check the refresh token.");
-            }
-
-            $service = new \Google\Service\Drive($client);
-
-            $totalCount = 0;
-            $totalSizeBytes = 0;
-
-            // 🚀 BULLETPROOF RECURSIVE SCAN (v154): Use direct API with pagination
-            $scanFolder = function($parentId) use (&$scanFolder, $service, &$totalCount, &$totalSizeBytes) {
-                $pageToken = null;
-                do {
-                    $optParams = [
-                        'q' => "'$parentId' in parents and trashed = false",
-                        'fields' => 'nextPageToken, files(id, name, size, mimeType)',
-                        'pageToken' => $pageToken,
-                        'pageSize' => 100,
-                        'supportsAllDrives' => true, // 🚀 SHARED DRIVE SUPPORT (v292)
-                        'includeItemsFromAllDrives' => true
-                    ];
-                    $results = $service->files->listFiles($optParams);
-
-                    foreach ($results->getFiles() as $file) {
-                        $mime = $file->getMimeType();
-                        if ($mime === 'application/vnd.google-apps.folder') {
-                            $scanFolder($file->getId());
-                        } else {
-                            $name = strtolower($file->getName());
-                            // 🚀 UNIVERSAL PHOTO DETECTION (v237): Support for all pro formats (JPG, TIF, RAW, etc.)
-                            $isPhoto = false;
-                            if (preg_match('/\.(jpg|jpeg|png|tif|tiff|dng|webp|cr2|cr3|nef|arw|orf|raf|rw2|bmp|pos|exif|txt|csv)$/i', $name)) {
-                                $isPhoto = true;
-                            }
-                            
-                            if ($isPhoto) {
-                                $totalCount++;
-                            }
-                            $totalSizeBytes += (int)($file->getSize() ?: 0);
-                        }
-                    }
-                    $pageToken = $results->getNextPageToken();
-                } while ($pageToken);
-            };
-
-            // 🚀 SMART DETECTION (v155): Check if the ID is a single file or a folder
-            $itemInfo = $service->files->get($folderId, [
-                'fields' => 'id, name, size, mimeType',
-                'supportsAllDrives' => true // 🚀 SHARED DRIVE SUPPORT (v292)
-            ]);
-            
-            if ($itemInfo->getMimeType() !== 'application/vnd.google-apps.folder') {
-                // It's a single file (e.g., a ZIP file)
-                $totalCount = 1;
-                $totalSizeBytes = (int)($itemInfo->getSize() ?: 0);
-                $name = strtolower($itemInfo->getName());
-                
-                // 🚀 ZIP PEEKER (v236): If it's a ZIP, try to peek inside for photo count
-                if (str_ends_with($name, '.zip') && $totalSizeBytes > 0) {
-                    \Log::info("GDrive Zip Peeker [{$upload->project_id}]: Attempting to peek inside {$name}");
-                    try {
-                        $zipCount = $this->peekGoogleDriveZipCount($service, $folderId, $totalSizeBytes, $client->getAccessToken()['access_token']);
-                        if ($zipCount > 0) {
-                            $totalCount = $zipCount;
-                            \Log::info("GDrive Zip Peeker [{$upload->project_id}]: Successfully counted {$zipCount} items inside ZIP.");
-                        }
-                    } catch (\Exception $e) {
-                        \Log::warning("GDrive Zip Peeker Failed [{$upload->project_id}]: " . $e->getMessage());
-                    }
-                }
-                \Log::info("GDrive Direct API Sync [{$upload->project_id}]: Single file detected: " . $itemInfo->getName());
-            } else {
-                // It's a folder, perform recursive scan
-                $scanFolder($folderId);
-            }
-
-            \Log::info("GDrive Direct API Sync [{$upload->project_id}]: Found {$totalCount} files, total {$totalSizeBytes} bytes.");
-
-            // 🚀 METADATA PROTECTION (v234): If we only found 1 file (likely a ZIP) but the DB already has a higher count 
-            // from the original Nitro upload, do NOT overwrite the count with 1.
-            $finalCount = $totalCount;
-            if ($totalCount === 1) {
-                // Check if we have a higher count in DB already
-                if ($upload->file_count > 1) {
-                    \Log::info("GDrive Sync Protection [{$upload->project_id}]: Preserving existing count ({$upload->file_count}) over single-file detection.");
-                    $finalCount = $upload->file_count;
-                } else {
-                    // 🚀 RETROACTIVE RECOVERY: Check image_metadata JSON for the original count
-                    $meta = is_string($upload->image_metadata) ? json_decode($upload->image_metadata, true) : $upload->image_metadata;
-                    if (isset($meta['count']) && (int)$meta['count'] > 1) {
-                        \Log::info("GDrive Sync Recovery [{$upload->project_id}]: Restoring count from metadata JSON: " . $meta['count']);
-                        $finalCount = (int)$meta['count'];
-                    }
-                }
-            }
-
-            $upload->update([
-                'file_count' => $finalCount,
-                'total_size_bytes' => $totalSizeBytes
-            ]);
-        } catch (\Exception $e) {
-            \Log::error("GDrive Direct API Sync Failed [{$upload->project_id}]: " . $e->getMessage());
-            throw $e;
-        }
-    }
 
     private function extractGoogleDriveFolderId($link)
     {
@@ -1187,55 +1044,6 @@ class ProjectController extends Controller
         return round($bytes / pow(1024, $i), 1) . ' ' . $units[$i];
     }
 
-    /**
-     * 🚀 ZIP PEEKER (v236): Efficiently count files in a Google Drive ZIP using Range Requests.
-     * This avoids downloading the entire file (e.g. 1.1GB) just to see the count.
-     */
-    private function peekGoogleDriveZipCount($service, $fileId, $fileSize, $accessToken)
-    {
-        $rangeSize = 131072; // Peek the last 128KB for the Central Directory
-        $start = max(0, $fileSize - $rangeSize);
-        $range = $start . '-' . ($fileSize - 1);
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://www.googleapis.com/drive/v3/files/{$fileId}?alt=media");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer {$accessToken}",
-            "Range: bytes={$range}"
-        ]);
-
-        $data = curl_exec($ch);
-        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-        curl_close($ch);
-
-        if ($status !== 206 && $status !== 200) {
-            \Log::warning("GDrive Zip Peeker HTTP Error: {$status}");
-            return 0;
-        }
-
-        // 🚀 LANDING PAGE DETECTION (v293): If we got HTML, it's a sign-in or error page, not ZIP data
-        if (str_contains(strtolower($contentType), 'text/html')) {
-            \Log::warning("GDrive Zip Peeker: Received HTML instead of file media. Skipping count.");
-            return 0;
-        }
-
-        // 🚀 SMART SIGNATURE SCAN (v237): Count entries that match professional image/data extensions
-        // We look for common extensions immediately following the ZIP directory headers
-        $extensions = ['jpg', 'jpeg', 'png', 'tif', 'tiff', 'dng', 'webp', 'cr2', 'cr3', 'nef', 'arw', 'orf', 'raf', 'rw2', 'bmp', 'pos', 'exif', 'txt', 'csv'];
-        $pattern = '/\.(' . implode('|', $extensions) . ')/i';
-        
-        $count = preg_match_all($pattern, $data);
-        
-        // Fallback: If no recognized extensions found but it's a ZIP, count the raw headers
-        if ($count === 0) {
-            $count = substr_count($data, "PK\x01\x02");
-        }
-        
-        return $count;
-    }
 
     public static function expandOneDriveUrl($url)
     {
