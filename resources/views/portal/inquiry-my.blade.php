@@ -465,6 +465,28 @@
                 <a class="nav-link fw-medium" href="{{ route('inquiry.my') }}">My Inquiry</a>
               </div>
             </li>
+            <!-- Upload Dropdown for Desktop -->
+            <li class="nav-item dropdown d-none d-xl-block" id="navUpload">
+              <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
+                Upload
+              </a>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ route('create_project') }}">New Project</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ route('my_uploads') }}">My Projects</a></li>
+              </ul>
+            </li>
+            <!-- Upload Dropdown for Mobile -->
+            <li class="nav-item d-xl-none navUpload-mobile">
+              <a class="nav-link fw-medium dropdown-toggle" href="javascript:void(0);" data-bs-toggle="collapse" data-bs-target="#navUploadCollapse" aria-expanded="false" aria-controls="navUploadCollapse" id="navUploadMobileToggle">
+                Upload
+              </a>
+              <div class="collapse nav-upload-mobile-sub" id="navUploadCollapse">
+                <a class="nav-link fw-medium" href="{{ route('create_project') }}">New Project</a>
+                <hr class="dropdown-divider">
+                <a class="nav-link fw-medium" href="{{ route('my_uploads') }}">My Projects</a>
+              </div>
+            </li>
             @endauth
             <li class="nav-item"><a class="nav-link fw-medium" href="{{ route('landing') }}#landingFAQ">FAQ</a></li>
             <li class="nav-item"><a class="nav-link fw-medium" href="{{ route('landing') }}#landingContact">Contact us</a></li>

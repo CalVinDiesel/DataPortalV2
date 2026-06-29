@@ -286,11 +286,10 @@
               <a class="nav-link fw-medium" href="{{ route('inquiry.my') }}">My Inquiry</a>
             </div>
           </li>
-          {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (3D MODEL SALES FIRST)
           <li class="nav-item dropdown d-none d-lg-block" id="navUpload" style="display:none;">
             <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">Upload</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="create-project.html">New Project</a></li>
+              <li><a class="dropdown-item" href="{{ route('create_project') }}">New Project</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="{{ route('my_uploads') }}">My Projects</a></li>
             </ul>
@@ -300,12 +299,11 @@
               Upload
             </a>
             <div class="collapse nav-upload-mobile-sub" id="navUploadCollapsePayment">
-              <a class="nav-link fw-medium" href="create-project.html">New Project</a>
+              <a class="nav-link fw-medium" href="{{ route('create_project') }}">New Project</a>
               <hr class="dropdown-divider">
               <a class="nav-link fw-medium" href="{{ route('my_uploads') }}">My Projects</a>
             </div>
           </li>
-          --}}
           <li class="nav-item">
             <a class="nav-link fw-medium" href="{{ route('landing') }}#landingFAQ">FAQ</a>
           </li>

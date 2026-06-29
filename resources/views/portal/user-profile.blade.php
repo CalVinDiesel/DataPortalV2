@@ -295,7 +295,6 @@
       </div>
     </div>
 
-    {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (3D MODEL SALES FIRST)
     <!-- SFTP Credentials Card -->
     <div class="profile-card">
       <h5><i class="bx bx-server me-2"></i>SFTP credentials</h5>
@@ -361,7 +360,6 @@
         Your SFTP account has not been set up yet. Please contact the administrator.
       </div>
     </div>
-    --}}
   </div>
 
   <script src="{{ asset('assets') }}/vendor/libs/popper/popper.js"></script>

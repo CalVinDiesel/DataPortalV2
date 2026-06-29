@@ -177,7 +177,6 @@
                   </div>
                 </a>
               </div>
-              {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (3D MODEL SALES FIRST)
               <div class="col-md-6 col-lg-4 mb-4">
                 <a href="{{ route('admin.client_uploads') }}" class="card text-decoration-none h-100">
                   <div class="card-body">
@@ -193,7 +192,6 @@
                   </div>
                 </a>
               </div>
-              --}}
               <div class="col-md-6 col-lg-4 mb-4">
                 <a href="{{ route('admin.inquiries') }}" class="card text-decoration-none h-100">
                   <div class="card-body">

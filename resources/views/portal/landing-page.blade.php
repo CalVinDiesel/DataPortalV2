@@ -229,7 +229,6 @@
               <a class="nav-link fw-medium" href="{{ route('inquiry.my') }}">My Inquiry</a>
             </div>
           </li>
-          {{-- TEMPORARILY HIDDEN FOR PRE-LAUNCH (3D MODEL SALES FIRST)
           <li class="nav-item dropdown d-none d-xl-block" id="navUpload">
             <a href="javascript:void(0);" class="nav-link dropdown-toggle fw-medium" aria-expanded="false" data-bs-toggle="dropdown" data-trigger="hover">
               Upload
@@ -250,7 +249,6 @@
               <a class="nav-link fw-medium" href="{{ route('my_uploads') }}">My Projects</a>
             </div>
           </li>
-          --}}
           @endauth
 
           <!--<li class="nav-item">
