@@ -144,6 +144,10 @@ class AdminUserController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
+        if ($user && $user->id === auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'You cannot remove yourself from the data portal.'], 400);
+        }
+
         // Prevent modifying the base Super Admin defined in .env or anyone with superadmin role
         if ($request->email === env('SUPER_ADMIN_EMAIL') || ($user && $user->role === 'superadmin')) {
             return response()->json(['success' => false, 'message' => 'The Super Admin cannot be removed.'], 403);

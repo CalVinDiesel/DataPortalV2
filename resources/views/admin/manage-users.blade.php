@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
   <title>Manage Users - Admin | 3DHub</title>
   <script src="{{ asset('assets') }}/js/theme-init.js"></script>
   <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
@@ -203,6 +204,7 @@
   <script>
     (function() {
       var API = (window.TemaDataPortal_API_BASE || window.location.origin || 'http://localhost:3000');
+      var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
       var tbody = document.getElementById('usersTableBody');
       var alertEl = document.getElementById('usersAlert');
       var removeUserModal = null;
@@ -258,7 +260,7 @@
                 if (!confirm('Approve this request? This will generate an invite and email the user.')) return;
                 this.disabled = true;
                 fetch(API + '/api/admin/access-requests/' + id + '/approve', {
-                  method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include'
+                  method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, credentials: 'include'
                 }).then(r => r.json()).then(data => {
                   if (data.success) { showReqAlert('Approved & Invite Sent!', true); loadAccessRequests(); loadUsers(); } 
                   else { showReqAlert('Failed: ' + data.message, false); btn.disabled = false; }
@@ -272,7 +274,7 @@
                 if (!confirm('Reject and discard this waitlist request?')) return;
                 this.disabled = true;
                 fetch(API + '/api/admin/access-requests/' + id + '/reject', {
-                  method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include'
+                  method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, credentials: 'include'
                 }).then(r => r.json()).then(data => {
                   if (data.success) { showReqAlert('Request Rejected.', true); loadAccessRequests(); } 
                   else { showReqAlert('Failed: ' + data.message, false); btn.disabled = false; }
@@ -287,6 +289,7 @@
                 this.disabled = true;
                 fetch(API + '/api/admin/access-requests/' + id, {
                   method: 'DELETE',
+                  headers: { 'X-CSRF-TOKEN': csrfToken },
                   credentials: 'include'
                 }).then(r => r.json()).then(data => {
                   if (data.success) {
@@ -395,7 +398,7 @@
                 this.disabled = true;
                 fetch(API + '/api/admin/users/promote', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                   credentials: 'include',
                   body: JSON.stringify({ email: email })
                 })
@@ -422,7 +425,7 @@
                 this.disabled = true;
                 fetch(API + '/api/admin/users/upgrade-trusted', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                   credentials: 'include',
                   body: JSON.stringify({ email: email })
                 })
@@ -450,7 +453,7 @@
                 this.disabled = true;
                 fetch(API + '/api/admin/users/downgrade-registered', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                   credentials: 'include',
                   body: JSON.stringify({ email: email })
                 })
@@ -482,7 +485,7 @@
 
                 fetch(API + '/api/admin/users/resend-invitation', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                   credentials: 'include',
                   body: JSON.stringify({ email: email })
                 })
@@ -512,7 +515,7 @@
                 this.disabled = true;
                 fetch(API + '/api/admin/users/downgrade-admin', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                   credentials: 'include',
                   body: JSON.stringify({ email: email })
                 })
@@ -569,7 +572,7 @@
 
           fetch(API + '/api/admin/users/remove', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             credentials: 'include',
             body: JSON.stringify({ email: email, reason: reason })
           })
