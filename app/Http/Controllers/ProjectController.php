@@ -232,16 +232,18 @@ class ProjectController extends Controller
 
             // 🚀 MASTER-FORCE (v123): Use SSH to create folder with 777 immediately
             try {
-                $sshPort = (int)config('filesystems.disks.sftp_delivery.port', 22);
-                $ssh = new \phpseclib3\Net\SSH2(config('filesystems.disks.sftp_delivery.host'), $sshPort);
-                if ($ssh->login(config('filesystems.disks.sftp_delivery.username'), config('filesystems.disks.sftp_delivery.password'))) {
-                    $baseUploadRoot = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
+                $sshPort = (int) env('SYSTEM_SSH_PORT', 22);
+                $sshHost = env('SYSTEM_SSH_HOST', config('filesystems.disks.sftp_delivery.host'));
+                $sshUser = env('SYSTEM_SSH_USERNAME', 'root');
+                $sshPass = env('SYSTEM_SSH_PASSWORD');
+                $ssh = new \phpseclib3\Net\SSH2($sshHost, $sshPort);
+                if ($ssh->login($sshUser, $sshPass)) {
+                    $baseUploadRoot = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/');
                     $fullPath = $baseUploadRoot . '/' . $uploadPathRelative;
                     $userDir = $baseUploadRoot . '/' . 'uploads/' . $sftpUser;
                     // 🚀 TIMESTAMP WAKEUP (v225): Write and delete a temp file to force filesystem/SFTPGo to update mtime
                     $ssh->exec("mkdir -p " . escapeshellarg($fullPath . "/delivered"));
                     
-                    // Force update for User Root, Project Root, and Delivered Folder
                     $pathsToWake = [$userDir, $fullPath, $fullPath . "/delivered"];
                     foreach ($pathsToWake as $p) {
                         $tempFile = $p . "/.v" . time();
@@ -256,7 +258,6 @@ class ProjectController extends Controller
         } catch (\Exception $e) {
             \Log::warning('Could not auto-create SFTP directories: ' . $e->getMessage());
         }
-
         // Return connection details for the UI. (Personalized for the user)
         $user = Auth::user();
         $isAdmin = ($user->role === 'admin' || $user->role === 'superadmin');
@@ -731,13 +732,16 @@ class ProjectController extends Controller
         $creator = \App\Models\User::where('email', $upload->created_by_email)->first();
         $sftpUser = $creator ? ($creator->sftp_username ?: \Str::slug($creator->name)) : 'guest';
         
-        $baseUploadRoot = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
+        $baseUploadRoot = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/');
         $remotePath = "{$baseUploadRoot}/uploads/{$sftpUser}/{$upload->project_id}";
 
         try {
-            $port = (int)config('filesystems.disks.sftp_delivery.port', 22);
-            $tempSsh = new \phpseclib3\Net\SSH2(config('filesystems.disks.sftp_delivery.host'), $port);
-            if ($tempSsh->login(config('filesystems.disks.sftp_delivery.username'), config('filesystems.disks.sftp_delivery.password'))) {
+            $port = (int) env('SYSTEM_SSH_PORT', 22);
+            $sshHost = env('SYSTEM_SSH_HOST', config('filesystems.disks.sftp_delivery.host'));
+            $sshUser = env('SYSTEM_SSH_USERNAME', 'root');
+            $sshPass = env('SYSTEM_SSH_PASSWORD');
+            $tempSsh = new \phpseclib3\Net\SSH2($sshHost, $port);
+            if ($tempSsh->login($sshUser, $sshPass)) {
                 $ssh = $tempSsh;
             }
 

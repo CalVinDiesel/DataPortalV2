@@ -384,13 +384,13 @@
                 <div class="mb-3">
                   <div class="card p-3 border shadow-none mb-2" style="background: rgba(105, 108, 255, 0.04); border-color: rgba(105, 108, 255, 0.15);">
                     <div class="d-flex justify-content-between align-items-start mb-2">
-                      <span class="badge bg-label-primary px-2 py-1" style="font-size: 10px;">Host SSH / Root (Port 22)</span>
+                      <span class="badge bg-label-primary px-2 py-1" style="font-size: 10px;">SFTPGo / Admin (Port 2222)</span>
                       <button type="button" class="btn btn-xs btn-primary py-0 px-2" style="font-size: 11px;" onclick="launchWinSftp('host')">
                         <i class="bx bx-link-external me-1"></i> Launch WinSCP
                       </button>
                     </div>
                     <div class="small text-muted mb-2">
-                      Host: <strong><span class="text-dark" id="sftpHostHost">—</span></strong> · Port: <strong><span class="text-dark" id="sftpPortHost">22</span></strong> · User: <strong><span class="text-dark" id="sftpUserHost">—</span></strong>
+                      Host: <strong><span class="text-dark" id="sftpHostHost">—</span></strong> · Port: <strong><span class="text-dark" id="sftpPortHost">—</span></strong> · User: <strong><span class="text-dark" id="sftpUserHost">—</span></strong>
                     </div>
                     <div class="d-flex align-items-center gap-2">
                       <div class="delivery-path-box mb-0 flex-grow-1" id="deliverySftpPathHost" style="background:#f1f5f9; color:#1e293b; border-color:#cbd5e1; font-size:12px; padding:0.5rem 0.75rem;">—</div>
@@ -403,12 +403,12 @@
                 <p class="text-muted mb-2" style="font-size:11.5px;">
                   <i class="bx bx-info-circle me-1"></i>
                   Connect to the SFTP server with WinSCP and upload the 3D model tiles into the path above.
-                  Then click <strong>Check Files</strong> to verify, and <strong>Mark as Ready</strong> to notify the client.
+                  Then click <strong>Check Files on SFTPGo</strong> to verify, and <strong>Mark as Ready</strong> to notify the client.
                 </p>
 
                 <!-- Check Files button + result -->
                 <button type="button" class="btn btn-sm btn-outline-primary mb-2" onclick="checkDeliveryFiles()">
-                  <i class="bx bx-search me-1"></i> Check Files on Server
+                  <i class="bx bx-search me-1"></i> Check Files on SFTPGo
                 </button>
                 <div id="deliveryFileResult" class="d-none mt-2"></div>
               </div>
@@ -1240,14 +1240,19 @@
 
     var sftpHost = @json(config('filesystems.disks.sftp_delivery.host') ?: request()->getHost());
     var sftpUserHost = @json(config('filesystems.disks.sftp_delivery.username') ?: 'root');
+    var sftpPortHost = @json(config('filesystems.disks.sftp_delivery.port') ?: 22);
 
     var hostEl = document.getElementById('sftpHostHost');
     if (hostEl) hostEl.textContent = sftpHost;
     var userHostEl = document.getElementById('sftpUserHost');
     if (userHostEl) userHostEl.textContent = sftpUserHost;
+    var portHostEl = document.getElementById('sftpPortHost');
+    if (portHostEl) portHostEl.textContent = sftpPortHost;
 
     var pathHostEl = document.getElementById('deliverySftpPathHost');
-    if (pathHostEl) pathHostEl.textContent = q.sftp_delivery_path || '—';
+    if (pathHostEl) {
+      pathHostEl.textContent = q.sftp_delivery_relative ? ('/' + q.sftp_delivery_relative) : '—';
+    }
 
     var badge = document.getElementById('deliveryStatusBadge');
     if (badge) {
@@ -1268,9 +1273,9 @@
   window.launchWinSftp = function (type) {
     if (!currentQuotation) return;
     var host = @json(config('filesystems.disks.sftp_delivery.host') ?: request()->getHost());
-    var path = currentQuotation.sftp_delivery_path || '';
+    var path = currentQuotation.sftp_delivery_relative ? ('/' + currentQuotation.sftp_delivery_relative) : '';
     var user = @json(config('filesystems.disks.sftp_delivery.username') ?: 'root');
-    var port = 22;
+    var port = @json(config('filesystems.disks.sftp_delivery.port') ?: 22);
     
     var sftpUrl = 'sftp://' + encodeURIComponent(user) + '@' + host + ':' + port + path;
     window.location.href = sftpUrl;

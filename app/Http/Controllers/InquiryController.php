@@ -584,48 +584,29 @@ class InquiryController extends Controller
             $files = [];
             $totalSize = 0;
 
-            if (is_dir($absolutePath)) {
-                $localFiles = array_diff(scandir($absolutePath), ['.', '..']);
-                foreach ($localFiles as $file) {
-                    $filePath = $absolutePath . '/' . $file;
-                    if (is_file($filePath)) {
-                        $size = filesize($filePath);
-                        $files[] = [
-                            'name' => $file,
-                            'path' => $relativePath . '/' . $file,
-                            'size' => $size,
-                            'size_human' => $this->formatBytes($size),
-                        ];
-                        $totalSize += $size;
-                    }
-                }
-            } else {
-                @mkdir($absolutePath, 0777, true);
+            $disk = Storage::disk('sftp_delivery');
+            if (!$disk->exists($relativePath)) {
+                $disk->makeDirectory($relativePath);
+            }
+            $contents = $disk->listContents($relativePath, true)->toArray();
 
-                $disk = Storage::disk('sftp_delivery');
-                if (!$disk->exists($relativePath)) {
-                    $disk->makeDirectory($relativePath);
-                }
-                $contents = $disk->listContents($relativePath, true)->toArray();
-
-                foreach ($contents as $item) {
-                    if ($item->isFile()) {
-                        $size = 0;
-                        try { $size = $disk->size($item->path()); } catch (\Exception $e) {}
-                        $files[] = [
-                            'name' => basename($item->path()),
-                            'path' => $item->path(),
-                            'size' => $size,
-                            'size_human' => $this->formatBytes($size),
-                        ];
-                        $totalSize += $size;
-                    }
+            foreach ($contents as $item) {
+                if ($item->isFile()) {
+                    $size = 0;
+                    try { $size = $disk->size($item->path()); } catch (\Exception $e) {}
+                    $files[] = [
+                        'name' => basename($item->path()),
+                        'path' => $item->path(),
+                        'size' => $size,
+                        'size_human' => $this->formatBytes($size),
+                    ];
+                    $totalSize += $size;
                 }
             }
 
             return response()->json([
                 'success'          => true,
-                'sftp_path'        => $absolutePath,
+                'sftp_path'        => '/' . $relativePath,
                 'file_count'       => count($files),
                 'total_size'       => $totalSize,
                 'total_size_human' => $this->formatBytes($totalSize),
@@ -636,7 +617,7 @@ class InquiryController extends Controller
             Log::error('adminCheckDelivery failed for ' . $inquiry->inquiry_id . ': ' . $e->getMessage());
             return response()->json([
                 'success'   => false,
-                'sftp_path' => $absolutePath,
+                'sftp_path' => '/' . $relativePath,
                 'message'   => 'Could not read delivery folder: ' . $e->getMessage(),
                 'files'     => [],
                 'file_count'=> 0,
@@ -999,15 +980,10 @@ class InquiryController extends Controller
             $absolutePath = $inquiry->getSftpDeliveryAbsolutePath();
             $exists = false;
 
-            if (is_dir($absolutePath)) {
-                $localFiles = array_diff(scandir($absolutePath), ['.', '..']);
-                $exists = count($localFiles) > 0;
-            } else {
-                $disk = Storage::disk('sftp_delivery');
-                if ($disk->exists($relativePath)) {
-                    $contents = $disk->listContents($relativePath)->toArray();
-                    $exists = count($contents) > 0;
-                }
+            $disk = Storage::disk('sftp_delivery');
+            if ($disk->exists($relativePath)) {
+                $contents = $disk->listContents($relativePath)->toArray();
+                $exists = count($contents) > 0;
             }
 
             if ($exists) {

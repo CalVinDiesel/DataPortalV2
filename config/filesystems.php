@@ -63,10 +63,10 @@ return [
         'sftp_delivery' => [
             'driver'          => 'sftp',
             'host'            => env('SYSTEM_SSH_HOST', env('SFTP_DELIVERY_HOST')),
-            'username'        => env('SYSTEM_SSH_USERNAME', env('SFTP_DELIVERY_USERNAME')),
-            'password'        => env('SYSTEM_SSH_PASSWORD', env('SFTP_DELIVERY_PASSWORD')),
-            'port'            => (int) env('SYSTEM_SSH_PORT', env('SFTP_PORT', 22)),
-            'root'            => env('SYSTEM_SSH_STORAGE_ROOT', env('SFTP_DELIVERY_ROOT', '/')),
+            'username'        => env('SFTPGO_ADMIN_USERNAME', env('SYSTEM_SSH_USERNAME', env('SFTP_DELIVERY_USERNAME'))),
+            'password'        => env('SFTPGO_ADMIN_PASSWORD', env('SYSTEM_SSH_PASSWORD', env('SFTP_DELIVERY_PASSWORD'))),
+            'port'            => (int) env('CLIENT_SFTP_PORT', env('SYSTEM_SSH_PORT', env('SFTP_PORT', 22))),
+            'root'            => env('SFTP_DELIVERY_SFTP_ROOT', env('SFTP_DELIVERY_ROOT', '/')),
             'visibility'      => 'public',
             'directory_visibility' => 'public',
             'permissions' => [
