@@ -743,7 +743,7 @@
                 @if($inquiry->status === 'processing')
                   <div class="alert alert-info mt-3 mb-0 small">
                     <i class="bx bx-loader-alt bx-spin me-1"></i>
-                    <strong>Your payment has been confirmed</strong> — our team is currently processing and preparing your 3D model data. You will be notified once it is ready for delivery.
+                    <strong>Your request is being processed</strong> — our team is currently processing and preparing your 3D model data. You will be notified once it is ready for delivery.
                   </div>
                 @elseif($inquiry->status === 'completed')
                   @if($inquiry->delivery_ready)
