@@ -902,29 +902,29 @@
           </div>
           <div class="col-lg-7">
             <div class="accordion" id="accordionExample">
-              <div class="card accordion-item">
+              <div class="card accordion-item active">
                 <h2 class="accordion-header" id="headingOne">
-                  <button type="button" class="accordion-button" data-bs-toggle="collapse" data-bs-target="#accordionOne" aria-expanded="true" aria-controls="accordionOne">How do I upload my raw data for 3D processing?</button>
+                  <button type="button" class="accordion-button" data-bs-toggle="collapse" data-bs-target="#accordionOne" aria-expanded="true" aria-controls="accordionOne">How do I request a 3D model?</button>
                 </h2>
-                <div id="accordionOne" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">To start a new project, log in to your account and navigate to the "Upload" menu. You can choose to upload your raw images or zip files directly through the portal, via our high-speed SFTP server, or by providing a Google Drive share link. Our team will then process your data into a high-quality 3D model.</div>
+                <div id="accordionOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+                  <div class="accordion-body">To request a 3D model, log in to your account and navigate to the "New Inquiry" page. Simply draw/select your area of interest on the interactive map, choose your requested output formats, and submit. Our team will review the request and begin processing the 3D model for your selected area.</div>
                 </div>
               </div>
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingTwo">
-                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionTwo" aria-expanded="false" aria-controls="accordionTwo">How long do I have to download my processed 3D models?</button>
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionTwo" aria-expanded="false" aria-controls="accordionTwo">Is there any charge for requesting 3D models?</button>
                 </h2>
                 <div id="accordionTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">Once your 3D model is processed and delivered by our admin team, you will have 7 days to download the files. After 7 days, the download links (including Google Drive and SFTP links) will automatically expire and be removed from our system to ensure data security and maintain portal performance.</div>
+                  <div class="accordion-body">No! For our first launch, all 3D model inquiries and deliveries are completely <strong>free of charge</strong> for all registered users. There are no payments or transaction receipts required.</div>
                 </div>
               </div>
-              <div class="card accordion-item active">
+              <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingThree">
-                  <button type="button" class="accordion-button" data-bs-toggle="collapse" data-bs-target="#accordionThree" aria-expanded="false" aria-controls="accordionThree">What are the requirements for Google Drive uploads?</button>
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionThree" aria-expanded="false" aria-controls="accordionThree">What 3D model formats can I request?</button>
                 </h2>
-                <div id="accordionThree" class="accordion-collapse collapse show" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+                <div id="accordionThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
                   <div class="accordion-body">
-                    When using Google Drive to upload raw data, please ensure your shared link is set to "Anyone with the link" and has "Viewer" or "Editor" permissions. This allows our admin team to access your raw data for processing. Our system will automatically detect the file size and photo count once you provide a valid shared link.
+                    You can request any of the following formats: <strong>3D Tiles</strong> (best for web-based map streaming), <strong>OSGB</strong> (high-precision mesh models for engineering), <strong>DSM</strong> (Digital Surface Model elevation maps), <strong>3DGS</strong> (hyper-realistic Gaussian Splatting), and <strong>Orthophoto</strong> (distortion-free 2D maps).
                   </div>
                 </div>
               </div>
@@ -933,24 +933,24 @@
                   <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionFour" aria-expanded="false" aria-controls="accordionFour">Do I need an account to explore the 3D showcase?</button>
                 </h2>
                 <div id="accordionFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">The 3D Model Showcase and Overview Map are public and can be explored by anyone visiting the portal. However, if you wish to upload your own raw data, track project statuses, or download processed 3D models, you must register for a free account.</div>
+                  <div class="accordion-body">The 3D Model Showcase and Overview Map are public and can be explored by anyone visiting the portal. However, if you wish to request custom 3D models, track inquiry statuses, or download processed files, you must register for a free account.</div>
                 </div>
               </div>
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingFive">
-                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionFive" aria-expanded="false" aria-controls="accordionFive">How do I track the status of my uploaded projects?</button>
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionFive" aria-expanded="false" aria-controls="accordionFive">How do I track the status of my inquiries?</button>
                 </h2>
                 <div id="accordionFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">You can track your projects in real-time by visiting the "My Projects" page under the Upload menu. Your project will move through various stages: "Pending" (uploaded), "Processing" (admin working on it), "Sent" (processed file ready), and "Completed" (once finalized).</div>
+                  <div class="accordion-body">You can track your requests in real-time by visiting the "My Inquiries" page. Your request will progress through the following stages: <strong>Pending Review</strong> (received by our team), <strong>Under Review</strong> (analyzing area details), <strong>Processing</strong> (generating 3D files), and <strong>Completed</strong> (delivered files ready for download).</div>
                 </div>
               </div>
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingSix">
-                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionSix" aria-expanded="false" aria-controls="accordionSix">Are all project creation and upload methods available to every user?</button>
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionSix" aria-expanded="false" aria-controls="accordionSix">How long do I have to download my completed 3D models?</button>
                 </h2>
                 <div id="accordionSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#accordionExample">
                   <div class="accordion-body">
-                    While all registered users can utilize our standard Direct Portal Upload and Google Drive integration to submit their raw data, the high-speed SFTP (Secure File Transfer Protocol) method is exclusively reserved for our "Trusted" accounts. This ensures high-bandwidth availability for our power users. If your projects involve massive datasets and you require SFTP access, please contact our support team to discuss account verification.
+                    Once your 3D model is processed and marked as ready, you will have 7 days to download the files. After 7 days, the download links will automatically expire to ensure server storage availability and maintain portal performance.
                   </div>
                 </div>
               </div>
