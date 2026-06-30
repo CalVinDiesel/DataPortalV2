@@ -11,8 +11,9 @@
   <link rel="stylesheet" href="{{ asset('assets') }}/css/demo.css" />
   <link rel="stylesheet" href="{{ asset('assets') }}/css/admin-responsive.css" />
   <script src="{{ asset('assets') }}/vendor/js/helpers.js"></script>
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <!-- Local assets for Popper and Bootstrap (prevents CDN network blocks/offline errors) -->
+  <script src="{{ asset('assets') }}/vendor/libs/popper/popper.js"></script>
+  <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
 </head>
 <body>
   <div class="layout-wrapper layout-content-navbar">
