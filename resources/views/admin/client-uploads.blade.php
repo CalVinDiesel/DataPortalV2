@@ -655,6 +655,9 @@
           if (!path) return '–';
           // 🚀 FULL PATH DISPLAY (v168): Reverted to show absolute system paths
           var p = normalizePathForDisplay(path);
+          if (!p.startsWith('/')) {
+              p = '/' + p;
+          }
           return p.replace(/\/+/g, '/');
       }
 
