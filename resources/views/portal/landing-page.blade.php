@@ -154,6 +154,16 @@ ob_start(function($output) {
           margin-top: 0;
         }
       }
+      
+      /* FAQ Image custom styling for premium spacing and proportions */
+      .faq-image {
+        max-width: 100%;
+        width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+        border-radius: 12px;
+      }
     </style>
   
     <!-- CesiumJS 1.138
