@@ -785,12 +785,12 @@ ob_start(function($output) {
         </h4>
         <p class="text-center mb-12 pb-md-4">Browse through these FAQs to find answers to commonly asked questions.</p>
         <div class="row gy-12 align-items-center">
-          <div class="col-lg-5">
+          <div class="col-lg-6">
             <div class="text-center">
               <img src="{{ asset('assets') }}/img/front-pages/landing-page/faq-boy-with-logos.png?v={{ file_exists(public_path('assets/img/front-pages/landing-page/faq-boy-with-logos.png')) ? filemtime(public_path('assets/img/front-pages/landing-page/faq-boy-with-logos.png')) : time() }}" alt="faq boy with logos" class="faq-image" />
             </div>
           </div>
-          <div class="col-lg-7">
+          <div class="col-lg-6">
             <div class="accordion" id="accordionExample">
               <div class="card accordion-item active">
                 <h2 class="accordion-header" id="headingOne">
