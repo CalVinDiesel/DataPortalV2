@@ -747,56 +747,53 @@
             <div class="accordion" id="accordionExample">
               <div class="card accordion-item active">
                 <h2 class="accordion-header" id="headingOne">
-                  <button type="button" class="accordion-button" data-bs-toggle="collapse" data-bs-target="#accordionOne" aria-expanded="true" aria-controls="accordionOne">How do I request a 3D model?</button>
+                  <button type="button" class="accordion-button" data-bs-toggle="collapse" data-bs-target="#accordionOne" aria-expanded="true" aria-controls="accordionOne">How do I request a 3D model (Inquiry)?</button>
                 </h2>
                 <div id="accordionOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">To request a 3D model, log in to your account and navigate to the "New Inquiry" page. Simply draw/select your area of interest on the interactive map, choose your requested output formats, and submit. Our team will review the request and begin processing the 3D model for your selected area.</div>
+                  <div class="accordion-body">To request a 3D model, log in to your account and navigate to the "New Inquiry" page. Choose one of our pre-existing 3D models from the dropdown list, select your required output formats, and submit. Our team will review the details and prepare the 3D model files for your selection.</div>
                 </div>
               </div>
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingTwo">
-                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionTwo" aria-expanded="false" aria-controls="accordionTwo">Is there any charge for requesting 3D models?</button>
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionTwo" aria-expanded="false" aria-controls="accordionTwo">How do I upload raw drone datasets (Upload)?</button>
                 </h2>
                 <div id="accordionTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">No! For our first launch, all 3D model inquiries and deliveries are completely <strong>free of charge</strong> for all registered users. There are no payments or transaction receipts required.</div>
+                  <div class="accordion-body">Standard users can create a new project and submit shared links from <strong>Google Drive</strong> or <strong>OneDrive</strong> (manually entering the total size in bytes and photo count). Trusted users and administrators can upload raw photo sets directly to their dedicated folder using high-speed <strong>SFTP</strong>.</div>
                 </div>
               </div>
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingThree">
-                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionThree" aria-expanded="false" aria-controls="accordionThree">What 3D model formats can I request?</button>
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionThree" aria-expanded="false" aria-controls="accordionThree">What upload limits and storage quotas apply?</button>
                 </h2>
                 <div id="accordionThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">
-                    You can request any of the following formats: <strong>3D Tiles</strong> (best for web-based map streaming), <strong>OSGB</strong> (high-precision mesh models for engineering), <strong>DSM</strong> (Digital Surface Model elevation maps), <strong>3DGS</strong> (hyper-realistic Gaussian Splatting), and <strong>Orthophoto</strong> (distortion-free 2D maps).
-                  </div>
+                  <div class="accordion-body">Each registered user is allocated a <strong>100 GB storage limit</strong> to host their uploaded datasets. Before uploading or adding cloud links, the portal dynamically validates your remaining quota. You can delete older projects in your dashboard to free up space.</div>
                 </div>
               </div>
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingFour">
-                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionFour" aria-expanded="false" aria-controls="accordionFour">Do I need an account to explore the 3D showcase?</button>
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionFour" aria-expanded="false" aria-controls="accordionFour">How do I track and download my completed inquiries?</button>
                 </h2>
                 <div id="accordionFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">The 3D Model Showcase and Overview Map are public and can be explored by anyone visiting the portal. However, if you wish to request custom 3D models, track inquiry statuses, or download processed files, you must register for a free account.</div>
+                  <div class="accordion-body">You can track your requests in real-time by visiting the "My Inquiries" page. Your request will progress through: <strong>Pending Review</strong>, <strong>Under Review</strong>, <strong>Processing</strong>, and <strong>Completed</strong>. Completed models are available for download for 7 days before the link expires.</div>
                 </div>
               </div>
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingFive">
-                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionFive" aria-expanded="false" aria-controls="accordionFive">How do I track the status of my inquiries?</button>
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionFive" aria-expanded="false" aria-controls="accordionFive">What 3D formats can I upload or request?</button>
                 </h2>
                 <div id="accordionFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">You can track your requests in real-time by visiting the "My Inquiries" page. Your request will progress through the following stages: <strong>Pending Review</strong> (received by our team), <strong>Under Review</strong> (analyzing area details), <strong>Processing</strong> (generating 3D files), and <strong>Completed</strong> (delivered files ready for download).</div>
+                  <div class="accordion-body">For uploads, you should package your raw drone images in JPG, PNG, TIFF, or DNG formats. For inquiries, you can request outputs such as <strong>3D Tiles</strong> (web map streaming), <strong>OSGB</strong> (precision meshes), <strong>DSM</strong> (elevation maps), <strong>3DGS</strong> (Gaussian Splatting), and <strong>Orthophoto</strong> maps.</div>
                 </div>
               </div>
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingSix">
-                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionSix" aria-expanded="false" aria-controls="accordionSix">How long do I have to download my completed 3D models?</button>
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionSix" aria-expanded="false" aria-controls="accordionSix">Is there any charge for uploading or requesting models?</button>
                 </h2>
                 <div id="accordionSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">
-                    Once your 3D model is processed and marked as ready, you will have 7 days to download the files. After 7 days, the download links will automatically expire to ensure server storage availability and maintain portal performance.
-                  </div>
+                  <div class="accordion-body">No! All core portal services — including project uploads, custom inquiries, and model deliveries — are completely <strong>free of charge</strong> for all registered users during this release.</div>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </div>

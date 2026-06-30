@@ -385,6 +385,15 @@
                   <div class="form-text">This unique ID is auto-generated and will be saved upon submission.</div>
                 </div>
 
+                <!-- Select Pre-existing 3D Model -->
+                <div class="mb-4">
+                  <label class="form-label fw-semibold" for="selectModel">Select 3D Model <span class="text-danger">*</span></label>
+                  <select id="selectModel" name="selectModel" class="form-select" required>
+                    <option value="">-- Choose 3D Model --</option>
+                  </select>
+                  <div class="form-text">Choose one of our pre-existing high-precision 3D models available on the map.</div>
+                </div>
+
                 <!-- Field 2: Output Categories (The 5 3D model formats) -->
                 <div class="mb-4">
                   <label class="form-label fw-semibold d-block">Required Output Formats <span class="text-danger">*</span></label>
@@ -441,12 +450,7 @@
                   </div>
                 </div>
 
-                <div id="areaCalcBox" class="mb-4 p-3 rounded d-none" style="background-color: rgba(105, 108, 255, 0.05); border: 1.5px solid rgba(105, 108, 255, 0.2);">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <span class="small fw-semibold text-muted">Drawn Area:</span>
-                    <strong class="text-primary" id="calcAreaVal" style="font-size: 13.5px;">0.00 m²</strong>
-                  </div>
-                </div>
+
 
                 <!-- Pricing Guidance and Important Notes -->
                 {{--
@@ -469,19 +473,16 @@
               <!-- Right Map Column -->
               <div class="col-lg-7">
                 <div class="form-section-title mt-0 mt-lg-0">Select Inquiry Area</div>
-                <div class="form-text mb-2">Use the Cesium map viewer to specify the area coordinates for your inquiry.</div>
+                <div class="form-text mb-2">Choose a pre-existing 3D model from the dropdown to view its coverage on the map.</div>
                 
                 <!-- Field 3: Cesium Ion Map -->
                 <div id="heroMapContainer" style="position: relative;">
                   <div id="cesiumContainer"></div>
-                  <!-- Drawing Toolbar (always visible) -->
-                  <div id="drawingToolbar" style="position: absolute; top: 12px; left: 12px; z-index: 1000; display: flex; gap: 8px;">
-                    <button type="button" id="btnDrawPolygon" class="btn btn-sm btn-primary shadow-sm fw-bold d-flex align-items-center gap-1" style="border-radius: 8px; padding: 8px 14px; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                      <i class="bx bx-pencil me-1"></i> Draw Inquiry Area
-                    </button>
-                    <button type="button" id="btnClearPolygon" class="btn btn-sm btn-danger shadow-sm fw-bold d-flex align-items-center gap-1" style="border-radius: 8px; padding: 8px 14px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                      <i class="bx bx-trash me-1"></i> Clear Area
-                    </button>
+                  <!-- Static Location Indicator -->
+                  <div id="drawingToolbar" style="position: absolute; top: 12px; left: 12px; z-index: 1000;">
+                    <span class="badge bg-primary shadow-sm fw-bold p-2.5 d-flex align-items-center gap-1" style="backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                      <i class="bx bx-map-alt me-1"></i> Interactive 3D Map View
+                    </span>
                   </div>
                   <!-- Map control sidebar (zoom, reset, fullscreen) -->
                   <div class="right-controls">
@@ -593,20 +594,8 @@
       }
 
       var selectedModel = null;
-      var dataSource = null;
-
-      var isDrawing = false;
       var polygonPoints = [];
-      var drawingEntities = [];
       var finalPolygonEntity = null;
-      var editVertexEntities = [];
-      var activeDrawingPreview = null;
-      var mousePosition = null;
-      
-      var drawingHandler = null;
-      var editHandler = null;
-      var draggedVertexIndex = null;
-      var draggedVertexEntity = null;
 
       getViewer(function(viewer) {
         viewer.camera.setView({
@@ -617,49 +606,6 @@
             roll: 0.0
           }
         });
-
-        function calculatePolygonArea(coords) {
-          if (coords.length < 3) return 0;
-          var baseLat = coords[0][1];
-          var cosLat = Math.cos(baseLat * Math.PI / 180.0);
-          var metersX = [];
-          var metersY = [];
-          for (var i = 0; i < coords.length; i++) {
-            metersX.push(coords[i][0] * 111320.0 * cosLat);
-            metersY.push(coords[i][1] * 111320.0);
-          }
-          var area = 0.0;
-          var j = coords.length - 1;
-          for (var i = 0; i < coords.length; i++) {
-            area += (metersX[j] + metersX[i]) * (metersY[j] - metersY[i]);
-            j = i;
-          }
-          return Math.abs(area / 2.0);
-        }
-
-        window.updateCalculatedArea = function() {
-          if (polygonPoints.length < 3) {
-            var calcBox = document.getElementById('areaCalcBox');
-            if (calcBox) calcBox.classList.add('d-none');
-            return;
-          }
-          
-          var coords = polygonPoints.map(function(pos) {
-            var carto = C.Cartographic.fromCartesian(pos);
-            return [
-              C.Math.toDegrees(carto.longitude),
-              C.Math.toDegrees(carto.latitude)
-            ];
-          });
-          
-          var areaM2 = calculatePolygonArea(coords);
-          
-          var calcBox = document.getElementById('areaCalcBox');
-          var areaVal = document.getElementById('calcAreaVal');
-          
-          if (calcBox) calcBox.classList.remove('d-none');
-          if (areaVal) areaVal.textContent = areaM2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m²';
-        };
 
         var rawLocations = @json($mapLocations);
         var locations = rawLocations.map(function(loc) {
@@ -675,6 +621,15 @@
           return tilesetUrl && typeof tilesetUrl === 'string' && tilesetUrl.trim() !== '' && tilesetUrl.indexOf('example.com') === -1;
         });
 
+        // Populate Select Model Dropdown
+        var selectEl = document.getElementById('selectModel');
+        locations.forEach(function(loc) {
+          var opt = document.createElement('option');
+          opt.value = loc.id;
+          opt.textContent = loc.name;
+          selectEl.appendChild(opt);
+        });
+
         locations.forEach(function(loc) {
           var tilesetUrl = loc.originalData['3dTiles'];
           var tilesetOptions = {};
@@ -687,320 +642,67 @@
               proxy: tilesetOptions.proxy
             })).then(function(tileset) {
               viewer.scene.primitives.add(tileset);
-
-              var center = tileset.boundingSphere ? tileset.boundingSphere.center : null;
-              var position = null;
-              
-              if (center && !(center.x === 0 && center.y === 0 && center.z === 0)) {
-                position = center;
-                var carto = C.Cartographic.fromCartesian(center);
-                loc.longitude = C.Math.toDegrees(carto.longitude);
-                loc.latitude = C.Math.toDegrees(carto.latitude);
-              } else {
-                position = C.Cartesian3.fromDegrees(loc.longitude, loc.latitude);
-              }
             }).catch(function(err) {
               console.error("Failed to load 3D Tileset for " + loc.name, err);
             });
           } catch(e) {
-            console.error("Error creating 3D Tileset or Label for " + loc.name, e);
+            console.error("Error creating 3D Tileset for " + loc.name, e);
           }
         });
 
-        function updateSelectedModelFromPolygon() {
-          if (polygonPoints.length < 3) {
-            selectedModel = null;
-            return;
-          }
-          
-          var sumLon = 0, sumLat = 0;
-          polygonPoints.forEach(function(pos) {
-            var carto = C.Cartographic.fromCartesian(pos);
-            sumLon += C.Math.toDegrees(carto.longitude);
-            sumLat += C.Math.toDegrees(carto.latitude);
-          });
-          var centroidLon = sumLon / polygonPoints.length;
-          var centroidLat = sumLat / polygonPoints.length;
-          
-          var closestLoc = null;
-          var minDist = Infinity;
-          
-          locations.forEach(function(loc) {
-            var dx = loc.longitude - centroidLon;
-            var dy = loc.latitude - centroidLat;
-            var dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < minDist) {
-              minDist = dist;
-              closestLoc = loc;
-            }
-          });
-          
-          if (closestLoc) {
-            selectedModel = closestLoc.originalData;
-          } else {
-            selectedModel = null;
-          }
-        }
-
-        function cancelOrbit() {}
-
-        function startDrawing() {
-          cancelOrbit();
-          clearPolygon();
-          isDrawing = true;
-          viewer.canvas.style.cursor = 'crosshair';
-
-          var drawBtn = document.getElementById('btnDrawPolygon');
-          if (drawBtn) {
-            drawBtn.innerHTML = '<i class="bx bx-x me-1"></i> Cancel';
-            drawBtn.className = 'btn btn-sm btn-secondary shadow-sm fw-bold d-flex align-items-center gap-1';
-          }
-
-          drawingHandler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
-
-          drawingHandler.setInputAction(function(movement) {
-            mousePosition = viewer.scene.pickPosition(movement.endPosition);
-            if (!mousePosition) {
-              mousePosition = viewer.camera.pickEllipsoid(movement.endPosition);
-            }
-            viewer.scene.requestRender();
-          }, C.ScreenSpaceEventType.MOUSE_MOVE);
-
-          drawingHandler.setInputAction(function(click) {
-            var pickedPosition = viewer.scene.pickPosition(click.position);
-            if (!pickedPosition) {
-              pickedPosition = viewer.camera.pickEllipsoid(click.position);
-            }
-            if (!pickedPosition) return;
-
-            polygonPoints.push(pickedPosition);
-
-            var pointEntity = viewer.entities.add({
-              position: pickedPosition,
-              point: {
-                pixelSize: 10,
-                color: C.Color.YELLOW,
-                outlineColor: C.Color.WHITE,
-                outlineWidth: 2,
-                disableDepthTestDistance: Number.POSITIVE_INFINITY
-              }
-            });
-            drawingEntities.push(pointEntity);
-
-            if (polygonPoints.length === 1) {
-              var dynamicPositions = new C.CallbackProperty(function() {
-                var pts = [].concat(polygonPoints);
-                if (mousePosition) {
-                  pts.push(mousePosition);
-                }
-                return pts;
-              }, false);
-
-              activeDrawingPreview = viewer.entities.add({
-                polyline: {
-                  positions: dynamicPositions,
-                  width: 3,
-                  material: C.Color.CYAN,
-                  clampToGround: true
-                },
-                polygon: {
-                  hierarchy: new C.CallbackProperty(function() {
-                    var pts = [].concat(polygonPoints);
-                    if (mousePosition) {
-                      pts.push(mousePosition);
-                    }
-                    return pts.length >= 3 ? new C.PolygonHierarchy(pts) : undefined;
-                  }, false),
-                  material: C.Color.CYAN.withAlpha(0.3),
-                  classificationType: C.ClassificationType.BOTH
-                }
-              });
-              drawingEntities.push(activeDrawingPreview);
-            }
-          }, C.ScreenSpaceEventType.LEFT_CLICK);
-
-          drawingHandler.setInputAction(function() {
-            if (polygonPoints.length >= 3) {
-              if (polygonPoints.length > 3) {
-                polygonPoints.pop();
-              }
-              completeDrawing();
-            }
-          }, C.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
-        }
-
-        function completeDrawing() {
-          isDrawing = false;
-          viewer.canvas.style.cursor = '';
-          
-          if (drawingHandler) {
-            drawingHandler.destroy();
-            drawingHandler = null;
-          }
-
-          drawingEntities.forEach(function(ent) {
-            viewer.entities.remove(ent);
-          });
-          drawingEntities = [];
-
-          var drawBtn = document.getElementById('btnDrawPolygon');
-          if (drawBtn) drawBtn.style.display = 'none';
-          var clearBtn = document.getElementById('btnClearPolygon');
-          if (clearBtn) clearBtn.style.display = 'flex';
-
-          finalPolygonEntity = viewer.entities.add({
-            polygon: {
-              hierarchy: new C.CallbackProperty(function() {
-                return new C.PolygonHierarchy(polygonPoints);
-              }, false),
-              material: C.Color.fromCssColorString('#696cff').withAlpha(0.4),
-              outline: true,
-              outlineColor: C.Color.WHITE,
-              outlineWidth: 2,
-              classificationType: C.ClassificationType.BOTH
-            }
-          });
-
-          if (typeof window.updateCalculatedArea === 'function') {
-            window.updateCalculatedArea();
-          }
-
-          updateSelectedModelFromPolygon();
-
-          polygonPoints.forEach(function(pos, idx) {
-            var handle = viewer.entities.add({
-              position: pos,
-              point: {
-                pixelSize: 12,
-                color: C.Color.YELLOW,
-                outlineColor: C.Color.WHITE,
-                outlineWidth: 2.5,
-                disableDepthTestDistance: Number.POSITIVE_INFINITY
-              },
-              isVertex: true,
-              vertexIndex: idx
-            });
-            editVertexEntities.push(handle);
-          });
-
-          editHandler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
-
-          editHandler.setInputAction(function(click) {
-            var picked = viewer.scene.pick(click.position);
-            if (C.defined(picked) && picked.id && picked.id.isVertex) {
-              draggedVertexIndex = picked.id.vertexIndex;
-              draggedVertexEntity = picked.id;
-              viewer.scene.screenSpaceCameraController.enableInputs = false;
-            }
-          }, C.ScreenSpaceEventType.LEFT_DOWN);
-
-          editHandler.setInputAction(function(movement) {
-            if (draggedVertexIndex === null) {
-              var picked = viewer.scene.pick(movement.endPosition);
-              if (C.defined(picked) && picked.id && picked.id.isVertex) {
-                viewer.canvas.style.cursor = 'grab';
-              } else {
-                if (!isDrawing) {
-                  viewer.canvas.style.cursor = '';
-                }
-              }
-              return;
-            }
-
-            var newPos = viewer.scene.pickPosition(movement.endPosition);
-            if (!newPos) {
-              newPos = viewer.camera.pickEllipsoid(movement.endPosition);
-            }
-            if (newPos) {
-              draggedVertexEntity.position = newPos;
-              polygonPoints[draggedVertexIndex] = newPos;
-              viewer.scene.requestRender();
-              if (typeof window.updateCalculatedArea === 'function') {
-                window.updateCalculatedArea();
-              }
-              updateSelectedModelFromPolygon();
-            }
-          }, C.ScreenSpaceEventType.MOUSE_MOVE);
-
-          editHandler.setInputAction(function() {
-            if (draggedVertexIndex !== null) {
-              draggedVertexIndex = null;
-              draggedVertexEntity = null;
-              viewer.scene.screenSpaceCameraController.enableInputs = true;
-            }
-          }, C.ScreenSpaceEventType.LEFT_UP);
-
-          viewer.scene.requestRender();
-        }
-
-        function clearPolygon() {
-          if (draggedVertexIndex !== null) {
-            draggedVertexIndex = null;
-            draggedVertexEntity = null;
-            viewer.scene.screenSpaceCameraController.enableInputs = true;
-          }
-
-          if (drawingHandler) {
-            drawingHandler.destroy();
-            drawingHandler = null;
-          }
-          if (editHandler) {
-            editHandler.destroy();
-            editHandler = null;
-          }
-
-          drawingEntities.forEach(function(ent) { viewer.entities.remove(ent); });
-          drawingEntities = [];
-          editVertexEntities.forEach(function(ent) { viewer.entities.remove(ent); });
-          editVertexEntities = [];
-
+        // Listen to change on dropdown
+        selectEl.addEventListener('change', function() {
+          var val = this.value;
           if (finalPolygonEntity) {
             viewer.entities.remove(finalPolygonEntity);
             finalPolygonEntity = null;
           }
-
           polygonPoints = [];
           selectedModel = null;
-          isDrawing = false;
-          viewer.canvas.style.cursor = '';
-          var calcBox = document.getElementById('areaCalcBox');
-          if (calcBox) calcBox.classList.add('d-none');
 
-          var drawBtn = document.getElementById('btnDrawPolygon');
-          if (drawBtn) {
-            drawBtn.style.display = 'flex';
-            drawBtn.innerHTML = '<i class="bx bx-pencil me-1"></i> Draw Inquiry Area';
-            drawBtn.className = 'btn btn-sm btn-primary shadow-sm fw-bold d-flex align-items-center gap-1';
-          }
-          var clearBtn = document.getElementById('btnClearPolygon');
-          if (clearBtn) {
-            clearBtn.style.display = 'none';
+          if (!val) {
+            viewer.camera.setView({
+              destination: C.Cartesian3.fromDegrees(116.082, 5.975, 15000),
+              orientation: {
+                heading: 0.0,
+                pitch: C.Math.toRadians(-90),
+                roll: 0.0
+              }
+            });
+            return;
           }
 
-          viewer.scene.requestRender();
-        }
+          var loc = locations.find(function(l) { return l.id === val; });
+          if (loc) {
+            selectedModel = loc.originalData;
+            var lat = Number(loc.latitude);
+            var lon = Number(loc.longitude);
+            
+            // Fly camera to model
+            viewer.camera.flyTo({
+              destination: C.Cartesian3.fromDegrees(lon, lat, 1200),
+              duration: 2.0
+            });
 
-        var drawBtn = document.getElementById('btnDrawPolygon');
-        if (drawBtn) {
-          drawBtn.addEventListener('click', function() {
-            if (isDrawing) {
-              clearPolygon();
-            } else {
-              startDrawing();
-            }
-          });
-        }
+            // Highlight pre-existing model area
+            var offset = 0.003; // Bounding box offset
+            polygonPoints = [
+              C.Cartesian3.fromDegrees(lon - offset, lat - offset),
+              C.Cartesian3.fromDegrees(lon + offset, lat - offset),
+              C.Cartesian3.fromDegrees(lon + offset, lat + offset),
+              C.Cartesian3.fromDegrees(lon - offset, lat + offset)
+            ];
 
-        var clearBtn = document.getElementById('btnClearPolygon');
-        if (clearBtn) {
-          clearBtn.addEventListener('click', function() {
-            clearPolygon();
-          });
-        }
-
-        window.addEventListener('keydown', function(e) {
-          if (e.key === 'Escape' && isDrawing) {
-            clearPolygon();
+            finalPolygonEntity = viewer.entities.add({
+              polygon: {
+                hierarchy: new C.PolygonHierarchy(polygonPoints),
+                material: C.Color.fromCssColorString('#696cff').withAlpha(0.4),
+                outline: true,
+                outlineColor: C.Color.WHITE,
+                outlineWidth: 2,
+                classificationType: C.ClassificationType.BOTH
+              }
+            });
           }
         });
 
@@ -1011,7 +713,13 @@
               viewer.camera.cancelFlight();
             } catch (e) {}
 
-            clearPolygon();
+            selectEl.value = "";
+            if (finalPolygonEntity) {
+              viewer.entities.remove(finalPolygonEntity);
+              finalPolygonEntity = null;
+            }
+            polygonPoints = [];
+            selectedModel = null;
 
             try {
               viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
@@ -1045,12 +753,12 @@
         e.preventDefault();
 
         if (!selectedModel) {
-          alert('Please draw a polygon over one of the 3D models on the map first.');
+          alert('Please select a 3D Model from the dropdown first.');
           return;
         }
 
         if (polygonPoints.length < 3) {
-          alert("Please outline the area you wish to purchase. Click 'Draw Inquiry Area' and click on the 3D model to draw a polygon. Double-click to complete.");
+          alert("Selected model area coordinates are incomplete.");
           return;
         }
 
