@@ -79,6 +79,52 @@
                 <a href="{{ $setupUrl }}">{{ $setupUrl }}</a>
             </p>
 
+            <hr style="border: 0; border-top: 1px solid #eeeeee; margin: 30px 0;">
+            
+            <h3 style="color: #32325d; margin-bottom: 15px;">Quick Guide: Getting Started with 3D Hub</h3>
+            <p style="margin-bottom: 20px;">Once you have completed your setup and logged in, you can take advantage of the portal's core functions:</p>
+            
+            <table cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 20px;">
+                <tr>
+                    <td style="vertical-align: top; width: 40px; padding-top: 2px;">
+                        <span style="display: inline-block; background-color: #eef2ff; color: #696cff; font-weight: bold; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; font-size: 14px;">1</span>
+                    </td>
+                    <td>
+                        <strong style="color: #32325d; font-size: 15px;">Submit Custom 3D Inquiries:</strong>
+                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">Navigate to <strong>"New Inquiry"</strong>. Use the interactive drawing tool on the map to highlight your area of interest over any pre-existing 3D models. Select your required output formats (3D Tiles, OSGB, DSM, etc.) and submit your request for our team to package.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: top; width: 40px; padding-top: 2px;">
+                        <span style="display: inline-block; background-color: #eef2ff; color: #696cff; font-weight: bold; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; font-size: 14px;">2</span>
+                    </td>
+                    <td>
+                        <strong style="color: #32325d; font-size: 15px;">Upload & Store Your Drone Datasets:</strong>
+                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">Create a new project in your dashboard. You can upload files via shared links from <strong>Google Drive</strong> or <strong>OneDrive</strong> by entering the file size and count. If you are a trusted or admin user, you can also upload raw photos directly to your folders via high-speed <strong>SFTP</strong>.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: top; width: 40px; padding-top: 2px;">
+                        <span style="display: inline-block; background-color: #eef2ff; color: #696cff; font-weight: bold; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; font-size: 14px;">3</span>
+                    </td>
+                    <td>
+                        <strong style="color: #32325d; font-size: 15px;">Monitor Storage Quotas:</strong>
+                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">Each account includes <strong>100 GB of free storage</strong> to host uploaded datasets. You can review your storage consumption and delete older projects directly in your user dashboard.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: top; width: 40px; padding-top: 2px;">
+                        <span style="display: inline-block; background-color: #eef2ff; color: #696cff; font-weight: bold; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; font-size: 14px;">4</span>
+                    </td>
+                    <td>
+                        <strong style="color: #32325d; font-size: 15px;">Explore Pre-existing 3D Models:</strong>
+                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">You can view and inspect all pre-existing 3D models directly on the <strong>Overview Map</strong> and the featured <strong>Showcases</strong>. Click on any highlighted thumbnail locations to load them interactively in 3D without registering or logging in.</p>
+                    </td>
+                </tr>
+            </table>
+
+            <hr style="border: 0; border-top: 1px solid #eeeeee; margin: 30px 0;">
+
             <p>This invitation link is valid for the next 48 hours.</p>
             <p>Thank you,<br>The 3DHub Team</p>
         </div>
