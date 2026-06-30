@@ -100,7 +100,7 @@
                     </td>
                     <td>
                         <strong style="color: #32325d; font-size: 15px;">Upload & Store Your Drone Datasets:</strong>
-                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">Create a new project in your dashboard. You can upload files via shared links from <strong>Google Drive</strong> or <strong>OneDrive</strong> by entering the file size and count. If you are a trusted or admin user, you can also upload raw photos directly to your folders via high-speed <strong>SFTP</strong>.</p>
+                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">Create a new project in your dashboard. You can upload files via shared links from <strong>Google Drive</strong> or <strong>OneDrive</strong> by entering the file size and count, or upload raw photos directly to your dedicated folders via high-speed <strong>SFTP</strong>.</p>
                     </td>
                 </tr>
                 <tr>
