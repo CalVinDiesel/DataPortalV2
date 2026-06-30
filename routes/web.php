@@ -157,15 +157,9 @@ Route::middleware(['auth', 'can:admin'])->group(function () {
         return view('admin.manage-showcases');
     })->name('admin.manage_showcases');
 
-    // TEMPORARILY REDIRECTED FOR PRE-LAUNCH (3D MODEL SALES FIRST)
-    /*
+    // RESTORED: Client Uploads management route
     Route::get('/admin/client-uploads', function () {
         return view('admin.client-uploads');
-    })->name('admin.client_uploads');
-    */
-
-    Route::get('/admin/client-uploads', function () {
-        return redirect()->route('admin_dashboard');
     })->name('admin.client_uploads');
 
     Route::get('/admin/manage-users', function () {
