@@ -292,6 +292,7 @@
   <script>
     (function () {
       var API_BASE = (typeof window !== 'undefined' && window.TemaDataPortal_API_BASE) || (window.location ? window.location.origin : '') || 'http://localhost:3000';
+      var currentPins = [];
 
       function escapeHtml(s) {
         if (!s) return '';
@@ -317,6 +318,7 @@
             return r.json();
           })
           .then(function (rows) {
+            currentPins = Array.isArray(rows) ? rows : [];
             var tbody = document.getElementById('pinsTableBody');
             if (!Array.isArray(rows)) {
               setTableMessage('Server did not return a list. Make sure the auth server is running (npm start) and try <strong>Sync from locations.json</strong> above.');
@@ -351,30 +353,35 @@
               btn.addEventListener('click', function () {
                 var id = btn.getAttribute('data-id');
                 if (!id) return;
-                fetch(API_BASE + '/api/map-data/' + encodeURIComponent(id))
-                  .then(function (r) { return r.json(); })
-                  .then(function (row) {
-                    document.getElementById('editMapDataID').value = row.mapDataID || row.id || '';
-                    document.getElementById('editTitle').value = row.title || '';
-                    document.getElementById('editDescription').value = row.description || '';
-                    document.getElementById('editYAxis').value = row.yAxis != null ? row.yAxis : '';
-                    document.getElementById('editXAxis').value = row.xAxis != null ? row.xAxis : '';
-                    document.getElementById('editTilesetUrl').value = row['3dTiles'] || row.tilesetUrl || '';
-                    var thumbUrl = (row.thumbNailUrl || row.thumbnailUrl || '').trim();
-                    document.getElementById('editThumbNailUrl').value = thumbUrl;
-                    var previewEl = document.getElementById('editThumbPreview');
-                    if (thumbUrl) {
-                      var fullUrl = thumbUrl.indexOf('http') === 0 ? thumbUrl : (API_BASE + (thumbUrl.indexOf('/') === 0 ? '' : '/') + thumbUrl);
-                      previewEl.src = fullUrl;
-                      previewEl.onerror = function () { previewEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; };
-                    } else {
-                      previewEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-                    }
-                    document.getElementById('editThumbnailFile').value = '';
-                    var modal = new bootstrap.Modal(document.getElementById('editModal'));
-                    modal.show();
-                  })
-                  .catch(function () { alert('Could not load pin data.'); });
+                
+                var row = currentPins.find(function (p) {
+                  return (p.mapDataID || p.id) === id;
+                });
+
+                if (!row) {
+                  alert('Could not load pin data.');
+                  return;
+                }
+
+                document.getElementById('editMapDataID').value = row.mapDataID || row.id || '';
+                document.getElementById('editTitle').value = row.title || '';
+                document.getElementById('editDescription').value = row.description || '';
+                document.getElementById('editYAxis').value = row.yAxis != null ? row.yAxis : '';
+                document.getElementById('editXAxis').value = row.xAxis != null ? row.xAxis : '';
+                document.getElementById('editTilesetUrl').value = row['3dTiles'] || row.tilesetUrl || '';
+                var thumbUrl = (row.thumbNailUrl || row.thumbnailUrl || '').trim();
+                document.getElementById('editThumbNailUrl').value = thumbUrl;
+                var previewEl = document.getElementById('editThumbPreview');
+                if (thumbUrl) {
+                  var fullUrl = thumbUrl.indexOf('http') === 0 ? thumbUrl : (API_BASE + (thumbUrl.indexOf('/') === 0 ? '' : '/') + thumbUrl);
+                  previewEl.src = fullUrl;
+                  previewEl.onerror = function () { previewEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; };
+                } else {
+                  previewEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                }
+                document.getElementById('editThumbnailFile').value = '';
+                var modal = new bootstrap.Modal(document.getElementById('editModal'));
+                modal.show();
               });
             });
 
