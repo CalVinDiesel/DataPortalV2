@@ -496,7 +496,10 @@
               if (data.success) {
                 showMessage('nameMessage', data.message || 'Name updated.', false);
                 document.getElementById('profile-name').textContent = data.name || name;
-                document.getElementById('inlineFormName').classList.add('d-none');
+                setTimeout(function () {
+                  document.getElementById('inlineFormName').classList.add('d-none');
+                  showMessage('nameMessage', '');
+                }, 2000);
               } else {
                 showMessage('nameMessage', data.message || (data.errors ? Object.values(data.errors)[0][0] : null) || 'Update failed.', true);
               }
@@ -541,10 +544,13 @@
             .then(function (data) {
               if (data.success) {
                 showMessage('passwordMessage', data.message || 'Password updated.', false);
-                document.getElementById('formChangePassword').classList.add('d-none');
                 document.getElementById('currentPassword').value = '';
                 document.getElementById('newPassword').value = '';
                 document.getElementById('profile-password').textContent = '••••••••';
+                setTimeout(function () {
+                  document.getElementById('formChangePassword').classList.add('d-none');
+                  showMessage('passwordMessage', '');
+                }, 2000);
               } else {
                 showMessage('passwordMessage', data.message || (data.errors ? Object.values(data.errors)[0][0] : null) || 'Update failed.', true);
               }
@@ -584,7 +590,10 @@
               if (data.success) {
                 showMessage('contactMessage', data.message || 'Updated.', false);
                 document.getElementById('profile-contact').textContent = contact || '—';
-                document.getElementById('inlineFormContact').classList.add('d-none');
+                setTimeout(function () {
+                  document.getElementById('inlineFormContact').classList.add('d-none');
+                  showMessage('contactMessage', '');
+                }, 2000);
               } else {
                 showMessage('contactMessage', data.message || (data.errors ? Object.values(data.errors)[0][0] : null) || 'Update failed.', true);
               }
@@ -626,11 +635,15 @@
               if (data.success) {
                 showMessage('emailMessage', data.message || 'Updated.', false);
                 document.getElementById('profile-email').textContent = newEmail;
-                document.getElementById('inlineFormEmail').classList.add('d-none');
                 if (data.requireRelogin) {
                   setTimeout(function () {
                     window.location.href = LOGIN_URL + '?message=email_updated';
                   }, 1500);
+                } else {
+                  setTimeout(function () {
+                    document.getElementById('inlineFormEmail').classList.add('d-none');
+                    showMessage('emailMessage', '');
+                  }, 2000);
                 }
               } else {
                 showMessage('emailMessage', data.message || (data.errors ? Object.values(data.errors)[0][0] : null) || 'Update failed.', true);
@@ -762,8 +775,11 @@
                   actualSftpPassword = newPwVal;
                   var sftpPasswordEl = document.getElementById('profile-sftp-password');
                   if (sftpPasswordEl) sftpPasswordEl.textContent = sftpPasswordVisible ? newPwVal : '••••••••';
-                  var formChangeSftpPassword = document.getElementById('formChangeSftpPassword');
-                  if (formChangeSftpPassword) formChangeSftpPassword.classList.add('d-none');
+                  setTimeout(function () {
+                    var formChangeSftpPassword = document.getElementById('formChangeSftpPassword');
+                    if (formChangeSftpPassword) formChangeSftpPassword.classList.add('d-none');
+                    showMessage('sftpPasswordMessage', '');
+                  }, 2000);
                 } else {
                   showMessage('sftpPasswordMessage', data.message || (data.errors ? Object.values(data.errors)[0][0] : null) || 'Update failed.', true);
                 }
