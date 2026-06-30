@@ -64,8 +64,22 @@ class SocialiteController extends Controller
             }
         }
 
-        // STANDARD LOGIN
-        $user = User::where('email', $socialUser->getEmail())->first();
+        // STANDARD LOGIN: Match by OAuth provider ID first (handles email change support)
+        $user = null;
+        if (!empty($socialUser->getId())) {
+            $user = User::where('provider', $provider)
+                ->where(function ($q) use ($socialUser) {
+                    $q->where('oauth_id', $socialUser->getId())
+                      ->orWhere('provider_id', $socialUser->getId());
+                })
+                ->first();
+        }
+
+        // Fallback to email matching
+        if (!$user) {
+            $user = User::where('email', $socialUser->getEmail())->first();
+        }
+
         $superAdminEmail = env('SUPER_ADMIN_EMAIL');
 
         // SELF-HEALING & IMMORTALITY FOR SUPER ADMIN

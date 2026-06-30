@@ -195,6 +195,18 @@
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Logging in...';
     });
+
+    // Check URL parameters for messages
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var msg = params.get('message');
+      var errorEl = document.getElementById('loginAuthError');
+      if (msg === 'email_updated' && errorEl) {
+        errorEl.textContent = 'Email updated successfully. Please log in with your new email.';
+        errorEl.className = 'alert alert-success small py-2 mb-3';
+        errorEl.classList.remove('d-none');
+      }
+    })();
   </script>
 </body>
 </html>
