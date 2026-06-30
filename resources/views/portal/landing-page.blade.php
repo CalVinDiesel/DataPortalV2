@@ -156,9 +156,11 @@ ob_start(function($output) {
       }
       
       /* FAQ Image custom styling for premium spacing and proportions */
-      .faq-image {
-        max-width: 100%;
-        width: 100%;
+      .landing-faq .faq-image {
+        max-width: 100% !important;
+        width: 100% !important;
+        max-inline-size: 100% !important;
+        inline-size: 100% !important;
         height: auto;
         display: block;
         margin: 0 auto;
