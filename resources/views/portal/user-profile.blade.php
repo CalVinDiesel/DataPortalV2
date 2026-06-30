@@ -484,7 +484,10 @@
           showMessage('nameMessage', '');
           fetch(AUTH_API + '/api/auth/profile/name', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
             credentials: 'include',
             body: JSON.stringify({ name: name })
           })
@@ -495,7 +498,7 @@
                 document.getElementById('profile-name').textContent = data.name || name;
                 document.getElementById('inlineFormName').classList.add('d-none');
               } else {
-                showMessage('nameMessage', data.message || 'Update failed.', true);
+                showMessage('nameMessage', data.message || (data.errors ? Object.values(data.errors)[0][0] : null) || 'Update failed.', true);
               }
             })
             .catch(function () { showMessage('nameMessage', 'Network error.', true); })
@@ -528,6 +531,7 @@
             method: 'PUT',
             headers: { 
               'Content-Type': 'application/json',
+              'Accept': 'application/json',
               'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
             credentials: 'include',
@@ -542,7 +546,7 @@
                 document.getElementById('newPassword').value = '';
                 document.getElementById('profile-password').textContent = '••••••••';
               } else {
-                showMessage('passwordMessage', data.message || 'Update failed.', true);
+                showMessage('passwordMessage', data.message || (data.errors ? Object.values(data.errors)[0][0] : null) || 'Update failed.', true);
               }
             })
             .catch(function () { showMessage('passwordMessage', 'Network error.', true); })
@@ -568,7 +572,10 @@
           showMessage('contactMessage', '');
           fetch(AUTH_API + '/api/auth/profile/contact', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
             credentials: 'include',
             body: JSON.stringify({ contactNumber: contact })
           })
@@ -579,7 +586,7 @@
                 document.getElementById('profile-contact').textContent = contact || '—';
                 document.getElementById('inlineFormContact').classList.add('d-none');
               } else {
-                showMessage('contactMessage', data.message || 'Update failed.', true);
+                showMessage('contactMessage', data.message || (data.errors ? Object.values(data.errors)[0][0] : null) || 'Update failed.', true);
               }
             })
             .catch(function () { showMessage('contactMessage', 'Network error.', true); })
@@ -607,7 +614,10 @@
           showMessage('emailMessage', '');
           fetch(AUTH_API + '/api/auth/profile/email', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
             credentials: 'include',
             body: JSON.stringify({ newEmail: newEmail })
           })
@@ -623,7 +633,7 @@
                   }, 1500);
                 }
               } else {
-                showMessage('emailMessage', data.message || 'Update failed.', true);
+                showMessage('emailMessage', data.message || (data.errors ? Object.values(data.errors)[0][0] : null) || 'Update failed.', true);
                 btn.disabled = false;
               }
             })
@@ -739,6 +749,7 @@
               method: 'PUT',
               headers: { 
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
               },
               credentials: 'include',
@@ -754,7 +765,7 @@
                   var formChangeSftpPassword = document.getElementById('formChangeSftpPassword');
                   if (formChangeSftpPassword) formChangeSftpPassword.classList.add('d-none');
                 } else {
-                  showMessage('sftpPasswordMessage', data.message || 'Update failed.', true);
+                  showMessage('sftpPasswordMessage', data.message || (data.errors ? Object.values(data.errors)[0][0] : null) || 'Update failed.', true);
                 }
               })
               .catch(function() { showMessage('sftpPasswordMessage', 'Network error.', true); })
