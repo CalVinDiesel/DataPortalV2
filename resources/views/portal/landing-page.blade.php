@@ -750,7 +750,7 @@
                   <button type="button" class="accordion-button" data-bs-toggle="collapse" data-bs-target="#accordionOne" aria-expanded="true" aria-controls="accordionOne">How do I request a 3D model (Inquiry)?</button>
                 </h2>
                 <div id="accordionOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">To request a 3D model, log in to your account and navigate to the "New Inquiry" page. Choose one of our pre-existing 3D models from the dropdown list, select your required output formats, and submit. Our team will review the details and prepare the 3D model files for your selection.</div>
+                  <div class="accordion-body">To request a 3D model, log in to your account and navigate to the "New Inquiry" page. Draw a polygon over any of the pre-existing 3D models on the interactive map to select your area, choose your required output formats, and submit. Our team will review the details and prepare the 3D model files for your selection.</div>
                 </div>
               </div>
               <div class="card accordion-item">
