@@ -572,6 +572,16 @@
           document.getElementById('resPass').innerText = data.sftpDetails.password || 'Contact Admin';
 
           // Ensure connection instruction is clear
+          const deliveryInfo = document.createElement('div');
+          deliveryInfo.className = 'alert alert-success mt-3 text-start';
+          deliveryInfo.innerHTML = '<i class="bx bx-download me-2"></i> <strong>How to retrieve your processed 3D Model:</strong><br>' +
+            'Once processing is complete, you can retrieve your files using one of two methods:<br>' +
+            '<ol class="mb-0 mt-1 ps-3">' +
+            '<li><strong>Web Portal Download:</strong> Download the file directly from your user dashboard.</li>' +
+            '<li><strong>SFTP Direct Download:</strong> Go to <strong>My Uploads > Action > View Details > click "Unlock Path"</strong> to retrieve the WinSCP folder path and download via your SFTP client.</li>' +
+            '</ol>';
+          document.getElementById('successView').appendChild(deliveryInfo);
+
           const instruction = document.createElement('div');
           instruction.className = 'alert alert-info mt-3 text-start';
           instruction.innerHTML = '<i class="bx bx-info-circle me-2"></i> <strong>WinSCP Tip:</strong> If you get a "Permission Denied" while dragging files, go to WinSCP <strong>Options > Preferences > Transfer > Default > Edit</strong> and <strong>UNCHECK "Preserve timestamp"</strong>. Then try again.';
