@@ -1,3 +1,40 @@
+@php
+ob_start(function($output) {
+    return preg_replace_callback('/(src|href|content|data-app-light-img|data-app-dark-img)="([^"]+\.(?:png|jpg|jpeg|gif|svg|ico|css|js)(?:\?[^"]*)?)"/i', function($matches) {
+        $attr = $matches[1];
+        $url = $matches[2];
+        
+        $parsed = parse_url($url);
+        $path = isset($parsed['path']) ? $parsed['path'] : '';
+        
+        $cleanPath = ltrim(rawurldecode($path), '/');
+        
+        $candidates = [
+            $cleanPath,
+            'assets/' . $cleanPath,
+            'assets/img/' . $cleanPath
+        ];
+        
+        $resolvedFile = null;
+        foreach ($candidates as $cand) {
+            $fullPath = public_path($cand);
+            if (file_exists($fullPath) && !is_dir($fullPath)) {
+                $resolvedFile = $fullPath;
+                break;
+            }
+        }
+        
+        if ($resolvedFile) {
+            $time = filemtime($resolvedFile);
+            $baseUrl = preg_replace('/[?&]v=[^&]*/', '', $url);
+            $separator = (strpos($baseUrl, '?') === false) ? '?' : '&';
+            return $attr . '="' . $baseUrl . $separator . 'v=' . $time . '"';
+        }
+        
+        return $matches[0];
+    }, $output);
+});
+@endphp
 <!doctype html>
 
 <!-- =========================================================
@@ -1261,3 +1298,6 @@
 </html>
 
   <!-- beautify ignore:end -->
+@php
+ob_end_flush();
+@endphp
