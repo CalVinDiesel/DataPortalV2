@@ -455,13 +455,7 @@
               <!-- Right Map Column -->
               <div class="col-lg-7">
                 <div class="form-section-title mt-0 mt-lg-0">Select Inquiry Area</div>
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
-                  <div class="form-text mb-0">Use the Cesium map viewer to specify the area coordinates for your inquiry.</div>
-                  <div class="small text-muted d-flex align-items-center gap-1 bg-label-info py-1 px-2 rounded shadow-sm" style="font-size: 11.5px; max-width: 480px; line-height: 1.35;">
-                    <i class="bx bx-info-circle text-info" style="font-size: 15px;"></i>
-                    <span><strong>Drawing Tip:</strong> Click "Draw Inquiry Area" &rarr; Click once on the map to start &rarr; Single-click to add points &rarr; <strong>Double-click to finish</strong> (selected area turns purple).</span>
-                  </div>
-                </div>
+                <div class="form-text mb-2">Use the Cesium map viewer to specify the area coordinates for your inquiry.</div>
                 
                 <!-- Field 3: Cesium Ion Map -->
                 <div id="heroMapContainer" style="position: relative;">
@@ -516,12 +510,21 @@
 
             <!-- Footer Action Row -->
             <div class="row mt-4">
-              <div class="col-12 d-flex justify-content-between align-items-center">
+              <div class="col-12 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                 <a href="{{ route('landing') }}" class="btn btn-outline-secondary px-4">Cancel</a>
-                <!-- Send Inquiry Button on the bottom right -->
-                <button type="submit" id="btnSubmitQuotation" class="btn btn-primary px-5 fw-bold">
-                  <i class="bx bx-send me-1"></i> Send Inquiry
-                </button>
+                
+                <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 flex-grow-1 justify-content-end">
+                  <!-- Drawing Tip (on the left side of Send Inquiry, under the map) -->
+                  <div class="small text-muted d-flex align-items-center gap-1 bg-label-info py-2 px-3 rounded shadow-sm mb-0" style="font-size: 11.5px; max-width: 580px; line-height: 1.4;">
+                    <i class="bx bx-info-circle text-info" style="font-size: 16px;"></i>
+                    <span><strong>Drawing Tip:</strong> Click "Draw Inquiry Area" &rarr; Click once on the map to start &rarr; Single-click to add points &rarr; <strong>Double-click to finish</strong> (selected area turns purple).</span>
+                  </div>
+
+                  <!-- Send Inquiry Button on the bottom right -->
+                  <button type="submit" id="btnSubmitQuotation" class="btn btn-primary px-5 fw-bold">
+                    <i class="bx bx-send me-1"></i> Send Inquiry
+                  </button>
+                </div>
               </div>
             </div>
           </form>
