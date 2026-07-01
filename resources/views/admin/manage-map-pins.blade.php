@@ -380,7 +380,8 @@
                   previewEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
                 }
                 document.getElementById('editThumbnailFile').value = '';
-                var modal = new bootstrap.Modal(document.getElementById('editModal'));
+                var modalEl = document.getElementById('editModal');
+                var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
                 modal.show();
               });
             });
@@ -414,7 +415,8 @@
 
       var syncBtn = document.getElementById('syncFromJsonBtn');
       if (syncBtn) syncBtn.addEventListener('click', function () {
-        var modal = new bootstrap.Modal(document.getElementById('confirmSyncPinsModal'));
+        var modalEl = document.getElementById('confirmSyncPinsModal');
+        var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
         modal.show();
       });
 
@@ -443,7 +445,8 @@
 
       var exportBtn = document.getElementById('exportToJsonBtn');
       if (exportBtn) exportBtn.addEventListener('click', function () {
-        var modal = new bootstrap.Modal(document.getElementById('confirmExportPinsModal'));
+        var modalEl = document.getElementById('confirmExportPinsModal');
+        var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
         modal.show();
       });
 
