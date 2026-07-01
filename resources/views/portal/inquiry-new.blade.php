@@ -455,7 +455,13 @@
               <!-- Right Map Column -->
               <div class="col-lg-7">
                 <div class="form-section-title mt-0 mt-lg-0">Select Inquiry Area</div>
-                <div class="form-text mb-2">Use the Cesium map viewer to specify the area coordinates for your inquiry.</div>
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
+                  <div class="form-text mb-0">Use the Cesium map viewer to specify the area coordinates for your inquiry.</div>
+                  <div class="small text-muted d-flex align-items-center gap-1 bg-label-info py-1 px-2 rounded shadow-sm" style="font-size: 11.5px; max-width: 480px; line-height: 1.35;">
+                    <i class="bx bx-info-circle text-info" style="font-size: 15px;"></i>
+                    <span><strong>Drawing Tip:</strong> Click "Draw Inquiry Area" &rarr; Click once on the map to start &rarr; Single-click to add points &rarr; <strong>Double-click to finish</strong> (selected area turns purple).</span>
+                  </div>
+                </div>
                 
                 <!-- Field 3: Cesium Ion Map -->
                 <div id="heroMapContainer" style="position: relative;">
