@@ -177,7 +177,7 @@
     </div>
   </div>
   <!-- Edit modal -->
-  <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
@@ -239,7 +239,7 @@
   </div>
 
   <!-- Confirm Sync locations.json modal -->
-  <div class="modal fade" id="confirmSyncPinsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="confirmSyncPinsModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -265,7 +265,7 @@
   </div>
 
   <!-- Confirm Export locations.json modal -->
-  <div class="modal fade" id="confirmExportPinsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="confirmExportPinsModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
