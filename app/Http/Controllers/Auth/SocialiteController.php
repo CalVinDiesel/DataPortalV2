@@ -29,6 +29,8 @@ class SocialiteController extends Controller
 
     public function handleProviderCallback($provider)
     {
+        \Log::info("SocialiteController::handleProviderCallback: callback received for provider '{$provider}'");
+        \Log::info("SocialiteController::handleProviderCallback: session relink_user_id = " . (session()->has('relink_user_id') ? session('relink_user_id') : 'NOT_SET'));
         try {
             $socialUser = $this->getDriver($provider)->user();
         } catch (\Exception $e) {
@@ -223,7 +225,11 @@ class SocialiteController extends Controller
         if (!in_array($provider, ['google', 'microsoft'])) {
             abort(404);
         }
-        session(['relink_user_id' => auth()->id()]);
+        $currentUserId = auth()->id();
+        \Log::info("SocialiteController::redirectToRelink: setting relink_user_id = {$currentUserId} for provider '{$provider}'");
+        session(['relink_user_id' => $currentUserId]);
+        session()->save(); // Force save session file immediately
+        \Log::info("SocialiteController::redirectToRelink: session saved successfully. Redirecting user to provider...");
         return $this->getDriver($provider)->redirect();
     }
 }
