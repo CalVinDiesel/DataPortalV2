@@ -26,7 +26,18 @@
 <body>
     <div class="wrapper">
         <div class="header">
-            <img src="{{ $message->embed(public_path('assets/img/front-pages/landing-page/3DHub logo1.png')) }}" alt="3DHub Logo" style="height: 50px; margin-bottom: 15px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
+            @php
+                $logoUrl = env('MAIL_LOGO_URL');
+                if (!$logoUrl) {
+                    $logoUrl = asset('assets/img/front-pages/landing-page/3DHub logo1.png');
+                    $requestHost = request()->getSchemeAndHttpHost();
+                    if ((str_contains($logoUrl, '127.0.0.1') || str_contains($logoUrl, 'localhost')) && 
+                        !str_contains($requestHost, '127.0.0.1') && !str_contains($requestHost, 'localhost')) {
+                        $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub logo1.png';
+                    }
+                }
+            @endphp
+            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 50px; margin-bottom: 15px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
             <h1>✅ Inquiry Request Received</h1>
             <p>We have received your inquiry request</p>
         </div>
