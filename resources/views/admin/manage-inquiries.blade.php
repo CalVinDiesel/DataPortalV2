@@ -635,7 +635,7 @@
   function renderTable(data) {
     var tbody = document.getElementById('quotationsTableBody');
     if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-5"><i class="bx bx-inbox display-6 d-block mb-2"></i>No inquiries found</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-5"><i class="bx bx-receipt display-6 mb-2"></i><br>No inquiries found</td></tr>';
       return;
     }
     tbody.innerHTML = data.map(function (q) {
