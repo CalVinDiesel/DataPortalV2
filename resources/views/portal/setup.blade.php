@@ -106,27 +106,13 @@
                 
                 <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.8rem;">Select Your Permanent Login Method</h6>
 
-                <!-- Google Auth -->
-                <button type="button" class="btn btn-outline-dark w-100 auth-btn" onclick="submitAuth('google')">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" style="height: 20px;">
-                  Continue with Google
-                </button>
-
-                <!-- Microsoft Auth -->
-                <button type="button" class="btn btn-outline-dark w-100 auth-btn" onclick="submitAuth('microsoft')">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" style="height: 20px;">
-                  Continue with Microsoft
-                </button>
-
-                <div class="text-center my-3 text-muted">OR</div>
-
                 <!-- Password Auth Toggle -->
                 <button type="button" class="btn {{ old('action') === 'password' || $errors->has('password') ? 'btn-outline-primary' : 'btn-primary' }} w-100 auth-btn" id="togglePasswordBtn">
                   <i class="bx bx-lock-alt"></i> Create a Password
                 </button>
 
                 <!-- Password Block -->
-                <div id="passwordBlock" class="{{ old('action') === 'password' || $errors->has('password') ? '' : 'd-none' }} mt-4 p-3 bg-light rounded border">
+                <div id="passwordBlock" class="{{ old('action') === 'password' || $errors->has('password') ? '' : 'd-none' }} mt-4 mb-3 p-3 bg-light rounded border">
                   <div class="mb-3">
                     <label class="form-label text-dark fw-bold">Password</label>
                     <div class="input-group input-group-merge form-password-toggle">
@@ -143,6 +129,20 @@
                   </div>
                   <button type="button" class="btn btn-success w-100 fw-bold" onclick="submitAuth('password')">Complete Setup</button>
                 </div>
+
+                <div class="text-center my-3 text-muted">OR</div>
+
+                <!-- Google Auth -->
+                <button type="button" class="btn btn-outline-dark w-100 auth-btn" onclick="submitAuth('google')">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" style="height: 20px;">
+                  Continue with Google
+                </button>
+
+                <!-- Microsoft Auth -->
+                <button type="button" class="btn btn-outline-dark w-100 auth-btn" onclick="submitAuth('microsoft')">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" style="height: 20px;">
+                  Continue with Microsoft
+                </button>
 
               </form>
             </div>
