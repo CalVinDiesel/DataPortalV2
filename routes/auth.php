@@ -63,4 +63,6 @@ Route::middleware('auth')->group(function () {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+
+    Route::get('auth/relink/{provider}', [SocialiteController::class, 'redirectToRelink'])->name('auth.relink');
 });

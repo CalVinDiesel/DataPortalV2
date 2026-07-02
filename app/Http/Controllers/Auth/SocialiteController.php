@@ -33,7 +33,58 @@ class SocialiteController extends Controller
             $socialUser = $this->getDriver($provider)->user();
         } catch (\Exception $e) {
             \Log::error("{$provider} OAuth failed", ['error' => $e->getMessage()]);
+            if (session()->has('relink_user_id')) {
+                session()->forget('relink_user_id');
+                return redirect('/profile')->with('error', 'OAuth authentication failed: ' . $e->getMessage());
+            }
             return redirect('/login')->with('error', ucfirst($provider) . ' login failed: ' . $e->getMessage());
+        }
+
+        // RELINKING FLOW (Approach 1: active OAuth verification to change email)
+        if (session()->has('relink_user_id')) {
+            $userId = session('relink_user_id');
+            session()->forget('relink_user_id');
+
+            $user = User::find($userId);
+            if (!$user) {
+                return redirect('/profile')->with('error', 'User account not found.');
+            }
+
+            $newEmail = $socialUser->getEmail();
+            if (empty($newEmail)) {
+                return redirect('/profile')->with('error', "Could not retrieve email address from your {$provider} account.");
+            }
+
+            // Check if another user already has this email
+            $exists = User::where('email', $newEmail)->where('id', '!=', $user->id)->exists();
+            if ($exists) {
+                return redirect('/profile')->with('error', "The {$provider} email ({$newEmail}) is already linked to another user account.");
+            }
+
+            // Check if another user already has this provider and oauth_id/provider_id
+            $idExists = User::where('provider', $provider)
+                ->where('id', '!=', $user->id)
+                ->where(function ($q) use ($socialUser) {
+                    $q->where('oauth_id', $socialUser->getId())
+                      ->orWhere('provider_id', $socialUser->getId());
+                })
+                ->exists();
+            if ($idExists) {
+                return redirect('/profile')->with('error', "This {$provider} account is already linked to another user.");
+            }
+
+            // Update user credentials
+            $user->email = $newEmail;
+            $user->provider = $provider;
+            $user->login_method = $provider;
+            $user->oauth_id = $socialUser->getId();
+            $user->provider_id = $socialUser->getId();
+            $user->save();
+
+            // Re-login as the updated user details
+            Auth::login($user);
+
+            return redirect('/profile')->with('success', "Your account email has been successfully updated to {$newEmail} and linked to your {$provider} account.");
         }
 
         // Check if user is currently going through the Initial Setup Flow
@@ -166,4 +217,13 @@ class SocialiteController extends Controller
 
     public function redirectToMicrosoft() { return $this->redirectToProvider('microsoft'); }
     public function handleMicrosoftCallback() { return $this->handleProviderCallback('microsoft'); }
+
+    public function redirectToRelink($provider)
+    {
+        if (!in_array($provider, ['google', 'microsoft'])) {
+            abort(404);
+        }
+        session(['relink_user_id' => auth()->id()]);
+        return $this->getDriver($provider)->redirect();
+    }
 }

@@ -193,6 +193,19 @@
   </div>
 
   <div class="container mt-4 mb-5 pb-5">
+    @if(session('success'))
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    @endif
+    @if(session('error'))
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    @endif
+
     <div id="profileLoadError" class="alert alert-danger d-none" role="alert"></div>
 
     <div class="profile-card">
@@ -221,6 +234,7 @@
         <span class="profile-value" id="profile-email">—</span>
         <span class="profile-actions">
           <button type="button" class="btn btn-sm btn-outline-primary" id="btnChangeEmail">Change email</button>
+          <a href="#" class="btn btn-sm btn-outline-primary d-none" id="btnChangeEmailOAuth">Change email</a>
         </span>
       </div>
       <div id="inlineFormEmail" class="profile-inline-form d-none">
@@ -406,10 +420,22 @@
                 document.getElementById('btnToggleMainPassword').classList.add('d-none');
                 document.getElementById('btnChangePassword').classList.add('d-none');
                 document.getElementById('btnChangeEmail').classList.add('d-none');
+                
+                var oAuthBtn = document.getElementById('btnChangeEmailOAuth');
+                if (oAuthBtn) {
+                    oAuthBtn.classList.remove('d-none');
+                    oAuthBtn.href = '/auth/relink/' + provider;
+                }
             } else {
                 document.getElementById('profile-password').textContent = data.hasPassword ? '••••••••' : 'Not set';
                 document.getElementById('btnChangePassword').classList.remove('d-none');
                 document.getElementById('btnChangeEmail').classList.remove('d-none');
+                
+                var oAuthBtn = document.getElementById('btnChangeEmailOAuth');
+                if (oAuthBtn) {
+                    oAuthBtn.classList.add('d-none');
+                }
+
                 if (!data.hasPassword) {
                     document.getElementById('btnToggleMainPassword').classList.add('d-none');
                 } else {
