@@ -148,6 +148,10 @@
     /* Logo text */
     .landing-navbar .app-brand-text {
       color: rgba(255, 255, 255, 0.95) !important;
+      transition: color 0.2s ease;
+    }
+    .layout-navbar.navbar-active .landing-navbar .app-brand-text {
+      color: var(--bs-heading-color) !important;
     }
     
     /* Navigation links (Desktop only to prevent white-on-white in mobile drawer) */
@@ -162,14 +166,32 @@
       .landing-navbar .navbar-nav .show > .nav-link {
         color: #cbd5ff !important;
       }
+      
+      /* Active state link color when scrolled */
+      .layout-navbar.navbar-active .landing-navbar .navbar-nav .nav-link {
+        color: var(--bs-heading-color) !important;
+      }
+      .layout-navbar.navbar-active .landing-navbar .navbar-nav .nav-link:hover,
+      .layout-navbar.navbar-active .landing-navbar .navbar-nav .nav-link:focus,
+      .layout-navbar.navbar-active .landing-navbar .navbar-nav .nav-link.active,
+      .layout-navbar.navbar-active .landing-navbar .navbar-nav .show > .nav-link {
+        color: #696cff !important;
+      }
     }
     
     /* Theme switcher icon */
     .landing-navbar #nav-theme {
       color: rgba(255, 255, 255, 0.85) !important;
+      transition: color 0.2s ease;
     }
     .landing-navbar #nav-theme:hover {
       color: #cbd5ff !important;
+    }
+    .layout-navbar.navbar-active .landing-navbar #nav-theme {
+      color: var(--bs-heading-color) !important;
+    }
+    .layout-navbar.navbar-active .landing-navbar #nav-theme:hover {
+      color: #696cff !important;
     }
 
     /* Email text */
@@ -181,6 +203,14 @@
     #navUserWrap .navbar-text:hover,
     .landing-navbar .navbar-text:hover {
       color: #cbd5ff !important;
+    }
+    .layout-navbar.navbar-active #navUserWrap .navbar-text,
+    .layout-navbar.navbar-active .landing-navbar .navbar-text {
+      color: var(--bs-heading-color) !important;
+    }
+    .layout-navbar.navbar-active #navUserWrap .navbar-text:hover,
+    .layout-navbar.navbar-active .landing-navbar .navbar-text:hover {
+      color: #696cff !important;
     }
 
     /* Logout button */
@@ -196,10 +226,24 @@
       background-color: rgba(255, 255, 255, 0.2) !important;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
+    .layout-navbar.navbar-active #navLogoutBtn {
+      color: var(--bs-heading-color) !important;
+      border-color: rgba(0, 0, 0, 0.15) !important;
+      background-color: rgba(0, 0, 0, 0.03) !important;
+    }
+    .layout-navbar.navbar-active #navLogoutBtn:hover {
+      color: #696cff !important;
+      border-color: #696cff !important;
+      background-color: rgba(105, 108, 255, 0.08) !important;
+    }
 
     /* Mobile toggler icon */
     .landing-navbar .navbar-toggler i {
       color: rgba(255, 255, 255, 0.9) !important;
+      transition: color 0.2s ease;
+    }
+    .layout-navbar.navbar-active .landing-navbar .navbar-toggler i {
+      color: var(--bs-heading-color) !important;
     }
   </style>
 </head>
@@ -552,6 +596,25 @@
 
   <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
+  
+  <!-- Interactive scroll listener for taskbar backdrop transition -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var nav = document.querySelector('.layout-navbar');
+      if (nav) {
+        function checkScroll() {
+          if (window.scrollY > 10) {
+            nav.classList.add('navbar-active');
+          } else {
+            nav.classList.remove('navbar-active');
+          }
+        }
+        window.addEventListener('scroll', checkScroll);
+        window.addEventListener('load', checkScroll);
+        checkScroll();
+      }
+    });
+  </script>
 
   <!-- Initialize Cesium map using common script files -->
   <script>
