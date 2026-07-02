@@ -26,19 +26,19 @@
             @php
                 $logoUrl = env('MAIL_LOGO_URL');
                 if (!$logoUrl) {
-                    $logoUrl = asset('assets/img/front-pages/landing-page/3DHub%20logo1_glow_v2.png');
+                    $logoUrl = asset('assets/img/front-pages/landing-page/3DHub%20logo1_glow_v3.png');
                     $requestHost = request()->getSchemeAndHttpHost();
                     if (str_contains($logoUrl, '127.0.0.1') || str_contains($logoUrl, 'localhost') || str_contains($logoUrl, 'dataportal_app')) {
                         if (!str_contains($requestHost, '127.0.0.1') && !str_contains($requestHost, 'localhost') && !str_contains($requestHost, 'dataportal_app')) {
-                            $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub%20logo1_glow_v2.png';
+                            $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub%20logo1_glow_v3.png';
                         } else {
-                            $logoUrl = 'https://dataportal.geovidia.my/assets/img/front-pages/landing-page/3DHub%20logo1_glow_v2.png';
+                            $logoUrl = 'https://dataportal.geovidia.my/assets/img/front-pages/landing-page/3DHub%20logo1_glow_v3.png';
                         }
                     }
                 }
             @endphp
             <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle;">
-            <h1>ðŸ”” New Inquiry Submitted</h1>
+            <h1>Ã°Å¸â€â€ New Inquiry Submitted</h1>
             <p>A client has submitted a new inquiry request</p>
         </div>
         <div class="body">
@@ -56,7 +56,7 @@
                 </tr>
                 <tr>
                     <td>Client Name</td>
-                    <td>{{ $inquiry->user->name ?? 'â€”' }}</td>
+                    <td>{{ $inquiry->user->name ?? 'Ã¢â‚¬â€' }}</td>
                 </tr>
                 <tr>
                     <td>3D Model</td>
@@ -82,10 +82,10 @@
 
             <p>Please log in to the Admin Panel to review this inquiry, preview the area the client has selected on the 3D map, and send a formal quotation with pricing details.</p>
 
-            <a href="{{ url('/admin/inquiries') }}" class="cta-btn">Open Admin Panel â†’</a>
+            <a href="{{ url('/admin/inquiries') }}" class="cta-btn">Open Admin Panel Ã¢â€ â€™</a>
         </div>
         <div class="footer">
-            &copy; {{ date('Y') }} 3DHub Data Portal â€” Admin Notification
+            &copy; {{ date('Y') }} 3DHub Data Portal Ã¢â‚¬â€ Admin Notification
         </div>
     </div>
 </body>
