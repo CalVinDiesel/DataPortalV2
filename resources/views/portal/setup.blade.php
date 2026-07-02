@@ -89,7 +89,7 @@
                   <h6 class="fw-bold mb-2 text-dark">Your Registration Details:</h6>
                   <div class="small text-muted mb-1"><strong>Name:</strong> {{ $user->name }}</div>
                   <div class="small text-muted mb-1"><strong>Email:</strong> {{ $user->email }}</div>
-                  <div class="small text-muted mb-0"><strong>Contact Number:</strong> {{ $user->contact_number }}</div>
+                  <div class="small text-muted mb-0"><strong>Contact Number:</strong> {{ $user->contact_number ?: '—' }}</div>
                 </div>
 
                 <div class="alert alert-warning mb-3">

@@ -148,8 +148,8 @@
                     <input type="email" class="form-control" id="reg_email" name="email" placeholder="e.g. john@example.com" required>
                   </div>
                   <div class="col-md-4">
-                    <label for="reg_contact" class="form-label fw-bold">Contact Number <span class="text-danger">*</span></label>
-                    <input type="tel" class="form-control" id="reg_contact" name="contact_number" placeholder="e.g. +60123456789" required>
+                    <label for="reg_contact" class="form-label fw-bold">Contact Number</label>
+                    <input type="tel" class="form-control" id="reg_contact" name="contact_number" placeholder="e.g. +60123456789">
                   </div>
                   <div class="col-12 mt-3">
                     <button type="submit" class="btn btn-primary" id="btnRegisterUser">

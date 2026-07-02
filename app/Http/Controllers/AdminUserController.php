@@ -23,10 +23,14 @@ class AdminUserController extends Controller
 
     public function register(Request $request)
     {
+        if ($request->has('contact_number') && $request->input('contact_number') === '') {
+            $request->merge(['contact_number' => null]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
-            'contact_number' => 'required|string|min:8|max:20',
+            'contact_number' => 'nullable|string|min:8|max:20',
         ]);
 
         if (User::where('email', $request->email)->exists()) {
