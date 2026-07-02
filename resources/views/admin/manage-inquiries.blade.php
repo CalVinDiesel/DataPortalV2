@@ -740,7 +740,8 @@
 
     if (points.length >= 3) {
       var areaM2 = calculatePolygonArea(points);
-      document.getElementById('dCalculatedArea').textContent = areaM2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m²';
+      var areaKM2 = areaM2 / 1000000;
+      document.getElementById('dCalculatedArea').textContent = areaM2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m² / ' + areaKM2.toFixed(6) + ' km²';
     } else {
       document.getElementById('dCalculatedArea').textContent = '—';
     }

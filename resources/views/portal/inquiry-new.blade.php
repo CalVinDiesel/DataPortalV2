@@ -488,7 +488,7 @@
                 <div id="areaCalcBox" class="mb-4 p-3 rounded d-none" style="background-color: rgba(105, 108, 255, 0.05); border: 1.5px solid rgba(105, 108, 255, 0.2);">
                   <div class="d-flex justify-content-between align-items-center">
                     <span class="small fw-semibold text-muted">Drawn Area:</span>
-                    <strong class="text-primary" id="calcAreaVal" style="font-size: 13.5px;">0.00 m²</strong>
+                    <strong class="text-primary" id="calcAreaVal" style="font-size: 13.5px;">0.00 m² / 0.000000 km²</strong>
                   </div>
                 </div>
 
@@ -716,7 +716,10 @@
           var areaVal = document.getElementById('calcAreaVal');
           
           if (calcBox) calcBox.classList.remove('d-none');
-          if (areaVal) areaVal.textContent = areaM2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m²';
+          if (areaVal) {
+            var areaKM2 = areaM2 / 1000000;
+            areaVal.textContent = areaM2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m² / ' + areaKM2.toFixed(6) + ' km²';
+          }
         };
 
         var rawLocations = @json($mapLocations);
