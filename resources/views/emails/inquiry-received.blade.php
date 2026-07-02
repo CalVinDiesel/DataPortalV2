@@ -29,19 +29,19 @@
             @php
                 $logoUrl = env('MAIL_LOGO_URL');
                 if (!$logoUrl) {
-                    $logoUrl = asset('assets/img/front-pages/landing-page/3DHub%20logo1_glow_v4.png');
+                    $logoUrl = asset('assets/img/front-pages/landing-page/3DHub%20logo1_glow_v5.png');
                     $requestHost = request()->getSchemeAndHttpHost();
                     if (str_contains($logoUrl, '127.0.0.1') || str_contains($logoUrl, 'localhost') || str_contains($logoUrl, 'dataportal_app')) {
                         if (!str_contains($requestHost, '127.0.0.1') && !str_contains($requestHost, 'localhost') && !str_contains($requestHost, 'dataportal_app')) {
-                            $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub%20logo1_glow_v4.png';
+                            $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub%20logo1_glow_v5.png';
                         } else {
-                            $logoUrl = 'https://dataportal.geovidia.my/assets/img/front-pages/landing-page/3DHub%20logo1_glow_v4.png';
+                            $logoUrl = 'https://dataportal.geovidia.my/assets/img/front-pages/landing-page/3DHub%20logo1_glow_v5.png';
                         }
                     }
                 }
             @endphp
             <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle;">
-            <h1>ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Inquiry Request Received</h1>
+            <h1>ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Inquiry Request Received</h1>
             <p>We have received your inquiry request</p>
         </div>
         <div class="body">
@@ -49,7 +49,7 @@
             <p>Thank you for submitting your inquiry request to <strong>3DHub Data Portal</strong>. We have successfully received your request and our team will review it shortly.</p>
 
             <div style="text-align: center;">
-                <div class="badge-id">ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ {{ $inquiry->inquiry_id }}</div>
+                <div class="badge-id">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ {{ $inquiry->inquiry_id }}</div>
             </div>
 
             <table class="info-table">
@@ -75,7 +75,7 @@
                 </tr>
                 <tr>
                     <td>Status</td>
-                    <td><span class="status-badge">ÃƒÂ¢Ã‚ÂÃ‚Â³ Pending Review</span></td>
+                    <td><span class="status-badge">ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â³ Pending Review</span></td>
                 </tr>
             </table>
 
