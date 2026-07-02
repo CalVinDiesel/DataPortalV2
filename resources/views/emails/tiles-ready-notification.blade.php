@@ -34,9 +34,11 @@
 
         /* Steps */
         .steps-list { list-style: none; padding: 0; margin: 16px 0; }
-        .steps-list li { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+        .steps-list li { display: table; width: 100%; padding: 10px 0; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
         .steps-list li:last-child { border-bottom: none; }
-        .step-num { background: #059669; color: #fff; border-radius: 50%; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+        .step-num-wrap { display: table-cell; width: 38px; vertical-align: top; padding-top: 1px; }
+        .step-num { background: #059669; color: #fff; border-radius: 50%; width: 26px; height: 26px; display: inline-block; text-align: center; line-height: 26px; font-weight: 700; font-size: 13px; }
+        .step-text { display: table-cell; vertical-align: middle; font-size: 14px; }
 
         /* CTA Button */
         .cta-wrap { text-align: center; margin: 32px 0 16px; }
@@ -131,20 +133,20 @@
             <p class="section-title">🚀 How to Download</p>
             <ul class="steps-list">
                 <li>
-                    <span class="step-num">1</span>
-                    <div>Log in to the <strong>3DHub Data Portal</strong> at <a href="{{ url('/') }}" style="color:#059669;">{{ url('/') }}</a></div>
+                    <div class="step-num-wrap"><span class="step-num">1</span></div>
+                    <div class="step-text">Log in to the <strong>3DHub Data Portal</strong> at <a href="{{ url('/') }}" style="color:#059669;">{{ url('/') }}</a></div>
                 </li>
                 <li>
-                    <span class="step-num">2</span>
-                    <div>Navigate to <strong>Inquiry → My Inquiry</strong> in the top navigation bar</div>
+                    <div class="step-num-wrap"><span class="step-num">2</span></div>
+                    <div class="step-text">Navigate to <strong>Inquiry → My Inquiry</strong> in the top navigation bar</div>
                 </li>
                 <li>
-                    <span class="step-num">3</span>
-                    <div>Find your order <strong>{{ $inquiry->inquiry_id }}</strong> and click to expand it</div>
+                    <div class="step-num-wrap"><span class="step-num">3</span></div>
+                    <div class="step-text">Find your order <strong>{{ $inquiry->inquiry_id }}</strong> and click to expand it</div>
                 </li>
                 <li>
-                    <span class="step-num">4</span>
-                    <div>Click the <strong>⬇ Download 3D Model Tiles</strong> green button to start the download</div>
+                    <div class="step-num-wrap"><span class="step-num">4</span></div>
+                    <div class="step-text">Click the <strong>⬇ Download 3D Model Tiles</strong> green button to start the download</div>
                 </li>
             </ul>
 
