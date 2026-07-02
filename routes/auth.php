@@ -12,13 +12,13 @@ use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('auth/google', [SocialiteController::class, 'redirectToGoogle'])->name('auth.google');
+Route::get('auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
+
+Route::get('auth/microsoft', [SocialiteController::class, 'redirectToMicrosoft'])->name('auth.microsoft');
+Route::get('auth/microsoft/callback', [SocialiteController::class, 'handleMicrosoftCallback']);
+
 Route::middleware('guest')->group(function () {
-    Route::get('auth/google', [SocialiteController::class, 'redirectToGoogle'])->name('auth.google');
-    Route::get('auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
-
-    Route::get('auth/microsoft', [SocialiteController::class, 'redirectToMicrosoft'])->name('auth.microsoft');
-    Route::get('auth/microsoft/callback', [SocialiteController::class, 'handleMicrosoftCallback']);
-
     // Open registration disabled - redirect to Waitlist Request Access
     Route::get('register', function() {
         return redirect()->route('request_access');
