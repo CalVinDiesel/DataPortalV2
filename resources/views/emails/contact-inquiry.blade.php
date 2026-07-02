@@ -17,18 +17,18 @@
             @php
                 $logoUrl = env('MAIL_LOGO_URL');
                 if (!$logoUrl) {
-                    $logoUrl = asset('assets/img/front-pages/landing-page/3DHub%20logo1.png');
+                    $logoUrl = asset('assets/img/front-pages/landing-page/3DHub%20logo1_glow.png');
                     $requestHost = request()->getSchemeAndHttpHost();
                     if (str_contains($logoUrl, '127.0.0.1') || str_contains($logoUrl, 'localhost') || str_contains($logoUrl, 'dataportal_app')) {
                         if (!str_contains($requestHost, '127.0.0.1') && !str_contains($requestHost, 'localhost') && !str_contains($requestHost, 'dataportal_app')) {
-                            $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub%20logo1.png';
+                            $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub%20logo1_glow.png';
                         } else {
-                            $logoUrl = 'https://dataportal.geovidia.my/assets/img/front-pages/landing-page/3DHub%20logo1.png';
+                            $logoUrl = 'https://dataportal.geovidia.my/assets/img/front-pages/landing-page/3DHub%20logo1_glow.png';
                         }
                     }
                 }
             @endphp
-            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 120px; margin-bottom: 8px; filter: drop-shadow(0 0 12px rgba(0, 224, 255, 0.85)) drop-shadow(0 0 4px rgba(0, 224, 255, 0.6)); -webkit-filter: drop-shadow(0 0 12px rgba(0, 224, 255, 0.85)) drop-shadow(0 0 4px rgba(0, 224, 255, 0.6)); vertical-align: middle;">
+            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 120px; margin-bottom: 8px; vertical-align: middle;">
             <h2 style="margin: 0;">New Contact Inquiry</h2>
         </div>
         <div class="content">
