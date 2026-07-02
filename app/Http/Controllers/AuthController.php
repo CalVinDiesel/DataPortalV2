@@ -98,8 +98,16 @@ class AuthController extends Controller
 
     public function updateEmail(Request $request)
     {
+        $user = $request->user();
+        if ($user->provider && $user->provider !== 'local') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email address management is not available for social login accounts.'
+            ], 400);
+        }
+
         $request->validate([
-            'newEmail' => 'required|email|max:255|unique:portal_users,email,' . $request->user()->id,
+            'newEmail' => 'required|email|max:255|unique:portal_users,email,' . $user->id,
         ]);
 
         $user = $request->user();

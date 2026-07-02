@@ -405,9 +405,11 @@
                 document.getElementById('profile-password').innerHTML = '<span class="text-success fw-medium"><i class="bx bx-shield me-1"></i>Managed securely by ' + providerName + '</span>';
                 document.getElementById('btnToggleMainPassword').classList.add('d-none');
                 document.getElementById('btnChangePassword').classList.add('d-none');
+                document.getElementById('btnChangeEmail').classList.add('d-none');
             } else {
                 document.getElementById('profile-password').textContent = data.hasPassword ? '••••••••' : 'Not set';
                 document.getElementById('btnChangePassword').classList.remove('d-none');
+                document.getElementById('btnChangeEmail').classList.remove('d-none');
                 if (!data.hasPassword) {
                     document.getElementById('btnToggleMainPassword').classList.add('d-none');
                 } else {
