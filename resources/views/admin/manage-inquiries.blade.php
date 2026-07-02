@@ -781,6 +781,13 @@
     freezeOrUnfreezeAdminNotes();
     clearModalAlert();
 
+    // Reset Delete Request button state from loading
+    var deleteBtn = document.getElementById('btnDeleteQuotation');
+    if (deleteBtn) {
+      deleteBtn.disabled = false;
+      deleteBtn.innerHTML = '<i class="bx bx-trash me-1"></i> Delete Request';
+    }
+
     // Dynamic KML download link binding
     var kmlBtn = document.getElementById('btnDownloadKml');
     if (kmlBtn) {
