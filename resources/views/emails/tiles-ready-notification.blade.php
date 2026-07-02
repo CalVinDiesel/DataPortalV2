@@ -72,7 +72,7 @@
                     }
                 }
             @endphp
-            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle; filter: drop-shadow(0px 0px 10px #ffffff) drop-shadow(0px 0px 2px #ffffff);">
+            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle; filter: brightness(2.5) contrast(1.2) drop-shadow(0 0 2px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));">
             <h1>Your 3D Model Tiles Are Ready!</h1>
             <p>Your inquiry order has been fulfilled — download your tiles now</p>
         </div>
