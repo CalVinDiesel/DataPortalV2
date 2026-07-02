@@ -20,13 +20,15 @@
             @php
                 $logoUrl = env('MAIL_LOGO_URL');
                 if (!$logoUrl) {
-                    $logoUrl = asset('assets/img/front-pages/landing-page/3DHub%20logo1_glow_v7.png');
+                    $logoFile = 'assets/img/front-pages/landing-page/3DHub-logo-email.png';
+                    $logoVer  = @filemtime(public_path($logoFile)) ?: time();
+                    $logoUrl  = asset($logoFile) . '?v=' . $logoVer;
                     $requestHost = request()->getSchemeAndHttpHost();
                     if (str_contains($logoUrl, '127.0.0.1') || str_contains($logoUrl, 'localhost') || str_contains($logoUrl, 'dataportal_app')) {
                         if (!str_contains($requestHost, '127.0.0.1') && !str_contains($requestHost, 'localhost') && !str_contains($requestHost, 'dataportal_app')) {
-                            $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub%20logo1_glow_v7.png';
+                            $logoUrl = $requestHost . '/' . $logoFile . '?v=' . $logoVer;
                         } else {
-                            $logoUrl = 'https://dataportal.geovidia.my/assets/img/front-pages/landing-page/3DHub%20logo1_glow_v7.png';
+                            $logoUrl = 'https://dataportal.geovidia.my/' . $logoFile . '?v=' . $logoVer;
                         }
                     }
                 }
