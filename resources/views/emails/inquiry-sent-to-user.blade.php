@@ -58,7 +58,7 @@
                     }
                 }
             @endphp
-            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle;">
+            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle; filter: drop-shadow(0px 0px 10px #ffffff) drop-shadow(0px 0px 2px #ffffff);">
             <h1>💼 Your Quotation is Ready</h1>
             <p>We have processed your inquiry and issued a quotation</p>
         </div>

@@ -39,7 +39,7 @@
                     }
                 }
             @endphp
-            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle;">
+            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle; filter: drop-shadow(0px 0px 10px #ffffff) drop-shadow(0px 0px 2px #ffffff);">
             <h1>🔔 New Inquiry Submitted</h1>
             <p>A client has submitted a new inquiry request</p>
         </div>
