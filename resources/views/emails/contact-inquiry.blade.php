@@ -23,7 +23,7 @@
                         if (!str_contains($requestHost, '127.0.0.1') && !str_contains($requestHost, 'localhost') && !str_contains($requestHost, 'dataportal_app')) {
                             $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub logo1.png';
                         } else {
-                            $logoUrl = 'https://dataportal.temadigital.my/assets/img/front-pages/landing-page/3DHub logo1.png';
+                            $logoUrl = 'https://dataportal.geovidia.my/assets/img/front-pages/landing-page/3DHub logo1.png';
                         }
                     }
                 }
