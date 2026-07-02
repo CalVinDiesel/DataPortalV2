@@ -2,12 +2,12 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Your 3D Model Tiles Are Ready – {{ $inquiry->inquiry_id }}</title>
+    <title>Your 3D Model Tiles Are Ready â€“ {{ $inquiry->inquiry_id }}</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 0; line-height: 1.7; }
         .wrapper { max-width: 640px; margin: 40px auto; }
 
-        /* Header — green gradient matching the download button */
+        /* Header â€” green gradient matching the download button */
         .header { background: #0a2540; border-radius: 14px 14px 0 0; padding: 20px 40px; text-align: center; }
         .header .icon { font-size: 48px; line-height: 1; margin-bottom: 12px; display: block; }
         .header h1 { margin: 0; color: #fff; font-size: 26px; font-weight: 800; letter-spacing: -0.4px; }
@@ -59,20 +59,20 @@
             @php
                 $logoUrl = env('MAIL_LOGO_URL');
                 if (!$logoUrl) {
-                    $logoUrl = asset('assets/img/front-pages/landing-page/3DHub%20logo1_glow.png');
+                    $logoUrl = asset('assets/img/front-pages/landing-page/3DHub%20logo1_glow_v2.png');
                     $requestHost = request()->getSchemeAndHttpHost();
                     if (str_contains($logoUrl, '127.0.0.1') || str_contains($logoUrl, 'localhost') || str_contains($logoUrl, 'dataportal_app')) {
                         if (!str_contains($requestHost, '127.0.0.1') && !str_contains($requestHost, 'localhost') && !str_contains($requestHost, 'dataportal_app')) {
-                            $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub%20logo1_glow.png';
+                            $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub%20logo1_glow_v2.png';
                         } else {
-                            $logoUrl = 'https://dataportal.geovidia.my/assets/img/front-pages/landing-page/3DHub%20logo1_glow.png';
+                            $logoUrl = 'https://dataportal.geovidia.my/assets/img/front-pages/landing-page/3DHub%20logo1_glow_v2.png';
                         }
                     }
                 }
             @endphp
             <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle;">
             <h1>Your 3D Model Tiles Are Ready!</h1>
-            <p>Your inquiry order has been fulfilled — download your tiles now</p>
+            <p>Your inquiry order has been fulfilled â€” download your tiles now</p>
         </div>
 
         <div class="body">
@@ -81,12 +81,12 @@
 
             {{-- Inquiry ID badge --}}
             <div style="text-align: center;">
-                <div class="badge-id">📋 {{ $inquiry->inquiry_id }}</div>
+                <div class="badge-id">ðŸ“‹ {{ $inquiry->inquiry_id }}</div>
             </div>
 
             {{-- Ready highlight box --}}
             <div class="ready-box">
-                <span class="check">✅</span>
+                <span class="check">âœ…</span>
                 <h2>Files Ready for Download</h2>
                 <p>Log in to the portal and visit <strong>My Inquiries</strong> to download your 3D model tiles.</p>
                 @if($inquiry->delivered_at)
@@ -95,7 +95,7 @@
             </div>
 
             {{-- Order summary --}}
-            <p class="section-title">📍 Order Summary</p>
+            <p class="section-title">ðŸ“ Order Summary</p>
             <table class="info-table">
                 <tr>
                     <td>Inquiry ID</td>
@@ -126,7 +126,7 @@
             </table>
 
             {{-- How to download steps --}}
-            <p class="section-title">🚀 How to Download</p>
+            <p class="section-title">ðŸš€ How to Download</p>
             <ul class="steps-list">
                 <li>
                     <span class="step-num">1</span>
@@ -134,7 +134,7 @@
                 </li>
                 <li>
                     <span class="step-num">2</span>
-                    <div>Navigate to <strong>Inquiry → My Inquiry</strong> in the top navigation bar</div>
+                    <div>Navigate to <strong>Inquiry â†’ My Inquiry</strong> in the top navigation bar</div>
                 </li>
                 <li>
                     <span class="step-num">3</span>
@@ -142,18 +142,18 @@
                 </li>
                 <li>
                     <span class="step-num">4</span>
-                    <div>Click the <strong>⬇ Download 3D Model Tiles</strong> green button to start the download</div>
+                    <div>Click the <strong>â¬‡ Download 3D Model Tiles</strong> green button to start the download</div>
                 </li>
             </ul>
 
             {{-- CTA Button --}}
             <div class="cta-wrap">
-                <a href="{{ url('/inquiry/my') }}" class="cta-btn">⬇ Go to My Inquiries</a>
+                <a href="{{ url('/inquiry/my') }}" class="cta-btn">â¬‡ Go to My Inquiries</a>
             </div>
 
             {{-- Notice box --}}
             <div class="notice-box">
-                <strong>📌 Important:</strong> Please keep a backup copy of the downloaded tiles after saving them. If you experience any issues with the download, contact our support team and we will assist you promptly.
+                <strong>ðŸ“Œ Important:</strong> Please keep a backup copy of the downloaded tiles after saving them. If you experience any issues with the download, contact our support team and we will assist you promptly.
             </div>
 
             <p>Thank you for choosing <strong>3DHub</strong>. We hope the 3D model data meets your needs perfectly!</p>
@@ -164,10 +164,10 @@
         <div class="footer">
             <p>This email was sent to <strong>{{ $inquiry->user_email }}</strong> because you placed an inquiry order on 3DHub Data Portal.</p>
             <p style="margin-top: 8px;">
-                <a href="{{ url('/inquiry/my') }}">My Inquiries</a> &nbsp;·&nbsp;
+                <a href="{{ url('/inquiry/my') }}">My Inquiries</a> &nbsp;Â·&nbsp;
                 <a href="{{ url('/#landingContact') }}">Contact Support</a>
             </p>
-            <p style="margin-top: 8px; color: #bbb;">© {{ date('Y') }} 3DHub Data Portal. All rights reserved.</p>
+            <p style="margin-top: 8px; color: #bbb;">Â© {{ date('Y') }} 3DHub Data Portal. All rights reserved.</p>
         </div>
 
     </div>
