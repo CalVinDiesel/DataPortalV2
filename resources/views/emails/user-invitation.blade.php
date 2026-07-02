@@ -142,7 +142,7 @@
 
             <hr style="border: 0; border-top: 1px solid #eeeeee; margin: 30px 0;">
 
-            <p>This invitation link is valid for the next 48 hours.</p>
+            <p>This invitation link is valid for the next 1 week.</p>
             <p>Thank you,<br>The 3DHub Team</p>
         </div>
         <div class="footer">

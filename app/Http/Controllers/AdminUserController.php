@@ -35,7 +35,7 @@ class AdminUserController extends Controller
 
         // Generate activation token
         $token = \Illuminate\Support\Str::random(60);
-        $expiresAt = now()->addHours(48);
+        $expiresAt = now()->addWeek();
 
         $namePrefix = \Illuminate\Support\Str::replace(' ', '', $request->name);
 
@@ -228,7 +228,7 @@ class AdminUserController extends Controller
         // Regenerate activation token and expiry
         $token = \Illuminate\Support\Str::random(60);
         $user->invitation_token = $token;
-        $user->invitation_expires_at = now()->addHours(48);
+        $user->invitation_expires_at = now()->addWeek();
         $user->save();
 
         // Send Email

@@ -29,7 +29,7 @@ class AdminAccessRequestController extends Controller
 
         // Generate invitation token
         $token = Str::random(60);
-        $expiresAt = now()->addHours(48);
+        $expiresAt = now()->addWeek();
 
         // Map to user table
         $namePrefix = Str::replace(' ', '', $accessRequest->name);
