@@ -56,7 +56,7 @@
 
         {{-- Header --}}
         <div class="header">
-            <img src="{{ asset('assets/img/front-pages/landing-page/3DHub logo1.png') }}" alt="3DHub Logo" style="height: 50px; margin-bottom: 15px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
+            <img src="{{ $message->embed(public_path('assets/img/front-pages/landing-page/3DHub logo1.png')) }}" alt="3DHub Logo" style="height: 50px; margin-bottom: 15px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
             <h1>Your 3D Model Tiles Are Ready!</h1>
             <p>Your inquiry order has been fulfilled — download your tiles now</p>
         </div>

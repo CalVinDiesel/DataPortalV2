@@ -14,7 +14,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ asset('assets/img/front-pages/landing-page/3DHub logo1.png') }}" alt="3DHub Logo" style="height: 40px; margin-bottom: 10px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
+            <img src="{{ $message->embed(public_path('assets/img/front-pages/landing-page/3DHub logo1.png')) }}" alt="3DHub Logo" style="height: 40px; margin-bottom: 10px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
             <h2 style="margin: 0;">New Contact Inquiry</h2>
         </div>
         <div class="content">

@@ -23,7 +23,7 @@
 <body>
     <div class="wrapper">
         <div class="header">
-            <img src="{{ asset('assets/img/front-pages/landing-page/3DHub logo1.png') }}" alt="3DHub Logo" style="height: 50px; margin-bottom: 15px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
+            <img src="{{ $message->embed(public_path('assets/img/front-pages/landing-page/3DHub logo1.png')) }}" alt="3DHub Logo" style="height: 50px; margin-bottom: 15px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
             <h1>🔔 New Inquiry Submitted</h1>
             <p>A client has submitted a new inquiry request</p>
         </div>
