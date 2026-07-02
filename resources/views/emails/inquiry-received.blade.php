@@ -6,7 +6,7 @@
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 0; line-height: 1.7; }
         .wrapper { max-width: 620px; margin: 40px auto; }
-        .header { background: #0a2540; border-radius: 14px 14px 0 0; padding: 36px 40px; text-align: center; }
+        .header { background: #0a2540; border-radius: 14px 14px 0 0; padding: 20px 40px; text-align: center; }
         .header h1 { margin: 0; color: #fff; font-size: 24px; font-weight: 700; letter-spacing: -0.3px; }
         .header p { margin: 8px 0 0; color: rgba(255,255,255,0.85); font-size: 14px; }
         .body { background: #ffffff; padding: 40px; }
@@ -40,7 +40,7 @@
                     }
                 }
             @endphp
-            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 100px; margin-bottom: 15px; padding: 15px; background: radial-gradient(circle, rgba(0, 224, 255, 0.35) 0%, rgba(10, 37, 64, 0) 70%); border-radius: 50%; filter: drop-shadow(0 0 12px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 4px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 12px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 4px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
+            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(0, 224, 255, 0.85)) drop-shadow(0 0 5px rgba(0, 224, 255, 0.6)); -webkit-filter: drop-shadow(0 0 15px rgba(0, 224, 255, 0.85)) drop-shadow(0 0 5px rgba(0, 224, 255, 0.6)); vertical-align: middle;">
             <h1>✅ Inquiry Request Received</h1>
             <p>We have received your inquiry request</p>
         </div>

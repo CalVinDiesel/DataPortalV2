@@ -6,7 +6,7 @@
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f5; color: #333; line-height: 1.6; margin: 0; padding: 0; }
         .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); }
-        .header { background-color: #0a2540; color: #ffffff; padding: 30px; text-align: center; }
+        .header { background-color: #0a2540; color: #ffffff; padding: 20px; text-align: center; }
         .header h1 { margin: 0; font-size: 24px; }
         .body-content { padding: 40px 30px; }
         .details-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 20px; margin: 20px 0; }
@@ -31,7 +31,7 @@
                     }
                 }
             @endphp
-            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 100px; margin-bottom: 15px; padding: 15px; background: radial-gradient(circle, rgba(0, 224, 255, 0.35) 0%, rgba(10, 37, 64, 0) 70%); border-radius: 50%; filter: drop-shadow(0 0 12px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 4px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 12px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 4px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
+            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(0, 224, 255, 0.85)) drop-shadow(0 0 5px rgba(0, 224, 255, 0.6)); -webkit-filter: drop-shadow(0 0 15px rgba(0, 224, 255, 0.85)) drop-shadow(0 0 5px rgba(0, 224, 255, 0.6)); vertical-align: middle;">
             <h1 style="margin: 0;">New Access Request</h1>
         </div>
         <div class="body-content">
