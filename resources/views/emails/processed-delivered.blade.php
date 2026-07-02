@@ -4,7 +4,7 @@
     <style>
         body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; }
-        .header { background: #0a2540; color: white; padding: 20px; border-radius: 12px 12px 0 0; text-align: center; }
+        .header { background: #0a2540; color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }
         .content { padding: 30px; }
         .footer { padding: 20px; text-align: center; font-size: 12px; color: #718096; }
         .btn { display: inline-block; padding: 12px 24px; background: #3182ce; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 20px; }
@@ -14,7 +14,7 @@
 <body>
     <div class="container">
         <div class="header">
-            @php
+                        @php
                 $logoUrl = env('MAIL_LOGO_URL');
                 if (!$logoUrl) {
                     $logoFile = 'assets/img/front-pages/landing-page/3DHub-logo-email.png';

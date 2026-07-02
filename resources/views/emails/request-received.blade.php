@@ -6,7 +6,7 @@
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f5; color: #333; line-height: 1.6; margin: 0; padding: 0; }
         .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); }
-        .header { background-color: #0a2540; color: #ffffff; padding: 20px; text-align: center; }
+        .header { background-color: #0a2540; color: #ffffff; padding: 30px; text-align: center; }
         .header h1 { margin: 0; font-size: 24px; }
         .body-content { padding: 40px 30px; }
         .footer { background-color: #f8f9fa; color: #6c757d; text-align: center; padding: 20px; font-size: 13px; }
@@ -15,7 +15,7 @@
 <body>
     <div class="container">
         <div class="header">
-            @php
+                        @php
                 $logoUrl = env('MAIL_LOGO_URL');
                 if (!$logoUrl) {
                     $logoFile = 'assets/img/front-pages/landing-page/3DHub-logo-email.png';

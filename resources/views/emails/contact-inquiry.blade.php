@@ -4,7 +4,7 @@
     <style>
         body { font-family: 'Public Sans', sans-serif; line-height: 1.6; color: #333; }
         .container { width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; }
-        .header { background: #0a2540; color: #fff; padding: 15px 15px; border-radius: 8px 8px 0 0; text-align: center; }
+        .header { background: #0a2540; color: #fff; padding: 25px 15px; border-radius: 8px 8px 0 0; text-align: center; }
         .content { padding: 20px; }
         .field { margin-bottom: 15px; }
         .label { font-weight: bold; color: #696cff; }
@@ -14,7 +14,7 @@
 <body>
     <div class="container">
         <div class="header">
-            @php
+                        @php
                 $logoUrl = env('MAIL_LOGO_URL');
                 if (!$logoUrl) {
                     $logoFile = 'assets/img/front-pages/landing-page/3DHub-logo-email.png';
@@ -30,7 +30,7 @@
                     }
                 }
             @endphp
-            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 120px; margin-bottom: 8px; vertical-align: middle;">
+            <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle;">
             <h2 style="margin: 0;">New Contact Inquiry</h2>
         </div>
         <div class="content">

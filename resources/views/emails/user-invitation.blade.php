@@ -23,7 +23,7 @@
         .header {
             background-color: #0a2540;
             color: #ffffff;
-            padding: 20px;
+            padding: 30px;
             text-align: center;
         }
         .header h1 {
@@ -63,7 +63,7 @@
 <body>
     <div class="container">
         <div class="header">
-            @php
+                        @php
                 $logoUrl = env('MAIL_LOGO_URL');
                 if (!$logoUrl) {
                     $logoFile = 'assets/img/front-pages/landing-page/3DHub-logo-email.png';
