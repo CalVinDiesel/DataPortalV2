@@ -28,9 +28,12 @@
                 if (!$logoUrl) {
                     $logoUrl = asset('assets/img/front-pages/landing-page/3DHub logo1.png');
                     $requestHost = request()->getSchemeAndHttpHost();
-                    if ((str_contains($logoUrl, '127.0.0.1') || str_contains($logoUrl, 'localhost')) && 
-                        !str_contains($requestHost, '127.0.0.1') && !str_contains($requestHost, 'localhost')) {
-                        $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub logo1.png';
+                    if (str_contains($logoUrl, '127.0.0.1') || str_contains($logoUrl, 'localhost') || str_contains($logoUrl, 'dataportal_app')) {
+                        if (!str_contains($requestHost, '127.0.0.1') && !str_contains($requestHost, 'localhost') && !str_contains($requestHost, 'dataportal_app')) {
+                            $logoUrl = $requestHost . '/assets/img/front-pages/landing-page/3DHub logo1.png';
+                        } else {
+                            $logoUrl = 'https://dataportal.temadigital.my/assets/img/front-pages/landing-page/3DHub logo1.png';
+                        }
                     }
                 }
             @endphp
