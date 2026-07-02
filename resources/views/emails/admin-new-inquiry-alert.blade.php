@@ -6,7 +6,7 @@
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 0; line-height: 1.7; }
         .wrapper { max-width: 620px; margin: 40px auto; }
-        .header { background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%); border-radius: 14px 14px 0 0; padding: 32px 40px; text-align: center; }
+        .header { background: #0a2540; border-radius: 14px 14px 0 0; padding: 32px 40px; text-align: center; }
         .header h1 { margin: 0; color: #fff; font-size: 22px; font-weight: 700; }
         .header p { margin: 8px 0 0; color: rgba(255,255,255,0.8); font-size: 13px; }
         .body { background: #ffffff; padding: 36px 40px; }
@@ -23,6 +23,7 @@
 <body>
     <div class="wrapper">
         <div class="header">
+            <img src="{{ asset('assets/img/front-pages/landing-page/3DHub logo1.png') }}" alt="3DHub Logo" style="height: 50px; margin-bottom: 15px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
             <h1>🔔 New Inquiry Submitted</h1>
             <p>A client has submitted a new inquiry request</p>
         </div>

@@ -6,7 +6,7 @@
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 0; line-height: 1.7; }
         .wrapper { max-width: 640px; margin: 40px auto; }
-        .header { background: linear-gradient(135deg, #059669 0%, #0d9488 100%); border-radius: 14px 14px 0 0; padding: 36px 40px; text-align: center; }
+        .header { background: #0a2540; border-radius: 14px 14px 0 0; padding: 36px 40px; text-align: center; }
         .header h1 { margin: 0; color: #fff; font-size: 24px; font-weight: 700; letter-spacing: -0.3px; }
         .header p { margin: 8px 0 0; color: rgba(255,255,255,0.9); font-size: 14px; }
         .body { background: #ffffff; padding: 40px; }
@@ -42,8 +42,9 @@
 <body>
     <div class="wrapper">
         <div class="header">
+            <img src="{{ asset('assets/img/front-pages/landing-page/3DHub logo1.png') }}" alt="3DHub Logo" style="height: 50px; margin-bottom: 15px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
             <h1>💼 Your Quotation is Ready</h1>
-            <p>Please review the details below and proceed with payment</p>
+            <p>We have processed your inquiry and issued a quotation</p>
         </div>
         <div class="body">
             <p>Hello <strong>{{ $inquiry->user->name ?? $inquiry->user_email }}</strong>,</p>

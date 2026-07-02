@@ -6,7 +6,7 @@
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f5; color: #333; line-height: 1.6; margin: 0; padding: 0; }
         .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); }
-        .header { background-color: #696cff; color: #ffffff; padding: 30px; text-align: center; }
+        .header { background-color: #0a2540; color: #ffffff; padding: 30px; text-align: center; }
         .header h1 { margin: 0; font-size: 24px; }
         .body-content { padding: 40px 30px; }
         .footer { background-color: #f8f9fa; color: #6c757d; text-align: center; padding: 20px; font-size: 13px; }
@@ -15,7 +15,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Request Received</h1>
+            <img src="{{ asset('assets/img/front-pages/landing-page/3DHub logo1.png') }}" alt="3DHub Logo" style="height: 50px; margin-bottom: 15px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
+            <h1 style="margin: 0;">Request Received</h1>
         </div>
         <div class="body-content">
             <p>Hello {{ $name }},</p>

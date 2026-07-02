@@ -21,7 +21,7 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
         }
         .header {
-            background-color: #696cff;
+            background-color: #0a2540;
             color: #ffffff;
             padding: 30px;
             text-align: center;
@@ -63,6 +63,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <img src="{{ asset('assets/img/front-pages/landing-page/3DHub logo1.png') }}" alt="3DHub Logo" style="height: 50px; margin-bottom: 15px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
             <h1>Welcome to the Data Portal</h1>
         </div>
         <div class="body-content">

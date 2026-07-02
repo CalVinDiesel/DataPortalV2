@@ -8,7 +8,7 @@
         .wrapper { max-width: 640px; margin: 40px auto; }
 
         /* Header — green gradient matching the download button */
-        .header { background: linear-gradient(135deg, #059669 0%, #0d9488 100%); border-radius: 14px 14px 0 0; padding: 36px 40px; text-align: center; }
+        .header { background: #0a2540; border-radius: 14px 14px 0 0; padding: 36px 40px; text-align: center; }
         .header .icon { font-size: 48px; line-height: 1; margin-bottom: 12px; display: block; }
         .header h1 { margin: 0; color: #fff; font-size: 26px; font-weight: 800; letter-spacing: -0.4px; }
         .header p { margin: 8px 0 0; color: rgba(255,255,255,0.9); font-size: 14px; }
@@ -56,7 +56,7 @@
 
         {{-- Header --}}
         <div class="header">
-            <span class="icon">📦</span>
+            <img src="{{ asset('assets/img/front-pages/landing-page/3DHub logo1.png') }}" alt="3DHub Logo" style="height: 50px; margin-bottom: 15px; filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); -webkit-filter: drop-shadow(0 0 8px rgba(0, 224, 255, 0.75)) drop-shadow(0 0 3px rgba(0, 224, 255, 0.5)); vertical-align: middle;">
             <h1>Your 3D Model Tiles Are Ready!</h1>
             <p>Your inquiry order has been fulfilled — download your tiles now</p>
         </div>
