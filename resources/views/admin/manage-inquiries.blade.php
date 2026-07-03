@@ -129,6 +129,46 @@
     .delivery-file-list .fsize { color: #9ca3af; font-size: 11.5px; }
     .delivery-ready-badge-on  { background:#f0fdf4;color:#065f46;border:1.5px solid #6ee7b7;border-radius:20px;padding:.2rem .8rem;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:.35rem; }
     .delivery-ready-badge-off { background:#f8fafc;color:#9ca3af;border:1.5px solid #e5e7eb;border-radius:20px;padding:.2rem .8rem;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:.35rem; }
+
+    /* === Dark Mode Adjustments === */
+    [data-bs-theme="dark"] .q-table tbody tr {
+      background-color: var(--bs-card-bg) !important;
+      color: var(--bs-body-color) !important;
+    }
+    [data-bs-theme="dark"] .q-table tbody tr:nth-of-type(odd) td {
+      background-color: rgba(255, 255, 255, 0.02) !important;
+    }
+    [data-bs-theme="dark"] .q-table tbody tr:hover td {
+      background-color: rgba(105, 108, 255, 0.08) !important;
+    }
+    [data-bs-theme="dark"] .q-table thead.table-light {
+      border-bottom-color: var(--bs-border-color);
+    }
+    [data-bs-theme="dark"] .q-table thead.table-light th {
+      background-color: var(--bs-tertiary-bg) !important;
+      color: var(--bs-secondary-color) !important;
+    }
+    [data-bs-theme="dark"] .admin-form-section {
+      background: var(--bs-tertiary-bg) !important;
+    }
+    [data-bs-theme="dark"] .detail-section {
+      border-bottom-color: var(--bs-border-color) !important;
+    }
+    [data-bs-theme="dark"] .delivery-file-list li {
+      border-bottom-color: var(--bs-border-color) !important;
+    }
+    [data-bs-theme="dark"] .delivery-file-list .fname {
+      color: var(--bs-heading-color) !important;
+    }
+    [data-bs-theme="dark"] .delivery-ready-badge-off {
+      background: var(--bs-tertiary-bg) !important;
+      border-color: var(--bs-border-color) !important;
+      color: var(--bs-secondary-color) !important;
+    }
+    [data-bs-theme="dark"] .modal-header,
+    [data-bs-theme="dark"] .modal-footer {
+      border-color: var(--bs-border-color) !important;
+    }
   </style>
 </head>
 <body>
@@ -399,10 +439,10 @@
                       </button>
                     </div>
                     <div class="small text-muted mb-2">
-                      Host: <strong><span class="text-dark" id="sftpHostHost">—</span></strong> · Port: <strong><span class="text-dark" id="sftpPortHost">—</span></strong> · User: <strong><span class="text-dark" id="sftpUserHost">—</span></strong>
+                      Host: <strong><span class="text-heading" id="sftpHostHost">—</span></strong> · Port: <strong><span class="text-heading" id="sftpPortHost">—</span></strong> · User: <strong><span class="text-heading" id="sftpUserHost">—</span></strong>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                      <div class="delivery-path-box mb-0 flex-grow-1" id="deliverySftpPathHost" style="background:#f1f5f9; color:#1e293b; border-color:#cbd5e1; font-size:12px; padding:0.5rem 0.75rem;">—</div>
+                      <div class="delivery-path-box mb-0 flex-grow-1" id="deliverySftpPathHost" style="font-size:12px; padding:0.5rem 0.75rem;">—</div>
                       <button type="button" class="btn btn-xs btn-outline-secondary px-2 flex-shrink-0" onclick="copyPathToClipboard('deliverySftpPathHost', this)" title="Copy Path">
                         <i class="bx bx-copy"></i>
                       </button>
