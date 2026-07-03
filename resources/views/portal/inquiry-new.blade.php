@@ -247,6 +247,9 @@
     }
 
     /* ── Scrolled Active Navbar Solid Backdrop Fix ── */
+    .layout-navbar {
+      transition: background-color 0.25s ease-in-out, backdrop-filter 0.25s ease-in-out, -webkit-backdrop-filter 0.25s ease-in-out, border-color 0.25s ease-in-out, box-shadow 0.25s ease-in-out !important;
+    }
     .layout-navbar.navbar-active {
       background-color: var(--bs-body-bg) !important;
       backdrop-filter: blur(10px) saturate(150%) !important;
