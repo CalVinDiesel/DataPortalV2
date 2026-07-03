@@ -478,6 +478,21 @@
     .layout-navbar.navbar-active .landing-navbar .navbar-toggler i {
       color: var(--bs-heading-color) !important;
     }
+
+    /* ── Scrolled Active Navbar Solid Backdrop Fix ── */
+    .layout-navbar.navbar-active {
+      background-color: var(--bs-body-bg) !important;
+      backdrop-filter: blur(10px) saturate(150%) !important;
+      -webkit-backdrop-filter: blur(10px) saturate(150%) !important;
+      border-bottom: 1px solid var(--bs-border-color) !important;
+    }
+    .layout-navbar.navbar-active .landing-navbar {
+      background-color: transparent !important;
+      border-color: transparent !important;
+      margin-block-start: 0 !important;
+      margin-block-end: 0 !important;
+      box-shadow: none !important;
+    }
   </style>
 </head>
 <body>
