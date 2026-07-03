@@ -841,6 +841,21 @@ ob_start(function($output) {
                 <div id="accordionSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#accordionExample">
                   <div class="accordion-body">No! All core portal services — including project uploads, custom inquiries, and model deliveries — are completely <strong>free of charge</strong> for all registered users during this release.</div>
                 </div>
+              <div class="card accordion-item">
+                <h2 class="accordion-header" id="headingSeven">
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionSeven" aria-expanded="false" aria-controls="accordionSeven">How do I update my account profile or contact information?</button>
+                </h2>
+                <div id="accordionSeven" class="accordion-collapse collapse" aria-labelledby="headingSeven" data-bs-parent="#accordionExample">
+                  <div class="accordion-body">After logging in, click on your <strong>profile email</strong> in the top-right corner of the navigation bar and select <strong>My Profile</strong>. From there you can update your display name, phone number, and email address. Password changes are also managed from the profile page. Note that updating your email will require re-verification before the change takes effect.</div>
+                </div>
+              </div>
+              <div class="card accordion-item">
+                <h2 class="accordion-header" id="headingEight">
+                  <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionEight" aria-expanded="false" aria-controls="accordionEight">How do I get access to the 3D Data Portal?</button>
+                </h2>
+                <div id="accordionEight" class="accordion-collapse collapse" aria-labelledby="headingEight" data-bs-parent="#accordionExample">
+                  <div class="accordion-body">Access to the portal is by invitation or request. You can submit a <strong>Request Access</strong> application from the login page by providing your name, organisation, and reason for access. Our admin team will review your request and send you an invitation email with your login credentials once approved. If you already have an invitation, simply use the credentials provided to log in directly.</div>
+                </div>
               </div>
             </div>
             </div>
