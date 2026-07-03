@@ -166,6 +166,36 @@ ob_start(function($output) {
         margin: 0 auto;
         border-radius: 12px;
       }
+      
+      /* Auto adjustment for long emails/menus in navbar to prevent layout break */
+      @media (min-width: 1200px) {
+        .landing-navbar .navbar-nav .nav-link {
+          padding-inline: 0.6rem !important;
+          margin-inline-end: 0.25rem !important;
+          font-size: 0.9rem !important;
+        }
+        #navUserWrap .navbar-text {
+          max-width: 180px;
+          display: inline-block !important;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
+          vertical-align: middle;
+        }
+      }
+      @media (min-width: 1200px) and (max-width: 1399.98px) {
+        .landing-navbar .navbar-nav .nav-link {
+          padding-inline: 0.4rem !important;
+          margin-inline-end: 0.15rem !important;
+          font-size: 0.85rem !important;
+        }
+        .landing-navbar .app-brand-text {
+          font-size: 1.15rem !important;
+        }
+        #navUserWrap .navbar-text {
+          max-width: 130px;
+        }
+      }
     </style>
   
     <!-- CesiumJS 1.138
@@ -371,7 +401,7 @@ ob_start(function($output) {
 
         @auth
         <li id="navUserWrap" class="d-flex align-items-center">
-          <a href="{{ route('profile') }}" class="navbar-text text-body me-3 d-none d-md-inline text-decoration-none fw-medium">{{ Auth::user()->email }}</a>
+          <a href="{{ route('profile') }}" title="{{ Auth::user()->email }}" class="navbar-text text-body me-3 d-none d-md-inline text-decoration-none fw-medium">{{ Auth::user()->email }}</a>
           <form method="POST" action="{{ route('logout') }}" class="d-inline">
               @csrf
               <button type="button" id="navLogoutBtn" class="btn btn-outline-secondary"><span class="tf-icons icon-base bx bx-log-out me-1"></span><span class="d-none d-md-inline">Log out</span></button>
