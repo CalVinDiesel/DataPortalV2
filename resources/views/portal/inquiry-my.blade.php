@@ -65,7 +65,7 @@
 
     /* Expandable list card design */
     .q-card {
-      background: #fff;
+      background: var(--bs-card-bg);
       border: 1px solid var(--bs-border-color);
       border-radius: 12px;
       margin-bottom: 1rem;
