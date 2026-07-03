@@ -366,25 +366,21 @@
       var dbPinIds = new Set();
 
       document.getElementById('addToShowcaseBtn').addEventListener('click', function () {
-        var p1 = fetch(API_BASE + '/api/map-data').then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; });
-        var p2 = fetch('../../data/locations.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
-        
-        Promise.all([p1, p2]).then(function (results) {
-          var mapRows = results[0];
-          var locsJson = results[1];
-          
-          dbPinIds = new Set();
-          var merged = [];
-          var seenIds = new Set();
-          
-          if (Array.isArray(mapRows)) {
-            mapRows.forEach(function (row) {
-              var id = row.mapDataID || row.id;
-              if (id) {
-                dbPinIds.add(id);
-                if (!seenIds.has(id)) {
+        fetch(API_BASE + '/api/map-data')
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .catch(function () { return []; })
+          .then(function (mapRows) {
+            dbPinIds = new Set();
+            allLocations = [];
+            var seenIds = new Set();
+
+            if (Array.isArray(mapRows)) {
+              mapRows.forEach(function (row) {
+                var id = row.mapDataID || row.id;
+                if (id && !seenIds.has(id)) {
                   seenIds.add(id);
-                  merged.push({
+                  dbPinIds.add(id);
+                  allLocations.push({
                     id: id,
                     title: row.title || id,
                     description: row.description || '',
@@ -395,42 +391,21 @@
                     inDb: true
                   });
                 }
-              }
+              });
+            }
+
+            var select = document.getElementById('addMapDataId');
+            select.innerHTML = '<option value="">-- Select a location --</option>';
+            allLocations.forEach(function (loc) {
+              select.appendChild(new Option(loc.title + ' (' + loc.id + ')', loc.id));
             });
-          }
-          
-          if (locsJson && Array.isArray(locsJson.locations)) {
-            locsJson.locations.forEach(function (loc) {
-              var id = loc.id;
-              if (id && !seenIds.has(id)) {
-                seenIds.add(id);
-                merged.push({
-                  id: id,
-                  title: loc.name || id,
-                  description: loc.description || '',
-                  xAxis: loc.coordinates && loc.coordinates.longitude != null ? parseFloat(loc.coordinates.longitude) : 0,
-                  yAxis: loc.coordinates && loc.coordinates.latitude != null ? parseFloat(loc.coordinates.latitude) : 0,
-                  '3dTiles': loc.dataPaths && loc.dataPaths.tileset ? loc.dataPaths.tileset : '',
-                  thumbNailUrl: loc.thumbnailUrl || loc.thumbNailUrl || loc.previewImage || '',
-                  inDb: false
-                });
-              }
-            });
-          }
-          
-          allLocations = merged;
-          
-          var select = document.getElementById('addMapDataId');
-          select.innerHTML = '<option value="">-- Select a location --</option>';
-          merged.forEach(function (loc) {
-            select.appendChild(new Option(loc.title + ' (' + loc.id + ')', loc.id));
+
+            var modal = new bootstrap.Modal(document.getElementById('addModal'));
+            modal.show();
+          })
+          .catch(function () {
+            alert('Could not load map locations.');
           });
-          
-          var modal = new bootstrap.Modal(document.getElementById('addModal'));
-          modal.show();
-        }).catch(function () {
-          alert('Could not load map locations.');
-        });
       });
 
       document.getElementById('addConfirmBtn').addEventListener('click', function () {
@@ -467,38 +442,8 @@
           .finally(function () { confirmBtn.disabled = false; });
         }
 
-        if (selectedLoc && !dbPinIds.has(mapDataId)) {
-          // Auto-provision map pin in the database first
-          fetch(API_BASE + '/api/map-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              mapDataID: selectedLoc.id,
-              title: selectedLoc.title,
-              description: selectedLoc.description,
-              xAxis: selectedLoc.xAxis,
-              yAxis: selectedLoc.yAxis,
-              '3dTiles': selectedLoc['3dTiles'],
-              thumbNailUrl: selectedLoc.thumbNailUrl,
-              is_update: false
-            })
-          })
-          .then(function (r) { return r.json(); })
-          .then(function (data) {
-            if (data.success) {
-              saveToShowcase();
-            } else {
-              alert(data.message || 'Failed to auto-register map pin in database.');
-              confirmBtn.disabled = false;
-            }
-          })
-          .catch(function () {
-            alert('Request failed during map pin auto-provisioning.');
-            confirmBtn.disabled = false;
-          });
-        } else {
-          saveToShowcase();
-        }
+        // All entries in the dropdown are from the database - save directly
+        saveToShowcase();
       });
 
       document.getElementById('deleteConfirmBtn').addEventListener('click', function () {
