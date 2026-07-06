@@ -902,6 +902,7 @@
                       </div>
                     </div>
                 @endif
+                @endif
 
                 <!-- Edit and Delete Actions (Only for pending, reviewed, rejected) -->
                 @if(in_array($inquiry->status, ['pending', 'reviewed', 'rejected']))
