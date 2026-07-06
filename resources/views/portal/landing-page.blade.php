@@ -501,13 +501,27 @@ ob_start(function($output) {
         <div class="row g-4" id="tilesShowcase">
           <!-- Fallback: static tiles loaded from showcases.json; replaced by script when GET /api/showcases returns data -->
           @php
-            $showcasesPath = public_path('data/showcases.json');
             $fallbackShowcases = [];
-            if (file_exists($showcasesPath)) {
-                $json = file_get_contents($showcasesPath);
-                $data = json_decode($json, true);
-                $fallbackShowcases = $data['showcases'] ?? [];
+            try {
+                $fallbackShowcases = \App\Models\Showcase::select(
+                        'showcases.*', 
+                        'map_data.title', 
+                        'map_data.thumbNailUrl', 
+                        'map_data.description'
+                    )
+                    ->leftJoin('map_data', 'showcases.map_data_id', '=', 'map_data.mapDataID')
+                    ->orderBy('showcases.display_order', 'asc')
+                    ->get()
+                    ->toArray();
+            } catch (\Exception $e) {
+                $showcasesPath = public_path('data/showcases.json');
+                if (file_exists($showcasesPath)) {
+                    $json = file_get_contents($showcasesPath);
+                    $data = json_decode($json, true);
+                    $fallbackShowcases = $data['showcases'] ?? [];
+                }
             }
+
             // Settle on premium colors for fallback placeholders
             $getPremiumColor = function($id) {
                 $colors = [
@@ -528,8 +542,8 @@ ob_start(function($output) {
             };
             
             $getDynamicCategory = function($loc) {
-                $tileset = strtolower($loc['3dTiles'] ?? '');
-                $id = strtolower($loc['mapDataID'] ?? '');
+                $tileset = strtolower($loc['3dTiles'] ?? $loc['3d_tiles'] ?? '');
+                $id = strtolower($loc['mapDataID'] ?? $loc['map_data_id'] ?? '');
                 if (str_contains($tileset, 'building_planning') || str_contains($tileset, 'building')) {
                     return 'Building Planning';
                 }
@@ -543,7 +557,7 @@ ob_start(function($output) {
           @if(count($fallbackShowcases) > 0)
             @foreach($fallbackShowcases as $loc)
               @php
-                $id = $loc['mapDataID'] ?? '';
+                $id = $loc['map_data_id'] ?? $loc['mapDataID'] ?? '';
                 $title = $loc['title'] ?? $id;
                 $rawImg = trim($loc['thumbNailUrl'] ?? '');
                 $finalSrc = '';
