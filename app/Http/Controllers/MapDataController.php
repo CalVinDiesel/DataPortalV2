@@ -66,6 +66,12 @@ class MapDataController extends Controller
             }
         }
 
+        // Clean up old thumbnail file if it is being replaced
+        $existingRecord = MapData::where('mapDataID', $request->mapDataID)->first();
+        if ($existingRecord && $existingRecord->thumbNailUrl !== $request->thumbNailUrl) {
+            $this->deleteUploadedFile($existingRecord->thumbNailUrl);
+        }
+
         $data = MapData::updateOrCreate(
             ['mapDataID' => $request->mapDataID],
             [
@@ -86,6 +92,7 @@ class MapDataController extends Controller
     {
         $data = MapData::where('mapDataID', $id)->first();
         if ($data) {
+            $this->deleteUploadedFile($data->thumbNailUrl);
             $data->delete();
             return response()->json(['success' => true, 'message' => 'Map pin deleted successfully']);
         }
@@ -141,5 +148,32 @@ class MapDataController extends Controller
 
         // File genuinely does not exist locally; return empty so frontend uses placeholder
         return '';
+    }
+
+    /**
+     * Delete an old thumbnail file from disk if it is located in the uploads directory.
+     */
+    private function deleteUploadedFile(?string $url)
+    {
+        if (empty($url)) {
+            return;
+        }
+
+        // Extract the path from the URL
+        $path = parse_url($url, PHP_URL_PATH);
+        if (empty($path)) {
+            return;
+        }
+
+        // Clean double slashes and locate public file path
+        $relativePath = ltrim($path, '/');
+        
+        // Only delete if it belongs to public/uploads directory
+        if (str_starts_with($relativePath, 'uploads/')) {
+            $absolutePath = public_path($relativePath);
+            if (file_exists($absolutePath) && is_file($absolutePath)) {
+                @unlink($absolutePath);
+            }
+        }
     }
 }
