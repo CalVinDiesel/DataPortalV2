@@ -245,7 +245,7 @@
                     <i class="bx bx-file me-1"></i> Files / ZIP
                   </button>
                   <button type="button" class="btn btn-sm btn-outline-primary px-3 py-1-5 fw-semibold" onclick="selectUploadType('single', 'folder'); event.stopPropagation();">
-                    <i class="bx bx-folder me-1"></i> Upload Folder
+                    <i class="bx bx-folder me-1"></i> Unzipped Folder
                   </button>
                 </div>
                 <input type="radio" name="cameraConfiguration" id="singleCamera" value="single" class="d-none" required>
@@ -261,7 +261,7 @@
                     <i class="bx bx-file me-1"></i> Files / ZIP
                   </button>
                   <button type="button" class="btn btn-sm btn-outline-primary px-3 py-1-5 fw-semibold" onclick="selectUploadType('multiple', 'folder'); event.stopPropagation();">
-                    <i class="bx bx-folder me-1"></i> Upload Folder
+                    <i class="bx bx-folder me-1"></i> Unzipped Folder
                   </button>
                 </div>
                 <input type="radio" name="cameraConfiguration" id="multipleCamera" value="multiple" class="d-none" required>
