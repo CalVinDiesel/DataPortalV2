@@ -118,8 +118,8 @@
                         <span style="display: inline-block; background-color: #eef2ff; color: #696cff; font-weight: bold; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; font-size: 14px;">1</span>
                     </td>
                     <td>
-                        <strong style="color: #32325d; font-size: 15px;">Submit Custom 3D Inquiries:</strong>
-                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">Navigate to <strong>"New Inquiry"</strong>. Use the interactive drawing tool on the map to highlight your area of interest over any pre-existing 3D models. Select your required output formats (3D Tiles, OSGB, DSM, etc.) and submit your request for our team to package.</p>
+                        <strong style="color: #32325d; font-size: 15px;">Request Custom 3D Data:</strong>
+                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">Go to <strong>"New Inquiry"</strong> and draw an area on the map to request custom 3D formats prepared by our team.</p>
                     </td>
                 </tr>
                 <tr>
@@ -127,8 +127,8 @@
                         <span style="display: inline-block; background-color: #eef2ff; color: #696cff; font-weight: bold; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; font-size: 14px;">2</span>
                     </td>
                     <td>
-                        <strong style="color: #32325d; font-size: 15px;">Upload & Store Your Drone Datasets:</strong>
-                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">Create a new project in your dashboard. You can upload files via shared links from <strong>Google Drive</strong> or <strong>OneDrive</strong> by entering the file size and count, or upload raw photos directly to your dedicated folders via high-speed <strong>SFTP</strong>.</p>
+                        <strong style="color: #32325d; font-size: 15px;">Upload Your Drone Photos:</strong>
+                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">Create a project in your dashboard. You can paste a shared Google Drive/OneDrive folder link, or upload raw images directly via high-speed SFTP.</p>
                     </td>
                 </tr>
                 <tr>
@@ -136,8 +136,8 @@
                         <span style="display: inline-block; background-color: #eef2ff; color: #696cff; font-weight: bold; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; font-size: 14px;">3</span>
                     </td>
                     <td>
-                        <strong style="color: #32325d; font-size: 15px;">Monitor Storage Quotas:</strong>
-                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">Each account includes <strong>100 GB of free storage</strong> to host uploaded datasets. You can review your storage consumption and delete older projects directly in your user dashboard.</p>
+                        <strong style="color: #32325d; font-size: 15px;">Manage Free Storage:</strong>
+                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">You have <strong>100 GB of free storage</strong> to host your drone datasets. Track and manage your usage directly from your user dashboard.</p>
                     </td>
                 </tr>
                 <tr>
@@ -145,8 +145,8 @@
                         <span style="display: inline-block; background-color: #eef2ff; color: #696cff; font-weight: bold; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; font-size: 14px;">4</span>
                     </td>
                     <td>
-                        <strong style="color: #32325d; font-size: 15px;">Explore Pre-existing 3D Models:</strong>
-                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">You can view and inspect all pre-existing 3D models directly on the <strong>Overview Map</strong> and the featured <strong>Showcases</strong>. Click on any highlighted thumbnail locations to load them interactively in 3D without registering or logging in.</p>
+                        <strong style="color: #32325d; font-size: 15px;">Explore Existing 3D Models:</strong>
+                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">Visit the <strong>Overview Map</strong> or homepage showcases to interactively view and inspect pre-existing 3D models directly in your browser.</p>
                     </td>
                 </tr>
             </table>
