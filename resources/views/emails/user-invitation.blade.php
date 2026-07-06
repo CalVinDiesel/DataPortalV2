@@ -83,9 +83,20 @@
             <h1>Welcome to the Data Portal</h1>
         </div>
         <div class="body-content">
-            <p>Hello {{ $name }},</p>
-            <p>Your admin has created an account for you on the 3D Hub Data Portal.</p>
-            <p>Please click the button below to activate your account and choose your preferred login method (Google, Microsoft, or Password).</p>
+            <p>Dear {{ $name }},</p>
+            
+            <p>Temadigital is pleased to announce the launch of our new beta product, 3D Hub, and we would like to invite you to be among a select group of valued participants to experience it firsthand.</p>
+            
+            <p>With 3D Hub, you can transform your drone aerial images into:</p>
+            <ul style="margin-top: 0; margin-bottom: 20px; padding-left: 20px; line-height: 1.6;">
+                <li>3D mesh models</li>
+                <li>Basemaps (true orthophotos)</li>
+                <li>Digital surface models (DSM)</li>
+            </ul>
+            
+            <p>These outputs can be processed within hours and will be shared with you for your own use and evaluation.</p>
+            
+            <p><strong>How to Participate:</strong><br>To begin, please complete your account setup by clicking the button below.</p>
             
             <div class="btn-wrapper">
                 <a href="{{ $setupUrl }}" class="btn">Complete Account Setup</a>
