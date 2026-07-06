@@ -543,8 +543,8 @@ class UploadController extends Controller
             $file = $request->file('thumbnail');
             
             $fileName = 'thumbnail_' . time() . '_' . Str::lower(Str::random(10)) . '.' . Str::lower($file->getClientOriginalExtension());
-            $file->move(public_path('uploads/thumbnails'), $fileName);
-            $url = asset('uploads/thumbnails/' . $fileName);
+            $file->move(public_path('uploads/pins'), $fileName);
+            $url = asset('uploads/pins/' . $fileName);
             
             return response()->json([
                 'success' => true,
