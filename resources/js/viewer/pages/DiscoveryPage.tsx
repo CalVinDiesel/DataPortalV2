@@ -527,9 +527,9 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             return `${acres.toFixed(2)} acres`;
         }
         if (sqMeters > 1000000) {
-            return `${(sqMeters / 1000000).toFixed(2)} km\u00B2`;
+            return `${(sqMeters / 1000000).toFixed(2)} km2`;
         }
-        return `${sqMeters.toFixed(2)} m\u00B2`;
+        return `${sqMeters.toFixed(2)} m2`;
     };
 
     useEffect(() => {
