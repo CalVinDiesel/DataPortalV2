@@ -105,6 +105,10 @@ class MapDataController extends Controller
      */
     private function rewriteThumbnailUrl(?string $url, ?string $mapDataID = null): string
     {
+        if (!empty($url)) {
+            $url = str_replace('/uploads/pins/', '/uploads/thumbnails/', $url);
+        }
+
         // 1. Check explicitly provided URL
         if (!empty($url)) {
             if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
