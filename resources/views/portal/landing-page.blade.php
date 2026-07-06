@@ -1342,7 +1342,7 @@ ob_start(function($output) {
         return 'Kota Kinabalu';
       }
 
-      fetch(API_BASE + '/api/showcases').then(function (r) { return r.json(); }).then(function (rows) {
+      fetch(API_BASE + '/api/showcases?t=' + new Date().getTime()).then(function (r) { return r.json(); }).then(function (rows) {
         if (!Array.isArray(rows) || rows.length === 0) return;
         var html = rows.map(function (r) {
           var id = r.mapDataID || r.map_data_id || r.id || '';
