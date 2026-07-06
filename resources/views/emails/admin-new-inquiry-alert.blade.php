@@ -40,12 +40,12 @@
                 }
             @endphp
             <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle; filter: brightness(2.5) contrast(1.2) drop-shadow(0 0 2px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));">
-            <h1>🔔 New Inquiry Submitted</h1>
-            <p>A client has submitted a new inquiry request</p>
+            <h1>{{ $isUpdate ? '✏️ Inquiry Request Updated' : '🔔 New Inquiry Submitted' }}</h1>
+            <p>{{ $isUpdate ? 'A client has updated their inquiry details' : 'A client has submitted a new inquiry request' }}</p>
         </div>
         <div class="body">
             <p>Hello Admin,</p>
-            <p>A new inquiry request has been submitted and is waiting for your review.</p>
+            <p>{{ $isUpdate ? 'An existing inquiry request has been updated by the client and is waiting for your re-review.' : 'A new inquiry request has been submitted and is waiting for your review.' }}</p>
 
             <div style="text-align: center;">
                 <div class="badge-id">{{ $inquiry->inquiry_id }}</div>

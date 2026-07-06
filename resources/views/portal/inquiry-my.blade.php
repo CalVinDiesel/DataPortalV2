@@ -901,7 +901,18 @@
                         <div style="font-size:12.5px;opacity:.8;">Our team is finalising the delivery package. This page will reflect the download link once it is ready.</div>
                       </div>
                     </div>
-                  @endif
+                @endif
+
+                <!-- Edit and Delete Actions (Only for pending, reviewed, rejected) -->
+                @if(in_array($inquiry->status, ['pending', 'reviewed', 'rejected']))
+                  <div class="d-flex gap-2 mt-4 pt-3 border-top justify-content-end">
+                    <a href="{{ route('inquiry.edit', $inquiry->id) }}" class="btn btn-sm btn-outline-warning fw-bold px-3">
+                      <i class="bx bx-edit-alt me-1"></i> Edit Inquiry
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-danger fw-bold px-3" onclick="confirmDeleteInquiry({{ $inquiry->id }}, '{{ $inquiry->inquiry_id }}')">
+                      <i class="bx bx-trash-alt me-1"></i> Delete Inquiry
+                    </button>
+                  </div>
                 @endif
 
               </div>
@@ -910,6 +921,29 @@
         @endforeach
       @endif
 
+    </div>
+  </div>
+
+  <!-- Delete Inquiry Confirm Modal -->
+  <div class="modal fade" id="deleteInquiryConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header py-3 bg-light">
+          <h5 class="modal-title fw-bold text-dark"><i class="bx bx-error me-2 text-danger"></i> Delete Inquiry Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4 text-center">
+          <i class="bx bx-trash display-4 text-danger mb-3"></i>
+          <h5>Are you sure you want to delete this inquiry request?</h5>
+          <p class="text-muted mb-0 small">This action cannot be undone. Inquiry ID: <strong id="deleteInquiryIdDisplay" class="text-danger">—</strong></p>
+        </div>
+        <div class="modal-footer border-top-0 pt-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger px-4 fw-bold" id="btnConfirmDeleteInquiryAction">
+            <i class="bx bx-trash me-1"></i> Delete
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1179,6 +1213,94 @@
         btn.innerHTML = origHTML;
       });
     }
+
+    // Client-side Delete Inquiry Handlers
+    window.confirmDeleteInquiry = function(id, inquiryId) {
+      document.getElementById('deleteInquiryIdDisplay').textContent = inquiryId;
+      var confirmBtn = document.getElementById('btnConfirmDeleteInquiryAction');
+      
+      // Update dynamic action on the confirm button
+      confirmBtn.onclick = function() {
+        deleteInquiryAjax(id, confirmBtn);
+      };
+      
+      var modal = new bootstrap.Modal(document.getElementById('deleteInquiryConfirmModal'));
+      modal.show();
+    };
+
+    async function deleteInquiryAjax(id, btn) {
+      var origHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting&hellip;';
+      
+      try {
+        var res = await fetch('/inquiry/' + id + '/delete', {
+          method: 'DELETE',
+          headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json'
+          }
+        });
+        
+        var data = await res.json();
+        if (data.success) {
+          // Hide modal
+          var modalEl = document.getElementById('deleteInquiryConfirmModal');
+          var modalInstance = bootstrap.Modal.getInstance(modalEl);
+          if (modalInstance) {
+            modalInstance.hide();
+          }
+          
+          // Animate and remove the card dynamically
+          var card = document.getElementById('qcard-' + id);
+          if (card) {
+            card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.95)';
+            setTimeout(function() {
+              card.remove();
+              // Reload if no inquiries remain, to show empty state
+              if (document.querySelectorAll('.q-card').length === 0) {
+                window.location.reload();
+              }
+            }, 400);
+          }
+        } else {
+          alert(data.message || 'Failed to delete inquiry.');
+          btn.disabled = false;
+          btn.innerHTML = origHTML;
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Server error occurred during deletion.');
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
+      }
+    }
+
+    // Automatically check URL parameters for delete confirm
+    document.addEventListener('DOMContentLoaded', function() {
+      var urlParams = new URLSearchParams(window.location.search);
+      var deleteConfirmId = urlParams.get('delete_confirm');
+      if (deleteConfirmId) {
+        var card = document.getElementById('qcard-' + deleteConfirmId);
+        if (card) {
+          // Open card details first
+          if (typeof toggleCard === 'function') {
+            toggleCard(parseInt(deleteConfirmId));
+          }
+          
+          var inqIdElement = card.querySelector('.purchase-id');
+          var inqIdText = inqIdElement ? inqIdElement.textContent.trim() : 'Inquiry';
+          
+          confirmDeleteInquiry(parseInt(deleteConfirmId), inqIdText);
+          
+          // Clean the URL without reload
+          var cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+        }
+      }
+    });
   </script>
 </body>
 </html>

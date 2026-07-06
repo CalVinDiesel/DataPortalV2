@@ -123,6 +123,138 @@ class InquiryController extends Controller
         return view('portal.inquiry-my', compact('inquiries'));
     }
 
+    /**
+     * Show the form for editing an existing inquiry.
+     */
+    public function edit($id)
+    {
+        $inquiry = Inquiry::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        if (!in_array($inquiry->status, ['pending', 'reviewed', 'rejected'])) {
+            return redirect()->route('inquiry.my')->with('error', 'You can only edit inquiries that are pending review, under review, or rejected.');
+        }
+
+        $mapLocations = MapData::orderBy('title', 'asc')->get();
+
+        $mapLocations->transform(function ($item) {
+            $item->thumbNailUrl = $this->rewriteThumbnailUrl($item->thumbNailUrl, $item->mapDataID);
+            return $item;
+        });
+
+        return view('portal.inquiry-edit', compact('inquiry', 'mapLocations'));
+    }
+
+    /**
+     * Update the specified inquiry in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        $inquiry = Inquiry::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        if (!in_array($inquiry->status, ['pending', 'reviewed', 'rejected'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You can only edit inquiries that are pending review, under review, or rejected.',
+            ], 422);
+        }
+
+        $request->validate([
+            'map_data_id'       => 'required|string|exists:map_data,mapDataID',
+            'output_categories' => 'required|array',
+            'output_categories.*' => 'string',
+            'area_coordinates'  => 'required|array',
+        ]);
+
+        $inquiry->update([
+            'map_data_id'       => $request->map_data_id,
+            'output_categories' => $request->output_categories,
+            'area_coordinates'  => $request->area_coordinates,
+            'status'            => 'pending', // Reset status to pending so admin re-reviews it
+            'rejection_reason'  => null,      // Clear any prior rejection reason
+        ]);
+
+        // Load relations for mail
+        $inquiry->load(['user', 'mapData']);
+
+        // Send confirmation of update to user
+        try {
+            Mail::to($inquiry->user_email)->send(new InquiryReceived($inquiry, true));
+        } catch (\Exception $e) {
+            Log::error('InquiryReceived update mail failed', [
+                'inquiry_id' => $inquiry->inquiry_id,
+                'error'      => $e->getMessage(),
+            ]);
+        }
+
+        // Alert admin about update
+        try {
+            $adminEmail = env('SUPER_ADMIN_EMAIL', 'mosestiquan23@gmail.com');
+            Mail::to($adminEmail)->send(new AdminNewInquiryAlert($inquiry, true));
+        } catch (\Exception $e) {
+            Log::error('AdminNewInquiryAlert update mail failed', [
+                'inquiry_id' => $inquiry->inquiry_id,
+                'error'      => $e->getMessage(),
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Inquiry request updated successfully.',
+            'data'    => $inquiry,
+        ]);
+    }
+
+    /**
+     * Client: delete their own inquiry request.
+     */
+    public function destroy($id)
+    {
+        $inquiry = Inquiry::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        if (!in_array($inquiry->status, ['pending', 'reviewed', 'rejected'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You can only delete inquiries that are pending review, under review, or rejected.',
+            ], 422);
+        }
+
+        $relativePath = $inquiry->getSftpDeliveryRelativePath();
+        $absolutePath = $inquiry->getSftpDeliveryAbsolutePath();
+
+        try {
+            if (is_dir($absolutePath)) {
+                $this->deleteLocalDirRecursive($absolutePath);
+                Log::info("destroy (client): Deleted local folder: " . $absolutePath);
+            }
+        } catch (\Exception $e) {
+            Log::warning("destroy (client): Failed to delete local folder: " . $e->getMessage());
+        }
+
+        try {
+            $disk = Storage::disk('sftp_delivery');
+            if ($disk->exists($relativePath)) {
+                $disk->deleteDirectory($relativePath);
+                Log::info("destroy (client): Deleted SFTP folder: " . $relativePath);
+            }
+        } catch (\Exception $e) {
+            Log::warning("destroy (client): Failed to delete SFTP folder: " . $relativePath);
+        }
+
+        $inquiryIdStr = $inquiry->inquiry_id;
+        $inquiry->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Inquiry request ' . $inquiryIdStr . ' deleted successfully.',
+        ]);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // ADMIN METHODS
     // ─────────────────────────────────────────────────────────────────────────

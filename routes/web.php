@@ -118,6 +118,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/inquiry/new', [\App\Http\Controllers\InquiryController::class, 'create'])->name('inquiry.new');
     Route::post('/inquiry/store', [\App\Http\Controllers\InquiryController::class, 'store'])->name('inquiry.store');
     Route::get('/inquiry/my', [\App\Http\Controllers\InquiryController::class, 'my'])->name('inquiry.my');
+    Route::get('/inquiry/{id}/edit', [\App\Http\Controllers\InquiryController::class, 'edit'])->name('inquiry.edit');
+    Route::post('/inquiry/{id}/update', [\App\Http\Controllers\InquiryController::class, 'update'])->name('inquiry.update');
+    Route::delete('/inquiry/{id}/delete', [\App\Http\Controllers\InquiryController::class, 'destroy'])->name('inquiry.destroy');
     Route::get('/api/inquiry/{id}/download', [\App\Http\Controllers\InquiryController::class, 'clientDownload'])->name('inquiry.download');
     Route::get('/api/inquiry/{id}/quotation-pdf', [\App\Http\Controllers\InquiryController::class, 'clientDownloadQuotationPdf'])->name('inquiry.pdf');
     Route::post('/api/inquiry/{id}/payment-receipt', [\App\Http\Controllers\InquiryController::class, 'clientUploadReceipt'])->name('inquiry.upload_receipt');

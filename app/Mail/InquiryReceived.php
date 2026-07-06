@@ -14,16 +14,22 @@ class InquiryReceived extends Mailable
     use Queueable, SerializesModels;
 
     public Inquiry $inquiry;
+    public bool $isUpdate;
 
-    public function __construct(Inquiry $inquiry)
+    public function __construct(Inquiry $inquiry, bool $isUpdate = false)
     {
         $this->inquiry = $inquiry;
+        $this->isUpdate = $isUpdate;
     }
 
     public function envelope(): Envelope
     {
+        $subject = $this->isUpdate
+            ? '[3DHub] Inquiry Request Updated - ' . $this->inquiry->inquiry_id
+            : '[3DHub] Inquiry Request Received - ' . $this->inquiry->inquiry_id;
+
         return new Envelope(
-            subject: '[3DHub] Inquiry Request Received - ' . $this->inquiry->inquiry_id,
+            subject: $subject,
         );
     }
 
