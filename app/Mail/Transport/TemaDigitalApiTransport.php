@@ -35,8 +35,8 @@ class TemaDigitalApiTransport extends AbstractTransport
         $apiKey = env('MAIL_API_KEY', 'temadigital');
         $apiUrl = env('MAIL_API_URL', 'https://mail-api.temadigital.my/send-email');
         
-        // 👮 Default Sender details required by manager
-        $fromAddress = 'noreply.temadigital@gmail.com';
+        // 👮 Sender details dynamically loaded from env configuration
+        $fromAddress = env('MAIL_FROM_ADDRESS', 'noreply.temadigital@gmail.com');
         $fromName = env('MAIL_FROM_NAME', '3D Hub Data Portal');
 
         // Extract custom sender name from Laravel mailer if it exists
