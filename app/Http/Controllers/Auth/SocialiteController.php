@@ -86,6 +86,12 @@ class SocialiteController extends Controller
             // Re-login as the updated user details
             Auth::login($user);
 
+            try {
+                \App\Services\SFTPGoService::syncFromSFTPGo($user);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to sync from SFTPGo on social login: " . $e->getMessage());
+            }
+
             return redirect('/profile')->with('success', "Your account email has been successfully updated to {$newEmail} and linked to your {$provider} account.");
         }
 
@@ -205,6 +211,13 @@ class SocialiteController extends Controller
         }
 
         Auth::login($user);
+        
+        try {
+            \App\Services\SFTPGoService::syncFromSFTPGo($user);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to sync from SFTPGo on social login: " . $e->getMessage());
+        }
+
         request()->session()->regenerate();
 
         if ($user->role === 'admin' || $user->role === 'superadmin') {

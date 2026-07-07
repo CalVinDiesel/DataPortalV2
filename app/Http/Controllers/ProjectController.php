@@ -107,9 +107,10 @@ class ProjectController extends Controller
         // Enforce role permission: Only trusted users and admins can use SFTP.
         // 🚀 STORAGE QUOTA CHECK (v310)
         if (ClientUpload::hasExceededStorageLimit(Auth::user()->email)) {
+            $limitGb = ClientUpload::getStorageLimitBytes(Auth::user()->email) / (1024 * 1024 * 1024);
             return response()->json([
                 'success' => false,
-                'message' => 'Storage Quota Exceeded. You have already used 100% of your 100 GB limit. Please delete old projects to free up space.'
+                'message' => 'Storage Quota Exceeded. You have already used 100% of your ' . $limitGb . ' GB limit. Please delete old projects to free up space.'
             ], 422);
         }
 
@@ -298,9 +299,10 @@ class ProjectController extends Controller
         $gdriveSize = intval($request->googleDriveSize ?? 0);
         // 🚀 STORAGE QUOTA CHECK (v310)
         if (ClientUpload::hasExceededStorageLimit(Auth::user()->email, $gdriveSize)) {
+            $limitGb = ClientUpload::getStorageLimitBytes(Auth::user()->email) / (1024 * 1024 * 1024);
             return response()->json([
                 'success' => false,
-                'message' => 'Storage Quota Exceeded. Registering this project would exceed your 100 GB limit. Please delete old projects to free up space.'
+                'message' => 'Storage Quota Exceeded. Registering this project would exceed your ' . $limitGb . ' GB limit. Please delete old projects to free up space.'
             ], 422);
         }
 
@@ -383,9 +385,10 @@ class ProjectController extends Controller
         $onedriveSize = intval($request->onedriveSize ?? 0);
         // 🚀 STORAGE QUOTA CHECK (v310)
         if (ClientUpload::hasExceededStorageLimit(Auth::user()->email, $onedriveSize)) {
+            $limitGb = ClientUpload::getStorageLimitBytes(Auth::user()->email) / (1024 * 1024 * 1024);
             return response()->json([
                 'success' => false,
-                'message' => 'Storage Quota Exceeded. Registering this project would exceed your 100 GB limit. Please delete old projects to free up space.'
+                'message' => 'Storage Quota Exceeded. Registering this project would exceed your ' . $limitGb . ' GB limit. Please delete old projects to free up space.'
             ], 422);
         }
 
@@ -1245,7 +1248,7 @@ class ProjectController extends Controller
         }
 
         $used = ClientUpload::calculateUserStorageUsed($user->email);
-        $limit = ClientUpload::getStorageLimitBytes();
+        $limit = ClientUpload::getStorageLimitBytes($user->email);
 
         return response()->json([
             'success' => true,

@@ -859,7 +859,7 @@ ob_start(function($output) {
                   <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionThree" aria-expanded="false" aria-controls="accordionThree">What upload limits and storage quotas apply?</button>
                 </h2>
                 <div id="accordionThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
-                  <div class="accordion-body">Each registered user is allocated a <strong>100 GB storage limit</strong> to host their uploaded datasets. Before uploading or adding cloud links, the portal dynamically validates your remaining quota. You can delete older projects in your dashboard to free up space.</div>
+                  <div class="accordion-body">Each registered user is allocated a <strong>{{ \App\Models\ClientUpload::getStorageLimitBytes() / (1024 * 1024 * 1024) }} GB storage limit</strong> to host their uploaded datasets. Before uploading or adding cloud links, the portal dynamically validates your remaining quota. You can delete older projects in your dashboard to free up space.</div>
                 </div>
               </div>
               <div class="card accordion-item">

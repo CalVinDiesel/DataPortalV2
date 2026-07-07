@@ -137,7 +137,7 @@
                     </td>
                     <td>
                         <strong style="color: #32325d; font-size: 15px;">Manage Free Storage:</strong>
-                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">You have <strong>100 GB of free storage</strong> to host your drone datasets. Track and manage your usage directly from your user dashboard.</p>
+                        <p style="margin: 4px 0 12px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">You have <strong>{{ \App\Models\ClientUpload::getStorageLimitBytes() / (1024 * 1024 * 1024) }} GB of free storage</strong> to host your drone datasets. Track and manage your usage directly from your user dashboard.</p>
                     </td>
                 </tr>
                 <tr>

@@ -261,6 +261,25 @@
   <!-- Main Content -->
   <div class="container mt-4 mb-5 pb-5">
     
+    <!-- Quota Exceeded Banner -->
+    <div id="quotaWarningBanner" class="alert alert-danger d-none d-flex align-items-center mb-4 p-3 shadow-sm" role="alert" style="border-radius: 8px;">
+      <i class="bx bx-error-alt me-2 fs-3 text-danger"></i>
+      <div>
+        <h6 class="alert-heading mb-1 fw-bold text-danger">Storage Full!</h6>
+        <span style="font-size: 0.85rem;">You have exceeded your total storage limit. New project creation and raw file uploads are currently blocked. Please delete past completed projects to free up space.</span>
+      </div>
+    </div>
+
+    <!-- Session Flash Error -->
+    @if(session('error'))
+    <div class="alert alert-danger d-flex align-items-center mb-4 p-3 shadow-sm" role="alert" style="border-radius: 8px;">
+      <i class="bx bx-error-alt me-2 fs-3 text-danger"></i>
+      <div>
+        <span style="font-size: 0.85rem;">{{ session('error') }}</span>
+      </div>
+    </div>
+    @endif
+    
     <!-- Dashboard Stats Row -->
     <div class="row g-4 mb-5">
       <!-- Storage Quota -->
@@ -272,7 +291,7 @@
           </div>
           <div class="d-flex justify-content-between text-muted small mb-2">
             <span id="storageUsedText">0 GB Used</span>
-            <span>100 GB Total</span>
+            <span id="storageTotalText">100 GB Total</span>
           </div>
           <div class="progress" style="height: 10px; border-radius: 10px;">
             <div id="storageProgressBar" class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
@@ -1311,21 +1330,50 @@
       }
     }
 
-    function updateStorageUI(totalBytes) {
-      const gb = (totalBytes / (1024 * 1024 * 1024)).toFixed(1);
-      const percent = Math.min((gb / 100) * 100, 100).toFixed(1);
-      
-      const usedText = document.getElementById('storageUsedText');
-      const progressBar = document.getElementById('storageProgressBar');
-      const statusText = document.getElementById('storageStatusText');
-      
-      if (usedText) usedText.textContent = gb + ' GB Used';
-      if (progressBar) {
-        progressBar.style.width = percent + '%';
-        progressBar.setAttribute('aria-valuenow', percent);
-      }
-      if (statusText) {
-        statusText.innerHTML = `You have used ${percent}% of your available storage.`;
+    async function updateStorageUI(totalBytes) {
+      try {
+        const response = await fetch('/api/user/storage-quota');
+        const data = await response.json();
+        
+        if (data.success) {
+          const usedGb = (data.used_bytes / (1024 * 1024 * 1024)).toFixed(1);
+          const limitGb = (data.limit_bytes / (1024 * 1024 * 1024)).toFixed(0);
+          const percent = data.percent_used.toFixed(1);
+          
+          const usedText = document.getElementById('storageUsedText');
+          const totalText = document.getElementById('storageTotalText');
+          const progressBar = document.getElementById('storageProgressBar');
+          const statusText = document.getElementById('storageStatusText');
+          
+          if (usedText) usedText.textContent = usedGb + ' GB Used';
+          if (totalText) totalText.textContent = limitGb + ' GB Total';
+          if (progressBar) {
+            progressBar.style.width = percent + '%';
+            progressBar.setAttribute('aria-valuenow', percent);
+            
+            if (data.has_exceeded) {
+              progressBar.className = 'progress-bar bg-danger';
+            } else if (parseFloat(percent) > 85) {
+              progressBar.className = 'progress-bar bg-warning';
+            } else {
+              progressBar.className = 'progress-bar bg-primary';
+            }
+          }
+          if (statusText) {
+            statusText.innerHTML = `You have used ${percent}% of your available storage.`;
+          }
+          
+          const bannerContainer = document.getElementById('quotaWarningBanner');
+          if (bannerContainer) {
+            if (data.has_exceeded) {
+              bannerContainer.classList.remove('d-none');
+            } else {
+              bannerContainer.classList.add('d-none');
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load dynamic storage quota:", err);
       }
     }
   </script>

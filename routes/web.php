@@ -94,14 +94,23 @@ Route::get('/payment', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/create-project', function () {
+        if (\App\Models\ClientUpload::hasExceededStorageLimit(auth()->user()->email)) {
+            return redirect()->route('my_uploads')->with('error', 'Storage Quota Exceeded. You cannot create a new project because your storage is full. Please delete past projects to free up space.');
+        }
         return view('portal.create-project');
     })->name('create_project');
 
     Route::get('/upload-data', function () {
+        if (\App\Models\ClientUpload::hasExceededStorageLimit(auth()->user()->email)) {
+            return redirect()->route('my_uploads')->with('error', 'Storage Quota Exceeded. You cannot upload files because your storage is full. Please delete past projects to free up space.');
+        }
         return view('portal.upload-data');
     })->name('upload_data');
 
     Route::get('/upload-sftp', function (Request $request) {
+        if (\App\Models\ClientUpload::hasExceededStorageLimit($request->user()->email)) {
+            return redirect()->route('my_uploads')->with('error', 'Storage Quota Exceeded. You cannot use SFTP upload because your storage is full. Please delete past projects to free up space.');
+        }
         $role = $request->user()->role;
         if (!in_array($role, ['trusted', 'admin'])) {
             return redirect()->route('create_project')->with('error', 'SFTP upload is only available for trusted users.');
@@ -111,6 +120,9 @@ Route::middleware('auth')->group(function () {
 
     // 🚀 CLOUD HUB (v265): Unified redirect for GDrive and OneDrive
     Route::get('/upload-cloud', function () {
+        if (\App\Models\ClientUpload::hasExceededStorageLimit(auth()->user()->email)) {
+            return redirect()->route('my_uploads')->with('error', 'Storage Quota Exceeded. You cannot use Cloud upload because your storage is full. Please delete past projects to free up space.');
+        }
         return view('portal.upload-cloud');
     })->name('upload_cloud');
 
@@ -142,6 +154,7 @@ Route::middleware('auth')->group(function () {
 
     // 🚀 SESSION-SYNC (v271): Moved from api.php to ensure stable session access for AJAX
     Route::get('/api/user/my-uploads', [ProjectController::class, 'index']);
+    Route::get('/api/user/storage-quota', [ProjectController::class, 'getStorageQuota']);
     Route::post('/api/user/my-uploads/{id}/confirm-received', [ProjectController::class, 'confirmReceived']);
     Route::post('/api/user/my-uploads/{id}/sync-metadata', [ProjectController::class, 'syncSftpMetadata']);
     Route::post('/api/user/my-uploads/{id}/sync-gdrive', [ProjectController::class, 'syncGoogleDriveMetadata']);

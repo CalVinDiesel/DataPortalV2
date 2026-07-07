@@ -271,7 +271,7 @@ class UploadController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Storage Quota Exceeded. Finalizing this upload (' . round($totalSizeBytes / (1024 * 1024 * 1024), 2) . ' GB) would exceed your 100 GB limit. Please delete old projects to free up space.'
+                    'message' => 'Storage Quota Exceeded. Finalizing this upload (' . round($totalSizeBytes / (1024 * 1024 * 1024), 2) . ' GB) would exceed your ' . (\App\Models\ClientUpload::getStorageLimitBytes($email) / (1024 * 1024 * 1024)) . ' GB limit. Please delete old projects to free up space.'
                 ], 422);
             }
 

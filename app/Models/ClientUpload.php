@@ -70,12 +70,25 @@ class ClientUpload extends Model
             ->sum('total_size_bytes');
     }
 
-    /**
-     * Get the maximum storage limit in bytes (100 GB).
-     */
-    public static function getStorageLimitBytes()
+    public static function getStorageLimitBytes($email = null)
     {
-        return 107374182400; // 100 GB
+        $defaultPortalLimitGb = (float) env('DATA_PORTAL_STORAGE_LIMIT_GB', 10);
+        $defaultPortalLimitBytes = (int) ($defaultPortalLimitGb * 1024 * 1024 * 1024);
+
+        if ($email) {
+            $user = \App\Models\User::where('email', $email)->first();
+            if ($user && isset($user->sftp_quota_size) && $user->sftp_quota_size > 0) {
+                $defaultSftpLimitGb = (float) env('SFTPGO_STORAGE_LIMIT_GB', 5);
+                $defaultSftpLimitBytes = (int) ($defaultSftpLimitGb * 1024 * 1024 * 1024);
+                
+                if ($user->sftp_quota_size !== $defaultSftpLimitBytes) {
+                    $ratio = $defaultSftpLimitBytes > 0 ? ($defaultPortalLimitBytes / $defaultSftpLimitBytes) : 2.0;
+                    return (int) ($user->sftp_quota_size * $ratio);
+                }
+            }
+        }
+        
+        return $defaultPortalLimitBytes;
     }
 
     /**
@@ -84,7 +97,7 @@ class ClientUpload extends Model
     public static function hasExceededStorageLimit($email, $additionalBytes = 0)
     {
         $used = self::calculateUserStorageUsed($email);
-        return ($used + $additionalBytes) > self::getStorageLimitBytes();
+        return ($used + $additionalBytes) > self::getStorageLimitBytes($email);
     }
 }
 

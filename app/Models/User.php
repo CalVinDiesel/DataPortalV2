@@ -76,7 +76,7 @@ class User extends Authenticatable
         'provider', 'stripe_customer_id', 'is_active', 'invitation_token', 
         'invitation_expires_at', 'oauth_id', 'sftp_username', 'sftp_password',
         'viewable_password', 'previous_role', 'status', 'login_method', 'provider_id',
-        'home_dir'
+        'home_dir', 'sftp_quota_size'
     ];
 
     protected $hidden = [

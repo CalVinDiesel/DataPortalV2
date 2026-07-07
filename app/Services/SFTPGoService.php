@@ -102,10 +102,25 @@ class SFTPGoService
         $sftpUser = self::getUserFromSFTPGo($user->sftp_username);
         if ($sftpUser) {
             $updates = [];
-            // Sync home_dir
-            if (isset($sftpUser['home_dir']) && $sftpUser['home_dir'] !== $user->home_dir) {
-                $updates['home_dir'] = $sftpUser['home_dir'];
+            
+            // Sync home_dir (with path normalization)
+            if (isset($sftpUser['home_dir'])) {
+                $sftpHome = rtrim(str_replace('\\', '/', $sftpUser['home_dir']), '/');
+                $localHome = rtrim(str_replace('\\', '/', $user->home_dir ?? ''), '/');
+                if ($sftpHome !== $localHome) {
+                    $updates['home_dir'] = $sftpUser['home_dir'];
+                }
             }
+
+            // Sync quota_size
+            if (isset($sftpUser['quota_size'])) {
+                $sftpQuota = (int)$sftpUser['quota_size'];
+                $localQuota = $user->sftp_quota_size ? (int)$user->sftp_quota_size : null;
+                if ($sftpQuota !== $localQuota) {
+                    $updates['sftp_quota_size'] = $sftpQuota;
+                }
+            }
+
             // Sync status (SFTPGo: 1 = active, 0 = disabled)
             if (isset($sftpUser['status'])) {
                 $sftpIsActive = $sftpUser['status'] === 1;
@@ -167,8 +182,29 @@ class SFTPGoService
             return;
         }
 
-        // Determine home directory
-        if (empty($user->home_dir)) {
+        // 🚀 FETCH EXISTING SFTPGO USER STATE FIRST (v320)
+        $existingData = null;
+        try {
+            $response = $client->get('/users/' . urlencode($user->sftp_username));
+            if ($response->successful()) {
+                $existingData = json_decode($response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error("SFTPGo API: Error checking existing user: " . $e->getMessage());
+        }
+
+        // Determine home directory dynamically, preferring existing SFTPGo setting, then database, then default
+        if ($existingData && !empty($existingData->home_dir)) {
+            $homeDir = $existingData->home_dir;
+            if ($user->home_dir !== $homeDir) {
+                \Illuminate\Support\Facades\DB::table('portal_users')
+                    ->where('id', $user->id)
+                    ->update(['home_dir' => $homeDir]);
+                $user->home_dir = $homeDir;
+            }
+        } elseif (!empty($user->home_dir)) {
+            $homeDir = $user->home_dir;
+        } else {
             // Construct default home directory path
             $sftpRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', env('SYSTEM_SSH_STORAGE_ROOT', '/home/tiquan')), '/');
             if (in_array($user->role, ['admin', 'superadmin'])) {
@@ -182,8 +218,6 @@ class SFTPGoService
                 ->where('id', $user->id)
                 ->update(['home_dir' => $homeDir]);
             $user->home_dir = $homeDir;
-        } else {
-            $homeDir = $user->home_dir;
         }
 
         // AUTO-CREATE PHYSICAL SFTP HOME DIRECTORY ON SYNC
@@ -214,20 +248,21 @@ class SFTPGoService
         $isAdmin = in_array($user->role, ['admin', 'superadmin']);
         $defaultPermissions = $isAdmin ? ['*'] : ['list', 'download', 'upload', 'overwrite', 'create_dirs', 'rename', 'chtimes'];
 
-        try {
-            // Check if user already exists
-            $response = $client->get('/users/' . urlencode($user->sftp_username));
+        $sftpQuotaGb = (float) env('SFTPGO_STORAGE_LIMIT_GB', 5);
+        $defaultQuotaBytes = (int) ($sftpQuotaGb * 1024 * 1024 * 1024);
 
-            if ($response->successful()) {
+        try {
+            if ($existingData) {
                 // Update User
                 Log::info("SFTPGo API: Syncing update for user {$user->sftp_username}");
-                $existingData = json_decode($response->body()) ?: new \stdClass();
                 
                 // Preserve existing attributes set by the SFTPGo administrator
                 $uid = isset($existingData->uid) ? $existingData->uid : 1000;
                 $gid = isset($existingData->gid) ? $existingData->gid : 1000;
                 $maxSessions = isset($existingData->max_sessions) ? $existingData->max_sessions : 0;
-                $quotaSize = isset($existingData->quota_size) ? $existingData->quota_size : 0;
+                $quotaSize = isset($existingData->quota_size) && $existingData->quota_size > 0 
+                    ? $existingData->quota_size 
+                    : ($user->sftp_quota_size ?: $defaultQuotaBytes);
                 $quotaFiles = isset($existingData->quota_files) ? $existingData->quota_files : 0;
                 $perms = isset($existingData->permissions) ? (array) $existingData->permissions : ['/' => $defaultPermissions];
 
@@ -284,7 +319,7 @@ class SFTPGoService
                 } else {
                     Log::info("SFTPGo API: User {$user->sftp_username} updated successfully.");
                 }
-            } elseif ($response->status() === 404) {
+            } else {
                 // Create User
                 Log::info("SFTPGo API: Creating new user {$user->sftp_username}");
                 
@@ -305,7 +340,7 @@ class SFTPGoService
                         '/' => $defaultPermissions
                     ],
                     'max_sessions' => 0,
-                    'quota_size' => 0,
+                    'quota_size' => $user->sftp_quota_size ?: $defaultQuotaBytes,
                     'quota_files' => 0,
                 ];
 
@@ -315,8 +350,6 @@ class SFTPGoService
                 } else {
                     Log::info("SFTPGo API: User {$user->sftp_username} created successfully.");
                 }
-            } else {
-                Log::error("SFTPGo API: Error checking user {$user->sftp_username}. Status: " . $response->status() . " Response: " . $response->body());
             }
         } catch (\Exception $e) {
             Log::error("SFTPGo API Exception during sync for {$user->sftp_username}: " . $e->getMessage());
