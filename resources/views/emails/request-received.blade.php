@@ -26,7 +26,7 @@
                         if (!str_contains($requestHost, '127.0.0.1') && !str_contains($requestHost, 'localhost') && !str_contains($requestHost, 'dataportal_app')) {
                             $logoUrl = $requestHost . '/' . $logoFile . '?v=' . $logoVer;
                         } else {
-                            $logoUrl = 'https://dataportal.geovidia.my/' . $logoFile . '?v=' . $logoVer;
+                            $logoUrl = rtrim(config('app.url'), '/') . '/' . $logoFile . '?v=' . $logoVer;
                         }
                     }
                 }
