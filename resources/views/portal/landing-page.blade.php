@@ -885,6 +885,7 @@ ob_start(function($output) {
                 <div id="accordionSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#accordionExample">
                   <div class="accordion-body">No! All core portal services — including project uploads, custom inquiries, and model deliveries — are completely <strong>free of charge</strong> for all registered users during this release.</div>
                 </div>
+              </div>
               <div class="card accordion-item">
                 <h2 class="accordion-header" id="headingSeven">
                   <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionSeven" aria-expanded="false" aria-controls="accordionSeven">How do I update my account profile or contact information?</button>
