@@ -89,6 +89,12 @@ class LoginRequest extends FormRequest
         $user = \App\Models\User::where('email', $this->email)->first();
 
         if ($user) {
+            try {
+                \App\Services\SFTPGoService::syncFromSFTPGo($user);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to sync from SFTPGo on login: " . $e->getMessage());
+            }
+
             if ($user->status === 'pending') {
                 RateLimiter::hit($this->throttleKey());
                 throw ValidationException::withMessages([

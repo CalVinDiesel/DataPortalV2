@@ -69,11 +69,83 @@ class SFTPGoService
     }
 
     /**
+     * Query SFTPGo to get the latest user details.
+     * Returns array|null
+     */
+    public static function getUserFromSFTPGo($username)
+    {
+        $client = self::getClient();
+        if (!$client) {
+            return null;
+        }
+
+        try {
+            $response = $client->get('/users/' . urlencode($username));
+            if ($response->successful()) {
+                return $response->json();
+            }
+        } catch (\Exception $e) {
+            Log::error("SFTPGo API: Exception fetching user {$username}: " . $e->getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Fetch the latest user details from SFTPGo and save/update them in the local database.
+     */
+    public static function syncFromSFTPGo(User $user)
+    {
+        if (empty($user->sftp_username)) {
+            return;
+        }
+
+        $sftpUser = self::getUserFromSFTPGo($user->sftp_username);
+        if ($sftpUser) {
+            $updates = [];
+            // Sync home_dir
+            if (isset($sftpUser['home_dir']) && $sftpUser['home_dir'] !== $user->home_dir) {
+                $updates['home_dir'] = $sftpUser['home_dir'];
+            }
+            // Sync status (SFTPGo: 1 = active, 0 = disabled)
+            if (isset($sftpUser['status'])) {
+                $sftpIsActive = $sftpUser['status'] === 1;
+                if ($sftpIsActive !== $user->is_active) {
+                    $updates['is_active'] = $sftpIsActive;
+                    $updates['status'] = $sftpIsActive ? 'active' : 'pending';
+                }
+            }
+            // Sync email if updated in SFTPGo
+            if (isset($sftpUser['email']) && !empty($sftpUser['email']) && $sftpUser['email'] !== $user->email) {
+                $updates['email'] = $sftpUser['email'];
+            }
+
+            if (!empty($updates)) {
+                Log::info("SFTPGo API: Syncing updates from SFTPGo to local database for User #{$user->id}: " . json_encode($updates));
+                // Update DB directly to prevent Eloquent event loops, but keep model instance updated
+                \Illuminate\Support\Facades\DB::table('portal_users')
+                    ->where('id', $user->id)
+                    ->update($updates);
+                
+                foreach ($updates as $key => $val) {
+                    $user->setAttribute($key, $val);
+                }
+            }
+        }
+    }
+
+    /**
      * Synchronize a user model's state to SFTPGo.
      * Handles creation, updates, and deletion (when downgraded or inactive).
      */
     public static function syncUser(User $user, $plainPassword = null)
     {
+        // 1. Sync latest changes from SFTPGo to local DB first (preserves admin modifications)
+        try {
+            self::syncFromSFTPGo($user);
+        } catch (\Exception $e) {
+            Log::error("SFTPGo API: Exception during pre-sync: " . $e->getMessage());
+        }
+
         $client = self::getClient();
         if (!$client) {
             return; // Config not set, skip silently
@@ -95,20 +167,38 @@ class SFTPGoService
             return;
         }
 
-        // Construct home directory path (checks SFTPGO_HOME_DIR_ROOT for container-internal paths, falling back to SYSTEM_SSH_STORAGE_ROOT)
-        $sftpRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', env('SYSTEM_SSH_STORAGE_ROOT', '/home/tiquan')), '/');
-        if (in_array($user->role, ['admin', 'superadmin'])) {
-            $homeDir = $sftpRoot . '/delivered/' . $user->sftp_username;
+        // Determine home directory
+        if (empty($user->home_dir)) {
+            // Construct default home directory path
+            $sftpRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', env('SYSTEM_SSH_STORAGE_ROOT', '/home/tiquan')), '/');
+            if (in_array($user->role, ['admin', 'superadmin'])) {
+                $homeDir = $sftpRoot . '/delivered/' . $user->sftp_username;
+            } else {
+                $homeDir = $sftpRoot . '/uploads/' . $user->sftp_username;
+            }
+            
+            // Save computed path to DB
+            \Illuminate\Support\Facades\DB::table('portal_users')
+                ->where('id', $user->id)
+                ->update(['home_dir' => $homeDir]);
+            $user->home_dir = $homeDir;
         } else {
-            $homeDir = $sftpRoot . '/uploads/' . $user->sftp_username;
+            $homeDir = $user->home_dir;
         }
 
         // AUTO-CREATE PHYSICAL SFTP HOME DIRECTORY ON SYNC
         try {
             $sftpDisk = \Illuminate\Support\Facades\Storage::disk('sftp_delivery');
+            
+            // Compute relative directory path for storage check
+            $sftpRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', env('SYSTEM_SSH_STORAGE_ROOT', '/home/tiquan')), '/');
             $relativeDir = in_array($user->role, ['admin', 'superadmin']) 
                 ? 'delivered/' . $user->sftp_username 
                 : 'uploads/' . $user->sftp_username;
+                
+            if (str_starts_with($homeDir, $sftpRoot)) {
+                $relativeDir = ltrim(substr($homeDir, strlen($sftpRoot)), '/');
+            }
 
             if (!$sftpDisk->exists($relativeDir)) {
                 $sftpDisk->makeDirectory($relativeDir);
@@ -122,23 +212,7 @@ class SFTPGoService
         $password = $plainPassword ?: $user->sftp_password;
 
         $isAdmin = in_array($user->role, ['admin', 'superadmin']);
-        $permissions = $isAdmin ? ['*'] : ['list', 'download', 'upload', 'overwrite', 'create_dirs', 'rename', 'chtimes'];
-
-        $userData = [
-            'username' => $user->sftp_username,
-            'password' => $password,
-            'email' => $user->email,
-            'status' => 1,
-            'home_dir' => $homeDir,
-            'uid' => 1000,
-            'gid' => 1000,
-            'permissions' => [
-                '/' => $permissions
-            ],
-            'max_sessions' => 0,
-            'quota_size' => 0,
-            'quota_files' => 0,
-        ];
+        $defaultPermissions = $isAdmin ? ['*'] : ['list', 'download', 'upload', 'overwrite', 'create_dirs', 'rename', 'chtimes'];
 
         try {
             // Check if user already exists
@@ -149,6 +223,28 @@ class SFTPGoService
                 Log::info("SFTPGo API: Syncing update for user {$user->sftp_username}");
                 $existingData = json_decode($response->body()) ?: new \stdClass();
                 
+                // Preserve existing attributes set by the SFTPGo administrator
+                $uid = isset($existingData->uid) ? $existingData->uid : 1000;
+                $gid = isset($existingData->gid) ? $existingData->gid : 1000;
+                $maxSessions = isset($existingData->max_sessions) ? $existingData->max_sessions : 0;
+                $quotaSize = isset($existingData->quota_size) ? $existingData->quota_size : 0;
+                $quotaFiles = isset($existingData->quota_files) ? $existingData->quota_files : 0;
+                $perms = isset($existingData->permissions) ? (array) $existingData->permissions : ['/' => $defaultPermissions];
+
+                $userData = [
+                    'username' => $user->sftp_username,
+                    'password' => $password,
+                    'email' => $user->email,
+                    'status' => $user->is_active ? 1 : 0,
+                    'home_dir' => $homeDir,
+                    'uid' => $uid,
+                    'gid' => $gid,
+                    'permissions' => $perms,
+                    'max_sessions' => $maxSessions,
+                    'quota_size' => $quotaSize,
+                    'quota_files' => $quotaFiles,
+                ];
+
                 // Merge data and preserve unmanaged attributes (casting $existingData to array shallowly, nested objects remain stdClass)
                 $payload = array_merge((array) $existingData, $userData);
 
@@ -173,7 +269,7 @@ class SFTPGoService
                     unset($payload['password']);
                 }
 
-                // Fix SFTPGo TOTP secret unmarshal issue (json_decode decodes empty JSON object {} for secret as array [])
+                // Fix SFTPGo TOTP secret unmarshal issue
                 if (isset($payload['filters']) && is_object($payload['filters'])) {
                     if (isset($payload['filters']->totp_config) && is_object($payload['filters']->totp_config)) {
                         if (isset($payload['filters']->totp_config->secret) && is_array($payload['filters']->totp_config->secret) && empty($payload['filters']->totp_config->secret)) {
@@ -193,9 +289,25 @@ class SFTPGoService
                 Log::info("SFTPGo API: Creating new user {$user->sftp_username}");
                 
                 // For new users, we must have a password
-                if (empty($userData['password'])) {
-                    $userData['password'] = \Illuminate\Support\Str::random(12);
+                if (empty($password)) {
+                    $password = \Illuminate\Support\Str::random(12);
                 }
+
+                $userData = [
+                    'username' => $user->sftp_username,
+                    'password' => $password,
+                    'email' => $user->email,
+                    'status' => $user->is_active ? 1 : 0,
+                    'home_dir' => $homeDir,
+                    'uid' => 1000,
+                    'gid' => 1000,
+                    'permissions' => [
+                        '/' => $defaultPermissions
+                    ],
+                    'max_sessions' => 0,
+                    'quota_size' => 0,
+                    'quota_files' => 0,
+                ];
 
                 $postResponse = $client->post('/users', $userData);
                 if (!$postResponse->successful()) {

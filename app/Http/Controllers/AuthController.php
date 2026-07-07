@@ -154,6 +154,14 @@ class AuthController extends Controller
         $this->ensureSftpCredentials($user);
         $hasSftpAccess = in_array($user->role, ['trusted', 'admin', 'superadmin']);
 
+        if ($hasSftpAccess && $user->sftp_username) {
+            try {
+                \App\Services\SFTPGoService::syncUser($user);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to sync user on sftp details: " . $e->getMessage());
+            }
+        }
+
         return response()->json([
             'success' => true,
             'sftpUsername' => $hasSftpAccess ? ($user->sftp_username ?? 'Not set') : 'Not set',
