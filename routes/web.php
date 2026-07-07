@@ -23,12 +23,24 @@ Route::post('/contact', function (Request $request) {
     ]);
 
     try {
+        $adminEmails = \App\Models\User::getAdminEmails();
         $supportEmail = config('support.email');
-        Mail::to($supportEmail)->send(new ContactInquiry(
-            $request->name,
-            $request->email,
-            $request->message
-        ));
+        if ($supportEmail) {
+            $adminEmails[] = $supportEmail;
+        }
+        $adminEmails = array_values(array_unique(array_filter($adminEmails)));
+
+        foreach ($adminEmails as $adminEmail) {
+            try {
+                Mail::to($adminEmail)->send(new ContactInquiry(
+                    $request->name,
+                    $request->email,
+                    $request->message
+                ));
+            } catch (\Exception $e) {
+                \Log::error('Contact form mail failed for ' . $adminEmail, ['error' => $e->getMessage()]);
+            }
+        }
         return back()->with('success', 'Your message has been sent successfully! We will get back to you shortly.');
     } catch (\Exception $e) {
         \Log::error('Contact form submission failed', ['error' => $e->getMessage()]);

@@ -255,4 +255,30 @@ class User extends Authenticatable
         }
         return $password;
     }
+
+    /**
+     * Get all active admin and superadmin emails dynamically.
+     *
+     * @return array
+     */
+    public static function getAdminEmails(): array
+    {
+        try {
+            $emails = self::whereIn('role', ['superadmin', 'admin'])
+                ->where('status', 'active')
+                ->pluck('email')
+                ->toArray();
+        } catch (\Exception $e) {
+            $emails = [];
+        }
+
+        // Fallbacks from environment configuration
+        $superAdminEnv = env('SUPER_ADMIN_EMAIL');
+        if ($superAdminEnv) {
+            $emails[] = $superAdminEnv;
+        }
+
+        // Return unique, non-empty emails
+        return array_values(array_unique(array_filter($emails)));
+    }
 }

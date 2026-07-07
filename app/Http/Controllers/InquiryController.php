@@ -85,12 +85,21 @@ class InquiryController extends Controller
             ]);
         }
 
-        // Alert admin
+        // Alert admins and superadmins
         try {
-            $adminEmail = env('SUPER_ADMIN_EMAIL', 'mosestiquan23@gmail.com');
-            Mail::to($adminEmail)->send(new AdminNewInquiryAlert($inquiry));
+            $adminEmails = \App\Models\User::getAdminEmails();
+            foreach ($adminEmails as $adminEmail) {
+                try {
+                    Mail::to($adminEmail)->send(new AdminNewInquiryAlert($inquiry));
+                } catch (\Exception $e) {
+                    Log::error('AdminNewInquiryAlert mail failed for ' . $adminEmail, [
+                        'inquiry_id' => $inquiry->inquiry_id,
+                        'error'      => $e->getMessage(),
+                    ]);
+                }
+            }
         } catch (\Exception $e) {
-            Log::error('AdminNewInquiryAlert mail failed', [
+            Log::error('AdminNewInquiryAlert dispatching failed', [
                 'inquiry_id' => $inquiry->inquiry_id,
                 'error'      => $e->getMessage(),
             ]);
@@ -190,12 +199,21 @@ class InquiryController extends Controller
             ]);
         }
 
-        // Alert admin about update
+        // Alert admins and superadmins about update
         try {
-            $adminEmail = env('SUPER_ADMIN_EMAIL', 'mosestiquan23@gmail.com');
-            Mail::to($adminEmail)->send(new AdminNewInquiryAlert($inquiry, true));
+            $adminEmails = \App\Models\User::getAdminEmails();
+            foreach ($adminEmails as $adminEmail) {
+                try {
+                    Mail::to($adminEmail)->send(new AdminNewInquiryAlert($inquiry, true));
+                } catch (\Exception $e) {
+                    Log::error('AdminNewInquiryAlert update mail failed for ' . $adminEmail, [
+                        'inquiry_id' => $inquiry->inquiry_id,
+                        'error'      => $e->getMessage(),
+                    ]);
+                }
+            }
         } catch (\Exception $e) {
-            Log::error('AdminNewInquiryAlert update mail failed', [
+            Log::error('AdminNewInquiryAlert update dispatching failed', [
                 'inquiry_id' => $inquiry->inquiry_id,
                 'error'      => $e->getMessage(),
             ]);
