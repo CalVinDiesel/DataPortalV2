@@ -281,4 +281,15 @@ class User extends Authenticatable
         // Return unique, non-empty emails
         return array_values(array_unique(array_filter($emails)));
     }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+    }
 }
