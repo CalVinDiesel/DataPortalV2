@@ -262,7 +262,7 @@ class SFTPGoService
                 $maxSessions = isset($existingData->max_sessions) ? $existingData->max_sessions : 0;
                 $quotaSize = isset($existingData->quota_size) && $existingData->quota_size > 0 
                     ? $existingData->quota_size 
-                    : ($user->sftp_quota_size ?: $defaultQuotaBytes);
+                    : (!is_null($user->sftp_quota_size) ? $user->sftp_quota_size : $defaultQuotaBytes);
                 $quotaFiles = isset($existingData->quota_files) ? $existingData->quota_files : 0;
                 $perms = isset($existingData->permissions) ? (array) $existingData->permissions : ['/' => $defaultPermissions];
 
@@ -340,7 +340,7 @@ class SFTPGoService
                         '/' => $defaultPermissions
                     ],
                     'max_sessions' => 0,
-                    'quota_size' => $user->sftp_quota_size ?: $defaultQuotaBytes,
+                    'quota_size' => !is_null($user->sftp_quota_size) ? $user->sftp_quota_size : $defaultQuotaBytes,
                     'quota_files' => 0,
                 ];
 

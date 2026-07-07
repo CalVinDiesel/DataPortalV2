@@ -77,7 +77,11 @@ class ClientUpload extends Model
 
         if ($email) {
             $user = \App\Models\User::where('email', $email)->first();
-            if ($user && isset($user->sftp_quota_size) && $user->sftp_quota_size > 0) {
+            if ($user && !is_null($user->sftp_quota_size)) {
+                if ($user->sftp_quota_size <= 0) {
+                    return 9999 * 1024 * 1024 * 1024; // 9999 GB (effectively unlimited)
+                }
+                
                 $defaultSftpLimitGb = (float) env('SFTPGO_STORAGE_LIMIT_GB', 5);
                 $defaultSftpLimitBytes = (int) ($defaultSftpLimitGb * 1024 * 1024 * 1024);
                 
