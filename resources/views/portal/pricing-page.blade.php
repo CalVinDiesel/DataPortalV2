@@ -20,21 +20,21 @@
     <meta name="robots" content="noindex, nofollow">
 
     
-      <title>Demo: Pricing - Front Pages | Sneat - Bootstrap Dashboard PRO</title>
+      <title>Pricing | {{ config('app.brand_name', '3D Hub beta') }}</title>
     
 
     
       <!-- Canonical SEO -->
-      <meta name="description" content="Sneat is the best bootstrap 5 dashboard for responsive web apps. Streamline your app development process with ease.">
+      <meta name="description" content="Transform drone aerial images into 3D mesh models, basemaps, and digital surface models with 3D Hub.">
       
-        <meta name="keywords" content="Sneat bootstrap dashboard, sneat bootstrap 5 dashboard, themeselection, html dashboard, web dashboard, frontend dashboard, responsive bootstrap theme">
-        <meta property="og:title" content="Sneat Bootstrap 5 Dashboard PRO by ThemeSelection">
-        <meta property="og:type" content="product">
-        <meta property="og:url" content="https://themeselection.com/item/sneat-dashboard-pro-bootstrap/">
-        <meta property="og:image" content="https://themeselection.com/wp-content/uploads/edd/2024/08/sneat-dashboard-pro-bootstrap-smm-image.png">
-        <meta property="og:description" content="Sneat is the best bootstrap 5 dashboard for responsive web apps. Streamline your app development process with ease.">
-        <meta property="og:site_name" content="ThemeSelection">
-        <link rel="canonical" href="https://themeselection.com/item/sneat-dashboard-pro-bootstrap/">
+        <meta name="keywords" content="3D Hub, drone photos, 3D mesh models, orthophotos, digital surface models, DSM, spatial data, mapping, Sabah">
+        <meta property="og:title" content="Pricing | {{ config('app.brand_name', '3D Hub beta') }}">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="{{ config('app.url') }}/pricing">
+        <meta property="og:image" content="{{ asset('assets/img/front-pages/landing-page/3DHub logo1.png') }}">
+        <meta property="og:description" content="Transform drone aerial images into 3D mesh models, basemaps, and digital surface models with 3D Hub.">
+        <meta property="og:site_name" content="{{ config('app.brand_name', '3D Hub beta') }}">
+        <link rel="canonical" href="{{ request()->url() }}">
       
     
     
