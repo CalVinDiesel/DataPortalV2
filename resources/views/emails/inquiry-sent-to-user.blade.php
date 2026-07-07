@@ -59,7 +59,7 @@
                 }
             @endphp
             <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle; filter: brightness(2.5) contrast(1.2) drop-shadow(0 0 2px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));">
-            <h1>💼 Your Quotation is Ready</h1>
+            <h1>Your Quotation is Ready</h1>
             <p>We have processed your inquiry and issued a quotation</p>
         </div>
         <div class="body">
@@ -67,10 +67,10 @@
             <p>We have reviewed your inquiry request and are pleased to present you with a formal quotation. Please see the attached PDF quotation for details including pricing, bank transfer information, and payment instructions.</p>
 
             <div style="text-align: center;">
-                <div class="badge-id">📋 {{ $inquiry->inquiry_id }}</div>
+                <div class="badge-id">{{ $inquiry->inquiry_id }}</div>
             </div>
 
-            <p class="section-title">📍 Order Details</p>
+            <p class="section-title">Order Details</p>
             <table class="info-table">
                 <tr>
                     <td style="padding: 10px 14px; font-size: 14px; color: #888; font-weight: 600; width: 40%;">3D Model / Location</td>
@@ -100,13 +100,13 @@
 
             @if($inquiry->current_admin_note)
             <div class="notes-box">
-                <strong>📝 Notes from Our Team:</strong><br>
+                <strong>Notes from Our Team:</strong><br>
                 {{ $inquiry->current_admin_note }}
             </div>
             @endif
 
             <div style="background-color: #f0f7ff; border-left: 4px solid #0070f3; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 20px 0; font-size: 13.5px; color: #0050b3; line-height: 1.6;">
-                <strong style="text-transform: uppercase; font-size: 11px; letter-spacing: 0.8px; color: #0070f3; display: block; margin-bottom: 8px;">⚠️ Important 3D Model Pricing Notices:</strong>
+                <strong style="text-transform: uppercase; font-size: 11px; letter-spacing: 0.8px; color: #0070f3; display: block; margin-bottom: 8px;">Important 3D Model Pricing Notices:</strong>
                 <ol style="margin: 0; padding-left: 18px;">
                     <li style="margin-bottom: 8px;">
                         <strong>Different Year/Capture Pricing:</strong> The same 3D model captured in different years will have different prices. A more recent capture is more expensive than older ones.
@@ -117,7 +117,7 @@
                 </ol>
             </div>
 
-            <p class="section-title">📌 How to Proceed</p>
+            <p class="section-title">How to Proceed</p>
             <ul class="steps-list">
                 <li>
                     <div class="step-num">1</div>

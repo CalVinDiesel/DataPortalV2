@@ -43,7 +43,7 @@
                 }
             @endphp
             <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle; filter: brightness(2.5) contrast(1.2) drop-shadow(0 0 2px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));">
-            <h1>{{ $isUpdate ? '✏️ Inquiry Request Updated' : '✅ Inquiry Request Received' }}</h1>
+            <h1>{{ $isUpdate ? 'Inquiry Request Updated' : 'Inquiry Request Received' }}</h1>
             <p>{{ $isUpdate ? 'We have received your updated inquiry details' : 'We have received your inquiry request' }}</p>
         </div>
         <div class="body">
@@ -51,7 +51,7 @@
             <p>Thank you for {{ $isUpdate ? 'updating' : 'submitting' }} your inquiry request to <strong>3DHub Data Portal</strong>. We have successfully received your {{ $isUpdate ? 'updated details' : 'request' }} and our team will review it shortly.</p>
 
             <div style="text-align: center;">
-                <div class="badge-id">📋 {{ $inquiry->inquiry_id }}</div>
+                <div class="badge-id">{{ $inquiry->inquiry_id }}</div>
             </div>
 
             <table class="info-table">
@@ -77,7 +77,7 @@
                 </tr>
                 <tr>
                     <td>Status</td>
-                    <td><span class="status-badge">⏳ Pending Review</span></td>
+                    <td><span class="status-badge">Pending Review</span></td>
                 </tr>
             </table>
 
@@ -89,8 +89,8 @@
             <div style="text-align: center; margin-top: 25px; margin-bottom: 10px;">
                 <a href="{{ url('/inquiry/my') }}" class="cta-btn" style="display: inline-block; margin: 5px 8px;">View My Inquiries</a>
                 @if(in_array($inquiry->status, ['pending', 'reviewed', 'rejected']))
-                    <a href="{{ url('/inquiry/' . $inquiry->id . '/edit') }}" class="cta-btn" style="display: inline-block; margin: 5px 8px; background: linear-gradient(135deg, #ffab00, #ffc107);">✏️ Edit Inquiry</a>
-                    <a href="{{ url('/inquiry/my?delete_confirm=' . $inquiry->id) }}" class="cta-btn" style="display: inline-block; margin: 5px 8px; background: linear-gradient(135deg, #ff3e1d, #ff5e3a);">❌ Cancel Request</a>
+                    <a href="{{ url('/inquiry/' . $inquiry->id . '/edit') }}" class="cta-btn" style="display: inline-block; margin: 5px 8px; background: linear-gradient(135deg, #ffab00, #ffc107);">Edit Inquiry</a>
+                    <a href="{{ url('/inquiry/my?delete_confirm=' . $inquiry->id) }}" class="cta-btn" style="display: inline-block; margin: 5px 8px; background: linear-gradient(135deg, #ff3e1d, #ff5e3a);">Cancel Request</a>
                 @endif
             </div>
 

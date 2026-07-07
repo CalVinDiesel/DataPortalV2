@@ -85,21 +85,20 @@
 
             {{-- Inquiry ID badge --}}
             <div style="text-align: center;">
-                <div class="badge-id">📋 {{ $inquiry->inquiry_id }}</div>
+                <div class="badge-id">{{ $inquiry->inquiry_id }}</div>
             </div>
-
+ 
             {{-- Ready highlight box --}}
             <div class="ready-box">
-                <span class="check">✅</span>
                 <h2>Files Ready for Download</h2>
                 <p>Log in to the portal and visit <strong>My Inquiries</strong> to download your 3D model tiles.</p>
                 @if($inquiry->delivered_at)
                     <p style="font-size:12.5px; color:#6b7280; margin-top: 8px;">Made available on {{ $inquiry->delivered_at->format('d M Y, h:i A') }}</p>
                 @endif
             </div>
-
+ 
             {{-- Order summary --}}
-            <p class="section-title">📍 Order Summary</p>
+            <p class="section-title">Order Summary</p>
             <table class="info-table">
                 <tr>
                     <td>Inquiry ID</td>
@@ -128,9 +127,9 @@
                     <td>{{ $inquiry->created_at->format('d M Y, h:i A') }}</td>
                 </tr>
             </table>
-
+ 
             {{-- How to download steps --}}
-            <p class="section-title">🚀 How to Download</p>
+            <p class="section-title">How to Download</p>
             <ul class="steps-list">
                 <li>
                     <div class="step-num-wrap"><span class="step-num">1</span></div>
@@ -146,18 +145,18 @@
                 </li>
                 <li>
                     <div class="step-num-wrap"><span class="step-num">4</span></div>
-                    <div class="step-text">Click the <strong>⬇ Download 3D Model Tiles</strong> green button to start the download</div>
+                    <div class="step-text">Click the <strong>Download 3D Model Tiles</strong> green button to start the download</div>
                 </li>
             </ul>
-
+ 
             {{-- CTA Button --}}
             <div class="cta-wrap">
-                <a href="{{ url('/inquiry/my') }}" class="cta-btn">⬇ Go to My Inquiries</a>
+                <a href="{{ url('/inquiry/my') }}" class="cta-btn">Go to My Inquiries</a>
             </div>
-
+ 
             {{-- Notice box --}}
             <div class="notice-box">
-                <strong>📌 Important:</strong> Please keep a backup copy of the downloaded tiles after saving them. If you experience any issues with the download, contact our support team and we will assist you promptly.
+                <strong>Important:</strong> Please keep a backup copy of the downloaded tiles after saving them. If you experience any issues with the download, contact our support team and we will assist you promptly.
             </div>
 
             <p>Thank you for choosing <strong>3DHub</strong>. We hope the 3D model data meets your needs perfectly!</p>

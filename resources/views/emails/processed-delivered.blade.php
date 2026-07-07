@@ -56,7 +56,7 @@
             </div>
 
             <p style="color: #e53e3e; font-weight: bold; margin-top: 20px;">
-                <i class="bx bx-time"></i> Important: This download link will expire in 7 days ({{ $upload->delivered_expires_at ? $upload->delivered_expires_at->format('M d, Y') : 'one week' }}).
+                Important: This download link will expire in 7 days ({{ $upload->delivered_expires_at ? $upload->delivered_expires_at->format('M d, Y') : 'one week' }}).
                 Please download and save your files locally before then.
             </p>
 

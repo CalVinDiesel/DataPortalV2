@@ -40,7 +40,7 @@
                 }
             @endphp
             <img src="{{ $logoUrl }}" alt="3DHub Logo" style="height: 160px; margin-bottom: 10px; vertical-align: middle; filter: brightness(2.5) contrast(1.2) drop-shadow(0 0 2px rgba(255,255,255,0.95)) drop-shadow(0 0 6px rgba(255,255,255,0.6));">
-            <h1>{{ $isUpdate ? '✏️ Inquiry Request Updated' : '🔔 New Inquiry Submitted' }}</h1>
+            <h1>{{ $isUpdate ? 'Inquiry Request Updated' : 'New Inquiry Submitted' }}</h1>
             <p>{{ $isUpdate ? 'A client has updated their inquiry details' : 'A client has submitted a new inquiry request' }}</p>
         </div>
         <div class="body">
@@ -58,7 +58,7 @@
                 </tr>
                 <tr>
                     <td>Client Name</td>
-                    <td>{{ $inquiry->user->name ?? '—' }}</td>
+                    <td>{{ $inquiry->user->name ?? '-' }}</td>
                 </tr>
                 <tr>
                     <td>3D Model</td>
@@ -84,10 +84,10 @@
 
             <p>Please log in to the Admin Panel to review this inquiry, preview the area the client has selected on the 3D map, and send a formal quotation with pricing details.</p>
 
-            <a href="{{ url('/admin/inquiries') }}" class="cta-btn">Open Admin Panel →</a>
+            <a href="{{ url('/admin/inquiries') }}" class="cta-btn">Open Admin Panel</a>
         </div>
         <div class="footer">
-            &copy; {{ date('Y') }} 3DHub Data Portal — Admin Notification
+            &copy; {{ date('Y') }} 3DHub Data Portal - Admin Notification
         </div>
     </div>
 </body>
