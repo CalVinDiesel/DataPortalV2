@@ -87,7 +87,7 @@ class SocialiteController extends Controller
             Auth::login($user);
 
             try {
-                \App\Services\SFTPGoService::syncFromSFTPGo($user);
+                \App\Services\SFTPGoService::syncUser($user);
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error("Failed to sync from SFTPGo on social login: " . $e->getMessage());
             }
@@ -115,6 +115,13 @@ class SocialiteController extends Controller
                 $user->save();
 
                 Auth::login($user);
+                
+                try {
+                    \App\Services\SFTPGoService::syncUser($user);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to sync from SFTPGo on social setup: " . $e->getMessage());
+                }
+
                 session()->forget(['setup_token']);
                 return redirect()->route('landing')->with('success', 'Setup Complete!');
             } else {
@@ -213,7 +220,7 @@ class SocialiteController extends Controller
         Auth::login($user);
         
         try {
-            \App\Services\SFTPGoService::syncFromSFTPGo($user);
+            \App\Services\SFTPGoService::syncUser($user);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Failed to sync from SFTPGo on social login: " . $e->getMessage());
         }

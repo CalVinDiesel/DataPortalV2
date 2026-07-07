@@ -90,7 +90,7 @@ class LoginRequest extends FormRequest
 
         if ($user) {
             try {
-                \App\Services\SFTPGoService::syncFromSFTPGo($user);
+                \App\Services\SFTPGoService::syncUser($user);
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error("Failed to sync from SFTPGo on login: " . $e->getMessage());
             }
