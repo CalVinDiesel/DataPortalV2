@@ -14,6 +14,7 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
+    'brand_name' => env('APP_BRAND_NAME', '3D Hub beta'),
 
     /*
     |--------------------------------------------------------------------------

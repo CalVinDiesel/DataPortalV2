@@ -166,7 +166,7 @@
 </span>
 </span>
           <img src="{{ asset('assets') }}/img/front-pages/landing-page/3DHub logo1.png" alt="3DHub Logo" style="height: 80px; width: auto; max-height: 80px; object-fit: contain; display: block;" />
-          <span class="app-brand-text demo menu-text fw-bold ms-2 ps-1">3DHub Beta</span>
+          <span class="app-brand-text demo menu-text fw-bold ms-2 ps-1">{{ config('app.brand_name', '3D Hub beta') }}</span>
         </a>
       </div>
       <!-- Menu logo wrapper: End -->
