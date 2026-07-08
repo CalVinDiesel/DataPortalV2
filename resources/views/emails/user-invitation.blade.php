@@ -99,12 +99,12 @@
             <p><strong>How to Participate:</strong><br>To begin, please complete your account setup by clicking the button below.</p>
             
             <div class="btn-wrapper">
-                <a href="{{ $setupUrl }}" class="btn">Complete Account Setup</a>
+                <a href="{{ $setupUrl }}" class="btn">{{ __('Complete Account Setup') }}</a>
             </div>
 
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="word-wrap: break-word; font-size: 13px; color: #696cff;">
-                <a href="{{ $setupUrl }}">{{ $setupUrl }}</a>
+            <p>Or click this link:</p>
+            <p style="word-wrap: break-word; font-size: 14px; color: #696cff; font-weight: bold;">
+                <a href="{{ $setupUrl }}">{{ __('Complete your account setup') }}</a>
             </p>
 
             <hr style="border: 0; border-top: 1px solid #eeeeee; margin: 30px 0;">
