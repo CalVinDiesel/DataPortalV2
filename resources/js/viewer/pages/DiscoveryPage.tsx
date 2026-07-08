@@ -42,12 +42,12 @@ import '../../../../node_modules/cesium/Build/Cesium/Widgets/widgets.css';
 import './DiscoveryPage.css';
 
 // Create a high-contrast canvas-based texture for billboard point markers
-let yellowDotImage: HTMLCanvasElement | null = null;
+let yellowDotImage: string | undefined = undefined;
 if (typeof document !== 'undefined') {
-    yellowDotImage = document.createElement('canvas');
-    yellowDotImage.width = 16;
-    yellowDotImage.height = 16;
-    const ctx = yellowDotImage.getContext('2d');
+    const canvas = document.createElement('canvas');
+    canvas.width = 16;
+    canvas.height = 16;
+    const ctx = canvas.getContext('2d');
     if (ctx) {
         ctx.beginPath();
         ctx.arc(8, 8, 4.5, 0, 2 * Math.PI);
@@ -56,6 +56,7 @@ if (typeof document !== 'undefined') {
         ctx.lineWidth = 1.5;
         ctx.strokeStyle = '#000000'; // Black outline
         ctx.stroke();
+        yellowDotImage = canvas.toDataURL();
     }
 }
 
