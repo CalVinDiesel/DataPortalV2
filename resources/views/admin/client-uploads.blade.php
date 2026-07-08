@@ -775,7 +775,7 @@
             document.getElementById('detailSftpPath').textContent = buildSftpPath(row);
             
             if (window.remoteBasePath) {
-                document.getElementById('detailSftpHostDisplay').innerText = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? (window.sftpHost || 'sftp.server.com') : window.location.hostname;
+                document.getElementById('detailSftpHostDisplay').innerText = window.sftpHost || '{{ config('support.sftp_host') }}';
                 document.getElementById('detailSftpPortDisplay').innerText = window.sftpPort || '2222';
                 document.getElementById('detailSftpUserDisplay').innerText = window.sftpUsername || 'guest';
             }
@@ -1655,13 +1655,7 @@
             var targetPath = formatSftpPath(joinDisplayPath(base, 'uploads/' + clientUser + '/' + (meta.project_id || uploadId) + '/delivered/'));
             document.getElementById('deliverPathHint').textContent = targetPath;
             
-            if (window.sftpHost) {
-                document.getElementById('deliverHostDisplay').innerText = window.sftpHost;
-            } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                document.getElementById('deliverHostDisplay').innerText = (window.sftpHost || 'sftp.server.com');
-            } else {
-                document.getElementById('deliverHostDisplay').innerText = window.location.hostname;
-            }
+            document.getElementById('deliverHostDisplay').innerText = window.sftpHost || '{{ config('support.sftp_host') }}';
             document.getElementById('deliverPortDisplay').innerText = window.sftpPort || '2222';
             document.getElementById('deliverUserDisplay').innerText = window.sftpUsername || 'guest';
 
