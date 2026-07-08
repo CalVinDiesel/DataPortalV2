@@ -474,15 +474,15 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const entity = drawnMeasurements[type][index];
         if (entity) {
-            // Remove the shell tracking entity from the scene list
+            // Drop tracking shell index element
             viewerRef.current.entities.remove(entity);
 
-            // CRITICAL MEMORY CLEANUP: Completely drops the direct primitive line out of GPU buffer space
+            // FIX: Purges the low-level rendering buffer allocations instantly from memory
             if ((entity as any).primitiveLineCollection) {
                 viewerRef.current.scene.primitives.remove((entity as any).primitiveLineCollection);
             }
 
-            // Remove all points and text labels associated with the measurement container
+            // Clear sub-elements (pinpoint dot billboards, value text labels)
             if ((entity as any).subEntities) {
                 (entity as any).subEntities.forEach((subEntity: Entity) => {
                     viewerRef.current?.entities.remove(subEntity);
@@ -678,13 +678,13 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 handlerRef.current.destroy();
                 handlerRef.current = null;
             }
-            // Clear temporary entities
+            // Clear temporary markers
             tempEntitiesRef.current.forEach(entity => {
                 if (viewerRef.current) {
                     viewerRef.current.entities.remove(entity);
                 }
             });
-            // Clear active live drawing primitive preview collection
+            // Safely clear the active low-level hardware preview primitive collection out of WebGL memory
             if (viewerRef.current && (viewerRef.current as any)._activePreviewPrimitiveCollection) {
                 viewerRef.current.scene.primitives.remove((viewerRef.current as any)._activePreviewPrimitiveCollection);
                 (viewerRef.current as any)._activePreviewPrimitiveCollection = null;
@@ -699,7 +699,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
         handlerRef.current = handler;
 
-        // Create a standalone primitive collection for the live mouse preview path
+        // Allocate a dedicated WebGL direct-draw line collection primitive for mouse tracking previews
         const previewCollection = viewer.scene.primitives.add(new (window as any).Cesium.PolylineCollection());
         (viewer as any)._activePreviewPrimitiveCollection = previewCollection;
 
@@ -709,7 +709,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         handler.setInputAction((movement: any) => {
             currentMousePosition = viewer.scene.pickPosition(movement.endPosition);
 
-            // Real-time update to make sure the mouse dragging preview line NEVER turns into a sheet
+            // Real-time frame update to ensure the moving line preview NEVER turns into a sheet curtain
             if (currentMousePosition && drawingPointsRef.current.length > 0) {
                 const positions = [...drawingPointsRef.current, currentMousePosition];
 
@@ -739,7 +739,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             setDrawingPoints(newPoints);
             drawingPointsRef.current = newPoints;
 
-            // Render crisp endpoint canvas dots on building facades
+            // Render high-contrast endpoint canvas dots on facade surfaces
             const pointEntity = viewer.entities.add({
                 position: pickedPosition,
                 billboard: {
@@ -750,7 +750,6 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             });
             tempEntitiesRef.current.push(pointEntity);
 
-            // Keep separate logic for fallback area/circle tracking systems
             if (newPoints.length === 1 && activeTool !== 'length' && activeTool !== 'height') {
                 let fallbackEntity: Entity | null = null;
                 if (activeTool === 'area') {
@@ -974,7 +973,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             }
         });
 
-        // FIXED PERMANENTLY: Create a hardware collection layer to guarantee a razor-sharp thin line
+        // FIXED PERMANENTLY: Using direct primitives instead of entities completely strips away the shadow volume curtain logic
         const primitiveContainer = viewer.scene.primitives.add(new PrimitiveCollection());
         const polylineCollection = primitiveContainer.add(new (window as any).Cesium.PolylineCollection());
 
@@ -986,7 +985,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             })
         });
 
-        // Label layout tracking
+        // Measurement label tracker text
         const labelEntity = viewer.entities.add({
             position: midpoint,
             label: new LabelGraphics({
@@ -1004,7 +1003,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             }),
         });
 
-        // We generate a safe shell entity to bind everything into your React tracking indexes perfectly
+        // Build a plain dummy Tracking Entity shell to hook flawlessly into your state pipelines, popups, and sidebar trackers
         const entity = new Entity({
             id: `length-measurement-${nextNumber}`,
             position: midpoint as any
@@ -1012,7 +1011,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         (entity as any).measurementType = 'length';
         (entity as any).measurementName = name;
         (entity as any).subEntities = [startPointEntity, endPointEntity, labelEntity];
-        (entity as any).primitiveLineCollection = primitiveContainer; // Save container to drop from GPU safely on delete
+        (entity as any).primitiveLineCollection = primitiveContainer; // Retained to drop hardware buffers cleanly on delete executions
 
         viewer.entities.add(entity);
 
@@ -1053,7 +1052,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             }
         });
 
-        // FIXED PERMANENTLY: Create a hardware collection layer to guarantee a razor-sharp thin line
+        // FIXED PERMANENTLY: Direct low-level polyline buffers guarantee clean vertical axis wireframes
         const primitiveContainer = viewer.scene.primitives.add(new PrimitiveCollection());
         const polylineCollection = primitiveContainer.add(new (window as any).Cesium.PolylineCollection());
 
