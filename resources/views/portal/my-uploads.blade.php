@@ -1166,6 +1166,7 @@
       const modalEl = document.getElementById('mapPreviewModal'); // Mapped to match your structural layout
       const frameEl = document.getElementById('interactivePreviewFrame');
       const titleEl = document.getElementById('mapPreviewModalTitle');
+      const spinnerEl = document.getElementById('viewerLoadingSpinner'); // Grab the spinner element
       
       if (!modalEl || !frameEl) return;
 
@@ -1182,13 +1183,24 @@
         .then(res => res.json())
         .then(data => {
           if (data.success && data.tileset_url) {
+            // 1. Show the spinner right before updating the src attribute
+            if (spinnerEl) spinnerEl.classList.remove('d-none');
+            
+            // 2. Set the frame source context
             frameEl.src = `/viewer/${encodeURIComponent(projectIdString)}?model=${encodeURIComponent(projectIdString)}&tileset_url=${encodeURIComponent(data.tileset_url)}&title=${encodeURIComponent(projectTitle)}`;
+            
+            // 3. Attach the onload handler to clear the spinner once the pipeline completes loading
+            frameEl.onload = function() {
+              if (spinnerEl) spinnerEl.classList.add('d-none');
+            };
           } else {
             frameEl.src = '';
+            if (spinnerEl) spinnerEl.classList.add('d-none'); // Hide if it fails
             alert("The preview fileset index could not be resolved on the server.");
           }
         })
         .catch(() => {
+          if (spinnerEl) spinnerEl.classList.add('d-none'); // Hide if it errors
           alert("Failed to connect to the 3D secure rendering pipeline endpoint.");
         });
 
@@ -1410,6 +1422,15 @@
       } catch (err) {
         console.error("Failed to load dynamic storage quota:", err);
       }
+    }
+
+    // 🚀 BRIDGE FIX: Direct the HTML click events to the actual interactive rendering pipeline handler
+    function open3DPreviewModal(projectId) {
+        if (typeof launchInteractivePreview === 'function') {
+            launchInteractivePreview(projectId);
+        } else {
+            console.error("Critical: launchInteractivePreview pipeline handler is missing.");
+        }
     }
   </script>
 
