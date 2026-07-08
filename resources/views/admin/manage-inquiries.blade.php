@@ -541,6 +541,7 @@
   var currentQuotation = null;
   var cesiumViewer   = null;
   var detailModal    = null;
+  var detailPollInterval = null;
 
   var STATUS_ORDER = ['pending','reviewed','processing','completed'];
   var STATUS_LABELS = {
@@ -577,9 +578,10 @@
       });
     }
 
-    // Reset Cesium when modal closes
+    // Reset Cesium and polling when modal closes
     document.getElementById('quotationDetailModal').addEventListener('hidden.bs.modal', function () {
       destroyCesium();
+      stopDetailPolling();
     });
   });
 
@@ -718,6 +720,7 @@
     populateModal(q);
     detailModal.show();
     setTimeout(function () { initCesium(q); }, 400);
+    startDetailPolling(id);
   };
 
   window.toggleMapFullscreen = function () {
@@ -1101,7 +1104,7 @@
 
         var boundingSphere = Cesium.BoundingSphere.fromPoints(positions);
         var radius = boundingSphere.radius;
-        var zoomRange = Math.max(radius * 3.0, 500.0);
+        var zoomRange = Math.max(radius * 1.5, 50.0);
         var offset = new Cesium.HeadingPitchRange(0.0, Cesium.Math.toRadians(-90), zoomRange);
 
         cesiumViewer.zoomTo(cesiumViewer.entities, offset).then(function () {
@@ -1136,6 +1139,54 @@
     cesiumViewer = null;
     var el = document.getElementById('adminCesiumMap');
     if (el) el.innerHTML = '';
+  }
+
+  function startDetailPolling(id) {
+    stopDetailPolling();
+    detailPollInterval = setInterval(function () {
+      fetch(API + '/api/admin/inquiries/' + id, { credentials: 'include' })
+        .then(function (r) { return r.json(); })
+        .then(function (q) {
+          if (q && q.id === id) {
+            var oldCoordsStr = JSON.stringify((currentQuotation && currentQuotation.area_coordinates) || null);
+            var newCoordsStr = JSON.stringify(q.area_coordinates || null);
+            
+            if (oldCoordsStr !== newCoordsStr) {
+              console.log('Inquiry area coordinates updated by user. Refreshing map...');
+              currentQuotation = q;
+              var points = [];
+              var coords = q.area_coordinates;
+              if (coords && coords.type === "Polygon" && coords.coordinates && coords.coordinates[0]) {
+                points = coords.coordinates[0];
+              } else if (Array.isArray(coords) && coords.length >= 3) {
+                points = coords.map(function (c) {
+                  var lng = c.longitude !== undefined ? c.longitude : c.lng || c[0];
+                  var lat = c.latitude  !== undefined ? c.latitude  : c.lat || c[1];
+                  return [lng, lat];
+                });
+              }
+              if (points.length >= 3) {
+                var areaM2 = calculatePolygonArea(points);
+                var areaKM2 = areaM2 / 1000000;
+                document.getElementById('dCalculatedArea').textContent = areaM2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m² / ' + areaKM2.toFixed(6) + ' km²';
+              } else {
+                document.getElementById('dCalculatedArea').textContent = '—';
+              }
+              initCesium(q);
+            }
+          }
+        })
+        .catch(function(err) {
+          console.error('Error polling inquiry details:', err);
+        });
+    }, 5000);
+  }
+
+  function stopDetailPolling() {
+    if (detailPollInterval) {
+      clearInterval(detailPollInterval);
+      detailPollInterval = null;
+    }
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
