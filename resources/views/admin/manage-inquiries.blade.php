@@ -1107,8 +1107,10 @@
         var zoomRange = Math.max(radius * 1.5, 50.0);
         var offset = new Cesium.HeadingPitchRange(0.0, Cesium.Math.toRadians(-90), zoomRange);
 
-        cesiumViewer.zoomTo(cesiumViewer.entities, offset).then(function () {
-          cesiumViewer.scene.requestRender();
+        // Zoom directly to the calculated bounding sphere to bypass ground-clamped height resolution issues
+        cesiumViewer.camera.flyToBoundingSphere(boundingSphere, {
+          offset: offset,
+          duration: 0.5
         });
 
       } else if (q.map_x_axis && q.map_y_axis) {
