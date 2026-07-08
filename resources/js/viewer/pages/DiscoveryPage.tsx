@@ -672,7 +672,6 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
     // Handle click events for drawing
     useEffect(() => {
         if (!viewerRef.current || !activeTool) {
-            // Clean up handler if no active tool
             if (handlerRef.current) {
                 handlerRef.current.destroy();
                 handlerRef.current = null;
@@ -683,10 +682,14 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                     viewerRef.current.entities.remove(entity);
                 }
             });
+            // Clean up any lingering preview primitives
+            if (viewerRef.current && (viewerRef.current as any)._activePreviewPrimitive) {
+                viewerRef.current.scene.primitives.remove((viewerRef.current as any)._activePreviewPrimitive);
+                (viewerRef.current as any)._activePreviewPrimitive = null;
+            }
             tempEntitiesRef.current = [];
             setDrawingPoints([]);
             drawingPointsRef.current = [];
-
             return;
         }
 
@@ -694,18 +697,34 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
         handlerRef.current = handler;
 
-        // Keep track of current mouse position for live previews
+        // Create a standalone PolylineCollection specifically for our live mouse previews
+        const previewCollection = viewer.scene.primitives.add(new (window as any).Cesium.PolylineCollection());
+        (viewer as any)._activePreviewPrimitive = previewCollection;
+
+        let previewLinePrimitive: any = null;
         let currentMousePosition: Cartesian3 | null = null;
-        const dynamicPositions = new CallbackProperty(() => {
-            const pts = [...drawingPointsRef.current];
-            if (currentMousePosition && pts.length > 0) {
-                pts.push(currentMousePosition);
-            }
-            return pts;
-        }, false);
 
         handler.setInputAction((movement: any) => {
             currentMousePosition = viewer.scene.pickPosition(movement.endPosition);
+
+            // DYNAMIC UPDATE: Update the preview line position frame-by-frame as the mouse moves
+            if (currentMousePosition && drawingPointsRef.current.length > 0) {
+                const positions = [...drawingPointsRef.current, currentMousePosition];
+
+                if (activeTool === 'length' || activeTool === 'height') {
+                    if (!previewLinePrimitive) {
+                        previewLinePrimitive = previewCollection.add({
+                            positions: positions,
+                            width: 3,
+                            material: (window as any).Cesium.Material.fromType('Color', {
+                                color: activeTool === 'height' ? Color.PURPLE : Color.ORANGE
+                            })
+                        });
+                    } else {
+                        previewLinePrimitive.positions = positions;
+                    }
+                }
+            }
         }, ScreenSpaceEventType.MOUSE_MOVE);
 
         handler.setInputAction((click: any) => {
@@ -715,92 +734,48 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             const currentPoints = drawingPointsRef.current;
             const newPoints = [...currentPoints, pickedPosition];
 
-            // Update both state (for UI) and ref (for logic)
             setDrawingPoints(newPoints);
             drawingPointsRef.current = newPoints;
 
-            // Add temporary point marker
+            // Use crisp billboards instead of PointGraphics for temporary interaction dots
             const pointEntity = viewer.entities.add({
                 position: pickedPosition,
-                billboard: new BillboardGraphics({
-                    image: yellowDotImage || undefined,
-                    disableDepthTestDistance: Number.POSITIVE_INFINITY, // Ensure points are always visible over the model
-                }),
+                billboard: {
+                    image: createPointCanvasIcon(activeTool === 'height' ? '#A855F7' : '#EAB308'),
+                    disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                    heightReference: 0
+                },
             });
             tempEntitiesRef.current.push(pointEntity);
 
-            // On the very first click, set up the live preview entity
-            if (newPoints.length === 1) {
-                let previewEntity: Entity | null = null;
-
-                if (activeTool === 'length' || activeTool === 'height') {
-                    // Polyline preview
-                    previewEntity = viewer.entities.add({
+            // Set up fallback handling for non-line entities (area, circle, triangle) on step 1
+            if (newPoints.length === 1 && activeTool !== 'length' && activeTool !== 'height') {
+                let fallbackEntity: Entity | null = null;
+                if (activeTool === 'area') {
+                    fallbackEntity = viewer.entities.add({
                         polyline: new PolylineGraphics({
-                            positions: dynamicPositions,
-                            width: 3,
-                            material: activeTool === 'height' ? Color.PURPLE : Color.ORANGE,
-                            clampToGround: false, // Prevent vertical smearing on buildings/facades
-                        })
-                    });
-                } else if (activeTool === 'area') {
-                    previewEntity = viewer.entities.add({
-                        polyline: new PolylineGraphics({
-                            positions: dynamicPositions,
+                            positions: new CallbackProperty(() => {
+                                return currentMousePosition ? [...drawingPointsRef.current, currentMousePosition] : drawingPointsRef.current;
+                            }, false),
                             width: 3,
                             material: Color.CYAN.withAlpha(0.8),
                             clampToGround: true,
-                        }),
-                        polygon: new PolygonGraphics({
-                            hierarchy: new CallbackProperty(() => {
-                                const pts = [...drawingPointsRef.current];
-                                if (currentMousePosition) pts.push(currentMousePosition);
-                                return pts.length >= 3 ? new PolygonHierarchy(pts) : undefined;
-                            }, false),
-                            material: Color.CYAN.withAlpha(0.5),
-                            classificationType: ClassificationType.CESIUM_3D_TILE,
                         })
                     });
                 } else if (activeTool === 'circle') {
-                    // Circle preview (ellipse with dynamic axis)
-                    previewEntity = viewer.entities.add({
+                    fallbackEntity = viewer.entities.add({
                         position: pickedPosition,
                         ellipse: new EllipseGraphics({
-                            semiMajorAxis: new CallbackProperty(() => {
-                                if (currentMousePosition) {
-                                    const dist = Cartesian3.distance(pickedPosition, currentMousePosition);
-                                    return dist > 0.1 ? dist : 0.1;
-                                }
-                                return 0.1;
-                            }, false),
-                            semiMinorAxis: new CallbackProperty(() => {
-                                if (currentMousePosition) {
-                                    const dist = Cartesian3.distance(pickedPosition, currentMousePosition);
-                                    return dist > 0.1 ? dist : 0.1;
-                                }
-                                return 0.1;
-                            }, false),
+                            semiMajorAxis: new CallbackProperty(() => currentMousePosition ? Cartesian3.distance(pickedPosition, currentMousePosition) : 0.1, false),
+                            semiMinorAxis: new CallbackProperty(() => currentMousePosition ? Cartesian3.distance(pickedPosition, currentMousePosition) : 0.1, false),
                             material: Color.YELLOW.withAlpha(0.3),
-                            outline: false,
-                        })
-                    });
-                } else if (activeTool === 'triangle') {
-                    // Triangle preview (solid line to mouse)
-                    previewEntity = viewer.entities.add({
-                        polyline: new PolylineGraphics({
-                            positions: dynamicPositions,
-                            width: 3,
-                            material: Color.WHITE,
                         })
                     });
                 }
-
-                if (previewEntity) {
-                    tempEntitiesRef.current.push(previewEntity);
-                }
+                if (fallbackEntity) tempEntitiesRef.current.push(fallbackEntity);
             }
 
-            // Check if we have enough points to complete the measurement
+            // Check completion rules
             if (activeTool === 'length' && newPoints.length === 2) {
                 createLengthMeasurement(newPoints);
                 resetDrawing();
@@ -816,23 +791,18 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             }
         }, ScreenSpaceEventType.LEFT_CLICK);
 
-        // For area tool, allow double-click to finish
         if (activeTool === 'area') {
             handler.setInputAction(() => {
                 const currentPoints = drawingPointsRef.current;
                 if (currentPoints.length >= 3) {
-                    // Fill the area on completion
                     createAreaMeasurement(currentPoints);
                     resetDrawing();
                 }
             }, ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
         }
 
-        // Escape key to cancel
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                resetDrawing();
-            }
+            if (e.key === 'Escape') resetDrawing();
         };
         window.addEventListener('keydown', handleKeyDown);
 
@@ -841,9 +811,13 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 handlerRef.current.destroy();
                 handlerRef.current = null;
             }
+            if (viewerRef.current && (viewerRef.current as any)._activePreviewPrimitive) {
+                viewerRef.current.scene.primitives.remove((viewerRef.current as any)._activePreviewPrimitive);
+                (viewerRef.current as any)._activePreviewPrimitive = null;
+            }
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [activeTool]); // Remove drawingPoints from dependency array
+    }, [activeTool]);
 
     const resetDrawing = () => {
         setDrawingPoints([]);
