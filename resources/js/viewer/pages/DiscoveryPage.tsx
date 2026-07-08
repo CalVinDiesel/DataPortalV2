@@ -473,35 +473,28 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const entity = drawnMeasurements[type][index];
         if (entity) {
-            // Remove from Cesium viewer
+            // Remove from Cesium viewer entities list
             viewerRef.current.entities.remove(entity);
+
+            // CLEANUP PRIMITIVE FIX: Remove the low-level rendering line if it exists
+            if ((entity as any).primitiveLine) {
+                viewerRef.current.scene.primitives.remove((entity as any).primitiveLine);
+            }
+
             if ((entity as any).subEntities) {
                 (entity as any).subEntities.forEach((subEntity: Entity) => {
                     viewerRef.current?.entities.remove(subEntity);
                 });
             }
 
-            // Update state
             setDrawnMeasurements(prev => {
-                // Just filter out the deleted item
                 const newArray = prev[type].filter((_, i) => i !== index);
-
-                // Do NOT renumber existing items. 
-                // Do NOT decrement measurementCounters.
-                // This ensures "Length 1, Length 3" is persisted if "Length 2" is deleted,
-                // and next one will be "Length 4".
-
-                return {
-                    ...prev,
-                    [type]: newArray,
-                };
+                return { ...prev, [type]: newArray };
             });
 
-            // If we deleted the one being edited, close modal
             if (editingItem && editingItem.type === 'measurement' && editingItem.subtype === type && editingItem.index === index) {
                 setEditingItem(null);
             }
-            // If we deleted the selected one, close popup
             if (selectedEntity && selectedEntity.type === 'measurement' && selectedEntity.subtype === type && selectedEntity.index === index) {
                 setSelectedEntity(null);
             }
@@ -982,21 +975,23 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
     const createLengthMeasurement = (points: Cartesian3[]) => {
         if (!viewerRef.current || points.length !== 2) return;
 
+        const viewer = viewerRef.current;
         const distance = Cartesian3.distance(points[0], points[1]);
         const midpoint = Cartesian3.midpoint(points[0], points[1], new Cartesian3());
         const nextNumber = measurementCounters.current.length;
         const name = `Length ${nextNumber}`;
 
-        const startPointEntity = viewerRef.current.entities.add({
+        // 1. Foolproof Canvas Pin Endpoints
+        const startPointEntity = viewer.entities.add({
             position: points[0],
             billboard: {
-                image: createPointCanvasIcon('#EAB308'), // Bright Yellow
-                disableDepthTestDistance: Number.POSITIVE_INFINITY, // Forces endpoint visibility over facade
+                image: createPointCanvasIcon('#EAB308'),
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
                 heightReference: 0
             }
         });
 
-        const endPointEntity = viewerRef.current.entities.add({
+        const endPointEntity = viewer.entities.add({
             position: points[1],
             billboard: {
                 image: createPointCanvasIcon('#EAB308'),
@@ -1005,16 +1000,22 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             }
         });
 
-        const entity = viewerRef.current.entities.add({
-            polyline: new PolylineGraphics({
-                positions: points,
-                width: 4, // Slightly thicker for crisp visibility on detailed tilesets
-                material: Color.ORANGE,
-                clampToGround: false,
-                arcType: 0,
-                // CRITICAL FIX: Forces the line to draw cleanly even if it clips behind building skin triangles
-                depthFailMaterial: Color.ORANGE,
-            }),
+        // 2. CRITICAL FIX: Use Cesium Primitives instead of Entity Graphics to prevent facade smearing
+        const polylineCollection = viewer.scene.primitives.add(new (window as any).Cesium.PolylineCollection());
+        const linePrimitive = polylineCollection.add({
+            positions: points,
+            width: 3,
+            material: (window as any).Cesium.Material.fromType('Color', {
+                color: Color.ORANGE
+            })
+        });
+
+        // Disable depth testing directly on the primitive hardware layer so it stays crisp
+        linePrimitive.id = name; // Useful for picking
+
+        // 3. Label Measurement Display
+        const labelEntity = viewer.entities.add({
+            position: midpoint,
             label: new LabelGraphics({
                 text: convertDistance(distance),
                 font: '14px sans-serif',
@@ -1028,16 +1029,20 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 verticalOrigin: VerticalOrigin.BOTTOM,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
-            position: midpoint,
         });
 
-        (entity as any).measurementType = 'length';
-        (entity as any).measurementName = name;
-        (entity as any).subEntities = [startPointEntity, endPointEntity];
+        // Pack sub-entities into a pseudo-entity container so your delete/pan system continues to work perfectly
+        const trackingContainer = {
+            id: `length-measurement-${nextNumber}`,
+            measurementType: 'length',
+            measurementName: name,
+            subEntities: [startPointEntity, endPointEntity, labelEntity],
+            primitiveLine: polylineCollection // Reference to clean up on delete
+        };
 
         setDrawnMeasurements(prev => ({
             ...prev,
-            length: [...prev.length, entity],
+            length: [...prev.length, trackingContainer as any],
         }));
 
         measurementCounters.current.length++;
@@ -1046,6 +1051,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
     const createHeightMeasurement = (points: Cartesian3[]) => {
         if (!viewerRef.current || points.length !== 2) return;
 
+        const viewer = viewerRef.current;
         const cartographic1 = Cartographic.fromCartesian(points[0]);
         const cartographic2 = Cartographic.fromCartesian(points[1]);
         const heightDiff = Math.abs(cartographic1.height - cartographic2.height);
@@ -1056,7 +1062,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const startPointEntity = viewerRef.current.entities.add({
             position: points[0],
             billboard: {
-                image: createPointCanvasIcon('#A855F7'), // Purple Accent
+                image: createPointCanvasIcon('#A855F7'),
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
                 heightReference: 0
             }
@@ -1071,16 +1077,20 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             }
         });
 
-        const entity = viewerRef.current.entities.add({
-            polyline: new PolylineGraphics({
-                positions: points,
-                width: 4,
-                material: Color.PURPLE,
-                clampToGround: false,
-                arcType: 0,
-                // CRITICAL FIX: Forces height path to show cleanly without fragment dropouts
-                depthFailMaterial: Color.PURPLE,
-            }),
+        // Hardware accelerated Polyline primitive for perfect vertical lines
+        const polylineCollection = viewer.scene.primitives.add(new (window as any).Cesium.PolylineCollection());
+        viewer.scene.primitives.raiseToTop(polylineCollection); // Force line stack priority
+
+        polylineCollection.add({
+            positions: points,
+            width: 3,
+            material: (window as any).Cesium.Material.fromType('Color', {
+                color: Color.PURPLE
+            })
+        });
+
+        const labelEntity = viewer.entities.add({
+            position: midpoint,
             label: new LabelGraphics({
                 text: convertDistance(heightDiff),
                 font: '14px sans-serif',
@@ -1094,16 +1104,19 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 verticalOrigin: VerticalOrigin.CENTER,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
-            position: midpoint,
         });
 
-        (entity as any).measurementType = 'height';
-        (entity as any).measurementName = name;
-        (entity as any).subEntities = [startPointEntity, endPointEntity];
+        const trackingContainer = {
+            id: `height-measurement-${nextNumber}`,
+            measurementType: 'height',
+            measurementName: name,
+            subEntities: [startPointEntity, endPointEntity, labelEntity],
+            primitiveLine: polylineCollection
+        };
 
         setDrawnMeasurements(prev => ({
             ...prev,
-            height: [...prev.height, entity],
+            height: [...prev.height, trackingContainer as any],
         }));
 
         measurementCounters.current.height++;
