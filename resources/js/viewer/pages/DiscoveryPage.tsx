@@ -8,6 +8,7 @@ import {
     Color,
     Entity,
     PointGraphics,
+    BillboardGraphics,
     PolylineGraphics,
     PolygonGraphics,
     LabelGraphics,
@@ -39,6 +40,24 @@ import EditEntityModal from '../components/EditEntityModal';
 import EntityPopup from '../components/EntityPopup';
 import '../../../../node_modules/cesium/Build/Cesium/Widgets/widgets.css';
 import './DiscoveryPage.css';
+
+// Create a high-contrast canvas-based texture for billboard point markers
+let yellowDotImage: HTMLCanvasElement | null = null;
+if (typeof document !== 'undefined') {
+    yellowDotImage = document.createElement('canvas');
+    yellowDotImage.width = 16;
+    yellowDotImage.height = 16;
+    const ctx = yellowDotImage.getContext('2d');
+    if (ctx) {
+        ctx.beginPath();
+        ctx.arc(8, 8, 4.5, 0, 2 * Math.PI);
+        ctx.fillStyle = '#FFFF00'; // Bright yellow
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#000000'; // Black outline
+        ctx.stroke();
+    }
+}
 
 // Set your Cesium Ion access token
 Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhMmNhMWY0OC01MjM5LTQwNGUtYTFmOC0zYzVmMWVkODViMDUiLCJpZCI6MzgzNzg2LCJpYXQiOjE3Njk0OTY5NjV9.U79i-pR2pWdCE6AtHaw0zu7Y3fqnMG1D2pPJeJCSEuk';
@@ -709,11 +728,8 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             // Add temporary point marker
             const pointEntity = viewer.entities.add({
                 position: pickedPosition,
-                point: new PointGraphics({
-                    pixelSize: 8,
-                    color: Color.YELLOW,
-                    outlineColor: Color.WHITE,
-                    outlineWidth: 2,
+                billboard: new BillboardGraphics({
+                    image: yellowDotImage || undefined,
                     disableDepthTestDistance: Number.POSITIVE_INFINITY, // Ensure points are always visible over the model
                 }),
             });
@@ -885,11 +901,8 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 // Add temporary point marker
                 const pointEntity = viewer.entities.add({
                     position: pickedPosition,
-                    point: new PointGraphics({
-                        pixelSize: 8,
-                        color: Color.YELLOW,
-                        outlineColor: Color.WHITE,
-                        outlineWidth: 2,
+                    billboard: new BillboardGraphics({
+                        image: yellowDotImage || undefined,
                         disableDepthTestDistance: Number.POSITIVE_INFINITY,
                     }),
                 });
@@ -958,29 +971,25 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const nextNumber = measurementCounters.current.length;
         const name = `Length ${nextNumber}`;
 
+        const cameraPosition = viewerRef.current.camera.position;
         const offsetPoints = points.map(pt => {
-            const carto = Cartographic.fromCartesian(pt);
-            return Cartesian3.fromRadians(carto.longitude, carto.latitude, carto.height + 0.25);
+            const direction = Cartesian3.subtract(cameraPosition, pt, new Cartesian3());
+            Cartesian3.normalize(direction, direction);
+            return Cartesian3.add(pt, Cartesian3.multiplyByScalar(direction, 0.3, new Cartesian3()), new Cartesian3());
         });
 
         const startPointEntity = viewerRef.current.entities.add({
             position: offsetPoints[0],
-            point: new PointGraphics({
-                pixelSize: 10,
-                color: Color.YELLOW,
-                outlineColor: Color.BLACK,
-                outlineWidth: 1.5,
+            billboard: new BillboardGraphics({
+                image: yellowDotImage || undefined,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
 
         const endPointEntity = viewerRef.current.entities.add({
             position: offsetPoints[1],
-            point: new PointGraphics({
-                pixelSize: 10,
-                color: Color.YELLOW,
-                outlineColor: Color.BLACK,
-                outlineWidth: 1.5,
+            billboard: new BillboardGraphics({
+                image: yellowDotImage || undefined,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
@@ -1035,31 +1044,32 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const midpoint = Cartesian3.midpoint(points[0], points[1], new Cartesian3());
 
+        const cameraPosition = viewerRef.current.camera.position;
+        const offsetPoints = points.map(pt => {
+            const direction = Cartesian3.subtract(cameraPosition, pt, new Cartesian3());
+            Cartesian3.normalize(direction, direction);
+            return Cartesian3.add(pt, Cartesian3.multiplyByScalar(direction, 0.3, new Cartesian3()), new Cartesian3());
+        });
+
         const startPointEntity = viewerRef.current.entities.add({
-            position: points[0],
-            point: new PointGraphics({
-                pixelSize: 10,
-                color: Color.YELLOW,
-                outlineColor: Color.BLACK,
-                outlineWidth: 1.5,
+            position: offsetPoints[0],
+            billboard: new BillboardGraphics({
+                image: yellowDotImage || undefined,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
 
         const endPointEntity = viewerRef.current.entities.add({
-            position: points[1],
-            point: new PointGraphics({
-                pixelSize: 10,
-                color: Color.YELLOW,
-                outlineColor: Color.BLACK,
-                outlineWidth: 1.5,
+            position: offsetPoints[1],
+            billboard: new BillboardGraphics({
+                image: yellowDotImage || undefined,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
 
         const entity = viewerRef.current.entities.add({
             polyline: new PolylineGraphics({
-                positions: points,
+                positions: offsetPoints,
                 width: 3,
                 material: Color.PURPLE,
             }),
@@ -1235,11 +1245,8 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const pointEntities = points.map(pt => viewer.entities.add({
             position: pt,
-            point: new PointGraphics({
-                pixelSize: 8,
-                color: Color.YELLOW,
-                outlineColor: Color.WHITE,
-                outlineWidth: 2,
+            billboard: new BillboardGraphics({
+                image: yellowDotImage || undefined,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         }));
@@ -1338,18 +1345,17 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         // Calculate midpoint for label position
         const midpoint = Cartesian3.midpoint(points[0], points[points.length - 1], new Cartesian3());
 
+        const cameraPosition = viewer.camera.position;
         const offsetPoints = points.map(pt => {
-            const carto = Cartographic.fromCartesian(pt);
-            return Cartesian3.fromRadians(carto.longitude, carto.latitude, carto.height + 0.25);
+            const direction = Cartesian3.subtract(cameraPosition, pt, new Cartesian3());
+            Cartesian3.normalize(direction, direction);
+            return Cartesian3.add(pt, Cartesian3.multiplyByScalar(direction, 0.3, new Cartesian3()), new Cartesian3());
         });
 
         const pointEntities = offsetPoints.map(pt => viewer.entities.add({
             position: pt,
-            point: new PointGraphics({
-                pixelSize: 10,
-                color: Color.YELLOW,
-                outlineColor: Color.BLACK,
-                outlineWidth: 1.5,
+            billboard: new BillboardGraphics({
+                image: yellowDotImage || undefined,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         }));
@@ -1478,22 +1484,16 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const centerPointEntity = viewerRef.current.entities.add({
             position: points[0],
-            point: new PointGraphics({
-                pixelSize: 8,
-                color: Color.YELLOW,
-                outlineColor: Color.WHITE,
-                outlineWidth: 2,
+            billboard: new BillboardGraphics({
+                image: yellowDotImage || undefined,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
 
         const edgePointEntity = viewerRef.current.entities.add({
             position: points[1],
-            point: new PointGraphics({
-                pixelSize: 8,
-                color: Color.YELLOW,
-                outlineColor: Color.WHITE,
-                outlineWidth: 2,
+            billboard: new BillboardGraphics({
+                image: yellowDotImage || undefined,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
