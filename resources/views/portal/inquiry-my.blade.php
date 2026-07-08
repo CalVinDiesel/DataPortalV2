@@ -1121,6 +1121,17 @@
       });
     }
 
+    function triggerBackgroundDownload(url) {
+      let iframe = document.getElementById('background-download-iframe');
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'background-download-iframe';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+      }
+      iframe.src = url;
+    }
+
     function executeDownloadTiles(inquiryId) {
       var btn = document.getElementById('btnDownload-' + inquiryId);
       if (!btn) return;
@@ -1129,12 +1140,8 @@
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Preparing Download\u2026';
 
-      var a = document.createElement('a');
-      a.href = '/api/inquiry/' + inquiryId + '/download';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      // Download in the background using a hidden iframe to prevent navigation blocking
+      triggerBackgroundDownload('/api/inquiry/' + inquiryId + '/download');
 
       setTimeout(function () {
         btn.disabled = false;

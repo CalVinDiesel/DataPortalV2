@@ -871,10 +871,20 @@
         .catch(function () { alert("Request failed."); });
     }
 
+    function triggerBackgroundDownload(url) {
+      let iframe = document.getElementById('background-download-iframe');
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'background-download-iframe';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+      }
+      iframe.src = url;
+    }
+
     function downloadDeliveredFile(uploadId) {
-      // Navigate to the API route which streams the file from the SFTP disk
-      // ProjectController@downloadDelivered handles auth + file existence checks
-      window.location.href = '/api/user/my-uploads/' + uploadId + '/download-delivered';
+      // Stream the file in the background using a hidden iframe to prevent blocking navigation
+      triggerBackgroundDownload('/api/user/my-uploads/' + uploadId + '/download-delivered');
     }
 
     // 🚀 DISCLAIMER LOGIC (v176)
