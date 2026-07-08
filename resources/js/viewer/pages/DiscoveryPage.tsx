@@ -25,6 +25,7 @@ import {
     HeadingPitchRange,
     Math as CesiumMath,
     DirectionalLight,
+    PrimitiveCollection,
 } from 'cesium';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -473,14 +474,15 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const entity = drawnMeasurements[type][index];
         if (entity) {
-            // Remove from standard entity index
+            // Remove the shell tracking entity from the scene list
             viewerRef.current.entities.remove(entity);
 
-            // FIXED: Clears hardware rendering layer memory automatically
-            if ((entity as any).primitiveLine) {
-                viewerRef.current.scene.primitives.remove((entity as any).primitiveLine);
+            // CRITICAL MEMORY CLEANUP: Completely drops the direct primitive line out of GPU buffer space
+            if ((entity as any).primitiveLineCollection) {
+                viewerRef.current.scene.primitives.remove((entity as any).primitiveLineCollection);
             }
 
+            // Remove all points and text labels associated with the measurement container
             if ((entity as any).subEntities) {
                 (entity as any).subEntities.forEach((subEntity: Entity) => {
                     viewerRef.current?.entities.remove(subEntity);
@@ -682,6 +684,11 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                     viewerRef.current.entities.remove(entity);
                 }
             });
+            // Clear active live drawing primitive preview collection
+            if (viewerRef.current && (viewerRef.current as any)._activePreviewPrimitiveCollection) {
+                viewerRef.current.scene.primitives.remove((viewerRef.current as any)._activePreviewPrimitiveCollection);
+                (viewerRef.current as any)._activePreviewPrimitiveCollection = null;
+            }
             tempEntitiesRef.current = [];
             setDrawingPoints([]);
             drawingPointsRef.current = [];
@@ -692,17 +699,34 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
         handlerRef.current = handler;
 
+        // Create a standalone primitive collection for the live mouse preview path
+        const previewCollection = viewer.scene.primitives.add(new (window as any).Cesium.PolylineCollection());
+        (viewer as any)._activePreviewPrimitiveCollection = previewCollection;
+
+        let previewLinePrimitive: any = null;
         let currentMousePosition: Cartesian3 | null = null;
-        const dynamicPositions = new CallbackProperty(() => {
-            const pts = [...drawingPointsRef.current];
-            if (currentMousePosition && pts.length > 0) {
-                pts.push(currentMousePosition);
-            }
-            return pts;
-        }, false);
 
         handler.setInputAction((movement: any) => {
             currentMousePosition = viewer.scene.pickPosition(movement.endPosition);
+
+            // Real-time update to make sure the mouse dragging preview line NEVER turns into a sheet
+            if (currentMousePosition && drawingPointsRef.current.length > 0) {
+                const positions = [...drawingPointsRef.current, currentMousePosition];
+
+                if (activeTool === 'length' || activeTool === 'height') {
+                    if (!previewLinePrimitive) {
+                        previewLinePrimitive = previewCollection.add({
+                            positions: positions,
+                            width: 3,
+                            material: (window as any).Cesium.Material.fromType('Color', {
+                                color: activeTool === 'height' ? Color.PURPLE : Color.ORANGE
+                            })
+                        });
+                    } else {
+                        previewLinePrimitive.positions = positions;
+                    }
+                }
+            }
         }, ScreenSpaceEventType.MOUSE_MOVE);
 
         handler.setInputAction((click: any) => {
@@ -715,7 +739,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             setDrawingPoints(newPoints);
             drawingPointsRef.current = newPoints;
 
-            // Render high-contrast pinpoint canvas bubbles on 3D tiles surfaces
+            // Render crisp endpoint canvas dots on building facades
             const pointEntity = viewer.entities.add({
                 position: pickedPosition,
                 billboard: {
@@ -726,64 +750,31 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             });
             tempEntitiesRef.current.push(pointEntity);
 
-            // On the first click, build a clean, non-smearing preview line
-            if (newPoints.length === 1) {
-                let previewEntity: Entity | null = null;
-
-                if (activeTool === 'length' || activeTool === 'height') {
-                    const previewColor = activeTool === 'height' ? Color.PURPLE : Color.ORANGE;
-                    previewEntity = viewer.entities.add({
+            // Keep separate logic for fallback area/circle tracking systems
+            if (newPoints.length === 1 && activeTool !== 'length' && activeTool !== 'height') {
+                let fallbackEntity: Entity | null = null;
+                if (activeTool === 'area') {
+                    fallbackEntity = viewer.entities.add({
                         polyline: new PolylineGraphics({
-                            positions: dynamicPositions,
-                            width: 3,
-                            material: previewColor,
-                            clampToGround: false,
-                            arcType: 0 as any,
-                            // FIXES PREVIEW SHEET: Forces the depth failure state to render as a clean line instead of a sheet envelope
-                            depthFailMaterial: previewColor
-                        })
-                    });
-                } else if (activeTool === 'area') {
-                    previewEntity = viewer.entities.add({
-                        polyline: new PolylineGraphics({
-                            positions: dynamicPositions,
+                            positions: new CallbackProperty(() => {
+                                return currentMousePosition ? [...drawingPointsRef.current, currentMousePosition] : drawingPointsRef.current;
+                            }, false),
                             width: 3,
                             material: Color.CYAN.withAlpha(0.8),
                             clampToGround: true,
-                        }),
-                        polygon: new PolygonGraphics({
-                            hierarchy: new CallbackProperty(() => {
-                                const pts = [...drawingPointsRef.current];
-                                if (currentMousePosition) pts.push(currentMousePosition);
-                                return pts.length >= 3 ? new PolygonHierarchy(pts) : undefined;
-                            }, false),
-                            material: Color.CYAN.withAlpha(0.5),
-                            classificationType: ClassificationType.CESIUM_3D_TILE,
                         })
                     });
                 } else if (activeTool === 'circle') {
-                    previewEntity = viewer.entities.add({
+                    fallbackEntity = viewer.entities.add({
                         position: pickedPosition,
                         ellipse: new EllipseGraphics({
                             semiMajorAxis: new CallbackProperty(() => currentMousePosition ? Cartesian3.distance(pickedPosition, currentMousePosition) : 0.1, false),
                             semiMinorAxis: new CallbackProperty(() => currentMousePosition ? Cartesian3.distance(pickedPosition, currentMousePosition) : 0.1, false),
                             material: Color.YELLOW.withAlpha(0.3),
-                            outline: false,
-                        })
-                    });
-                } else if (activeTool === 'triangle') {
-                    previewEntity = viewer.entities.add({
-                        polyline: new PolylineGraphics({
-                            positions: dynamicPositions,
-                            width: 3,
-                            material: Color.WHITE,
                         })
                     });
                 }
-
-                if (previewEntity) {
-                    tempEntitiesRef.current.push(previewEntity);
-                }
+                if (fallbackEntity) tempEntitiesRef.current.push(fallbackEntity);
             }
 
             if (activeTool === 'length' && newPoints.length === 2) {
@@ -820,6 +811,10 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             if (handlerRef.current) {
                 handlerRef.current.destroy();
                 handlerRef.current = null;
+            }
+            if (viewerRef.current && (viewerRef.current as any)._activePreviewPrimitiveCollection) {
+                viewerRef.current.scene.primitives.remove((viewerRef.current as any)._activePreviewPrimitiveCollection);
+                (viewerRef.current as any)._activePreviewPrimitiveCollection = null;
             }
             window.removeEventListener('keydown', handleKeyDown);
         };
@@ -979,17 +974,21 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             }
         });
 
-        const entity = viewer.entities.add({
-            polyline: new PolylineGraphics({
-                positions: points,
-                width: 3,
-                material: Color.ORANGE,
-                clampToGround: false,
-                arcType: 0 as any,
-                // FIXES THE HUGE SHEET FOR GOOD: Explicitly match the line's material color on depth failures. 
-                // This stops Cesium from interpreting facade depths as a vertical volume sheet.
-                depthFailMaterial: Color.ORANGE
-            }),
+        // FIXED PERMANENTLY: Create a hardware collection layer to guarantee a razor-sharp thin line
+        const primitiveContainer = viewer.scene.primitives.add(new PrimitiveCollection());
+        const polylineCollection = primitiveContainer.add(new (window as any).Cesium.PolylineCollection());
+
+        polylineCollection.add({
+            positions: points,
+            width: 3,
+            material: (window as any).Cesium.Material.fromType('Color', {
+                color: Color.ORANGE
+            })
+        });
+
+        // Label layout tracking
+        const labelEntity = viewer.entities.add({
+            position: midpoint,
             label: new LabelGraphics({
                 text: convertDistance(distance),
                 font: '14px sans-serif',
@@ -1003,12 +1002,19 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 verticalOrigin: VerticalOrigin.BOTTOM,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
-            position: midpoint,
         });
 
+        // We generate a safe shell entity to bind everything into your React tracking indexes perfectly
+        const entity = new Entity({
+            id: `length-measurement-${nextNumber}`,
+            position: midpoint as any
+        });
         (entity as any).measurementType = 'length';
         (entity as any).measurementName = name;
-        (entity as any).subEntities = [startPointEntity, endPointEntity];
+        (entity as any).subEntities = [startPointEntity, endPointEntity, labelEntity];
+        (entity as any).primitiveLineCollection = primitiveContainer; // Save container to drop from GPU safely on delete
+
+        viewer.entities.add(entity);
 
         setDrawnMeasurements(prev => ({
             ...prev,
@@ -1047,16 +1053,20 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             }
         });
 
-        const entity = viewer.entities.add({
-            polyline: new PolylineGraphics({
-                positions: points,
-                width: 3,
-                material: Color.PURPLE,
-                clampToGround: false,
-                arcType: 0 as any,
-                // FIXES THE HUGE SHEET FOR GOOD: Prevents vertical smearing from height measurements down facade faces
-                depthFailMaterial: Color.PURPLE
-            }),
+        // FIXED PERMANENTLY: Create a hardware collection layer to guarantee a razor-sharp thin line
+        const primitiveContainer = viewer.scene.primitives.add(new PrimitiveCollection());
+        const polylineCollection = primitiveContainer.add(new (window as any).Cesium.PolylineCollection());
+
+        polylineCollection.add({
+            positions: points,
+            width: 3,
+            material: (window as any).Cesium.Material.fromType('Color', {
+                color: Color.PURPLE
+            })
+        });
+
+        const labelEntity = viewer.entities.add({
+            position: midpoint,
             label: new LabelGraphics({
                 text: convertDistance(heightDiff),
                 font: '14px sans-serif',
@@ -1070,12 +1080,18 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 verticalOrigin: VerticalOrigin.CENTER,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
-            position: midpoint,
         });
 
+        const entity = new Entity({
+            id: `height-measurement-${nextNumber}`,
+            position: midpoint as any
+        });
         (entity as any).measurementType = 'height';
         (entity as any).measurementName = name;
-        (entity as any).subEntities = [startPointEntity, endPointEntity];
+        (entity as any).subEntities = [startPointEntity, endPointEntity, labelEntity];
+        (entity as any).primitiveLineCollection = primitiveContainer;
+
+        viewer.entities.add(entity);
 
         setDrawnMeasurements(prev => ({
             ...prev,
