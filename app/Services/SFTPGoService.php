@@ -252,7 +252,7 @@ class SFTPGoService
             $homeDir = $user->home_dir;
         } else {
             // Construct default home directory path
-            $sftpRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', env('SYSTEM_SSH_STORAGE_ROOT', '/home/tiquan')), '/');
+            $sftpRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', env('SYSTEM_SSH_STORAGE_ROOT', '/srv/sftpgo/data')), '/');
             if (in_array($user->role, ['admin', 'superadmin'])) {
                 $homeDir = $sftpRoot . '/delivered/' . $user->sftp_username;
             } else {
@@ -271,7 +271,7 @@ class SFTPGoService
             $sftpDisk = \Illuminate\Support\Facades\Storage::disk('sftp_delivery');
             
             // Compute relative directory path for storage check
-            $sftpRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', env('SYSTEM_SSH_STORAGE_ROOT', '/home/tiquan')), '/');
+            $sftpRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', env('SYSTEM_SSH_STORAGE_ROOT', '/srv/sftpgo/data')), '/');
             $relativeDir = in_array($user->role, ['admin', 'superadmin']) 
                 ? 'delivered/' . $user->sftp_username 
                 : 'uploads/' . $user->sftp_username;

@@ -38,7 +38,7 @@ function nitroLog($msg) {
 
 // Parse .env manually for raw speed (fallback if not in environment)
 $env = file_exists(__DIR__ . '/../.env') ? parse_ini_file(__DIR__ . '/../.env') : [];
-$root = getenv('NITRO_STORAGE_ROOT') ?: ($_ENV['NITRO_STORAGE_ROOT'] ?? ($env['NITRO_STORAGE_ROOT'] ?? 'C:/DataPortal_Nitro_Storage'));
+$root = getenv('NITRO_STORAGE_ROOT') ?: ($_ENV['NITRO_STORAGE_ROOT'] ?? ($env['NITRO_STORAGE_ROOT'] ?? '/var/www/nitro_storage'));
 
     $projectId  = $_GET['projectID'] ?? 'unknown_project';
     $isFirst    = ($_GET['isFirstChunk'] ?? 'true') !== 'false';

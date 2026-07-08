@@ -320,7 +320,7 @@
       <!-- SFTP Connection Details -->
       <div class="profile-row">
         <span class="profile-label">SFTP Host</span>
-        <span class="profile-value" id="profile-sftp-host">{{ config('filesystems.disks.sftp_delivery.host') ?: request()->getHost() }}</span>
+        <span class="profile-value" id="profile-sftp-host">{{ config('support.sftp_host') }}</span>
       </div>
       <div class="profile-row">
         <span class="profile-label">SFTP Port</span>
@@ -730,7 +730,7 @@
                     sftpPortEl.textContent = data.sftpPort || '{{ env('CLIENT_SFTP_PORT', env('SFTP_PORT', 2222)) }}';
                   }
                   if (sftpHostEl) {
-                    sftpHostEl.textContent = data.sftpHost || '{{ config('filesystems.disks.sftp_delivery.host') ?: request()->getHost() }}';
+                    sftpHostEl.textContent = data.sftpHost || '{{ config('support.sftp_host') }}';
                   }
                   
                   if (sftpChangePwBtn) sftpChangePwBtn.disabled = false;

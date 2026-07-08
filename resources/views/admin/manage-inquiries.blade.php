@@ -1354,7 +1354,7 @@
   function updateDeliverySection(q) {
     if (!q) return;
 
-    var sftpHost = @json(config('filesystems.disks.sftp_delivery.host') ?: request()->getHost());
+    var sftpHost = @json(config('support.sftp_host'));
     var sftpUserHost = @json(config('filesystems.disks.sftp_delivery.username') ?: 'root');
     var sftpPortHost = @json(config('filesystems.disks.sftp_delivery.port') ?: 22);
 
@@ -1388,7 +1388,7 @@
 
   window.launchWinSftp = function (type) {
     if (!currentQuotation) return;
-    var host = @json(config('filesystems.disks.sftp_delivery.host') ?: request()->getHost());
+    var host = @json(config('support.sftp_host'));
     var path = currentQuotation.sftp_delivery_relative ? ('/' + currentQuotation.sftp_delivery_relative) : '';
     var user = @json(config('filesystems.disks.sftp_delivery.username') ?: 'root');
     var port = @json(config('filesystems.disks.sftp_delivery.port') ?: 22);

@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'log'),
+    'default' => env('MAIL_MAILER', 'temadigital_api'),
 
     /*
     |--------------------------------------------------------------------------
@@ -115,8 +115,8 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
+        'address' => env('MAIL_FROM_ADDRESS', 'noreply.temadigital@gmail.com'),
+        'name' => env('MAIL_FROM_NAME', env('APP_NAME', '3D Hub Data Portal')),
     ],
 
 ];

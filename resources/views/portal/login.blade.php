@@ -140,9 +140,9 @@
   <script src="{{ asset('assets') }}/vendor/js/bootstrap.js"></script>
   <script src="{{ asset('assets') }}/js/theme-switcher.js"></script>
   <script>
-    var AUTH_GOOGLE_URL = 'http://localhost:3000/api/auth/google';
-    var AUTH_MICROSOFT_URL = 'http://localhost:3000/auth/microsoft/login';
-    var AUTH_API = 'http://localhost:3000';
+    var AUTH_GOOGLE_URL = '{{ rtrim(config('app.url'), '/') }}/api/auth/google';
+    var AUTH_MICROSOFT_URL = '{{ rtrim(config('app.url'), '/') }}/auth/microsoft/login';
+    var AUTH_API = '{{ rtrim(config('app.url'), '/') }}';
 
     // Password show/hide toggle
     (function() {

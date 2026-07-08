@@ -239,7 +239,7 @@ class ProjectController extends Controller
                 $sshPass = env('SYSTEM_SSH_PASSWORD');
                 $ssh = new \phpseclib3\Net\SSH2($sshHost, $sshPort);
                 if ($ssh->login($sshUser, $sshPass)) {
-                    $baseUploadRoot = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/');
+                    $baseUploadRoot = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/srv/sftpgo/data'), '/');
                     $fullPath = $baseUploadRoot . '/' . $uploadPathRelative;
                     $userDir = $baseUploadRoot . '/' . 'uploads/' . $sftpUser;
                     // 🚀 TIMESTAMP WAKEUP (v225): Write and delete a temp file to force filesystem/SFTPGo to update mtime
@@ -267,7 +267,7 @@ class ProjectController extends Controller
         $sftpDetails = [
             'absolutePath' => rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/') . '/uploads/' . $sftpUser . '/' . $upload->project_id . '/',
             'clientPath'   => '/' . $upload->project_id . '/', 
-            'host'         => config('filesystems.disks.sftp_delivery.host'),
+            'host'         => config('support.sftp_host'),
             'port'         => (int)env('CLIENT_SFTP_PORT', env('SFTP_PORT', 2222)),
         ];
 
@@ -730,7 +730,7 @@ class ProjectController extends Controller
         $creator = \App\Models\User::where('email', $upload->created_by_email)->first();
         $sftpUser = $creator ? ($creator->sftp_username ?: \Str::slug($creator->name)) : 'guest';
         
-        $baseUploadRoot = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/');
+        $baseUploadRoot = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/srv/sftpgo/data'), '/');
         $remotePath = "{$baseUploadRoot}/uploads/{$sftpUser}/{$upload->project_id}";
 
         try {

@@ -151,7 +151,7 @@ class Inquiry extends Model
      */
     public function getSftpDeliveryAbsolutePath(): string
     {
-        $root = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/');
+        $root = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/srv/sftpgo/data'), '/');
         return $root . '/' . $this->getSftpDeliveryRelativePath();
     }
 

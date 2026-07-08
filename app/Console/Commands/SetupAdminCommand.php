@@ -29,7 +29,7 @@ class SetupAdminCommand extends Command
     public function handle()
     {
         // Read defaults from the .env environment, or establish fallbacks
-        $email = env('SUPER_ADMIN_EMAIL', 'admin@example.com');
+        $email = env('SUPER_ADMIN_EMAIL', 'nanno@temadigital.my');
         $name = env('SUPER_ADMIN_NAME', 'Super Admin');
         $password = env('SUPER_ADMIN_PASSWORD', 'admin123');
         $username = env('SUPER_ADMIN_USER', 'superadmin');

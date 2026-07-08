@@ -560,7 +560,7 @@
           document.getElementById('successFooter').style.display = 'flex';
           
           // Show basic connection info
-          document.getElementById('resHost').innerText = data.sftpDetails.host || '{{ config('filesystems.disks.sftp_delivery.host') ?: request()->getHost() }}';
+          document.getElementById('resHost').innerText = data.sftpDetails.host || '{{ config('support.sftp_host') }}';
           document.getElementById('resPort').innerText = data.sftpDetails.port || '{{ env('CLIENT_SFTP_PORT', env('SFTP_PORT', 2222)) }}';
           
           // 🚀 SMART-PATH SYNC (v118)

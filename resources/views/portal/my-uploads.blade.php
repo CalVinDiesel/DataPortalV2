@@ -554,7 +554,7 @@
   
   <script>
     // 🚀 DYNAMIC CONFIG (v196)
-    window.remoteBasePath = '{{ config("filesystems.disks.sftp_delivery.root", "/home/tiquan/") }}';
+    window.remoteBasePath = '{{ config("filesystems.disks.sftp_delivery.root", "/srv/sftpgo/data/") }}';
     
     function logout() {
       if (!confirm('Are you sure you want to log out?')) return;
@@ -1223,7 +1223,7 @@
               displayPath = displayPath.substring(displayPath.indexOf('/' + sftpUser + '/') + sftpUser.length + 1);
           } else {
               // Fallback: Remove known system roots
-              const rootPrefix = (window.remoteBasePath || '/home/tiquan/uploads').replace(/\/+$/, '');
+              const rootPrefix = (window.remoteBasePath || '/srv/sftpgo/data/uploads').replace(/\/+$/, '');
               if (displayPath.startsWith(rootPrefix)) {
                   displayPath = displayPath.substring(rootPrefix.length);
               }

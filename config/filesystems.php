@@ -96,7 +96,7 @@ return [
 
         'nitro' => [
             'driver' => 'local',
-            'root' => env('NITRO_STORAGE_ROOT', 'C:/DataPortal_Nitro_Storage'),
+            'root' => env('NITRO_STORAGE_ROOT', '/var/www/nitro_storage'),
             'throw' => false,
         ],
 
