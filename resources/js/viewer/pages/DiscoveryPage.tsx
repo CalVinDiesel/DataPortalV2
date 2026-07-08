@@ -731,14 +731,16 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 let previewEntity: Entity | null = null;
 
                 if (activeTool === 'length' || activeTool === 'height') {
+                    const previewColor = activeTool === 'height' ? Color.PURPLE : Color.ORANGE;
                     previewEntity = viewer.entities.add({
                         polyline: new PolylineGraphics({
                             positions: dynamicPositions,
                             width: 3,
-                            material: activeTool === 'height' ? Color.PURPLE : Color.ORANGE,
+                            material: previewColor,
                             clampToGround: false,
-                            // CRITICAL PREVIEW FIX: Prevents the mouse dragging path from turning into a sheet panel
-                            arcType: 0 as any
+                            arcType: 0 as any,
+                            // FIXES PREVIEW SHEET: Forces the depth failure state to render as a clean line instead of a sheet envelope
+                            depthFailMaterial: previewColor
                         })
                     });
                 } else if (activeTool === 'area') {
@@ -983,8 +985,10 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 width: 3,
                 material: Color.ORANGE,
                 clampToGround: false,
-                // CRITICAL FIXED ARCTYPE: Enforces standard 3D direct vector calculus over tiles
-                arcType: 0 as any
+                arcType: 0 as any,
+                // FIXES THE HUGE SHEET FOR GOOD: Explicitly match the line's material color on depth failures. 
+                // This stops Cesium from interpreting facade depths as a vertical volume sheet.
+                depthFailMaterial: Color.ORANGE
             }),
             label: new LabelGraphics({
                 text: convertDistance(distance),
@@ -1049,7 +1053,9 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 width: 3,
                 material: Color.PURPLE,
                 clampToGround: false,
-                arcType: 0 as any
+                arcType: 0 as any,
+                // FIXES THE HUGE SHEET FOR GOOD: Prevents vertical smearing from height measurements down facade faces
+                depthFailMaterial: Color.PURPLE
             }),
             label: new LabelGraphics({
                 text: convertDistance(heightDiff),
