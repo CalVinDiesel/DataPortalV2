@@ -367,7 +367,7 @@
           </thead>
           <tbody id="uploadsTableBody">
             <tr>
-              <td colspan="6" class="text-center py-5">
+              <td colspan="7" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status"></div>
                 <div class="mt-2 text-muted small">Loading your datasets...</div>
               </td>
@@ -1077,11 +1077,9 @@
 
       const rows = Array.from(tbody.querySelectorAll('tr:not(.empty-page-row)'));
       
-      // Remove existing empty page row
       const existingEmpty = tbody.querySelector('.empty-page-row');
       if (existingEmpty) existingEmpty.remove();
 
-      // Check if we are in "No datasets found" or "Loading" state
       if (rows.length === 1) {
         const firstRowText = rows[0].textContent.toLowerCase();
         if (firstRowText.includes('no datasets found') || firstRowText.includes('loading')) {
@@ -1096,7 +1094,6 @@
         return text.includes(filter);
       });
 
-      // Hide all rows first
       rows.forEach(row => row.style.display = 'none');
 
       let visibleCount = 0;
@@ -1108,13 +1105,12 @@
         }
       });
 
-      // Handle empty page higher than page 1
       if (visibleCount === 0 && window.currentPage > 1) {
         const lastValidPage = Math.max(1, Math.ceil(filteredRows.length / window.pageSize));
         const emptyRow = document.createElement('tr');
         emptyRow.className = 'empty-page-row';
         emptyRow.innerHTML = `
-          <td colspan="6" class="text-center py-5">
+          <td colspan="7" class="text-center py-5">
             <div class="text-muted mb-2"><i class="bx bx-folder-open" style="font-size: 3rem; opacity: 0.5;"></i></div>
             <h6 class="mb-1 fw-bold text-dark">No more history</h6>
             <p class="text-muted small">This page doesn't have any uploaded files yet.</p>
@@ -1127,27 +1123,65 @@
       updatePaginationUI(filteredRows.length);
     }
 
-    function launchInteractivePreview(projectIdString) {
-      const modalEl = document.getElementById('interactivePreviewModal');
-      const frameEl = document.getElementById('interactivePreviewFrame');
-      const titleEl = document.getElementById('interactivePreviewTitle');
+    // 🚀 FIXED: Re-added missing pagination UI renderer
+    function updatePaginationUI(totalEntries) {
+      const start = (window.currentPage - 1) * window.pageSize + 1;
+      const end = Math.min(window.currentPage * window.pageSize, totalEntries);
       
-      if (!modalEl || !frameEl) return;
-
-      // Set the structural title information block lookup safely
-      if (window.myUploadsData) {
-        const assetMeta = window.myUploadsData.find(p => String(p.project_id) === String(projectIdString) || String(p.id) === String(projectIdString));
-        if (assetMeta) {
-          titleEl.textContent = `3D Mesh Map Canvas View: ${assetMeta.project_title || assetMeta.project_id}`;
+      const pagText = document.getElementById('paginationText');
+      if (pagText) {
+        if (totalEntries === 0) {
+          pagText.textContent = 'Showing 0 entries';
+        } else if (start > totalEntries) {
+          pagText.textContent = `Showing 0 entries of ${totalEntries} total`;
+        } else {
+          pagText.textContent = `Showing ${start} to ${end} of ${totalEntries} entries`;
         }
       }
 
-      // Set up your dedicated web viewer controller context route mapping path
+      for (let i = 1; i <= 3; i++) {
+        const item = document.getElementById(`page${i}Item`);
+        if (item) {
+          if (i === window.currentPage) item.classList.add('active');
+          else item.classList.remove('active');
+        }
+      }
+
+      const prevItem = document.getElementById('prevPageItem');
+      const nextItem = document.getElementById('nextPageItem');
+      
+      if (prevItem) {
+        if (window.currentPage === 1) prevItem.classList.add('disabled');
+        else prevItem.classList.remove('disabled');
+      }
+      
+      if (nextItem) {
+        if (window.currentPage === 3) nextItem.classList.add('disabled');
+        else nextItem.classList.remove('disabled');
+      }
+    }
+
+    // 🚀 FIXED: Added robust link handler to securely query tileset information
+    function launchInteractivePreview(projectIdString) {
+      const modalEl = document.getElementById('mapPreviewModal'); // Mapped to match your structural layout
+      const frameEl = document.getElementById('interactivePreviewFrame');
+      const titleEl = document.getElementById('mapPreviewModalTitle');
+      
+      if (!modalEl || !frameEl) return;
+
+      let projectTitle = 'Project 3D Model';
+      if (window.myUploadsData) {
+        const assetMeta = window.myUploadsData.find(p => String(p.project_id) === String(projectIdString) || String(p.id) === String(projectIdString));
+        if (assetMeta) {
+          projectTitle = assetMeta.project_title || assetMeta.project_id;
+          titleEl.innerHTML = `<i class="bx bx-layer me-2 text-primary"></i> 3D Model Map Viewer: ${projectTitle}`;
+        }
+      }
+
       fetch(`/api/user/my-uploads/${encodeURIComponent(projectIdString)}/preview-tileset`)
         .then(res => res.json())
         .then(data => {
           if (data.success && data.tileset_url) {
-            // 🛰️ Pass everything straight into your DiscoveryPage parameter reader hooks!
             frameEl.src = `/viewer/${encodeURIComponent(projectIdString)}?model=${encodeURIComponent(projectIdString)}&tileset_url=${encodeURIComponent(data.tileset_url)}&title=${encodeURIComponent(projectTitle)}`;
           } else {
             frameEl.src = '';
@@ -1391,7 +1425,9 @@
                 <div class="mt-2 fw-bold text-dark">Initializing 3D Pipeline Render Engine...</div>
               </div>
               
-              <div id="spatialViewerContainer" style="width: 100%; height: 100%;"></div>
+              <div id="spatialViewerContainer" style="width: 100%; height: 100%;">
+                <iframe id="interactivePreviewFrame" src="" style="width: 100%; height: 100%; border: none; background: #000;" allow="fullscreen; xr-spatial-tracking"></iframe>
+              </div>
             </div>
           </div>
         </div>
