@@ -730,7 +730,11 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                             positions: dynamicPositions,
                             width: 3,
                             material: activeTool === 'height' ? Color.PURPLE : Color.ORANGE,
-                            clampToGround: activeTool !== 'height',
+                            clampToGround: false, // Prevent vertical smearing on buildings/facades
+                            depthFailMaterial: new PolylineDashMaterialProperty({
+                                color: activeTool === 'height' ? Color.PURPLE.withAlpha(0.6) : Color.ORANGE.withAlpha(0.6),
+                                dashLength: 12,
+                            }),
                         })
                     });
                 } else if (activeTool === 'area') {
@@ -902,7 +906,11 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                             positions: dynamicPositions,
                             width: 3,
                             material: activeAnnotationTool === 'line' ? Color.ORANGE : Color.PURPLE.withAlpha(0.8),
-                            clampToGround: true,
+                            clampToGround: false, // Prevent vertical smearing on buildings/facades
+                            depthFailMaterial: new PolylineDashMaterialProperty({
+                                color: activeAnnotationTool === 'line' ? Color.ORANGE.withAlpha(0.6) : Color.PURPLE.withAlpha(0.5),
+                                dashLength: 12,
+                            }),
                         }),
                         polygon: activeAnnotationTool === 'polygon' ? new PolygonGraphics({
                             hierarchy: new CallbackProperty(() => {
@@ -958,12 +966,38 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const nextNumber = measurementCounters.current.length;
         const name = `Length ${nextNumber}`;
 
+        const startPointEntity = viewerRef.current.entities.add({
+            position: points[0],
+            point: new PointGraphics({
+                pixelSize: 8,
+                color: Color.YELLOW,
+                outlineColor: Color.WHITE,
+                outlineWidth: 2,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            }),
+        });
+
+        const endPointEntity = viewerRef.current.entities.add({
+            position: points[1],
+            point: new PointGraphics({
+                pixelSize: 8,
+                color: Color.YELLOW,
+                outlineColor: Color.WHITE,
+                outlineWidth: 2,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            }),
+        });
+
         const entity = viewerRef.current.entities.add({
             polyline: new PolylineGraphics({
                 positions: points,
                 width: 3,
                 material: Color.ORANGE,
-                clampToGround: true,
+                clampToGround: false, // Prevent vertical smearing on buildings/facades
+                depthFailMaterial: new PolylineDashMaterialProperty({
+                    color: Color.ORANGE.withAlpha(0.6),
+                    dashLength: 12,
+                }),
             }),
             label: new LabelGraphics({
                 text: convertDistance(distance),
@@ -983,6 +1017,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         (entity as any).measurementType = 'length';
         (entity as any).measurementName = name;
+        (entity as any).subEntities = [startPointEntity, endPointEntity];
 
         // Optimistic update
         setDrawnMeasurements(prev => {
@@ -1274,12 +1309,27 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         // Calculate midpoint for label position
         const midpoint = Cartesian3.midpoint(points[0], points[points.length - 1], new Cartesian3());
 
+        const pointEntities = points.map(pt => viewer.entities.add({
+            position: pt,
+            point: new PointGraphics({
+                pixelSize: 8,
+                color: Color.YELLOW,
+                outlineColor: Color.WHITE,
+                outlineWidth: 2,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            }),
+        }));
+
         const entity = viewer.entities.add({
             polyline: new PolylineGraphics({
                 positions: points,
                 width: 3,
                 material: Color.ORANGE,
-                clampToGround: true,
+                clampToGround: false, // Prevent vertical smearing on buildings/facades
+                depthFailMaterial: new PolylineDashMaterialProperty({
+                    color: Color.ORANGE.withAlpha(0.6),
+                    dashLength: 12,
+                }),
             }),
             label: new LabelGraphics({
                 text: convertDistance(totalDistance),
@@ -1301,6 +1351,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const name = `Line ${counter}`;
         (entity as any).annotationType = 'line';
         (entity as any).annotationName = name;
+        (entity as any).subEntities = pointEntities;
 
         setUserAnnotations(prev => ({
             ...prev,
