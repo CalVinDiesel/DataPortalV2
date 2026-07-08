@@ -186,6 +186,26 @@ class AuthController extends Controller
         return response()->json(['success' => true, 'message' => 'SFTP password updated.']);
     }
 
+    public function updateSftpUsername(Request $request)
+    {
+        $user = $request->user();
+        if (!in_array($user->role, ['trusted', 'admin', 'superadmin'])) {
+            return response()->json(['success' => false, 'message' => 'SFTP access is not allowed for your role.'], 403);
+        }
+
+        $request->validate([
+            'sftpUsername' => 'required|string|max:255|regex:/^[a-zA-Z0-9._-]+$/|unique:portal_users,sftp_username,' . $user->id,
+        ], [
+            'sftpUsername.regex' => 'The SFTP username must only contain letters, numbers, dots, underscores, and hyphens.',
+            'sftpUsername.unique' => 'This SFTP username is already taken.',
+        ]);
+
+        $user->sftp_username = $request->sftpUsername;
+        $user->save();
+
+        return response()->json(['success' => true, 'message' => 'SFTP username updated.', 'sftpUsername' => $user->sftp_username]);
+    }
+
     protected function ensureSftpCredentials($user)
     {
         $hasSftpAccess = in_array($user->role, ['trusted', 'admin', 'superadmin']) && $user->is_active;

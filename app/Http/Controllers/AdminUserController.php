@@ -9,7 +9,7 @@ class AdminUserController extends Controller
 {
     public function index()
     {
-        $users = User::select('id', 'name', 'email', 'username', 'role', 'is_active', 'status')->orderBy('id', 'asc')->get();
+        $users = User::select('id', 'name', 'email', 'username', 'sftp_username', 'role', 'is_active', 'status')->orderBy('id', 'asc')->get();
         
         $mapped = $users->map(function ($u) {
             $data = $u->toArray();

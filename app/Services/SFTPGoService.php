@@ -154,6 +154,54 @@ class SFTPGoService
      */
     public static function syncUser(User $user, $plainPassword = null)
     {
+        // Detect if sftp_username has changed, and clean up/rename old user/directories
+        $oldUsername = $user->getOriginal('sftp_username');
+        if (!empty($oldUsername) && $oldUsername !== $user->sftp_username) {
+            // Delete old user in SFTPGo
+            try {
+                self::deleteUser($oldUsername);
+            } catch (\Exception $ex) {
+                Log::error("SFTPGo API: Failed to delete old user {$oldUsername} on username update: " . $ex->getMessage());
+            }
+
+            // Rename physical directories using Laravel's Storage disk
+            try {
+                $sftpDisk = \Illuminate\Support\Facades\Storage::disk('sftp_delivery');
+                $oldRelativeDir = in_array($user->role, ['admin', 'superadmin']) 
+                    ? 'delivered/' . $oldUsername 
+                    : 'uploads/' . $oldUsername;
+                $newRelativeDir = in_array($user->role, ['admin', 'superadmin']) 
+                    ? 'delivered/' . $user->sftp_username 
+                    : 'uploads/' . $user->sftp_username;
+                
+                if ($sftpDisk->exists($oldRelativeDir)) {
+                    $sftpDisk->move($oldRelativeDir, $newRelativeDir);
+                    Log::info("SFTPGo API: Renamed physical directory from {$oldRelativeDir} to {$newRelativeDir}");
+                    
+                    // Force 777 permissions using SSH on the new directory if possible
+                    try {
+                        $sshPort = (int)config('filesystems.disks.sftp_delivery.port', 22);
+                        $ssh = new \phpseclib3\Net\SSH2(config('filesystems.disks.sftp_delivery.host'), $sshPort);
+                        if ($ssh->login(config('filesystems.disks.sftp_delivery.username'), config('filesystems.disks.sftp_delivery.password'))) {
+                            $baseUploadRoot = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
+                            $userDir = $baseUploadRoot . '/' . $newRelativeDir;
+                            $ssh->exec("chmod -R 777 " . escapeshellarg($userDir));
+                        }
+                    } catch (\Exception $sshEx) {
+                        Log::error("SSH Chmod failed on username update: " . $sshEx->getMessage());
+                    }
+                }
+            } catch (\Exception $dirEx) {
+                Log::error("SFTPGo API: Failed to rename physical directory on username change: " . $dirEx->getMessage());
+            }
+
+            // Force recalculation of home directory
+            $user->home_dir = null;
+            \Illuminate\Support\Facades\DB::table('portal_users')
+                ->where('id', $user->id)
+                ->update(['home_dir' => null]);
+        }
+
         // 1. Sync latest changes from SFTPGo to local DB first (preserves admin modifications)
         try {
             self::syncFromSFTPGo($user);

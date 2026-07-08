@@ -327,10 +327,21 @@
         <span class="profile-value text-primary fw-bold" id="profile-sftp-port">{{ env('CLIENT_SFTP_PORT', env('SFTP_PORT', 2222)) }}</span>
       </div>
 
-      <!-- SFTP Username (read-only) -->
+      <!-- SFTP Username -->
       <div class="profile-row">
         <span class="profile-label">SFTP Username</span>
         <span class="profile-value" id="profile-sftp-username">—</span>
+        <span class="profile-actions" id="sftp-username-actions">
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnChangeSftpUsername">Change username</button>
+        </span>
+      </div>
+      <div id="formChangeSftpUsername" class="profile-inline-form d-none">
+        @csrf
+        <label class="form-label small">New SFTP username</label>
+        <input type="text" class="form-control form-control-sm" id="newSftpUsername" placeholder="e.g. johndoe_sftp">
+        <button type="button" class="btn btn-sm btn-primary" id="btnSftpUsernameSubmit">Update SFTP username</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnSftpUsernameCancel">Cancel</button>
+        <span id="sftpUsernameMessage" class="small ms-2"></span>
       </div>
 
       <!-- SFTP Password -->
@@ -392,7 +403,7 @@
       }
 
       function hideInlineForms() {
-        const ids = ['inlineFormName', 'formChangePassword', 'inlineFormContact', 'inlineFormEmail', 'formChangeSftpPassword'];
+        const ids = ['inlineFormName', 'formChangePassword', 'inlineFormContact', 'inlineFormEmail', 'formChangeSftpPassword', 'formChangeSftpUsername'];
         ids.forEach(id => {
           const el = document.getElementById(id);
           if (el) el.classList.add('d-none');
@@ -454,16 +465,22 @@
             var sftpUsernameEl = document.getElementById('profile-sftp-username');
             var sftpPasswordEl = document.getElementById('profile-sftp-password');
             var sftpAlertEl = document.getElementById('sftpNotSetAlert');
+            var sftpUsernameActions = document.getElementById('sftp-username-actions');
+            var sftpPasswordActions = document.getElementById('btnToggleSftpPassword')?.parentElement;
 
             if (data.sftpUsername && data.sftpUsername !== 'Not set') {
               if (sftpUsernameEl) sftpUsernameEl.textContent = data.sftpUsername;
               actualSftpPassword = data.sftpPassword || '';
               if (sftpPasswordEl) sftpPasswordEl.textContent = '••••••••';
               if (sftpAlertEl) sftpAlertEl.classList.add('d-none');
+              if (sftpUsernameActions) sftpUsernameActions.classList.remove('d-none');
+              if (sftpPasswordActions) sftpPasswordActions.classList.remove('d-none');
             } else {
               if (sftpUsernameEl) sftpUsernameEl.textContent = 'Not set';
               if (sftpPasswordEl) sftpPasswordEl.textContent = 'Not set';
               if (sftpAlertEl) sftpAlertEl.classList.remove('d-none');
+              if (sftpUsernameActions) sftpUsernameActions.classList.add('d-none');
+              if (sftpPasswordActions) sftpPasswordActions.classList.add('d-none');
             }
           })
           .catch(function () {
@@ -813,6 +830,76 @@
                 }
               })
               .catch(function() { showMessage('sftpPasswordMessage', 'Network error.', true); })
+              .finally(function() { if (btn) btn.disabled = false; });
+          });
+        }
+
+        // Show change SFTP username form
+        var btnChangeSftpUsername = document.getElementById('btnChangeSftpUsername');
+        if (btnChangeSftpUsername) {
+          btnChangeSftpUsername.addEventListener('click', function() {
+            hideInlineForms();
+            var formChangeSftpUsername = document.getElementById('formChangeSftpUsername');
+            if (formChangeSftpUsername) formChangeSftpUsername.classList.remove('d-none');
+            var newSftpUsername = document.getElementById('newSftpUsername');
+            if (newSftpUsername) {
+              var currentSftpUsername = document.getElementById('profile-sftp-username').textContent;
+              newSftpUsername.value = currentSftpUsername === 'Not set' || currentSftpUsername === '—' ? '' : currentSftpUsername;
+            }
+            showMessage('sftpUsernameMessage', '');
+          });
+        }
+
+        var btnSftpUsernameCancel = document.getElementById('btnSftpUsernameCancel');
+        if (btnSftpUsernameCancel) {
+          btnSftpUsernameCancel.addEventListener('click', function() {
+            var formChangeSftpUsername = document.getElementById('formChangeSftpUsername');
+            if (formChangeSftpUsername) formChangeSftpUsername.classList.add('d-none');
+            showMessage('sftpUsernameMessage', '');
+          });
+        }
+
+        var btnSftpUsernameSubmit = document.getElementById('btnSftpUsernameSubmit');
+        if (btnSftpUsernameSubmit) {
+          btnSftpUsernameSubmit.addEventListener('click', function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('btnSftpUsernameSubmit');
+            var newUsernameVal = document.getElementById('newSftpUsername').value.trim();
+
+            if (!newUsernameVal) {
+              showMessage('sftpUsernameMessage', 'Username cannot be empty.', true);
+              return;
+            }
+
+            if (btn) btn.disabled = true;
+            showMessage('sftpUsernameMessage', 'Updating…');
+
+            fetch(AUTH_API + '/api/auth/profile/sftp-username', {
+              method: 'PUT',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+              },
+              credentials: 'include',
+              body: JSON.stringify({ sftpUsername: newUsernameVal })
+            })
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                if (data.success) {
+                  showMessage('sftpUsernameMessage', data.message || 'SFTP username updated.', false);
+                  var sftpUsernameEl = document.getElementById('profile-sftp-username');
+                  if (sftpUsernameEl) sftpUsernameEl.textContent = data.sftpUsername;
+                  setTimeout(function () {
+                    var formChangeSftpUsername = document.getElementById('formChangeSftpUsername');
+                    if (formChangeSftpUsername) formChangeSftpUsername.classList.add('d-none');
+                    showMessage('sftpUsernameMessage', '');
+                  }, 2000);
+                } else {
+                  showMessage('sftpUsernameMessage', data.message || (data.errors ? Object.values(data.errors)[0][0] : null) || 'Update failed.', true);
+                }
+              })
+              .catch(function() { showMessage('sftpUsernameMessage', 'Network error.', true); })
               .finally(function() { if (btn) btn.disabled = false; });
           });
         }

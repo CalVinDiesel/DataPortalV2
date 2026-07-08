@@ -172,12 +172,13 @@
                       <th>Email</th>
                       <th>Name</th>
                       <th>Username</th>
+                      <th>SFTP Username</th>
                       <th>Role</th>
                       <th>Action</th>
                     </tr>
                   </thead>
                   <tbody id="usersTableBody">
-                    <tr><td colspan="5" class="text-muted text-center py-4">Loading…</td></tr>
+                    <tr><td colspan="6" class="text-muted text-center py-4">Loading…</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -293,14 +294,14 @@
             })
             .catch(function(err) {
                console.error('Error loading users:', err);
-               if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-danger text-center py-4">Failed to load users.</td></tr>';
+               if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-danger text-center py-4">Failed to load users.</td></tr>';
             });
       }
 
       function renderUsers(users, currentRole) {
             if (!tbody) return;
             if (!users || users.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">No users in the system yet.</td></tr>';
+              tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center py-4">No users in the system yet.</td></tr>';
               return;
             }
             var hasAnyNonAdmin = users.some(function(u) { return (u.role || 'registered') !== 'admin' && (u.role || 'registered') !== 'superadmin'; });
@@ -317,8 +318,11 @@
                 ? '<span class="badge bg-label-danger">Removed</span>'
                 : (isSuperAdmin ? '<span class="badge bg-label-dark">Super Admin</span>' : (isPending ? '<span class="badge bg-label-warning">Pending</span>' : (isAdmin ? '<span class="badge bg-label-success">Admin</span>' : (isTrusted ? '<span class="badge bg-label-primary">Trusted User</span>' : '<span class="badge bg-label-secondary">Registered</span>'))));
 
+              var sftpUsernameText = u.sftp_username || '—';
+              var sftpUsernameCell = '<td>' + sftpUsernameText + '</td>';
+
               if (isSuperAdmin || isRemoved) {
-                return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td><td>' + roleBadge + '</td><td><span class="text-muted small">—</span></td></tr>';
+                return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td>' + sftpUsernameCell + '<td>' + roleBadge + '</td><td><span class="text-muted small">—</span></td></tr>';
               }
 
               if (isAdmin) {
@@ -330,7 +334,7 @@
                   action += '<span class="text-muted small">—</span>';
                 }
                 action += '</div>';
-                return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td><td>' + roleBadge + '</td><td>' + action + '</td></tr>';
+                return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td>' + sftpUsernameCell + '<td>' + roleBadge + '</td><td>' + action + '</td></tr>';
               }
 
               if (isPending) {
@@ -338,7 +342,7 @@
                 action += '<button type="button" class="btn btn-sm btn-outline-info resend-invite-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Resend Invite</button>';
                 action += '<button type="button" class="btn btn-sm btn-outline-danger remove-user-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Remove</button>';
                 action += '</div>';
-                return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td><td>' + roleBadge + '</td><td>' + action + '</td></tr>';
+                return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td>' + sftpUsernameCell + '<td>' + roleBadge + '</td><td>' + action + '</td></tr>';
               }
 
               var action = '<div class="d-flex flex-wrap gap-2">';
@@ -356,7 +360,7 @@
               action += '<button type="button" class="btn btn-sm btn-outline-danger remove-user-btn" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '">Remove</button>';
               action += '</div>';
 
-              return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td><td>' + roleBadge + '</td><td>' + action + '</td></tr>';
+              return '<tr><td>' + (u.email || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.username || '') + '</td>' + sftpUsernameCell + '<td>' + roleBadge + '</td><td>' + action + '</td></tr>';
             }).join('');
             tbody.querySelectorAll('.promote-btn').forEach(function(btn) {
               btn.addEventListener('click', function() {
@@ -563,6 +567,7 @@
             });
         });
       }
+
     })();
   </script>
   <script src="{{ asset('assets') }}/js/admin-responsive.js"></script>

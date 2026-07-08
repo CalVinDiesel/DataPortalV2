@@ -37,6 +37,7 @@ Route::middleware('web')->group(function () {
         Route::put('/profile/password', [\App\Http\Controllers\AuthController::class, 'updatePassword']);
         Route::get('/profile/sftp', [\App\Http\Controllers\AuthController::class, 'sftp']);
         Route::put('/profile/sftp-password', [\App\Http\Controllers\AuthController::class, 'updateSftpPassword']);
+        Route::put('/profile/sftp-username', [\App\Http\Controllers\AuthController::class, 'updateSftpUsername']);
     });
 
 
