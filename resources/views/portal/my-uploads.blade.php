@@ -871,22 +871,6 @@
         .catch(function () { alert("Request failed."); });
     }
 
-    function triggerBackgroundDownload(url) {
-      let iframe = document.getElementById('background-download-iframe');
-      if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.id = 'background-download-iframe';
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-      }
-      iframe.src = url;
-    }
-
-    function downloadDeliveredFile(uploadId) {
-      // Stream the file in the background using a hidden iframe to prevent blocking navigation
-      triggerBackgroundDownload('/api/user/my-uploads/' + uploadId + '/download-delivered');
-    }
-
     // 🚀 DISCLAIMER LOGIC (v176)
     function initiateDownloadWithDisclaimer(projectId, targetUrl, isCloud) {
       document.getElementById('disclaimerProjectId').value = projectId;
@@ -915,9 +899,9 @@
       const btn = document.getElementById('agreeDownloadBtn');
       
       btn.disabled = true;
-      btn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Logging Agreement...';
+      btn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Preparing...';
 
-      // 1. Log agreement to database for legal proof
+      // 1. Log agreement to database in the background (asynchronously)
       fetch('/api/user/my-uploads/' + projectId + '/accept-disclaimer', {
         method: 'POST',
         headers: { 
@@ -925,47 +909,36 @@
           'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
         body: JSON.stringify({ agreed: true })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          // 2. Restore button state before hiding modal so next open is always clean
-          btn.disabled = true;
-          btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
+      }).catch(err => console.error("Disclaimer logging failed:", err));
 
-          // 3. Hide modal
-          const modalEl = document.getElementById('disclaimerModal');
-          const modalInstance = bootstrap.Modal.getInstance(modalEl);
-          if (modalInstance) modalInstance.hide();
-          
-          // 4. Trigger Download or Reveal Path
-          if (targetUrl === 'REVEAL_SFTP') {
-            // Reveal the path in the Details modal
-            const unlockContainer = document.getElementById('sftpUnlockContainer');
-            const actualPath = document.getElementById('sftpActualPath');
-            if (unlockContainer) unlockContainer.classList.add('d-none');
-            if (actualPath) {
-                actualPath.classList.remove('d-none');
-                actualPath.classList.add('d-flex');
-                actualPath.classList.add('align-items-center');
-            }
-          } else if (isCloud && targetUrl) {
-            window.open(targetUrl, '_blank');
-          } else {
-            downloadDeliveredFile(projectId);
-          }
-        } else {
-          alert('Could not log your agreement. Please try again.');
-          btn.disabled = false;
-          btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
+      // 2. Hide modal immediately
+      const modalEl = document.getElementById('disclaimerModal');
+      const modalInstance = bootstrap.Modal.getInstance(modalEl);
+      if (modalInstance) modalInstance.hide();
+      
+      // 3. Trigger Action synchronously to prevent browser popup blocking
+      if (targetUrl === 'REVEAL_SFTP') {
+        const unlockContainer = document.getElementById('sftpUnlockContainer');
+        const actualPath = document.getElementById('sftpActualPath');
+        if (unlockContainer) unlockContainer.classList.add('d-none');
+        if (actualPath) {
+            actualPath.classList.remove('d-none');
+            actualPath.classList.add('d-flex');
+            actualPath.classList.add('align-items-center');
         }
-      })
-      .catch(err => {
-        console.error(err);
-        alert('An error occurred. Please refresh the page.');
+      } else if (isCloud && targetUrl) {
+        window.open(targetUrl, '_blank');
+      } else {
+        // Trigger download directly in a separate background tab context (won't block navigation)
+        const downloadUrl = '/api/user/my-uploads/' + projectId + '/download-delivered';
+        window.open(downloadUrl, '_blank');
+      }
+
+      // Restore agreement button state for subsequent triggers
+      setTimeout(() => {
         btn.disabled = false;
         btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
-      });
+      }, 1000);
     }
 
     function deleteProject(projectId) {

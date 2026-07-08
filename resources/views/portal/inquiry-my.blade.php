@@ -1086,8 +1086,9 @@
       const btn = document.getElementById('agreeDownloadBtn');
       
       btn.disabled = true;
-      btn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Logging Agreement...';
+      btn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Preparing...';
 
+      // 1. Log agreement to database in the background (asynchronously)
       fetch('/api/inquiry/' + inquiryId + '/accept-disclaimer', {
         method: 'POST',
         headers: { 
@@ -1095,58 +1096,22 @@
           'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
         body: JSON.stringify({ agreed: true })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          btn.disabled = true;
-          btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
+      }).catch(err => console.error("Disclaimer logging failed:", err));
 
-          const modalEl = document.getElementById('disclaimerModal');
-          const modalInstance = bootstrap.Modal.getInstance(modalEl);
-          if (modalInstance) modalInstance.hide();
-          
-          executeDownloadTiles(inquiryId);
-        } else {
-          alert('Could not log your agreement. Please try again.');
-          btn.disabled = false;
-          btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        alert('An error occurred. Please refresh the page.');
+      // 2. Hide modal immediately
+      const modalEl = document.getElementById('disclaimerModal');
+      const modalInstance = bootstrap.Modal.getInstance(modalEl);
+      if (modalInstance) modalInstance.hide();
+      
+      // 3. Trigger download synchronously in a new tab to bypass popup blockers and tab-stalling
+      const downloadUrl = '/api/inquiry/' + inquiryId + '/download';
+      window.open(downloadUrl, '_blank');
+
+      // Restore agreement button state for subsequent triggers
+      setTimeout(() => {
         btn.disabled = false;
         btn.innerHTML = '<i class="bx bx-download me-1"></i> I Agree & Download';
-      });
-    }
-
-    function triggerBackgroundDownload(url) {
-      let iframe = document.getElementById('background-download-iframe');
-      if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.id = 'background-download-iframe';
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-      }
-      iframe.src = url;
-    }
-
-    function executeDownloadTiles(inquiryId) {
-      var btn = document.getElementById('btnDownload-' + inquiryId);
-      if (!btn) return;
-
-      var origHTML = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Preparing Download\u2026';
-
-      // Download in the background using a hidden iframe to prevent navigation blocking
-      triggerBackgroundDownload('/api/inquiry/' + inquiryId + '/download');
-
-      setTimeout(function () {
-        btn.disabled = false;
-        btn.innerHTML = origHTML;
-      }, 4000);
+      }, 1000);
     }
 
     (function() {
