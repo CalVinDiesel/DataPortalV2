@@ -731,7 +731,6 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                             width: 3,
                             material: activeTool === 'height' ? Color.PURPLE : Color.ORANGE,
                             clampToGround: false, // Prevent vertical smearing on buildings/facades
-                            depthFailMaterial: activeTool === 'height' ? Color.PURPLE : Color.ORANGE,
                         })
                     });
                 } else if (activeTool === 'area') {
@@ -904,7 +903,6 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                             width: 3,
                             material: activeAnnotationTool === 'line' ? Color.ORANGE : Color.PURPLE.withAlpha(0.8),
                             clampToGround: false, // Prevent vertical smearing on buildings/facades
-                            depthFailMaterial: activeAnnotationTool === 'line' ? Color.ORANGE : Color.PURPLE.withAlpha(0.8),
                         }),
                         polygon: activeAnnotationTool === 'polygon' ? new PolygonGraphics({
                             hierarchy: new CallbackProperty(() => {
@@ -960,35 +958,39 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const nextNumber = measurementCounters.current.length;
         const name = `Length ${nextNumber}`;
 
+        const offsetPoints = points.map(pt => {
+            const carto = Cartographic.fromCartesian(pt);
+            return Cartesian3.fromRadians(carto.longitude, carto.latitude, carto.height + 0.25);
+        });
+
         const startPointEntity = viewerRef.current.entities.add({
-            position: points[0],
+            position: offsetPoints[0],
             point: new PointGraphics({
-                pixelSize: 8,
+                pixelSize: 10,
                 color: Color.YELLOW,
-                outlineColor: Color.WHITE,
-                outlineWidth: 2,
+                outlineColor: Color.BLACK,
+                outlineWidth: 1.5,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
 
         const endPointEntity = viewerRef.current.entities.add({
-            position: points[1],
+            position: offsetPoints[1],
             point: new PointGraphics({
-                pixelSize: 8,
+                pixelSize: 10,
                 color: Color.YELLOW,
-                outlineColor: Color.WHITE,
-                outlineWidth: 2,
+                outlineColor: Color.BLACK,
+                outlineWidth: 1.5,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
 
         const entity = viewerRef.current.entities.add({
             polyline: new PolylineGraphics({
-                positions: points,
+                positions: offsetPoints,
                 width: 3,
                 material: Color.ORANGE,
                 clampToGround: false, // Prevent vertical smearing on buildings/facades
-                depthFailMaterial: Color.ORANGE,
             }),
             label: new LabelGraphics({
                 text: convertDistance(distance),
@@ -1036,10 +1038,10 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const startPointEntity = viewerRef.current.entities.add({
             position: points[0],
             point: new PointGraphics({
-                pixelSize: 8,
+                pixelSize: 10,
                 color: Color.YELLOW,
-                outlineColor: Color.WHITE,
-                outlineWidth: 2,
+                outlineColor: Color.BLACK,
+                outlineWidth: 1.5,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
@@ -1047,10 +1049,10 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const endPointEntity = viewerRef.current.entities.add({
             position: points[1],
             point: new PointGraphics({
-                pixelSize: 8,
+                pixelSize: 10,
                 color: Color.YELLOW,
-                outlineColor: Color.WHITE,
-                outlineWidth: 2,
+                outlineColor: Color.BLACK,
+                outlineWidth: 1.5,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
@@ -1060,7 +1062,6 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 positions: points,
                 width: 3,
                 material: Color.PURPLE,
-                depthFailMaterial: Color.PURPLE,
             }),
             label: new LabelGraphics({
                 text: convertDistance(heightDiff),
@@ -1337,24 +1338,28 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         // Calculate midpoint for label position
         const midpoint = Cartesian3.midpoint(points[0], points[points.length - 1], new Cartesian3());
 
-        const pointEntities = points.map(pt => viewer.entities.add({
+        const offsetPoints = points.map(pt => {
+            const carto = Cartographic.fromCartesian(pt);
+            return Cartesian3.fromRadians(carto.longitude, carto.latitude, carto.height + 0.25);
+        });
+
+        const pointEntities = offsetPoints.map(pt => viewer.entities.add({
             position: pt,
             point: new PointGraphics({
-                pixelSize: 8,
+                pixelSize: 10,
                 color: Color.YELLOW,
-                outlineColor: Color.WHITE,
-                outlineWidth: 2,
+                outlineColor: Color.BLACK,
+                outlineWidth: 1.5,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         }));
 
         const entity = viewer.entities.add({
             polyline: new PolylineGraphics({
-                positions: points,
+                positions: offsetPoints,
                 width: 3,
                 material: Color.ORANGE,
                 clampToGround: false, // Prevent vertical smearing on buildings/facades
-                depthFailMaterial: Color.ORANGE,
             }),
             label: new LabelGraphics({
                 text: convertDistance(totalDistance),
