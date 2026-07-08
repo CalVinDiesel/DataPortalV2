@@ -15,6 +15,19 @@ class User extends Authenticatable
 
     protected static function booted()
     {
+        static::saving(function ($user) {
+            if (empty($user->sftp_username)) {
+                $cleanName = \Illuminate\Support\Str::slug($user->name, '');
+                if (empty($cleanName)) {
+                    $cleanName = 'user';
+                }
+                $user->sftp_username = $cleanName . '_' . strtolower(\Illuminate\Support\Str::random(6));
+            }
+            if (empty($user->sftp_password)) {
+                $user->sftp_password = self::generateSecureSftpPassword(12);
+            }
+        });
+
         static::saved(function ($user) {
             if ($user->wasRecentlyCreated || $user->wasChanged(['role', 'is_active', 'sftp_username', 'sftp_password', 'email'])) {
                 \App\Services\SFTPGoService::syncUser($user);

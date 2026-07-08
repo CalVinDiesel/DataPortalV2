@@ -214,10 +214,8 @@ class SFTPGoService
             return; // Config not set, skip silently
         }
 
-        // Determine if they should have SFTP access
-        $hasSftpAccess = in_array($user->role, ['trusted', 'admin', 'superadmin']) && $user->is_active;
-
-        if (!$hasSftpAccess) {
+        // Inactive users should be deleted/removed from SFTPGo
+        if (!$user->is_active) {
             // Delete user if they exist in SFTPGo
             if ($user->sftp_username) {
                 self::deleteUser($user->sftp_username);
@@ -296,6 +294,9 @@ class SFTPGoService
         $isAdmin = in_array($user->role, ['admin', 'superadmin']);
         $defaultPermissions = $isAdmin ? ['*'] : ['list', 'download', 'upload', 'overwrite', 'create_dirs', 'rename', 'chtimes'];
 
+        $isTrusted = in_array($user->role, ['trusted', 'admin', 'superadmin']);
+        $protocols = $isTrusted ? ['SSH', 'FTP', 'DAV'] : [];
+
         $sftpQuotaGb = (float) env('SFTPGO_STORAGE_LIMIT_GB', 5);
         $defaultQuotaBytes = (int) ($sftpQuotaGb * 1024 * 1024 * 1024);
 
@@ -326,6 +327,7 @@ class SFTPGoService
                     'max_sessions' => $maxSessions,
                     'quota_size' => $quotaSize,
                     'quota_files' => $quotaFiles,
+                    'protocols' => $protocols,
                 ];
 
                 // Merge data and preserve unmanaged attributes (casting $existingData to array shallowly, nested objects remain stdClass)
@@ -390,6 +392,7 @@ class SFTPGoService
                     'max_sessions' => 0,
                     'quota_size' => !is_null($user->sftp_quota_size) ? $user->sftp_quota_size : $defaultQuotaBytes,
                     'quota_files' => 0,
+                    'protocols' => $protocols,
                 ];
 
                 $postResponse = $client->post('/users', $userData);

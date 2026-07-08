@@ -72,27 +72,35 @@ class ClientUpload extends Model
 
     public static function getStorageLimitBytes($email = null)
     {
-        $defaultPortalLimitGb = (float) env('DATA_PORTAL_STORAGE_LIMIT_GB', 10);
-        $defaultPortalLimitBytes = (int) ($defaultPortalLimitGb * 1024 * 1024 * 1024);
+        $defaultLimitGb = (float) env('SFTPGO_STORAGE_LIMIT_GB', 5);
+        $defaultLimitBytes = (int) ($defaultLimitGb * 1024 * 1024 * 1024);
 
         if ($email) {
             $user = \App\Models\User::where('email', $email)->first();
-            if ($user && !is_null($user->sftp_quota_size)) {
-                if ($user->sftp_quota_size <= 0) {
-                    return 9999 * 1024 * 1024 * 1024; // 9999 GB (effectively unlimited)
+            if ($user) {
+                // Rate-limited sync from SFTPGo (at most once every 5 minutes per user)
+                // to dynamically pick up updates saved from SFTPGo admin panel
+                $cacheKey = 'sftpgo_quota_sync_lock_' . $user->id;
+                if (!cache()->has($cacheKey)) {
+                    try {
+                        \App\Services\SFTPGoService::syncFromSFTPGo($user);
+                        cache()->put($cacheKey, true, 300); // 5 minutes lock
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error("Failed to sync quota from SFTPGo for user {$user->id}: " . $e->getMessage());
+                    }
                 }
-                
-                $defaultSftpLimitGb = (float) env('SFTPGO_STORAGE_LIMIT_GB', 5);
-                $defaultSftpLimitBytes = (int) ($defaultSftpLimitGb * 1024 * 1024 * 1024);
-                
-                if ($user->sftp_quota_size !== $defaultSftpLimitBytes) {
-                    $ratio = $defaultSftpLimitBytes > 0 ? ($defaultPortalLimitBytes / $defaultSftpLimitBytes) : 2.0;
-                    return (int) ($user->sftp_quota_size * $ratio);
+
+                // If sftp_quota_size is set, return it directly
+                if (!is_null($user->sftp_quota_size)) {
+                    if ($user->sftp_quota_size <= 0) {
+                        return 9999 * 1024 * 1024 * 1024; // 9999 GB (effectively unlimited)
+                    }
+                    return (int) $user->sftp_quota_size;
                 }
             }
         }
         
-        return $defaultPortalLimitBytes;
+        return $defaultLimitBytes;
     }
 
     /**

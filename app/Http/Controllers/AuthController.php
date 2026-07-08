@@ -208,13 +208,9 @@ class AuthController extends Controller
 
     protected function ensureSftpCredentials($user)
     {
-        $hasSftpAccess = in_array($user->role, ['trusted', 'admin', 'superadmin']) && $user->is_active;
-        if ($hasSftpAccess && empty($user->sftp_username)) {
+        if (empty($user->sftp_username)) {
             try {
-                $rawPassword = \App\Models\User::generateSecureSftpPassword(12);
-                $user->sftp_username = \Illuminate\Support\Str::slug($user->name) . '_' . strtolower(\Illuminate\Support\Str::random(6));
-                $user->sftp_password = $rawPassword;
-                $user->save();
+                $user->save(); // This will trigger the Model saving event and generate credentials
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error("Failed to auto-generate SFTP credentials: " . $e->getMessage());
             }
