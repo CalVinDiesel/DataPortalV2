@@ -1259,4 +1259,55 @@ class ProjectController extends Controller
             'has_exceeded' => $used >= $limit
         ]);
     }
+    
+    public function getPreviewTilesetConfig($id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // 1. Find the project belonging to the logged-in user
+        $record = ClientUpload::where('created_by_email', $user->email)
+            ->where(function($query) use ($id) {
+                $query->where('id', $id)->orWhere('project_id', $id);
+            })->firstOrFail();
+
+        // 2. Security validation: Verify the admin has actually delivered the project
+        $status = strtolower($record->request_status);
+        if (!in_array($status, ['sent', 'completed'])) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Processing asset calculations pending authorization layers.'
+            ], 403);
+        }
+
+        // 3. Resolve the path folder name for the user's home directory folder structure
+        $sftpUser = $user->sftp_username ?: \Illuminate\Support\Str::slug($user->name);
+        $relativeTilesetPath = "uploads/" . $sftpUser . "/" . $record->project_id . "/delivered/tileset.json";
+        
+        // 4. Verify that the processed 3D dataset actually exists on disk
+        $disk = Storage::disk('sftp_delivery');
+        if (!$disk->exists($relativeTilesetPath)) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Processed preview tileset compilation targets not found on target disk layer structure.',
+                'fallback_coordinates' => [
+                    'latitude' => $record->latitude,
+                    'longitude' => $record->longitude
+                ]
+            ], 404);
+        }
+
+        // 5. Safely pipe variables through the existing system secure proxy configuration
+        return response()->json([
+            'success' => true,
+            'project_id' => $record->project_id,
+            'title' => $record->project_title,
+            'latitude' => $record->latitude,
+            'longitude' => $record->longitude,
+            'tileset_url' => route('proxy', ['path' => $relativeTilesetPath])
+        ]);
+    }
+
 }

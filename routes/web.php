@@ -93,6 +93,10 @@ Route::get('/payment', function () {
 })->name('payment');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/viewer/{id}', function ($id) { 
+        return view('portal.3D-viewer', ['id' => $id]); 
+    })->name('viewer');
+
     Route::get('/create-project', function () {
         if (\App\Models\ClientUpload::hasExceededStorageLimit(auth()->user()->email)) {
             return redirect()->route('my_uploads')->with('error', 'Storage Quota Exceeded. You cannot create a new project because your storage is full. Please delete past projects to free up space.');
@@ -163,6 +167,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/api/user/my-uploads/{id}/accept-disclaimer', [ProjectController::class, 'acceptDisclaimer']);
     Route::delete('/api/user/my-uploads/{id}', [ProjectController::class, 'destroy']);
     Route::patch('/api/user/my-uploads/{id}', [ProjectController::class, 'update']);
+    
+    Route::get('/api/user/my-uploads/{id}/preview-tileset', [ProjectController::class, 'getPreviewTilesetConfig']);
 
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

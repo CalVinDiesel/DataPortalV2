@@ -356,11 +356,12 @@
         <table class="table table-hover mb-0">
           <thead>
             <tr>
-              <th style="width: 30%">Project Information</th>
+              <th style="width: 25%">Project Information</th>
               <th>Status</th>
               <th>Date / Size</th>
               <th>Delivered Date</th>
               <th>Configuration</th>
+              <th class="text-center" style="width: 12%">Preview Map</th>
               <th class="text-center">Actions</th>
             </tr>
           </thead>
@@ -770,6 +771,11 @@
                     <li><hr class="dropdown-divider"></li>`;
             }
 
+            // Locate where your tr.innerHTML is defined inside data.forEach(item => { ... })
+            // and replace it with the structure below:
+
+            const isReadyForPreview = (statusVal === 'completed' || statusVal === 'sent') && item.delivered_file_path;
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td>
@@ -779,7 +785,7 @@
                   </div>
                   <div>
                     <div class="project-name">${item.project_title || item.project_id}</div>
-                    <div class="project-meta text-truncate" style="max-width: 300px;">${item.project_description || 'No description provided.'}</div>
+                    <div class="project-meta text-truncate" style="max-width: 250px;">${item.project_description || 'No description provided.'}</div>
                   </div>
                 </div>
               </td>
@@ -800,6 +806,17 @@
                   `<div class="text-muted small">–</div>`}
               </td>
               <td>${configHtml}</td>
+              
+              <td class="text-center">
+                ${isReadyForPreview ? `
+                  <button type="button" class="btn btn-sm btn-icon btn-label-primary" title="Preview 3D Map" onclick="open3DPreviewModal(${item.id})">
+                    <i class="bx bx-show-alt fs-4"></i>
+                  </button>
+                ` : `
+                  <span class="badge bg-label-secondary btn-sm" style="font-size:0.75rem;"><i class="bx bx-lock me-1"></i> Unavailable</span>
+                `}
+              </td>
+
               <td class="text-center">
                 <div class="dropdown">
                   <button type="button" class="action-btn" data-bs-toggle="dropdown" aria-expanded="false">
@@ -807,6 +824,7 @@
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                     ${downloadHtml}
+                    ${isReadyForPreview ? `<li><a class="dropdown-item btn-dropdown-link text-primary" href="javascript:void(0);" onclick="open3DPreviewModal(${item.id})"><i class="bx bx-show-alt"></i> Interactive Preview</a></li>` : ''}
                     ${statusVal === 'sent' ? '<li><a class="dropdown-item btn-dropdown-link text-success fw-medium" href="javascript:void(0);" onclick="confirmReceived(' + item.id + ')"><i class="bx bx-check-circle"></i> Confirm Received</a></li>' : ''}
                     ${(item.upload_type && item.upload_type.includes('sftp')) ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="javascript:void(0);" onclick="syncSftpMetadata(' + item.id + ')"><i class="bx bx-refresh"></i> Sync Data Info</a></li>' : ''}
                     ${(item.upload_type === 'onedrive') ? '<li><a class="dropdown-item btn-dropdown-link text-primary" href="javascript:void(0);" onclick="syncOneDriveMetadata(' + item.id + ')"><i class="bx bx-refresh"></i> Sync Data Info</a></li>' : ''}
@@ -1109,44 +1127,44 @@
       updatePaginationUI(filteredRows.length);
     }
 
-    function updatePaginationUI(totalEntries) {
-      const start = (window.currentPage - 1) * window.pageSize + 1;
-      const end = Math.min(window.currentPage * window.pageSize, totalEntries);
+    function launchInteractivePreview(projectIdString) {
+      const modalEl = document.getElementById('interactivePreviewModal');
+      const frameEl = document.getElementById('interactivePreviewFrame');
+      const titleEl = document.getElementById('interactivePreviewTitle');
       
-      const pagText = document.getElementById('paginationText');
-      if (pagText) {
-        if (totalEntries === 0) {
-          pagText.textContent = 'Showing 0 entries';
-        } else if (start > totalEntries) {
-          // The current page starts after the last entry
-          pagText.textContent = `Showing 0 entries of ${totalEntries} total`;
-        } else {
-          pagText.textContent = `Showing ${start} to ${end} of ${totalEntries} entries`;
+      if (!modalEl || !frameEl) return;
+
+      // Set the structural title information block lookup safely
+      if (window.myUploadsData) {
+        const assetMeta = window.myUploadsData.find(p => String(p.project_id) === String(projectIdString) || String(p.id) === String(projectIdString));
+        if (assetMeta) {
+          titleEl.textContent = `3D Mesh Map Canvas View: ${assetMeta.project_title || assetMeta.project_id}`;
         }
       }
 
-      // Update active class on page buttons
-      for (let i = 1; i <= 3; i++) {
-        const item = document.getElementById(`page${i}Item`);
-        if (item) {
-          if (i === window.currentPage) item.classList.add('active');
-          else item.classList.remove('active');
-        }
-      }
+      // Set up your dedicated web viewer controller context route mapping path
+      fetch(`/api/user/my-uploads/${encodeURIComponent(projectIdString)}/preview-tileset`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.tileset_url) {
+            // 🛰️ Pass everything straight into your DiscoveryPage parameter reader hooks!
+            frameEl.src = `/viewer/${encodeURIComponent(projectIdString)}?model=${encodeURIComponent(projectIdString)}&tileset_url=${encodeURIComponent(data.tileset_url)}&title=${encodeURIComponent(projectTitle)}`;
+          } else {
+            frameEl.src = '';
+            alert("The preview fileset index could not be resolved on the server.");
+          }
+        })
+        .catch(() => {
+          alert("Failed to connect to the 3D secure rendering pipeline endpoint.");
+        });
 
-      // Update Previous/Next disabled state
-      const prevItem = document.getElementById('prevPageItem');
-      const nextItem = document.getElementById('nextPageItem');
-      
-      if (prevItem) {
-        if (window.currentPage === 1) prevItem.classList.add('disabled');
-        else prevItem.classList.remove('disabled');
-      }
-      
-      if (nextItem) {
-        if (window.currentPage === 3) nextItem.classList.add('disabled');
-        else nextItem.classList.remove('disabled');
-      }
+      const bModal = new bootstrap.Modal(modalEl);
+      bModal.show();
+
+      modalEl.addEventListener('hidden.bs.modal', function disposeFrame() {
+        frameEl.src = '';
+        modalEl.removeEventListener('hidden.bs.modal', disposeFrame);
+      });
     }
 
     // Live Search Logic
@@ -1360,5 +1378,23 @@
       }
     }
   </script>
+
+        <div class="modal fade" id="mapPreviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen"> <div class="modal-content">
+            <div class="modal-header py-3 bg-dark text-white">
+              <h5 class="modal-title fw-bold text-white" id="mapPreviewModalTitle"><i class="bx bx-layer me-2 text-primary"></i> 3D Model Map Viewer</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 position-relative bg-light">
+              <div id="viewerLoadingSpinner" class="position-absolute top-50 start-50 translate-middle text-center" style="z-index: 10;">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+                <div class="mt-2 fw-bold text-dark">Initializing 3D Pipeline Render Engine...</div>
+              </div>
+              
+              <div id="spatialViewerContainer" style="width: 100%; height: 100%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
 </body>
 </html>
