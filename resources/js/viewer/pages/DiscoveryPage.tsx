@@ -961,36 +961,36 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         };
     }, [activeAnnotationTool]);
 
+    // 1. ADD THIS HELPER FUNCTION HERE:
+    const createPointSvgIcon = (color: string) => {
+        return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4" fill="${encodeURIComponent(color)}" stroke="white" stroke-width="2"/></svg>`;
+    };
+
+    // 2. REPLACE YOUR OLD VERSION WITH THIS UPDATED ONE:
     const createLengthMeasurement = (points: Cartesian3[]) => {
         if (!viewerRef.current || points.length !== 2) return;
 
         const distance = Cartesian3.distance(points[0], points[1]);
         const midpoint = Cartesian3.midpoint(points[0], points[1], new Cartesian3());
-
-        // Calculate name using persistent counter
         const nextNumber = measurementCounters.current.length;
         const name = `Length ${nextNumber}`;
 
         const startPointEntity = viewerRef.current.entities.add({
             position: points[0],
-            point: new PointGraphics({
-                pixelSize: 8,
-                color: Color.YELLOW,
-                outlineColor: Color.WHITE,
-                outlineWidth: 2,
+            billboard: {
+                image: createPointSvgIcon('#EAB308'),
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            }),
+                heightReference: 0
+            }
         });
 
         const endPointEntity = viewerRef.current.entities.add({
             position: points[1],
-            point: new PointGraphics({
-                pixelSize: 8,
-                color: Color.YELLOW,
-                outlineColor: Color.WHITE,
-                outlineWidth: 2,
+            billboard: {
+                image: createPointSvgIcon('#EAB308'),
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            }),
+                heightReference: 0
+            }
         });
 
         const entity = viewerRef.current.entities.add({
@@ -998,9 +998,8 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 positions: points,
                 width: 3,
                 material: Color.ORANGE,
-                // Fixes the distortion artifact on 3D tilesets by decoupling from ground clamping configurations completely
                 clampToGround: false,
-                classificationType: ClassificationType.BOTH,
+                arcType: 0, // <- Fixes the expanding curtain issue
             }),
             label: new LabelGraphics({
                 text: convertDistance(distance),
@@ -1010,7 +1009,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 backgroundColor: Color.WHITE,
                 backgroundPadding: new Cartesian2(7, 5),
                 style: 0,
-                pixelOffset: new Cartesian2(0, -10),
+                pixelOffset: new Cartesian2(0, -15),
                 horizontalOrigin: HorizontalOrigin.CENTER,
                 verticalOrigin: VerticalOrigin.BOTTOM,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
@@ -1030,35 +1029,33 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         measurementCounters.current.length++;
     };
 
+    // 3. REPLACE YOUR OLD VERSION WITH THIS UPDATED ONE:
     const createHeightMeasurement = (points: Cartesian3[]) => {
         if (!viewerRef.current || points.length !== 2) return;
 
         const cartographic1 = Cartographic.fromCartesian(points[0]);
         const cartographic2 = Cartographic.fromCartesian(points[1]);
         const heightDiff = Math.abs(cartographic1.height - cartographic2.height);
-
         const midpoint = Cartesian3.midpoint(points[0], points[1], new Cartesian3());
+        const nextNumber = measurementCounters.current.height;
+        const name = `Height ${nextNumber}`;
 
         const startPointEntity = viewerRef.current.entities.add({
             position: points[0],
-            point: new PointGraphics({
-                pixelSize: 8,
-                color: Color.YELLOW,
-                outlineColor: Color.WHITE,
-                outlineWidth: 2,
+            billboard: {
+                image: createPointSvgIcon('#A855F7'),
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            }),
+                heightReference: 0
+            }
         });
 
         const endPointEntity = viewerRef.current.entities.add({
             position: points[1],
-            point: new PointGraphics({
-                pixelSize: 8,
-                color: Color.YELLOW,
-                outlineColor: Color.WHITE,
-                outlineWidth: 2,
+            billboard: {
+                image: createPointSvgIcon('#A855F7'),
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            }),
+                heightReference: 0
+            }
         });
 
         const entity = viewerRef.current.entities.add({
@@ -1066,7 +1063,8 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 positions: points,
                 width: 3,
                 material: Color.PURPLE,
-                depthFailMaterial: Color.PURPLE,
+                clampToGround: false,
+                arcType: 0, // <- Fixes the expanding curtain issue
             }),
             label: new LabelGraphics({
                 text: convertDistance(heightDiff),
@@ -1076,17 +1074,13 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 backgroundColor: Color.WHITE,
                 backgroundPadding: new Cartesian2(7, 5),
                 style: 0,
-                // FIXED: Changed from Cartesian3(10, 0, 0) to Cartesian2(10, 0) to avoid breakdown in rendering pipeline logic
-                pixelOffset: new Cartesian2(10, 0),
+                pixelOffset: new Cartesian2(15, 0),
                 horizontalOrigin: HorizontalOrigin.LEFT,
                 verticalOrigin: VerticalOrigin.CENTER,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
             position: midpoint,
         });
-
-        const nextNumber = measurementCounters.current.height;
-        const name = `Height ${nextNumber}`;
 
         (entity as any).measurementType = 'height';
         (entity as any).measurementName = name;
