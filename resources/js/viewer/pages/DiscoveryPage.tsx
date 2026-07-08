@@ -737,7 +737,8 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                             width: 3,
                             material: activeTool === 'height' ? Color.PURPLE : Color.ORANGE,
                             clampToGround: false,
-                            arcType: 0 as any // Forces direct point-to-point drawing during mouse move
+                            // CRITICAL PREVIEW FIX: Prevents the mouse dragging path from turning into a sheet panel
+                            arcType: 0 as any
                         })
                     });
                 } else if (activeTool === 'area') {
@@ -982,6 +983,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 width: 3,
                 material: Color.ORANGE,
                 clampToGround: false,
+                // CRITICAL FIXED ARCTYPE: Enforces standard 3D direct vector calculus over tiles
                 arcType: 0 as any
             }),
             label: new LabelGraphics({
