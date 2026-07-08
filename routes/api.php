@@ -28,6 +28,12 @@ Route::middleware('web')->group(function () {
     Route::post('/upload/onedrive-project', [ProjectController::class, 'storeOneDrive'])->name('api.upload.onedrive_project');
     Route::get('/user/storage-quota', [ProjectController::class, 'getStorageQuota'])->name('api.user.storage_quota');
 
+    // 📂 Client Upload Management & 3D Previews
+    Route::get('/user/my-uploads', [ProjectController::class, 'myUploadsList'])->name('api.user.my_uploads');
+    Route::get('/user/my-uploads/{id}/preview-tileset', [ProjectController::class, 'previewTileset'])->name('api.user.preview_tileset');
+    Route::patch('/user/my-uploads/{id}', [ProjectController::class, 'updateMetadata'])->name('api.user.update_metadata');
+    Route::delete('/user/my-uploads/{id}', [ProjectController::class, 'destroyProject'])->name('api.user.delete_project');
+
     Route::prefix('auth')->group(function () {
         Route::get('/me', [\App\Http\Controllers\AuthController::class, 'me']);
         Route::get('/profile', [\App\Http\Controllers\AuthController::class, 'profile']);
