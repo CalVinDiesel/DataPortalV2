@@ -11,6 +11,5 @@ return [
     |
     */
 
-    'phone' => env('SUPPORT_PHONE', '+6014-675 4881'),
-    'email' => env('SUPPORT_EMAIL', 'mosestiquan23@gmail.com'),
+    'email' => env('SUPPORT_EMAIL', 'nanno@temadigital.my'),
 ];

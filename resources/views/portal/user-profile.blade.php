@@ -255,7 +255,7 @@
       </div>
       <div id="inlineFormContact" class="profile-inline-form d-none">
         <label class="form-label small">New contact number</label>
-        <input type="tel" class="form-control form-control-sm" id="contactNumber" placeholder="e.g. {{ config('support.phone') }}">
+        <input type="tel" class="form-control form-control-sm" id="contactNumber" placeholder="e.g. +6012-345 6789">
         <button type="button" class="btn btn-sm btn-primary" id="btnContactSubmit">Update contact</button>
         <button type="button" class="btn btn-sm btn-outline-secondary" id="btnContactCancel">Cancel</button>
         <span id="contactMessage" class="small ms-2"></span>

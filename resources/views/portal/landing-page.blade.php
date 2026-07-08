@@ -931,21 +931,12 @@ ob_start(function($output) {
               <img src="{{ asset('assets') }}/img/front-pages/landing-page/contact-customer-service.png" alt="contact customer service" class="contact-img w-100 scaleX-n1-rtl" />
               <div class="p-4 pb-2">
                 <div class="row g-4">
-                  <div class="col-md-6 col-lg-12 col-xl-6">
+                  <div class="col-12">
                     <div class="d-flex align-items-center">
                       <div class="badge bg-label-primary rounded p-1_5 me-3"><i class="icon-base bx bx-envelope icon-lg"></i></div>
                       <div>
                         <p class="mb-0">Email</p>
                         <h6 class="mb-0"><a href="mailto:{{ config('support.email') }}" class="text-heading">{{ config('support.email') }}</a></h6>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-md-6 col-lg-12 col-xl-6">
-                    <div class="d-flex align-items-center">
-                      <div class="badge bg-label-success rounded p-1_5 me-3"><i class="icon-base bx bx-phone-call icon-lg"></i></div>
-                      <div>
-                        <p class="mb-0">Phone</p>
-                        <h6 class="mb-0"><a href="tel:{{ str_replace([' ', '-', '+'], '', config('support.phone')) }}" class="text-heading">{{ config('support.phone') }}</a></h6>
                       </div>
                     </div>
                   </div>
