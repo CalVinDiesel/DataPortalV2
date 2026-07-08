@@ -95,7 +95,7 @@ export default function DiscoveryPageWrapper() {
     // Fetch map data logic
     useEffect(() => {
         console.log('📍 DiscoveryPageWrapper: useEffect triggered for modelId:', modelId);
-        
+
         if (directTilesetUrl) {
             console.log('✅ DiscoveryPageWrapper: Using direct tileset URL:', directTilesetUrl);
             setLocationData({
@@ -424,7 +424,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 if (newArray[index]) {
                     (newArray[index] as any).measurementName = name;
                     (newArray[index] as any).measurementDescription = description;
-                    
+
                     // Update label if it exists
                     const entity = newArray[index];
                     if (entity.label) {
@@ -442,7 +442,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 if (newArray[index]) {
                     (newArray[index] as any).annotationName = name;
                     (newArray[index] as any).annotationDescription = description;
-                    
+
                     // Update label for markers
                     const entity = newArray[index];
                     if (entity.label) {
@@ -587,14 +587,14 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         // ENABLE DEBUG INSPECTOR (TEMP TO FIND MODEL)
         // (window as any).cesiumInspector = new (Cesium as any).viewerCesiumInspectorMixin(viewer);
-        
+
         // ACHIEVE THE "FLOATING MODEL" LOOK (Isolated on Black)
-        viewer.scene.backgroundColor = new Color(0.0, 0.0, 0.0, 1.0); 
-        viewer.scene.globe.show = false; 
-        if (viewer.scene.skyBox) (viewer.scene.skyBox as any).show = false; 
-        if (viewer.scene.sun) viewer.scene.sun.show = false; 
-        if (viewer.scene.moon) viewer.scene.moon.show = false; 
-        if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = false; 
+        viewer.scene.backgroundColor = new Color(0.0, 0.0, 0.0, 1.0);
+        viewer.scene.globe.show = false;
+        if (viewer.scene.skyBox) (viewer.scene.skyBox as any).show = false;
+        if (viewer.scene.sun) viewer.scene.sun.show = false;
+        if (viewer.scene.moon) viewer.scene.moon.show = false;
+        if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = false;
         // viewer.imageryLayers.removeAll(); // RE-ENABLED to prevent render loop crash
 
         // Remap camera controls: right-click drag = free-look (orbit angle), scroll = zoom
@@ -653,7 +653,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                         e.stopPropagation();
                         e.preventDefault();
                     }, true);
-                    
+
                     navigationContainer.appendChild(compass);
                 }
             }, 100);
@@ -662,7 +662,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         }
 
         // Initial camera will be overwritten by the FlyTo effect below
-        
+
         // Cleanup on unmount
         return () => {
             removePitchConstraint();
@@ -672,7 +672,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             }
         };
     }, []);
-    
+
     // Camera control is now handled exclusively by Sidebar.tsx to ensure perfect model centering
     // Removed old conflicting flyTo logic.
 
@@ -965,42 +965,42 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         if (!viewerRef.current || points.length !== 2) return;
 
         const distance = Cartesian3.distance(points[0], points[1]);
-
         const midpoint = Cartesian3.midpoint(points[0], points[1], new Cartesian3());
 
         // Calculate name using persistent counter
         const nextNumber = measurementCounters.current.length;
         const name = `Length ${nextNumber}`;
 
-        const cameraPosition = viewerRef.current.camera.position;
-        const offsetPoints = points.map(pt => {
-            const direction = Cartesian3.subtract(cameraPosition, pt, new Cartesian3());
-            Cartesian3.normalize(direction, direction);
-            return Cartesian3.add(pt, Cartesian3.multiplyByScalar(direction, 0.3, new Cartesian3()), new Cartesian3());
-        });
-
         const startPointEntity = viewerRef.current.entities.add({
-            position: offsetPoints[0],
-            billboard: new BillboardGraphics({
-                image: yellowDotImage || undefined,
+            position: points[0],
+            point: new PointGraphics({
+                pixelSize: 8,
+                color: Color.YELLOW,
+                outlineColor: Color.WHITE,
+                outlineWidth: 2,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
 
         const endPointEntity = viewerRef.current.entities.add({
-            position: offsetPoints[1],
-            billboard: new BillboardGraphics({
-                image: yellowDotImage || undefined,
+            position: points[1],
+            point: new PointGraphics({
+                pixelSize: 8,
+                color: Color.YELLOW,
+                outlineColor: Color.WHITE,
+                outlineWidth: 2,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
 
         const entity = viewerRef.current.entities.add({
             polyline: new PolylineGraphics({
-                positions: offsetPoints,
+                positions: points,
                 width: 3,
                 material: Color.ORANGE,
-                clampToGround: false, // Prevent vertical smearing on buildings/facades
+                // Fixes the distortion artifact on 3D tilesets by decoupling from ground clamping configurations completely
+                clampToGround: false,
+                classificationType: ClassificationType.BOTH,
             }),
             label: new LabelGraphics({
                 text: convertDistance(distance),
@@ -1022,17 +1022,11 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         (entity as any).measurementName = name;
         (entity as any).subEntities = [startPointEntity, endPointEntity];
 
-        // Optimistic update
-        setDrawnMeasurements(prev => {
-            // Create new array with entity
-            const newArray = [...prev.length, entity];
-            return {
-                ...prev,
-                length: newArray,
-            };
-        });
+        setDrawnMeasurements(prev => ({
+            ...prev,
+            length: [...prev.length, entity],
+        }));
 
-        // Increment persistent counter
         measurementCounters.current.length++;
     };
 
@@ -1045,34 +1039,34 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const midpoint = Cartesian3.midpoint(points[0], points[1], new Cartesian3());
 
-        const cameraPosition = viewerRef.current.camera.position;
-        const offsetPoints = points.map(pt => {
-            const direction = Cartesian3.subtract(cameraPosition, pt, new Cartesian3());
-            Cartesian3.normalize(direction, direction);
-            return Cartesian3.add(pt, Cartesian3.multiplyByScalar(direction, 0.3, new Cartesian3()), new Cartesian3());
-        });
-
         const startPointEntity = viewerRef.current.entities.add({
-            position: offsetPoints[0],
-            billboard: new BillboardGraphics({
-                image: yellowDotImage || undefined,
+            position: points[0],
+            point: new PointGraphics({
+                pixelSize: 8,
+                color: Color.YELLOW,
+                outlineColor: Color.WHITE,
+                outlineWidth: 2,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
 
         const endPointEntity = viewerRef.current.entities.add({
-            position: offsetPoints[1],
-            billboard: new BillboardGraphics({
-                image: yellowDotImage || undefined,
+            position: points[1],
+            point: new PointGraphics({
+                pixelSize: 8,
+                color: Color.YELLOW,
+                outlineColor: Color.WHITE,
+                outlineWidth: 2,
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
         });
 
         const entity = viewerRef.current.entities.add({
             polyline: new PolylineGraphics({
-                positions: offsetPoints,
+                positions: points,
                 width: 3,
                 material: Color.PURPLE,
+                depthFailMaterial: Color.PURPLE,
             }),
             label: new LabelGraphics({
                 text: convertDistance(heightDiff),
@@ -1082,14 +1076,15 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 backgroundColor: Color.WHITE,
                 backgroundPadding: new Cartesian2(7, 5),
                 style: 0,
-                pixelOffset: new Cartesian3(10, 0, 0),
+                // FIXED: Changed from Cartesian3(10, 0, 0) to Cartesian2(10, 0) to avoid breakdown in rendering pipeline logic
+                pixelOffset: new Cartesian2(10, 0),
                 horizontalOrigin: HorizontalOrigin.LEFT,
                 verticalOrigin: VerticalOrigin.CENTER,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
             }),
             position: midpoint,
         });
 
-        // Calculate name using persistent counter
         const nextNumber = measurementCounters.current.height;
         const name = `Height ${nextNumber}`;
 
@@ -1097,15 +1092,11 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         (entity as any).measurementName = name;
         (entity as any).subEntities = [startPointEntity, endPointEntity];
 
-        setDrawnMeasurements(prev => {
-            const newArray = [...prev.height, entity];
-            return {
-                ...prev,
-                height: newArray,
-            };
-        });
+        setDrawnMeasurements(prev => ({
+            ...prev,
+            height: [...prev.height, entity],
+        }));
 
-        // Increment persistent counter
         measurementCounters.current.height++;
     };
 
@@ -1336,7 +1327,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         if (!viewerRef.current || points.length < 2) return;
 
         const viewer = viewerRef.current;
-        
+
         // Calculate total distance
         let totalDistance = 0;
         for (let i = 0; i < points.length - 1; i++) {
@@ -1525,7 +1516,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         (entity as any).measurementType = 'circle';
         (entity as any).measurementName = name;
         (entity as any).subEntities = [centerPointEntity, edgePointEntity];
-        
+
         setDrawnMeasurements(prev => {
             const newArray = [...prev.circle, entity];
             return {
@@ -1649,14 +1640,14 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
     return (
         <div className="discovery-page">
             <header className="discovery-header">
-                <a href={new URLSearchParams(window.location.search).has('tileset_url') ? "#" : "/"} 
-                   className="back-button"
-                   onClick={(e) => {
-                       if (new URLSearchParams(window.location.search).has('tileset_url')) {
-                           e.preventDefault();
-                           window.close(); 
-                       }
-                   }}>
+                <a href={new URLSearchParams(window.location.search).has('tileset_url') ? "#" : "/"}
+                    className="back-button"
+                    onClick={(e) => {
+                        if (new URLSearchParams(window.location.search).has('tileset_url')) {
+                            e.preventDefault();
+                            window.close();
+                        }
+                    }}>
                     <ArrowLeft size={20} />
                     <span>{new URLSearchParams(window.location.search).has('tileset_url') ? "Close Viewer" : "Back to Showcases"}</span>
                 </a>
