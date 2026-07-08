@@ -961,12 +961,24 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         };
     }, [activeAnnotationTool]);
 
-    // 1. ADD THIS HELPER FUNCTION HERE:
-    const createPointSvgIcon = (color: string) => {
-        return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4" fill="${encodeURIComponent(color)}" stroke="white" stroke-width="2"/></svg>`;
+    // 1. ROBUST CANVAS INDICATOR GENERATOR (Replaces the fragile SVG variant)
+    const createPointCanvasIcon = (color: string) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 16;
+        canvas.height = 16;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.beginPath();
+            ctx.arc(8, 8, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        return canvas.toDataURL(); // Produces a foolproof base64 PNG data stream
     };
 
-    // 2. REPLACE YOUR OLD VERSION WITH THIS UPDATED ONE:
     const createLengthMeasurement = (points: Cartesian3[]) => {
         if (!viewerRef.current || points.length !== 2) return;
 
@@ -978,8 +990,8 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const startPointEntity = viewerRef.current.entities.add({
             position: points[0],
             billboard: {
-                image: createPointSvgIcon('#EAB308'),
-                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                image: createPointCanvasIcon('#EAB308'), // Bright Yellow
+                disableDepthTestDistance: Number.POSITIVE_INFINITY, // Forces endpoint visibility over facade
                 heightReference: 0
             }
         });
@@ -987,7 +999,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const endPointEntity = viewerRef.current.entities.add({
             position: points[1],
             billboard: {
-                image: createPointSvgIcon('#EAB308'),
+                image: createPointCanvasIcon('#EAB308'),
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
                 heightReference: 0
             }
@@ -996,10 +1008,12 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const entity = viewerRef.current.entities.add({
             polyline: new PolylineGraphics({
                 positions: points,
-                width: 3,
+                width: 4, // Slightly thicker for crisp visibility on detailed tilesets
                 material: Color.ORANGE,
                 clampToGround: false,
-                arcType: 0, // <- Fixes the expanding curtain issue
+                arcType: 0,
+                // CRITICAL FIX: Forces the line to draw cleanly even if it clips behind building skin triangles
+                depthFailMaterial: Color.ORANGE,
             }),
             label: new LabelGraphics({
                 text: convertDistance(distance),
@@ -1029,7 +1043,6 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         measurementCounters.current.length++;
     };
 
-    // 3. REPLACE YOUR OLD VERSION WITH THIS UPDATED ONE:
     const createHeightMeasurement = (points: Cartesian3[]) => {
         if (!viewerRef.current || points.length !== 2) return;
 
@@ -1043,7 +1056,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const startPointEntity = viewerRef.current.entities.add({
             position: points[0],
             billboard: {
-                image: createPointSvgIcon('#A855F7'),
+                image: createPointCanvasIcon('#A855F7'), // Purple Accent
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
                 heightReference: 0
             }
@@ -1052,7 +1065,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const endPointEntity = viewerRef.current.entities.add({
             position: points[1],
             billboard: {
-                image: createPointSvgIcon('#A855F7'),
+                image: createPointCanvasIcon('#A855F7'),
                 disableDepthTestDistance: Number.POSITIVE_INFINITY,
                 heightReference: 0
             }
@@ -1061,10 +1074,12 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const entity = viewerRef.current.entities.add({
             polyline: new PolylineGraphics({
                 positions: points,
-                width: 3,
+                width: 4,
                 material: Color.PURPLE,
                 clampToGround: false,
-                arcType: 0, // <- Fixes the expanding curtain issue
+                arcType: 0,
+                // CRITICAL FIX: Forces height path to show cleanly without fragment dropouts
+                depthFailMaterial: Color.PURPLE,
             }),
             label: new LabelGraphics({
                 text: convertDistance(heightDiff),
