@@ -1191,79 +1191,45 @@
       }
     }
 
-    // 🚀 OPTIMIZED: Uses prefetched tileset URL cache for instant iframe load, falls back to live fetch
+    // 🚀 OPTIMIZED: Open viewer in a new tab for maximum performance.
+    // Opening directly in a browser tab gives CesiumJS full browser resources
+    // instead of a sandboxed iframe — eliminates the main loading bottleneck.
+    // The viewer page has a "Close Viewer → Back to My Uploads" button built-in.
     function launchInteractivePreview(projectIdString) {
-      const modalEl = document.getElementById('mapPreviewModal');
-      const frameEl = document.getElementById('interactivePreviewFrame');
-      const titleEl = document.getElementById('mapPreviewModalTitle');
-      const spinnerEl = document.getElementById('viewerLoadingSpinner');
-      
-      if (!modalEl || !frameEl) return;
-
       let projectTitle = 'Project 3D Model';
       if (window.myUploadsData) {
         const assetMeta = window.myUploadsData.find(p => String(p.project_id) === String(projectIdString) || String(p.id) === String(projectIdString));
         if (assetMeta) {
           projectTitle = assetMeta.project_title || assetMeta.project_id;
-          titleEl.innerHTML = `<i class="bx bx-layer me-2 text-primary"></i> 3D Model Map Viewer: ${projectTitle}`;
         }
       }
 
-      function setViewerSrc(tilesetUrl) {
-        if (spinnerEl) spinnerEl.classList.remove('d-none');
-        frameEl.src = `/viewer/${encodeURIComponent(projectIdString)}?model=${encodeURIComponent(projectIdString)}&tileset_url=${encodeURIComponent(tilesetUrl)}&title=${encodeURIComponent(projectTitle)}`;
-        frameEl.onload = function() {
-          if (spinnerEl) spinnerEl.classList.add('d-none');
-        };
+      function openViewerTab(tilesetUrl) {
+        const viewerUrl = `/viewer/${encodeURIComponent(projectIdString)}?model=${encodeURIComponent(projectIdString)}&tileset_url=${encodeURIComponent(tilesetUrl)}&title=${encodeURIComponent(projectTitle)}`;
+        window.open(viewerUrl, '_blank');
       }
 
-      // 🚀 Use cached tileset URL if available (no network round-trip — instant start)
+      // 🚀 Use cached tileset URL for instant navigation (no API round-trip on click)
       const cached = window.tilesetUrlCache && window.tilesetUrlCache[String(projectIdString)];
       if (cached) {
-        setViewerSrc(cached);
+        openViewerTab(cached);
       } else {
-        // Cache miss: fetch live then set
+        // Cache miss: fetch live then open
         fetch(`/api/user/my-uploads/${encodeURIComponent(projectIdString)}/preview-tileset`)
           .then(res => res.json())
           .then(data => {
             if (data.success && data.tileset_url) {
-              // Store in cache for next time
               window.tilesetUrlCache = window.tilesetUrlCache || {};
               window.tilesetUrlCache[String(projectIdString)] = data.tileset_url;
-              setViewerSrc(data.tileset_url);
+              openViewerTab(data.tileset_url);
             } else {
-              frameEl.src = '';
-              if (spinnerEl) spinnerEl.classList.add('d-none');
               alert("The preview fileset index could not be resolved on the server.");
             }
           })
           .catch(() => {
-            if (spinnerEl) spinnerEl.classList.add('d-none');
             alert("Failed to connect to the 3D secure rendering pipeline endpoint.");
           });
       }
-
-      const bModal = new bootstrap.Modal(modalEl);
-      bModal.show();
-
-      // Push a history state so the browser back button triggers popstate instead of navigating away
-      history.pushState({ previewModalOpen: true }, '');
-
-      // Clean up: clear iframe when modal is dismissed normally (X button)
-      let closedByPopstate = false;
-      modalEl.addEventListener('hidden.bs.modal', function disposeFrame() {
-        frameEl.src = '';
-        titleEl.innerHTML = `<i class="bx bx-layer me-2 text-primary"></i> 3D Model Map Viewer`;
-        // If closed via X button (not back button), pop the history state we pushed
-        if (!closedByPopstate && history.state && history.state.previewModalOpen) {
-          history.back();
-        }
-        closedByPopstate = false;
-        modalEl.removeEventListener('hidden.bs.modal', disposeFrame);
-      });
-
-      // Store flag reference on element for popstate handler to access
-      modalEl._closedByPopstate = () => { closedByPopstate = true; };
     }
 
     // Listen for browser back button — close the modal cleanly without navigating away
