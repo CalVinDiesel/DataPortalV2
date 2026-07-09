@@ -1652,18 +1652,18 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 if (referrer && referrer.includes(window.location.hostname)) {
                     window.location.href = referrer;
                 } else {
-                    window.location.href = '/';
+                    window.location.href = '/my-uploads';
                 }
             }, 100);
         } else {
-            // Otherwise, go back in history if possible, or fallback to referrer/home
+            // Otherwise, go back in history if possible, or fallback to referrer/my-uploads
             const referrer = document.referrer;
             if (referrer && referrer.includes(window.location.hostname)) {
                 window.location.href = referrer;
             } else if (window.history.length > 1) {
                 window.history.back();
             } else {
-                window.location.href = '/';
+                window.location.href = '/my-uploads';
             }
         }
     };
@@ -1671,11 +1671,11 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
     return (
         <div className="discovery-page">
             <header className="discovery-header">
-                <a href="/"
+                <a href="/my-uploads"
                     className="back-button"
                     onClick={handleCloseViewer}>
                     <ArrowLeft size={20} />
-                    <span>{new URLSearchParams(window.location.search).has('tileset_url') ? "Close Viewer" : "Back to Showcases"}</span>
+                    <span>{new URLSearchParams(window.location.search).has('tileset_url') ? "Close Viewer" : "Back to My Uploads"}</span>
                 </a>
                 <h1 className="discovery-title">{siteTitle} - Data Discovery</h1>
                 {/* TEMPORARILY HIDDEN - Purchase button and price display
