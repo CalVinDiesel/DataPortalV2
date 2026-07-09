@@ -4,6 +4,8 @@ import {
     ScreenSpaceEventHandler,
     ScreenSpaceEventType,
     Cartesian3,
+    Matrix3,
+    Quaternion,
     Cartesian2,
     Color,
     Entity,
@@ -603,24 +605,21 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
 
         const removePitchConstraint = viewer.scene.preRender.addEventListener(() => {
             const camera = viewer.camera;
+            let angle = 0;
             if (camera.pitch > maxPitch) {
-                camera.setView({
-                    destination: camera.position,
-                    orientation: {
-                        heading: camera.heading,
-                        pitch: maxPitch,
-                        roll: camera.roll
-                    }
-                });
+                angle = maxPitch - camera.pitch;
             } else if (camera.pitch < minPitch) {
-                camera.setView({
-                    destination: camera.position,
-                    orientation: {
-                        heading: camera.heading,
-                        pitch: minPitch,
-                        roll: camera.roll
-                    }
-                });
+                angle = minPitch - camera.pitch;
+            }
+
+            if (angle !== 0) {
+                // Rotate direction and up vectors around the right axis to adjust pitch
+                // directly, without calling setView (which resets controller drag inertia and gets stuck)
+                const right = camera.right;
+                const quaternion = Quaternion.fromAxisAngle(right, angle, new Quaternion());
+                const rotation = Matrix3.fromQuaternion(quaternion, new Matrix3());
+                Matrix3.multiplyByVector(rotation, camera.direction, camera.direction);
+                Matrix3.multiplyByVector(rotation, camera.up, camera.up);
             }
         });
 
