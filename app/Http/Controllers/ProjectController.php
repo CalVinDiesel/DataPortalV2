@@ -1288,7 +1288,12 @@ class ProjectController extends Controller
         // Dynamic path resolution from delivery path if populated, with chroot fallback
         $deliveryPath = $record->sftp_delivery_path;
         if ($deliveryPath) {
-            $directory = $deliveryPath;
+            $ext = strtolower(pathinfo($deliveryPath, PATHINFO_EXTENSION));
+            if ($ext === 'zip') {
+                $directory = dirname($deliveryPath);
+            } else {
+                $directory = $deliveryPath;
+            }
         } else {
             $directory = "/uploads/" . $sftpUser . "/" . $record->project_id . "/delivered";
         }
