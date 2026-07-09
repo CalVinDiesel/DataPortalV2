@@ -1399,6 +1399,15 @@ class ProjectController extends Controller
                 'fallback_coordinates' => [
                     'latitude' => $record->latitude,
                     'longitude' => $record->longitude
+                ],
+                'debug' => [
+                    'sftp_delivery_path' => $deliveryPath,
+                    'absolute_tileset_path' => $absoluteTilesetPath,
+                    'sftp_path' => $sftpPath,
+                    'relative_tileset_path' => $relativeTilesetPath,
+                    'disk_root' => $root,
+                    'local_exists' => file_exists($absoluteTilesetPath),
+                    'local_dir_files' => file_exists($directory) && is_dir($directory) ? array_values(array_diff(scandir($directory), ['.', '..'])) : []
                 ]
             ], 404);
         }
