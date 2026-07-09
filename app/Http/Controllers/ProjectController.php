@@ -1522,85 +1522,97 @@ class ProjectController extends Controller
 
     public function streamViewerAsset($path)
     {
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthenticated'], 401);
-        }
-
-        // Security check: Clients can only access paths under their own uploads/{sftp_username}/ directory
-        if ($user->role !== 'admin' && $user->role !== 'superadmin') {
-            $sftpUser = $user->sftp_username ?: \Illuminate\Support\Str::slug($user->name);
-            $prefix = "uploads/" . $sftpUser . "/";
-            
-            // Normalize path by stripping absolute SFTPGo prefix if present
-            $sftpGoRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', '/srv/sftpgo/data'), '/');
-            $testPath = $path;
-            $normalizedRoot = ltrim($sftpGoRoot, '/');
-            if (\Illuminate\Support\Str::startsWith($path, $normalizedRoot)) {
-                $testPath = ltrim(\Illuminate\Support\Str::after($path, $normalizedRoot), '/');
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
             }
-            
-            if (!\Illuminate\Support\Str::startsWith($testPath, $prefix)) {
-                return response()->json(['error' => 'Unauthorized access to asset path.'], 403);
-            }
-        }
 
-        $disk = Storage::disk('sftp_delivery');
-        if (!$disk->exists($path)) {
-            $dir = dirname($path);
-            $dirFiles = [];
-            try {
-                $dirFiles = $disk->files($dir);
-            } catch (\Exception $e) {}
-            \Log::warning("streamViewerAsset 404: path [{$path}] not found on disk. Directory [{$dir}] contains files: " . json_encode($dirFiles));
-            
+            // Security check: Clients can only access paths under their own uploads/{sftp_username}/ directory
+            if ($user->role !== 'admin' && $user->role !== 'superadmin') {
+                $sftpUser = $user->sftp_username ?: \Illuminate\Support\Str::slug($user->name);
+                $prefix = "uploads/" . $sftpUser . "/";
+                
+                // Normalize path by stripping absolute SFTPGo prefix if present
+                $sftpGoRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', '/srv/sftpgo/data'), '/');
+                $testPath = $path;
+                $normalizedRoot = ltrim($sftpGoRoot, '/');
+                if (\Illuminate\Support\Str::startsWith($path, $normalizedRoot)) {
+                    $testPath = ltrim(\Illuminate\Support\Str::after($path, $normalizedRoot), '/');
+                }
+                
+                if (!\Illuminate\Support\Str::startsWith($testPath, $prefix)) {
+                    return response()->json(['error' => 'Unauthorized access to asset path.'], 403);
+                }
+            }
+
+            $disk = Storage::disk('sftp_delivery');
+            if (!$disk->exists($path)) {
+                $dir = dirname($path);
+                $dirFiles = [];
+                try {
+                    $dirFiles = $disk->files($dir);
+                } catch (\Exception $e) {}
+                \Log::warning("streamViewerAsset 404: path [{$path}] not found on disk. Directory [{$dir}] contains files: " . json_encode($dirFiles));
+                
+                return response()->json([
+                    'error' => 'Asset not found', 
+                    'path' => $path,
+                    'directory' => $dir,
+                    'directory_files' => $dirFiles
+                ], 404);
+            }
+
+            // Guess content type for Cesium 3D Tiles pipeline streaming
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $contentTypes = [
+                'json'    => 'application/json',
+                'b3dm'    => 'application/octet-stream',
+                'cmpt'    => 'application/octet-stream',
+                'i3dm'    => 'application/octet-stream',
+                'pnts'    => 'application/octet-stream',
+                'glb'     => 'model/gltf-binary',
+                'gltf'    => 'model/gltf+json',
+                'bin'     => 'application/octet-stream',
+                'ktx'     => 'image/ktx',
+                'ktx2'    => 'image/ktx2',
+                'basis'   => 'application/octet-stream',
+                'wasm'    => 'application/wasm',
+                'png'     => 'image/png',
+                'jpg'     => 'image/jpeg',
+                'jpeg'    => 'image/jpeg',
+                'gif'     => 'image/gif',
+                'webp'    => 'image/webp',
+                'svg'     => 'image/svg+xml',
+                'czml'    => 'application/json',
+                'kml'     => 'application/vnd.google-earth.kml+xml',
+                'geojson' => 'application/geo+json',
+            ];
+            $contentType = $contentTypes[$ext] ?? 'application/octet-stream';
+
+            // Low-memory streaming from SFTP delivery disk directly to browser response buffer
+            return response()->stream(function() use ($disk, $path) {
+                try {
+                    $stream = $disk->readStream($path);
+                    if ($stream) {
+                        fpassthru($stream);
+                        fclose($stream);
+                    }
+                } catch (\Exception $e) {
+                    \Log::error("streamViewerAsset readStream callback failed: " . $e->getMessage());
+                }
+            }, 200, [
+                'Content-Type' => $contentType,
+                'Access-Control-Allow-Origin' => '*',
+                'Cache-Control' => 'max-age=86400',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("streamViewerAsset failed: " . $e->getMessage());
             return response()->json([
-                'error' => 'Asset not found', 
-                'path' => $path,
-                'directory' => $dir,
-                'directory_files' => $dirFiles
-            ], 404);
+                'error' => 'Internal Server Error',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        // Guess content type for Cesium 3D Tiles pipeline streaming
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        $contentTypes = [
-            'json'    => 'application/json',
-            'b3dm'    => 'application/octet-stream',
-            'cmpt'    => 'application/octet-stream',
-            'i3dm'    => 'application/octet-stream',
-            'pnts'    => 'application/octet-stream',
-            'glb'     => 'model/gltf-binary',
-            'gltf'    => 'model/gltf+json',
-            'bin'     => 'application/octet-stream',
-            'ktx'     => 'image/ktx',
-            'ktx2'    => 'image/ktx2',
-            'basis'   => 'application/octet-stream',
-            'wasm'    => 'application/wasm',
-            'png'     => 'image/png',
-            'jpg'     => 'image/jpeg',
-            'jpeg'    => 'image/jpeg',
-            'gif'     => 'image/gif',
-            'webp'    => 'image/webp',
-            'svg'     => 'image/svg+xml',
-            'czml'    => 'application/json',
-            'kml'     => 'application/vnd.google-earth.kml+xml',
-            'geojson' => 'application/geo+json',
-        ];
-        $contentType = $contentTypes[$ext] ?? 'application/octet-stream';
-
-        // Low-memory streaming from SFTP delivery disk directly to browser response buffer
-        return response()->stream(function() use ($disk, $path) {
-            $stream = $disk->readStream($path);
-            if ($stream) {
-                fpassthru($stream);
-                fclose($stream);
-            }
-        }, 200, [
-            'Content-Type' => $contentType,
-            'Access-Control-Allow-Origin' => '*',
-            'Cache-Control' => 'max-age=86400',
-        ]);
     }
 
     private static function getDirFilesRecursive($dir) {
