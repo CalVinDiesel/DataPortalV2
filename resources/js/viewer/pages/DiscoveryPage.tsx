@@ -602,6 +602,11 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const maxPitch = CesiumMath.toRadians(-2); // 2 degrees below horizontal (prevents gimbal lock singularity at 0 degrees)
         const minPitch = CesiumMath.toRadians(-90); // Straight down
 
+        // Force camera to stay above model with pre-render position tracking
+        let lastValidTarget = new Cartesian3();
+        let lastValidRange = 1000.0;
+        let hasValidTarget = false;
+
         const removePitchConstraint = viewer.scene.preRender.addEventListener(() => {
             const camera = viewer.camera;
             let angle = 0;
@@ -611,26 +616,21 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 angle = minPitch - camera.pitch;
             }
 
-            if (angle !== 0) {
+            if (angle === 0) {
+                // Pitch is valid, record the target and range
                 const center = new Cartesian2(viewer.canvas.clientWidth / 2, viewer.canvas.clientHeight / 2);
-                let target = camera.pickEllipsoid(center);
-                let range = 0;
-                
+                const target = camera.pickEllipsoid(center);
                 if (target) {
-                    range = Cartesian3.distance(camera.position, target);
-                } else {
-                    // Fallback target based on camera height if looking at sky/space
-                    range = camera.positionCartographic.height;
-                    target = Cartesian3.add(
-                        camera.position,
-                        Cartesian3.multiplyByScalar(camera.direction, range, new Cartesian3()),
-                        new Cartesian3()
-                    );
+                    Cartesian3.clone(target, lastValidTarget);
+                    lastValidRange = Cartesian3.distance(camera.position, target);
+                    hasValidTarget = true;
                 }
-
-                // Smoothly clamp the pitch relative to the target without breaking camera inertia
-                camera.lookAt(target, new HeadingPitchRange(camera.heading, camera.pitch + angle, range));
-                camera.lookAtTransform(Matrix4.IDENTITY);
+            } else {
+                // Pitch is invalid, clamp orientation around the last valid target
+                if (hasValidTarget) {
+                    camera.lookAt(lastValidTarget, new HeadingPitchRange(camera.heading, camera.pitch + angle, lastValidRange));
+                    camera.lookAtTransform(Matrix4.IDENTITY);
+                }
             }
         });
 
