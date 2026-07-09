@@ -1503,7 +1503,19 @@ class ProjectController extends Controller
 
         $disk = Storage::disk('sftp_delivery');
         if (!$disk->exists($path)) {
-            abort(404);
+            $dir = dirname($path);
+            $dirFiles = [];
+            try {
+                $dirFiles = $disk->files($dir);
+            } catch (\Exception $e) {}
+            \Log::warning("streamViewerAsset 404: path [{$path}] not found on disk. Directory [{$dir}] contains files: " . json_encode($dirFiles));
+            
+            return response()->json([
+                'error' => 'Asset not found', 
+                'path' => $path,
+                'directory' => $dir,
+                'directory_files' => $dirFiles
+            ], 404);
         }
 
         // Guess content type for Cesium 3D Tiles pipeline streaming
