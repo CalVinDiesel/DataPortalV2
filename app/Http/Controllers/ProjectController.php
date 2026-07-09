@@ -1398,12 +1398,20 @@ class ProjectController extends Controller
         if (!$relativeTilesetPath) {
             // Find ZIP files inside SFTP project root or delivered folder
             $sftpSearchDirs = [
-                $relativeSearchDir ?: $cleanRelativeDir,
+                $cleanRelativeDir,
                 "uploads/" . $sftpUser . "/" . $record->project_id
             ];
             
+            // Build all prefix candidates for search directories on SFTP
+            $sftpCandidates = [];
             foreach ($sftpSearchDirs as $sftpDir) {
-                if (!$sftpDir) continue;
+                $sftpCandidates[] = $sftpDir;
+                $sftpCandidates[] = ltrim($sftpGoRoot, '/') . '/' . $sftpDir;
+                $sftpCandidates[] = ltrim($portalRoot, '/') . '/' . $sftpDir;
+            }
+            $sftpCandidates = array_unique(array_filter($sftpCandidates));
+            
+            foreach ($sftpCandidates as $sftpDir) {
                 $sftpDir = ltrim(str_replace('\\', '/', $sftpDir), '/');
                 try {
                     if ($disk->exists($sftpDir)) {
@@ -1433,8 +1441,11 @@ class ProjectController extends Controller
                                     \RecursiveIteratorIterator::LEAVES_ONLY
                                 );
                                 
-                                // Upload target is always under relativeSearchDir or cleanRelativeDir /delivered
-                                $targetBaseDir = $relativeSearchDir ?: ("uploads/" . $sftpUser . "/" . $record->project_id . "/delivered");
+                                // Target directory for unzipped files is always inside the delivered folder structure
+                                $targetBaseDir = $sftpDir;
+                                if (!\Illuminate\Support\Str::endsWith($targetBaseDir, 'delivered')) {
+                                    $targetBaseDir = rtrim($targetBaseDir, '/') . '/delivered';
+                                }
                                 
                                 foreach ($filesToUpload as $name => $file) {
                                     if (!$file->isDir()) {
