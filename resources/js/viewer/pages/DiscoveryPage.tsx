@@ -597,8 +597,30 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         camCtrl.tiltEventTypes = [{ eventType: CameraEventType.RIGHT_DRAG }];
         camCtrl.zoomEventTypes = [CameraEventType.WHEEL, CameraEventType.PINCH];
 
-        // No constraints on zoom or pitch to match showcase viewer behavior (unlimited zoom/movement)
-        const removePitchConstraint = () => {};
+        // No constraints on zoom to allow unlimited zoom out range
+        const maxPitch = CesiumMath.toRadians(0); // Horizontal / sea level (prevents looking up from below)
+        const minPitch = CesiumMath.toRadians(-90); // Straight down
+
+        const removePitchConstraint = viewer.scene.preRender.addEventListener(() => {
+            const camera = viewer.camera;
+            if (camera.pitch > maxPitch) {
+                camera.setView({
+                    orientation: {
+                        heading: camera.heading,
+                        pitch: maxPitch,
+                        roll: camera.roll
+                    }
+                });
+            } else if (camera.pitch < minPitch) {
+                camera.setView({
+                    orientation: {
+                        heading: camera.heading,
+                        pitch: minPitch,
+                        roll: camera.roll
+                    }
+                });
+            }
+        });
 
         // Initialize CesiumNavigation plugin
         try {
