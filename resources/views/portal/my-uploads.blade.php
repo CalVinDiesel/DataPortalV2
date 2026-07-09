@@ -281,6 +281,16 @@
     @endif
     
     <!-- Dashboard Stats Row -->
+    @php
+      $user = auth()->user();
+      $usedBytes = $user ? \App\Models\ClientUpload::calculateUserStorageUsed($user->email) : 0;
+      $limitBytes = $user ? \App\Models\ClientUpload::getStorageLimitBytes($user->email) : 5 * 1024 * 1024 * 1024;
+      
+      $usedGb = number_format($usedBytes / (1024 * 1024 * 1024), 1);
+      $limitGb = number_format($limitBytes / (1024 * 1024 * 1024), 0);
+      $percent = $limitBytes > 0 ? round(($usedBytes / $limitBytes) * 100, 1) : 0;
+      $hasExceeded = $usedBytes >= $limitBytes;
+    @endphp
     <div class="row g-4 mb-5">
       <!-- Storage Quota -->
       <div class="col-lg-5 col-md-12">
@@ -290,14 +300,14 @@
             <span class="badge bg-label-primary">Pro Plan</span>
           </div>
           <div class="d-flex justify-content-between text-muted small mb-2">
-            <span id="storageUsedText">0 GB Used</span>
-            <span id="storageTotalText">100 GB Total</span>
+            <span id="storageUsedText">{{ $usedGb }} GB Used</span>
+            <span id="storageTotalText">{{ $limitGb }} GB Total</span>
           </div>
           <div class="progress" style="height: 10px; border-radius: 10px;">
-            <div id="storageProgressBar" class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            <div id="storageProgressBar" class="progress-bar {{ $hasExceeded ? 'bg-danger' : ($percent > 85 ? 'bg-warning' : 'bg-primary') }}" role="progressbar" style="width: {{ $percent }}%" aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
           <div id="storageStatusText" class="mt-3 text-muted" style="font-size: 0.8rem;">
-            You have used 0% of your available storage.
+            You have used {{ $percent }}% of your available storage.
           </div>
         </div>
       </div>
