@@ -191,11 +191,27 @@
         return absoluteUrl;
       }
 
+      // Our own server is accessible via multiple domain aliases (e.g. both
+      // dataportal.geovidia.my and dataportal.temadigital.my point to the same
+      // machine). If the URL is from any of our own server domains, strip the
+      // host and return the path only so it resolves against whatever domain
+      // the page is currently on — NO proxy needed, no cross-origin issue.
+      var OWN_SERVER_HOSTS = [
+        'dataportal.geovidia.my',
+        'dataportal.temadigital.my',
+        'geovidia.my',
+        'temadigital.my'
+      ];
+      if (OWN_SERVER_HOSTS.indexOf(parsed.hostname) !== -1) {
+        return normalizePathFilename(parsed.pathname) + (parsed.search || '');
+      }
+
       // If it's a third-party different origin (e.g. sabahtourism.com, downbelowadventures.com),
       // we MUST route it through our built-in high-speed /proxy endpoint so it bypasses CORS and loads on the map pin canvas!
       if (parsed.origin !== pageOrigin && parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1' && (!API_BASE || parsed.origin !== new URL(API_BASE).origin)) {
         return '/proxy?url=' + encodeURIComponent(absoluteUrl);
       }
+
 
       // Same origin as the current page — no rewrite needed
       if (parsed.origin === pageOrigin) {
