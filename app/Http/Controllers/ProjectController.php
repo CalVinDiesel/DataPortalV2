@@ -1443,7 +1443,8 @@ class ProjectController extends Controller
                     'relative_tileset_path' => $relativeTilesetPath,
                     'disk_root' => $root,
                     'local_exists' => file_exists($absoluteTilesetPath),
-                    'local_dir_files' => file_exists($directoryLocal) && is_dir($directoryLocal) ? self::getDirFilesRecursive($directoryLocal) : []
+                    'local_dir_files' => file_exists($directoryLocal) && is_dir($directoryLocal) ? self::getDirFilesRecursive($directoryLocal) : [],
+                    'parent_dir_files' => file_exists(dirname($directoryLocal)) && is_dir(dirname($directoryLocal)) ? self::getDirFilesRecursive(dirname($directoryLocal)) : []
                 ]
             ], 404);
         }
