@@ -18,9 +18,13 @@ function initializeCesium(containerId = 'cesiumContainer') {
         Cesium.Ion.defaultAccessToken = '';
     }
 
-    // Use the official high-quality satellite imagery
-    var provider = Cesium.createWorldImagery ? Cesium.createWorldImagery() : new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://tile.openstreetmap.org/'
+    // Use OpenStreetMap via UrlTemplateImageryProvider (OpenStreetMapImageryProvider was removed in Cesium 1.115+)
+    var provider = new Cesium.UrlTemplateImageryProvider({
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        subdomains: ['a', 'b', 'c'],
+        minimumLevel: 0,
+        maximumLevel: 19,
+        credit: '© OpenStreetMap contributors'
     });
 
     var viewerOptions = {
@@ -38,9 +42,7 @@ function initializeCesium(containerId = 'cesiumContainer') {
         sceneMode: typeof window.cesiumDefaultSceneMode !== 'undefined' ? window.cesiumDefaultSceneMode : Cesium.SceneMode.SCENE2D,
         requestRenderMode: true,
         useDefaultRenderLoop: true,
-        baseLayer: new Cesium.ImageryLayer(new Cesium.OpenStreetMapImageryProvider({
-            url: 'https://tile.openstreetmap.org/'
-        }))
+        baseLayer: new Cesium.ImageryLayer(provider)
     };
 
     try {

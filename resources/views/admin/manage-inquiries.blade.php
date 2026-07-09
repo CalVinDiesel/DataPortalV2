@@ -1041,8 +1041,12 @@
         sceneMode: Cesium.SceneMode.SCENE3D,
         requestRenderMode: true,
         terrainProvider: new Cesium.EllipsoidTerrainProvider(),
-        baseLayer: new Cesium.ImageryLayer(new Cesium.OpenStreetMapImageryProvider({
-          url: 'https://tile.openstreetmap.org/'
+        baseLayer: new Cesium.ImageryLayer(new Cesium.UrlTemplateImageryProvider({
+          url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          subdomains: ['a', 'b', 'c'],
+          minimumLevel: 0,
+          maximumLevel: 19,
+          credit: '© OpenStreetMap contributors'
         }))
       });
       cesiumViewer.scene.globe.show = true;
