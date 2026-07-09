@@ -155,6 +155,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/inquiry/{id}/payment-receipt', [\App\Http\Controllers\InquiryController::class, 'clientDownloadPaymentReceipt'])->name('inquiry.receipt');
     Route::get('/api/inquiry/{id}/status', [\App\Http\Controllers\InquiryController::class, 'clientCheckStatus'])->name('inquiry.status');
     Route::post('/api/inquiry/{id}/accept-disclaimer', [\App\Http\Controllers\InquiryController::class, 'acceptDisclaimer'])->name('inquiry.accept_disclaimer');
+    Route::get('/api/inquiry/{id}/preview-tileset', [\App\Http\Controllers\InquiryController::class, 'getInquiryPreviewTilesetConfig'])->name('inquiry.preview_tileset');
 
     // 🚀 SESSION-SYNC (v271): Moved from api.php to ensure stable session access for AJAX
     Route::get('/api/user/my-uploads', [ProjectController::class, 'index']);

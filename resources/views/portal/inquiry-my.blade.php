@@ -883,16 +883,27 @@
                       @if($inquiry->delivered_at)
                         <div class="small text-muted mb-3"><i class="bx bx-calendar me-1"></i>Made available on {{ $inquiry->delivered_at->format('d M Y, h:i A') }}</div>
                       @endif
-                      <button
-                        type="button"
-                        class="btn-download-tiles"
-                        id="btnDownload-{{ $inquiry->id }}"
-                        onclick="initiateDownloadWithDisclaimer({{ $inquiry->id }})"
-                      >
-                        <i class="bx bx-download" style="font-size:18px;"></i>
-                        Download 3D Model Tiles
-                      </button>
-                    </div>
+                      <div class="d-flex align-items-center gap-2 flex-wrap mt-1">
+                        <button
+                          type="button"
+                          class="btn-download-tiles"
+                          id="btnDownload-{{ $inquiry->id }}"
+                          onclick="initiateDownloadWithDisclaimer({{ $inquiry->id }})"
+                        >
+                          <i class="bx bx-download" style="font-size:18px;"></i>
+                          Download 3D Model Tiles
+                        </button>
+                        <button
+                          type="button"
+                          id="btnPreview3D-{{ $inquiry->id }}"
+                          onclick="openInquiry3DPreview({{ $inquiry->id }}, '{{ addslashes($inquiry->inquiry_id) }}')"
+                          style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;transition:opacity .2s;"
+                          onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'"
+                        >
+                          <i class="bx bx-show-alt" style="font-size:18px;"></i>
+                          Preview 3D Model
+                        </button>
+                      </div>
                   @else
                     <div class="delivery-preparing mt-3">
                       <span class="spinner-border spinner-border-sm flex-shrink-0" style="color:#8b5cf6;"></span>
@@ -1274,6 +1285,71 @@
         }
       }
     });
+    // ─────────────────────────────────────────────────────────────────────────
+    // 🚀 INQUIRY 3D PREVIEW — Dynamic, isolated cache. No conflict with My Uploads.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // Prefetch tileset URLs for all completed+delivery_ready inquiries on page load
+    (function prefetchInquiryTilesets() {
+      window.inquiryTilesetCache = window.inquiryTilesetCache || {};
+      // Collect all inquiry IDs that have the Preview button rendered on this page
+      document.querySelectorAll('[id^="btnPreview3D-"]').forEach(function(btn) {
+        const inquiryId = btn.id.replace('btnPreview3D-', '');
+        if (!window.inquiryTilesetCache[inquiryId]) {
+          fetch(`/api/inquiry/${encodeURIComponent(inquiryId)}/preview-tileset`)
+            .then(r => r.json())
+            .then(d => {
+              if (d.success && d.tileset_url) {
+                window.inquiryTilesetCache[inquiryId] = {
+                  tilesetUrl: d.tileset_url,
+                  inquiryStringId: d.inquiry_id,
+                };
+              }
+            })
+            .catch(() => {}); // Silent — cache miss handled at click time
+        }
+      });
+    })();
+
+    // Open the 3D viewer in a new tab for an inquiry — same performance approach as My Uploads
+    function openInquiry3DPreview(inquiryNumericId, inquiryStringId) {
+      const btn = document.getElementById('btnPreview3D-' + inquiryNumericId);
+
+      function openTab(tilesetUrl, label) {
+        const title = encodeURIComponent('Inquiry 3D Model: ' + label);
+        const viewerUrl = `/viewer/${encodeURIComponent(inquiryStringId)}?model=${encodeURIComponent(inquiryStringId)}&tileset_url=${encodeURIComponent(tilesetUrl)}&title=${decodeURIComponent(title)}`;
+        window.open(viewerUrl, '_blank');
+      }
+
+      // 🚀 Use cached URL for instant navigation
+      const cached = window.inquiryTilesetCache && window.inquiryTilesetCache[String(inquiryNumericId)];
+      if (cached) {
+        openTab(cached.tilesetUrl, cached.inquiryStringId || inquiryStringId);
+        return;
+      }
+
+      // Cache miss: show loading state and fetch live
+      if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+      fetch(`/api/inquiry/${encodeURIComponent(inquiryNumericId)}/preview-tileset`)
+        .then(r => r.json())
+        .then(d => {
+          if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+          if (d.success && d.tileset_url) {
+            window.inquiryTilesetCache = window.inquiryTilesetCache || {};
+            window.inquiryTilesetCache[String(inquiryNumericId)] = {
+              tilesetUrl: d.tileset_url,
+              inquiryStringId: d.inquiry_id,
+            };
+            openTab(d.tileset_url, d.inquiry_id || inquiryStringId);
+          } else {
+            alert('The 3D model preview is not yet available for this inquiry.');
+          }
+        })
+        .catch(() => {
+          if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+          alert('Failed to connect to the 3D preview pipeline. Please try again.');
+        });
+    }
   </script>
 </body>
 </html>
