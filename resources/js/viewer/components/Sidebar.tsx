@@ -206,7 +206,7 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
                         (tilesetUrl.startsWith('http') && new URL(tilesetUrl, window.location.origin).origin === window.location.origin);
                     
                     if (isSameOrigin) {
-                        tilesetResource = new Resource({ url: tilesetUrl });
+                        tilesetResource = tilesetUrl;
                     } else {
                         tilesetResource = new Resource({ url: tilesetUrl, proxy: new DefaultProxy('/proxy?url=') });
                     }
