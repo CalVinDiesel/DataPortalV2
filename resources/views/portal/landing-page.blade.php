@@ -572,7 +572,7 @@ ob_start(function($output) {
               <div class="col-lg-4 col-md-6" id="tile-mapdata-{{ $id }}">
                 <a href="{{ route('loading_3d') }}?id={{ urlencode($id) }}" class="tile-3d-card" target="_blank" rel="noopener">
                   <div class="tile-3d-img">
-                    <img src="{{ $finalSrc }}" alt="{{ $title }}" onerror="this.src='https://placehold.co/{{ $getPremiumColor($id) }}?text=3D+Model'">
+                    <img src="{{ $finalSrc }}" alt="{{ $title }}" onerror="window.handleThumbFallback(this, '{{ addslashes($title) }}', '{{ explode('/', $getPremiumColor($id))[0] }}')">
                   </div>
                   <div class="tile-3d-body">
                     <h6 class="tile-3d-title">{{ $title }}</h6>
@@ -1348,7 +1348,7 @@ ob_start(function($output) {
             finalSrc = 'https://placehold.co/400x220/' + getPremiumColor(id) + '?text=' + encodeURIComponent((title || '3D').substring(0, 20));
           }
           var category = getDynamicCategory(r);
-          return '<div class="col-lg-4 col-md-6" id="tile-showcase-' + esc(id) + '"><a href="/loading-3d?id=' + esc(id) + '" class="tile-3d-card" target="_blank" rel="noopener"><div class="tile-3d-img"><img src="' + finalSrc + '" alt="' + esc(title) + '" onerror="this.src=\'https://placehold.co/400x220/' + getPremiumColor(id) + '?text=3D+Model\'"></div><div class="tile-3d-body"><h6 class="tile-3d-title">' + esc(title) + '</h6><div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>' + esc(category) + '</span></div><div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div></div></a></div>';
+          return '<div class="col-lg-4 col-md-6" id="tile-showcase-' + esc(id) + '"><a href="/loading-3d?id=' + esc(id) + '" class="tile-3d-card" target="_blank" rel="noopener"><div class="tile-3d-img"><img src="' + finalSrc + '" alt="' + esc(title) + '" onerror="window.handleThumbFallback(this, '" + esc(title).replace(/'/g, "\\'") + "', '" + getPremiumColor(id).split('/')[0] + "')"></div><div class="tile-3d-body"><h6 class="tile-3d-title">' + esc(title) + '</h6><div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>' + esc(category) + '</span></div><div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div></div></a></div>';
         }).join('');
         container.innerHTML = html;
       }).catch(function () {});

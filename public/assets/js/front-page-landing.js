@@ -1,3 +1,19 @@
+// --- Dynamic thumbnail fallback (no external service dependency) ---
+window.handleThumbFallback = function (imgEl, title, colorHex) {
+  imgEl.onerror = null;
+  var c = document.createElement('canvas');
+  c.width = 400; c.height = 220;
+  var ctx = c.getContext('2d');
+  ctx.fillStyle = '#' + (colorHex || '1a1a2e');
+  ctx.fillRect(0, 0, 400, 220);
+  ctx.fillStyle = '#696cff';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText((title || '3D Model').substring(0, 24), 200, 110);
+  imgEl.src = c.toDataURL('image/png');
+};
+
 (() => {
   let e = document.querySelector(".layout-navbar"),
     t = document.getElementById("hero-animation"),
@@ -21,9 +37,8 @@
       });
       r.forEach((e) => {
         var t = (window.innerWidth - 2 * n.pageX) / 100;
-        e.style.transform = `perspective(1200px) rotateX(${
-          (window.innerHeight - 2 * n.pageY) / 100
-        }deg) rotateY(${t}deg) scale3d(1, 1, 1)`;
+        e.style.transform = `perspective(1200px) rotateX(${(window.innerHeight - 2 * n.pageY) / 100
+          }deg) rotateY(${t}deg) scale3d(1, 1, 1)`;
       });
     });
 
@@ -33,9 +48,8 @@
       });
       r.forEach((e) => {
         var t = (window.innerWidth - 2 * n.pageX) / 100;
-        e.style.transform = `perspective(1200px) rotateX(${
-          (window.innerHeight - 2 * n.pageY) / 100
-        }deg) rotateY(${t}deg) scale3d(1, 1, 1)`;
+        e.style.transform = `perspective(1200px) rotateX(${(window.innerHeight - 2 * n.pageY) / 100
+          }deg) rotateY(${t}deg) scale3d(1, 1, 1)`;
       });
     });
 
@@ -51,7 +65,7 @@
 
   // Initialize Reviews Swiper - ensure it runs after Swiper library is loaded
   let reviewsSwiper = null;
-  
+
   function initReviewsSwiper() {
     // Check if Swiper is available
     if (typeof Swiper === 'undefined') {
@@ -111,7 +125,7 @@
 
   // Wait for DOM and Swiper library to be ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       // Wait for Swiper library to load
       const checkSwiper = setInterval(() => {
         if (typeof Swiper !== 'undefined') {
