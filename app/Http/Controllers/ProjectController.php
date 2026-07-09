@@ -1291,20 +1291,107 @@ class ProjectController extends Controller
             $directory = dirname($deliveryPath);
             $absoluteTilesetPath = rtrim($directory, '/') . '/tileset.json';
         } else {
-            $absoluteTilesetPath = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/') 
-                . "/uploads/" . $sftpUser . "/" . $record->project_id . "/delivered/tileset.json";
+            $directory = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/') 
+                . "/uploads/" . $sftpUser . "/" . $record->project_id . "/delivered";
+            $absoluteTilesetPath = $directory . '/tileset.json';
+        }
+
+        // 🚀 AUTO-UNZIP PREVIEW LAYER:
+        // If the tileset.json does not exist, but a delivered ZIP file exists locally,
+        // we can extract it in place so that the tileset can be previewed!
+        if (!file_exists($absoluteTilesetPath)) {
+            $zipFiles = glob(rtrim($directory, '/') . '/*.zip');
+            if (empty($zipFiles) && is_file($deliveryPath) && strtolower(pathinfo($deliveryPath, PATHINFO_EXTENSION)) === 'zip') {
+                $zipFiles = [$deliveryPath];
+            }
+            
+            foreach ($zipFiles as $zipFile) {
+                if (file_exists($zipFile)) {
+                    try {
+                        $zip = new \ZipArchive();
+                        if ($zip->open($zipFile) === true) {
+                            $zip->extractTo($directory);
+                            $zip->close();
+                            if (file_exists($absoluteTilesetPath)) {
+                                break;
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error("3D Preview Auto-Unzip failed for {$zipFile}: " . $e->getMessage());
+                    }
+                }
+            }
+        }
+
+        // Map absolute local storage path to the corresponding absolute path on the SFTP server
+        $sftpGoRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', '/srv/sftpgo/data'), '/');
+        $portalRoot = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/');
+        
+        $sftpPath = $absoluteTilesetPath;
+        if (\Illuminate\Support\Str::startsWith($absoluteTilesetPath, $portalRoot)) {
+            $sftpPath = $sftpGoRoot . '/' . ltrim(\Illuminate\Support\Str::after($absoluteTilesetPath, $portalRoot), '/');
         }
 
         // Strip config root dynamically to yield target relative path for storage operations
         $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
-        $relativeTilesetPath = $absoluteTilesetPath;
-        if (\Illuminate\Support\Str::startsWith($absoluteTilesetPath, $root)) {
-            $relativeTilesetPath = \Illuminate\Support\Str::after($absoluteTilesetPath, $root);
+        $relativeTilesetPath = $sftpPath;
+        if (\Illuminate\Support\Str::startsWith($sftpPath, $root)) {
+            $relativeTilesetPath = \Illuminate\Support\Str::after($sftpPath, $root);
         }
         $relativeTilesetPath = ltrim($relativeTilesetPath, '/');
         
         // 4. Verify that the processed 3D dataset actually exists on disk
         $disk = Storage::disk('sftp_delivery');
+        
+        // Fallback: If tileset.json is not on SFTP, but a zip file is there, let's download it to local temp, unzip, and upload back!
+        if (!$disk->exists($relativeTilesetPath)) {
+            $relativeDirectory = dirname($relativeTilesetPath);
+            try {
+                $sftpFiles = $disk->files($relativeDirectory);
+                $sftpZipFile = null;
+                foreach ($sftpFiles as $file) {
+                    if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'zip') {
+                        $sftpZipFile = $file;
+                        break;
+                    }
+                }
+                
+                if ($sftpZipFile) {
+                    $tempZip = tempnam(sys_get_temp_dir(), 'sftp_extract_');
+                    file_put_contents($tempZip, $disk->get($sftpZipFile));
+                    
+                    $tempExtractDir = sys_get_temp_dir() . '/sftp_unzip_' . uniqid();
+                    mkdir($tempExtractDir, 0777, true);
+                    
+                    $zip = new \ZipArchive();
+                    if ($zip->open($tempZip) === true) {
+                        $zip->extractTo($tempExtractDir);
+                        $zip->close();
+                        
+                        $filesToUpload = new \RecursiveIteratorIterator(
+                            new \RecursiveDirectoryIterator($tempExtractDir),
+                            \RecursiveIteratorIterator::LEAVES_ONLY
+                        );
+                        
+                        foreach ($filesToUpload as $name => $file) {
+                            if (!$file->isDir()) {
+                                $realPath = $file->getRealPath();
+                                $subPath = substr($realPath, strlen($tempExtractDir) + 1);
+                                $subPath = str_replace('\\', '/', $subPath);
+                                $targetSftpPath = rtrim($relativeDirectory, '/') . '/' . ltrim($subPath, '/');
+                                $disk->put($targetSftpPath, fopen($realPath, 'r'));
+                            }
+                        }
+                    }
+                    
+                    @unlink($tempZip);
+                    self::deleteLocalDir($tempExtractDir);
+                }
+            } catch (\Exception $e) {
+                \Log::error("SFTP Auto-Unzip failed: " . $e->getMessage());
+            }
+        }
+
         if (!$disk->exists($relativeTilesetPath)) {
             return response()->json([
                 'success' => false, 
@@ -1327,6 +1414,17 @@ class ProjectController extends Controller
         ]);
     }
 
+    private static function deleteLocalDir($dirPath) {
+        if (!is_dir($dirPath)) {
+            return;
+        }
+        $files = array_diff(scandir($dirPath), ['.','..']);
+        foreach ($files as $file) {
+            (is_dir("$dirPath/$file")) ? self::deleteLocalDir("$dirPath/$file") : unlink("$dirPath/$file");
+        }
+        return rmdir($dirPath);
+    }
+
     public function streamViewerAsset($path)
     {
         $user = Auth::user();
@@ -1338,7 +1436,16 @@ class ProjectController extends Controller
         if ($user->role !== 'admin' && $user->role !== 'superadmin') {
             $sftpUser = $user->sftp_username ?: \Illuminate\Support\Str::slug($user->name);
             $prefix = "uploads/" . $sftpUser . "/";
-            if (!\Illuminate\Support\Str::startsWith($path, $prefix)) {
+            
+            // Normalize path by stripping absolute SFTPGo prefix if present
+            $sftpGoRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', '/srv/sftpgo/data'), '/');
+            $testPath = $path;
+            $normalizedRoot = ltrim($sftpGoRoot, '/');
+            if (\Illuminate\Support\Str::startsWith($path, $normalizedRoot)) {
+                $testPath = ltrim(\Illuminate\Support\Str::after($path, $normalizedRoot), '/');
+            }
+            
+            if (!\Illuminate\Support\Str::startsWith($testPath, $prefix)) {
                 return response()->json(['error' => 'Unauthorized access to asset path.'], 403);
             }
         }
