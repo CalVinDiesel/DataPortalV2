@@ -1639,20 +1639,41 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             });
         }
     };
-
-
+    const handleCloseViewer = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        e.preventDefault();
+        
+        // If the window was opened by a script (new tab/window), try to close it
+        if (window.opener || window.history.length === 1) {
+            window.close();
+            
+            // If window.close() was blocked by browser security (e.g. user navigated directly), fallback after 100ms
+            setTimeout(() => {
+                const referrer = document.referrer;
+                if (referrer && referrer.includes(window.location.hostname)) {
+                    window.location.href = referrer;
+                } else {
+                    window.location.href = '/';
+                }
+            }, 100);
+        } else {
+            // Otherwise, go back in history if possible, or fallback to referrer/home
+            const referrer = document.referrer;
+            if (referrer && referrer.includes(window.location.hostname)) {
+                window.location.href = referrer;
+            } else if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }
+    };
 
     return (
         <div className="discovery-page">
             <header className="discovery-header">
-                <a href={new URLSearchParams(window.location.search).has('tileset_url') ? "#" : "/"}
+                <a href="/"
                     className="back-button"
-                    onClick={(e) => {
-                        if (new URLSearchParams(window.location.search).has('tileset_url')) {
-                            e.preventDefault();
-                            window.close();
-                        }
-                    }}>
+                    onClick={handleCloseViewer}>
                     <ArrowLeft size={20} />
                     <span>{new URLSearchParams(window.location.search).has('tileset_url') ? "Close Viewer" : "Back to Showcases"}</span>
                 </a>
