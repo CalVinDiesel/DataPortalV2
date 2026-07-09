@@ -598,13 +598,14 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         camCtrl.zoomEventTypes = [CameraEventType.WHEEL, CameraEventType.PINCH];
 
         // No constraints on zoom to allow unlimited zoom out range
-        const maxPitch = CesiumMath.toRadians(0); // Horizontal / sea level (prevents looking up from below)
+        const maxPitch = CesiumMath.toRadians(-2); // 2 degrees below horizontal (prevents gimbal lock singularity at 0 degrees)
         const minPitch = CesiumMath.toRadians(-90); // Straight down
 
         const removePitchConstraint = viewer.scene.preRender.addEventListener(() => {
             const camera = viewer.camera;
             if (camera.pitch > maxPitch) {
                 camera.setView({
+                    destination: camera.position,
                     orientation: {
                         heading: camera.heading,
                         pitch: maxPitch,
@@ -613,6 +614,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
                 });
             } else if (camera.pitch < minPitch) {
                 camera.setView({
+                    destination: camera.position,
                     orientation: {
                         heading: camera.heading,
                         pitch: minPitch,
