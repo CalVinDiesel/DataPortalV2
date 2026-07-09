@@ -210,6 +210,23 @@ ob_start(function($output) {
       window.TemaDataPortal_API_BASE = window.AppConfig.baseUrl;
     </script>
 
+    <script>
+      window.handleThumbFallback = function (imgEl, title, colorHex) {
+        imgEl.onerror = null;
+        var c = document.createElement('canvas');
+        c.width = 400; c.height = 220;
+        var ctx = c.getContext('2d');
+        ctx.fillStyle = '#' + (colorHex || '1a1a2e');
+        ctx.fillRect(0, 0, 400, 220);
+        ctx.fillStyle = '#696cff';
+        ctx.font = 'bold 18px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText((title || '3D Model').substring(0, 24), 200, 110);
+        imgEl.src = c.toDataURL('image/png');
+      };
+    </script>
+
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.138/Build/Cesium/Cesium.js"></script>
     <script>
@@ -1321,7 +1338,7 @@ ob_start(function($output) {
 
       function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
       function toImgSrc(url) { if (!url) return ''; var u = (url + '').trim(); return u ? u.replace(/ /g, '%20') : ''; }
-      
+
       function getDynamicCategory(item) {
         var tileset = (item['3dTiles'] || '').toLowerCase();
         var id = (item.mapDataID || item.map_data_id || item.id || '').toLowerCase();
@@ -1334,24 +1351,53 @@ ob_start(function($output) {
         return 'Kota Kinabalu';
       }
 
-      fetch(API_BASE + '/api/showcases?t=' + new Date().getTime()).then(function (r) { return r.json(); }).then(function (rows) {
-        if (!Array.isArray(rows) || rows.length === 0) return;
-        var html = rows.map(function (r) {
-          var id = r.mapDataID || r.map_data_id || r.id || '';
-          var title = r.title || id;
-          var rawImg = (r.thumbNailUrl || '').trim();
-          var finalSrc;
-          if (rawImg) {
-            var encoded = toImgSrc(rawImg);
-            finalSrc = (rawImg.indexOf('http') === 0 ? encoded : (API_BASE + (rawImg.indexOf('/') === 0 ? encoded : '/' + encoded)));
-          } else {
-            finalSrc = 'https://placehold.co/400x220/' + getPremiumColor(id) + '?text=' + encodeURIComponent((title || '3D').substring(0, 20));
-          }
-          var category = getDynamicCategory(r);
-          return '<div class="col-lg-4 col-md-6" id="tile-showcase-' + esc(id) + '"><a href="/loading-3d?id=' + esc(id) + '" class="tile-3d-card" target="_blank" rel="noopener"><div class="tile-3d-img"><img src="' + finalSrc + '" alt="' + esc(title) + '" onerror="window.handleThumbFallback(this, '" + esc(title).replace(/'/g, "\\'") + "', '" + getPremiumColor(id).split('/')[0] + "')"></div><div class="tile-3d-body"><h6 class="tile-3d-title">' + esc(title) + '</h6><div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>' + esc(category) + '</span></div><div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div></div></a></div>';
-        }).join('');
-        container.innerHTML = html;
-      }).catch(function () {});
+      fetch(API_BASE + '/api/showcases?t=' + new Date().getTime())
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+          if (!Array.isArray(rows) || rows.length === 0) return;
+          container.innerHTML = ''; // clear existing fallback tiles
+
+          rows.forEach(function (r) {
+            var id = r.mapDataID || r.map_data_id || r.id || '';
+            var title = r.title || id;
+            var rawImg = (r.thumbNailUrl || '').trim();
+            var colorPair = getPremiumColor(id);
+            var bgColor = colorPair.split('/')[0];
+            var finalSrc;
+
+            if (rawImg) {
+              var encoded = toImgSrc(rawImg);
+              finalSrc = (rawImg.indexOf('http') === 0 ? encoded : (API_BASE + (rawImg.indexOf('/') === 0 ? encoded : '/' + encoded)));
+            } else {
+              finalSrc = '';
+            }
+
+            var category = getDynamicCategory(r);
+            var col = document.createElement('div');
+            col.className = 'col-lg-4 col-md-6';
+            col.id = 'tile-showcase-' + id;
+            col.innerHTML =
+              '<a href="/loading-3d?id=' + esc(id) + '" class="tile-3d-card" target="_blank" rel="noopener">' +
+                '<div class="tile-3d-img"><img alt="' + esc(title) + '"></div>' +
+                '<div class="tile-3d-body">' +
+                  '<h6 class="tile-3d-title">' + esc(title) + '</h6>' +
+                  '<div class="tile-3d-tags"><span>GeoSabah 3D Hub</span><span>' + esc(category) + '</span></div>' +
+                  '<div class="tile-3d-metrics"><span><i class="bx bx-cube-alt"></i> 3D Tiles</span></div>' +
+                '</div>' +
+              '</a>';
+
+            var imgEl = col.querySelector('img');
+            imgEl.onerror = function () { window.handleThumbFallback(imgEl, title, bgColor); };
+            if (finalSrc) {
+              imgEl.src = finalSrc;
+            } else {
+              window.handleThumbFallback(imgEl, title, bgColor);
+            }
+
+            container.appendChild(col);
+          });
+        })
+        .catch(function () {});
     })();
     </script>
 
