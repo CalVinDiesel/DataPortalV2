@@ -5,6 +5,7 @@ import {
     ScreenSpaceEventType,
     Cartesian3,
     Matrix3,
+    Matrix4,
     Quaternion,
     Cartesian2,
     Color,
@@ -613,13 +614,25 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
             }
 
             if (angle !== 0) {
-                // Rotate direction and up vectors around the right axis to adjust pitch
-                // directly, without calling setView (which resets controller drag inertia and gets stuck)
-                const right = camera.right;
-                const quaternion = Quaternion.fromAxisAngle(right, angle, new Quaternion());
-                const rotation = Matrix3.fromQuaternion(quaternion, new Matrix3());
-                Matrix3.multiplyByVector(rotation, camera.direction, camera.direction);
-                Matrix3.multiplyByVector(rotation, camera.up, camera.up);
+                const center = new Cartesian2(viewer.canvas.clientWidth / 2, viewer.canvas.clientHeight / 2);
+                let target = camera.pickEllipsoid(center);
+                let range = 0;
+                
+                if (target) {
+                    range = Cartesian3.distance(camera.position, target);
+                } else {
+                    // Fallback target based on camera height if looking at sky/space
+                    range = camera.positionCartographic.height;
+                    target = Cartesian3.add(
+                        camera.position,
+                        Cartesian3.multiplyByScalar(camera.direction, range, new Cartesian3()),
+                        new Cartesian3()
+                    );
+                }
+
+                // Smoothly clamp the pitch relative to the target without breaking camera inertia
+                camera.lookAt(target, new HeadingPitchRange(camera.heading, camera.pitch + angle, range));
+                camera.lookAtTransform(Matrix4.IDENTITY);
             }
         });
 
