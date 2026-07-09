@@ -635,6 +635,26 @@
 
           // Store data globally for modal lookup
           window.myUploadsData = data;
+
+          // 🚀 PREFETCH: Warm up tileset URL cache for all previewable projects so the viewer starts instantly on click
+          window.tilesetUrlCache = window.tilesetUrlCache || {};
+          const previewableItems = data.filter(item => {
+            const s = (item.request_status || '').toLowerCase();
+            return (s === 'completed' || s === 'sent') && item.delivered_file_path;
+          });
+          previewableItems.forEach(item => {
+            const cacheKey = String(item.id);
+            if (!window.tilesetUrlCache[cacheKey]) {
+              fetch(`/api/user/my-uploads/${encodeURIComponent(item.id)}/preview-tileset`)
+                .then(r => r.json())
+                .then(d => {
+                  if (d.success && d.tileset_url) {
+                    window.tilesetUrlCache[cacheKey] = d.tileset_url;
+                  }
+                })
+                .catch(() => {}); // Silent — cache miss handled at click time
+            }
+          });
           
           let totalPhotos = 0;
           let processingJobs = 0;
@@ -1171,12 +1191,12 @@
       }
     }
 
-    // 🚀 FIXED: Added robust link handler to securely query tileset information
+    // 🚀 OPTIMIZED: Uses prefetched tileset URL cache for instant iframe load, falls back to live fetch
     function launchInteractivePreview(projectIdString) {
-      const modalEl = document.getElementById('mapPreviewModal'); // Mapped to match your structural layout
+      const modalEl = document.getElementById('mapPreviewModal');
       const frameEl = document.getElementById('interactivePreviewFrame');
       const titleEl = document.getElementById('mapPreviewModalTitle');
-      const spinnerEl = document.getElementById('viewerLoadingSpinner'); // Grab the spinner element
+      const spinnerEl = document.getElementById('viewerLoadingSpinner');
       
       if (!modalEl || !frameEl) return;
 
@@ -1189,30 +1209,39 @@
         }
       }
 
-      fetch(`/api/user/my-uploads/${encodeURIComponent(projectIdString)}/preview-tileset`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.tileset_url) {
-            // 1. Show the spinner right before updating the src attribute
-            if (spinnerEl) spinnerEl.classList.remove('d-none');
-            
-            // 2. Set the frame source context
-            frameEl.src = `/viewer/${encodeURIComponent(projectIdString)}?model=${encodeURIComponent(projectIdString)}&tileset_url=${encodeURIComponent(data.tileset_url)}&title=${encodeURIComponent(projectTitle)}`;
-            
-            // 3. Attach the onload handler to clear the spinner once the pipeline completes loading
-            frameEl.onload = function() {
+      function setViewerSrc(tilesetUrl) {
+        if (spinnerEl) spinnerEl.classList.remove('d-none');
+        frameEl.src = `/viewer/${encodeURIComponent(projectIdString)}?model=${encodeURIComponent(projectIdString)}&tileset_url=${encodeURIComponent(tilesetUrl)}&title=${encodeURIComponent(projectTitle)}`;
+        frameEl.onload = function() {
+          if (spinnerEl) spinnerEl.classList.add('d-none');
+        };
+      }
+
+      // 🚀 Use cached tileset URL if available (no network round-trip — instant start)
+      const cached = window.tilesetUrlCache && window.tilesetUrlCache[String(projectIdString)];
+      if (cached) {
+        setViewerSrc(cached);
+      } else {
+        // Cache miss: fetch live then set
+        fetch(`/api/user/my-uploads/${encodeURIComponent(projectIdString)}/preview-tileset`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.tileset_url) {
+              // Store in cache for next time
+              window.tilesetUrlCache = window.tilesetUrlCache || {};
+              window.tilesetUrlCache[String(projectIdString)] = data.tileset_url;
+              setViewerSrc(data.tileset_url);
+            } else {
+              frameEl.src = '';
               if (spinnerEl) spinnerEl.classList.add('d-none');
-            };
-          } else {
-            frameEl.src = '';
-            if (spinnerEl) spinnerEl.classList.add('d-none'); // Hide if it fails
-            alert("The preview fileset index could not be resolved on the server.");
-          }
-        })
-        .catch(() => {
-          if (spinnerEl) spinnerEl.classList.add('d-none'); // Hide if it errors
-          alert("Failed to connect to the 3D secure rendering pipeline endpoint.");
-        });
+              alert("The preview fileset index could not be resolved on the server.");
+            }
+          })
+          .catch(() => {
+            if (spinnerEl) spinnerEl.classList.add('d-none');
+            alert("Failed to connect to the 3D secure rendering pipeline endpoint.");
+          });
+      }
 
       const bModal = new bootstrap.Modal(modalEl);
       bModal.show();
