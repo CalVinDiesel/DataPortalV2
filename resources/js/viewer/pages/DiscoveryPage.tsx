@@ -596,38 +596,9 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         const camCtrl = viewer.scene.screenSpaceCameraController;
         camCtrl.tiltEventTypes = [{ eventType: CameraEventType.RIGHT_DRAG }];
         camCtrl.zoomEventTypes = [CameraEventType.WHEEL, CameraEventType.PINCH];
-        camCtrl.minimumZoomDistance = 10.0;
-        camCtrl.maximumZoomDistance = 50000.0;
 
-        // Apply pitch constraints supported by CesiumNavigation-es6
-        const minPitch = CesiumMath.toRadians(-90); // Straight down
-        const maxPitch = CesiumMath.toRadians(-5); // 5 degrees below horizontal (prevents going under)
-
-        (camCtrl as any).minimumPitch = minPitch;
-        (camCtrl as any).maximumPitch = maxPitch;
-
-        // Force camera to stay above model with pre-render position tracking
-        let lastValidPosition = new Cartesian3();
-        let lastValidOrientation = { heading: 0, pitch: 0, roll: 0 };
-        let hasInitialized = false;
-
-        const removePitchConstraint = viewer.scene.preRender.addEventListener(() => {
-            const camera = viewer.camera;
-            if (camera.pitch <= maxPitch) {
-                // Valid state, cache it
-                Cartesian3.clone(camera.position, lastValidPosition);
-                lastValidOrientation.heading = camera.heading;
-                lastValidOrientation.pitch = camera.pitch;
-                lastValidOrientation.roll = camera.roll;
-                hasInitialized = true;
-            } else if (hasInitialized) {
-                // Exceeded constraints, aggressively snap both position and pitch back
-                camera.setView({
-                    destination: lastValidPosition,
-                    orientation: lastValidOrientation
-                });
-            }
-        });
+        // No constraints on zoom or pitch to match showcase viewer behavior (unlimited zoom/movement)
+        const removePitchConstraint = () => {};
 
         // Initialize CesiumNavigation plugin
         try {
