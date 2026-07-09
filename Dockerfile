@@ -49,6 +49,7 @@ RUN apt-get update && apt-get install -y \
     libssh2-1-dev \
     nginx \
     supervisor \
+    openssl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the required PHP extensions
@@ -92,6 +93,13 @@ RUN chown -R www-data:www-data /var/www/html/storage \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/public/data
+
+# ── Create dummy self-signed certificate for local development fallback ──────
+RUN mkdir -p /etc/nginx/certs \
+    && openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+       -keyout /etc/nginx/certs/dataportal.pem \
+       -out /etc/nginx/certs/dataportal.pem \
+       -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
 
 # ── Copy production configuration files ──────────────────────────────────────
 COPY docker/nginx.conf /etc/nginx/sites-available/default
