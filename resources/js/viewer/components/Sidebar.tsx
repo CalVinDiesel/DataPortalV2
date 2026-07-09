@@ -200,8 +200,20 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
 
         const loadData = async () => {
             try {
-                const osmBuildings = await (tilesetUrl ? 
-                    Cesium3DTileset.fromUrl(new Resource({ url: tilesetUrl, proxy: new DefaultProxy('/proxy?url=') })) : 
+                let tilesetResource: any = null;
+                if (tilesetUrl) {
+                    const isSameOrigin = tilesetUrl.startsWith('/') || 
+                        (tilesetUrl.startsWith('http') && new URL(tilesetUrl, window.location.origin).origin === window.location.origin);
+                    
+                    if (isSameOrigin) {
+                        tilesetResource = new Resource({ url: tilesetUrl });
+                    } else {
+                        tilesetResource = new Resource({ url: tilesetUrl, proxy: new DefaultProxy('/proxy?url=') });
+                    }
+                }
+
+                const osmBuildings = await (tilesetResource ? 
+                    Cesium3DTileset.fromUrl(tilesetResource) : 
                     Cesium3DTileset.fromIonAssetId(96188));
 
                 viewer.scene.primitives.add(osmBuildings);
