@@ -1288,21 +1288,38 @@ class ProjectController extends Controller
         // Dynamic path resolution from delivery path if populated, with chroot fallback
         $deliveryPath = $record->sftp_delivery_path;
         if ($deliveryPath) {
-            $directory = dirname($deliveryPath);
-            $absoluteTilesetPath = rtrim($directory, '/') . '/tileset.json';
+            $directory = $deliveryPath;
         } else {
-            $directory = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/') 
-                . "/uploads/" . $sftpUser . "/" . $record->project_id . "/delivered";
-            $absoluteTilesetPath = $directory . '/tileset.json';
+            $directory = "/uploads/" . $sftpUser . "/" . $record->project_id . "/delivered";
         }
+
+        // Resolve the clean, root-less relative directory path starting with uploads/...
+        $cleanRelativeDir = $directory;
+        $portalRoot = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/');
+        $sftpGoRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', '/srv/sftpgo/data'), '/');
+        
+        if (\Illuminate\Support\Str::startsWith($cleanRelativeDir, $portalRoot)) {
+            $cleanRelativeDir = \Illuminate\Support\Str::after($cleanRelativeDir, $portalRoot);
+        }
+        if (\Illuminate\Support\Str::startsWith($cleanRelativeDir, $sftpGoRoot)) {
+            $cleanRelativeDir = \Illuminate\Support\Str::after($cleanRelativeDir, $sftpGoRoot);
+        }
+        $cleanRelativeDir = ltrim($cleanRelativeDir, '/');
+
+        // Resolve the local directory for unzipping
+        $directoryLocal = $portalRoot . '/' . $cleanRelativeDir;
+        $absoluteTilesetPath = $directoryLocal . '/tileset.json';
 
         // 🚀 AUTO-UNZIP PREVIEW LAYER:
         // If the tileset.json does not exist, but a delivered ZIP file exists locally,
         // we can extract it in place so that the tileset can be previewed!
         if (!file_exists($absoluteTilesetPath)) {
-            $zipFiles = glob(rtrim($directory, '/') . '/*.zip');
-            if (empty($zipFiles) && is_file($deliveryPath) && strtolower(pathinfo($deliveryPath, PATHINFO_EXTENSION)) === 'zip') {
-                $zipFiles = [$deliveryPath];
+            $zipFiles = glob(rtrim($directoryLocal, '/') . '/*.zip');
+            if (empty($zipFiles) && is_file($directoryLocal . '.zip')) {
+                $zipFiles = [$directoryLocal . '.zip'];
+            }
+            if (empty($zipFiles) && $deliveryPath && is_file($portalRoot . '/' . ltrim($deliveryPath, '/')) && strtolower(pathinfo($deliveryPath, PATHINFO_EXTENSION)) === 'zip') {
+                $zipFiles = [$portalRoot . '/' . ltrim($deliveryPath, '/')];
             }
             
             foreach ($zipFiles as $zipFile) {
@@ -1310,7 +1327,7 @@ class ProjectController extends Controller
                     try {
                         $zip = new \ZipArchive();
                         if ($zip->open($zipFile) === true) {
-                            $zip->extractTo($directory);
+                            $zip->extractTo($directoryLocal);
                             $zip->close();
                             if (file_exists($absoluteTilesetPath)) {
                                 break;
@@ -1323,33 +1340,41 @@ class ProjectController extends Controller
             }
         }
 
-        // Map absolute local storage path to the corresponding absolute path on the SFTP server
-        $sftpGoRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', '/srv/sftpgo/data'), '/');
-        $portalRoot = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/');
-        
-        $sftpPath = $absoluteTilesetPath;
-        if (\Illuminate\Support\Str::startsWith($absoluteTilesetPath, $portalRoot)) {
-            $sftpPath = $sftpGoRoot . '/' . ltrim(\Illuminate\Support\Str::after($absoluteTilesetPath, $portalRoot), '/');
+        // Resolve the exact search directory relative to the sftp_delivery disk root
+        $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
+        if ($root !== '/' && $root !== '') {
+            $sftpPath = $sftpGoRoot . '/' . $cleanRelativeDir;
+            $relativeSearchDir = $sftpPath;
+            if (\Illuminate\Support\Str::startsWith($sftpPath, $root)) {
+                $relativeSearchDir = \Illuminate\Support\Str::after($sftpPath, $root);
+            }
+        } else {
+            $relativeSearchDir = ltrim($sftpGoRoot, '/') . '/' . $cleanRelativeDir;
+        }
+        $relativeSearchDir = ltrim($relativeSearchDir, '/');
+
+        $disk = Storage::disk('sftp_delivery');
+        $relativeTilesetPath = null;
+
+        // Possibility A: tileset.json already exists in the folder or subfolder on SFTP disk
+        try {
+            $files = $disk->allFiles($relativeSearchDir);
+            foreach ($files as $file) {
+                if (basename($file) === 'tileset.json') {
+                    $relativeTilesetPath = $file;
+                    break;
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error("SFTP files scan failed: " . $e->getMessage());
         }
 
-        // Strip config root dynamically to yield target relative path for storage operations
-        $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
-        $relativeTilesetPath = $sftpPath;
-        if (\Illuminate\Support\Str::startsWith($sftpPath, $root)) {
-            $relativeTilesetPath = \Illuminate\Support\Str::after($sftpPath, $root);
-        }
-        $relativeTilesetPath = ltrim($relativeTilesetPath, '/');
-        
-        // 4. Verify that the processed 3D dataset actually exists on disk
-        $disk = Storage::disk('sftp_delivery');
-        
-        // Fallback: If tileset.json is not on SFTP, but a zip file is there, let's download it to local temp, unzip, and upload back!
-        if (!$disk->exists($relativeTilesetPath)) {
-            $relativeDirectory = dirname($relativeTilesetPath);
+        // Possibility B: tileset.json does not exist on SFTP because it's still zipped
+        if (!$relativeTilesetPath) {
             try {
-                $sftpFiles = $disk->files($relativeDirectory);
+                $files = $disk->files($relativeSearchDir);
                 $sftpZipFile = null;
-                foreach ($sftpFiles as $file) {
+                foreach ($files as $file) {
                     if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'zip') {
                         $sftpZipFile = $file;
                         break;
@@ -1378,7 +1403,7 @@ class ProjectController extends Controller
                                 $realPath = $file->getRealPath();
                                 $subPath = substr($realPath, strlen($tempExtractDir) + 1);
                                 $subPath = str_replace('\\', '/', $subPath);
-                                $targetSftpPath = rtrim($relativeDirectory, '/') . '/' . ltrim($subPath, '/');
+                                $targetSftpPath = rtrim($relativeSearchDir, '/') . '/' . ltrim($subPath, '/');
                                 $disk->put($targetSftpPath, fopen($realPath, 'r'));
                             }
                         }
@@ -1386,13 +1411,22 @@ class ProjectController extends Controller
                     
                     @unlink($tempZip);
                     self::deleteLocalDir($tempExtractDir);
+                    
+                    // Rescan SFTP directory after unzip
+                    $files = $disk->allFiles($relativeSearchDir);
+                    foreach ($files as $file) {
+                        if (basename($file) === 'tileset.json') {
+                            $relativeTilesetPath = $file;
+                            break;
+                        }
+                    }
                 }
             } catch (\Exception $e) {
                 \Log::error("SFTP Auto-Unzip failed: " . $e->getMessage());
             }
         }
 
-        if (!$disk->exists($relativeTilesetPath)) {
+        if (!$relativeTilesetPath || !$disk->exists($relativeTilesetPath)) {
             return response()->json([
                 'success' => false, 
                 'message' => 'Processed preview tileset compilation targets not found on target disk layer structure.',
@@ -1403,11 +1437,11 @@ class ProjectController extends Controller
                 'debug' => [
                     'sftp_delivery_path' => $deliveryPath,
                     'absolute_tileset_path' => $absoluteTilesetPath,
-                    'sftp_path' => $sftpPath,
+                    'relative_search_dir' => $relativeSearchDir,
                     'relative_tileset_path' => $relativeTilesetPath,
                     'disk_root' => $root,
                     'local_exists' => file_exists($absoluteTilesetPath),
-                    'local_dir_files' => file_exists($directory) && is_dir($directory) ? array_values(array_diff(scandir($directory), ['.', '..'])) : []
+                    'local_dir_files' => file_exists($directoryLocal) && is_dir($directoryLocal) ? array_values(array_diff(scandir($directoryLocal), ['.', '..'])) : []
                 ]
             ], 404);
         }
