@@ -19,11 +19,30 @@ class ProxyController extends Controller
             return response()->json(['error' => 'URL parameter is missing'], 400);
         }
 
+        // ── Own-server redirect ────────────────────────────────────────────────
+        // viewer-assets URLs point to streamViewerAsset which requires session auth.
+        // A server-side proxy request has no session cookies → always gets 401 → 502.
+        // Fix: redirect the browser to the path so it fetches with its own cookies.
+        $ownHosts = [
+            'dataportal.temadigital.my',
+            'dataportal.geovidia.my',
+            'temadigital.my',
+            'geovidia.my',
+        ];
+        $targetHost = parse_url($url, PHP_URL_HOST);
+        if ($targetHost && in_array($targetHost, $ownHosts)) {
+            $redirectPath = parse_url($url, PHP_URL_PATH) ?? '/';
+            $redirectQuery = parse_url($url, PHP_URL_QUERY);
+            return redirect($redirectPath . ($redirectQuery ? '?' . $redirectQuery : ''), 302);
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         // Validate that we only proxy things we trust
         if (!str_contains($url, 'geovidia.com.my') && !str_contains($url, 'cesium.com') && !str_contains($url, 'geosabah.my')) {
             // Log for debugging but allow for now
             \Log::info("Proxying external URL: " . $url);
         }
+
 
         try {
             // High-speed Content-Type guessing based on extension
