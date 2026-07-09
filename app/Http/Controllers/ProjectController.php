@@ -1340,37 +1340,39 @@ class ProjectController extends Controller
             }
         }
 
-        // Resolve the exact search directory relative to the sftp_delivery disk root
+        // Resolve candidates for the relative directory path on the SFTP disk
         $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
-        if ($root !== '/' && $root !== '') {
-            $sftpPath = $sftpGoRoot . '/' . $cleanRelativeDir;
-            $relativeSearchDir = $sftpPath;
-            if (\Illuminate\Support\Str::startsWith($sftpPath, $root)) {
-                $relativeSearchDir = \Illuminate\Support\Str::after($sftpPath, $root);
-            }
-        } else {
-            $relativeSearchDir = ltrim($sftpGoRoot, '/') . '/' . $cleanRelativeDir;
-        }
-        $relativeSearchDir = ltrim($relativeSearchDir, '/');
-
-        $disk = Storage::disk('sftp_delivery');
+        $candidates = [
+            $cleanRelativeDir,
+            ltrim($sftpGoRoot, '/') . '/' . $cleanRelativeDir,
+            ltrim($portalRoot, '/') . '/' . $cleanRelativeDir,
+        ];
+        
+        $relativeSearchDir = null;
         $relativeTilesetPath = null;
-
-        // Possibility A: tileset.json already exists in the folder or subfolder on SFTP disk
-        try {
-            $files = $disk->allFiles($relativeSearchDir);
-            foreach ($files as $file) {
-                if (basename($file) === 'tileset.json') {
-                    $relativeTilesetPath = $file;
-                    break;
+        
+        $disk = Storage::disk('sftp_delivery');
+        
+        foreach ($candidates as $candidate) {
+            $candidate = ltrim(str_replace('\\', '/', $candidate), '/');
+            try {
+                if ($disk->exists($candidate)) {
+                    $relativeSearchDir = $candidate;
+                    $files = $disk->allFiles($candidate);
+                    foreach ($files as $file) {
+                        if (basename($file) === 'tileset.json') {
+                            $relativeTilesetPath = $file;
+                            break 2; // Found it!
+                        }
+                    }
                 }
+            } catch (\Exception $e) {
+                \Log::error("SFTP candidate check failed for {$candidate}: " . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            \Log::error("SFTP files scan failed: " . $e->getMessage());
         }
 
         // Possibility B: tileset.json does not exist on SFTP because it's still zipped
-        if (!$relativeTilesetPath) {
+        if (!$relativeTilesetPath && $relativeSearchDir) {
             try {
                 $files = $disk->files($relativeSearchDir);
                 $sftpZipFile = null;
@@ -1441,7 +1443,7 @@ class ProjectController extends Controller
                     'relative_tileset_path' => $relativeTilesetPath,
                     'disk_root' => $root,
                     'local_exists' => file_exists($absoluteTilesetPath),
-                    'local_dir_files' => file_exists($directoryLocal) && is_dir($directoryLocal) ? array_values(array_diff(scandir($directoryLocal), ['.', '..'])) : []
+                    'local_dir_files' => file_exists($directoryLocal) && is_dir($directoryLocal) ? self::getDirFilesRecursive($directoryLocal) : []
                 ]
             ], 404);
         }
@@ -1537,6 +1539,23 @@ class ProjectController extends Controller
             'Access-Control-Allow-Origin' => '*',
             'Cache-Control' => 'max-age=86400',
         ]);
+    }
+
+    private static function getDirFilesRecursive($dir) {
+        if (!is_dir($dir)) return [];
+        $result = [];
+        try {
+            $files = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::SELF_FIRST
+            );
+            foreach ($files as $file) {
+                $result[] = str_replace('\\', '/', substr($file->getRealPath(), strlen($dir) + 1));
+            }
+        } catch (\Exception $e) {
+            $result[] = "Error listing: " . $e->getMessage();
+        }
+        return $result;
     }
 
 }
