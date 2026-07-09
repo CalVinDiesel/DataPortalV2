@@ -1284,7 +1284,24 @@ class ProjectController extends Controller
 
         // 3. Resolve the path folder name for the user's home directory folder structure
         $sftpUser = $user->sftp_username ?: \Illuminate\Support\Str::slug($user->name);
-        $relativeTilesetPath = "uploads/" . $sftpUser . "/" . $record->project_id . "/delivered/tileset.json";
+
+        // Dynamic path resolution from delivery path if populated, with chroot fallback
+        $deliveryPath = $record->sftp_delivery_path;
+        if ($deliveryPath) {
+            $directory = dirname($deliveryPath);
+            $absoluteTilesetPath = rtrim($directory, '/') . '/tileset.json';
+        } else {
+            $absoluteTilesetPath = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/') 
+                . "/uploads/" . $sftpUser . "/" . $record->project_id . "/delivered/tileset.json";
+        }
+
+        // Strip config root dynamically to yield target relative path for storage operations
+        $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
+        $relativeTilesetPath = $absoluteTilesetPath;
+        if (\Illuminate\Support\Str::startsWith($absoluteTilesetPath, $root)) {
+            $relativeTilesetPath = \Illuminate\Support\Str::after($absoluteTilesetPath, $root);
+        }
+        $relativeTilesetPath = ltrim($relativeTilesetPath, '/');
         
         // 4. Verify that the processed 3D dataset actually exists on disk
         $disk = Storage::disk('sftp_delivery');
@@ -1299,14 +1316,68 @@ class ProjectController extends Controller
             ], 404);
         }
 
-        // 5. Safely pipe variables through the existing system secure proxy configuration
+        // 5. Generate secure, session-authorized wildcard URL to stream preview assets without exposing direct downloads
         return response()->json([
             'success' => true,
             'project_id' => $record->project_id,
             'title' => $record->project_title,
             'latitude' => $record->latitude,
             'longitude' => $record->longitude,
-            'tileset_url' => route('proxy', ['path' => $relativeTilesetPath])
+            'tileset_url' => route('viewer_assets', ['path' => $relativeTilesetPath])
+        ]);
+    }
+
+    public function streamViewerAsset($path)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Security check: Clients can only access paths under their own uploads/{sftp_username}/ directory
+        if ($user->role !== 'admin' && $user->role !== 'superadmin') {
+            $sftpUser = $user->sftp_username ?: \Illuminate\Support\Str::slug($user->name);
+            $prefix = "uploads/" . $sftpUser . "/";
+            if (!\Illuminate\Support\Str::startsWith($path, $prefix)) {
+                return response()->json(['error' => 'Unauthorized access to asset path.'], 403);
+            }
+        }
+
+        $disk = Storage::disk('sftp_delivery');
+        if (!$disk->exists($path)) {
+            abort(404);
+        }
+
+        // Guess content type for Cesium 3D Tiles pipeline streaming
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $contentTypes = [
+            'json' => 'application/json',
+            'b3dm' => 'application/octet-stream',
+            'cmpt' => 'application/octet-stream',
+            'i3dm' => 'application/octet-stream',
+            'pnts' => 'application/octet-stream',
+            'glb'  => 'model/gltf-binary',
+            'gltf' => 'model/gltf+json',
+            'wasm' => 'application/wasm',
+            'png'  => 'image/png',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif'  => 'image/gif',
+            'webp' => 'image/webp',
+        ];
+        $contentType = $contentTypes[$ext] ?? 'application/octet-stream';
+
+        // Low-memory streaming from SFTP delivery disk directly to browser response buffer
+        return response()->stream(function() use ($disk, $path) {
+            $stream = $disk->readStream($path);
+            if ($stream) {
+                fpassthru($stream);
+                fclose($stream);
+            }
+        }, 200, [
+            'Content-Type' => $contentType,
+            'Access-Control-Allow-Origin' => '*',
+            'Cache-Control' => 'max-age=86400',
         ]);
     }
 

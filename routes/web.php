@@ -169,6 +169,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/api/user/my-uploads/{id}', [ProjectController::class, 'update']);
     
     Route::get('/api/user/my-uploads/{id}/preview-tileset', [ProjectController::class, 'getPreviewTilesetConfig']);
+    Route::get('/viewer-assets/{path}', [ProjectController::class, 'streamViewerAsset'])->where('path', '.*')->name('viewer_assets');
 
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
