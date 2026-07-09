@@ -202,15 +202,39 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
             try {
                 let tilesetResource: any = null;
                 if (tilesetUrl) {
-                    const isSameOrigin = tilesetUrl.startsWith('/') || 
+                    // Own-server domains: both dataportal.temadigital.my and dataportal.geovidia.my
+                    // point to the same machine. Tileset URLs from these domains MUST be loaded
+                    // directly by the browser (with session cookies for streamViewerAsset auth).
+                    // Routing them through /proxy would strip auth and cause 401 → 502.
+                    const OWN_SERVER_HOSTS = [
+                        'dataportal.geovidia.my',
+                        'dataportal.temadigital.my',
+                        'geovidia.my',
+                        'temadigital.my',
+                        'localhost',
+                        '127.0.0.1',
+                    ];
+                    let tilesetOriginHost = '';
+                    try { tilesetOriginHost = new URL(tilesetUrl).hostname; } catch(e) {}
+
+                    const isSameOrigin = tilesetUrl.startsWith('/') ||
+                        OWN_SERVER_HOSTS.includes(tilesetOriginHost) ||
                         (tilesetUrl.startsWith('http') && new URL(tilesetUrl, window.location.origin).origin === window.location.origin);
-                    
+
                     if (isSameOrigin) {
-                        tilesetResource = tilesetUrl;
+                        // Use path-only for cross-domain aliases (e.g. geovidia.my URL viewed from temadigital.my)
+                        // so the browser loads it from the current domain with its session cookies intact.
+                        if (tilesetUrl.startsWith('http') && tilesetOriginHost && !tilesetUrl.startsWith(window.location.origin)) {
+                            const parsed = new URL(tilesetUrl);
+                            tilesetResource = parsed.pathname + (parsed.search || '');
+                        } else {
+                            tilesetResource = tilesetUrl;
+                        }
                     } else {
                         tilesetResource = new Resource({ url: tilesetUrl, proxy: new DefaultProxy('/proxy?url=') });
                     }
                 }
+
 
                 const osmBuildings = await (tilesetResource ? 
                     Cesium3DTileset.fromUrl(tilesetResource) : 
