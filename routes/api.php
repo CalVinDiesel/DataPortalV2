@@ -30,7 +30,7 @@ Route::middleware('web')->group(function () {
 
     // 📂 Client Upload Management & 3D Previews
     Route::get('/user/my-uploads', [ProjectController::class, 'myUploadsList'])->name('api.user.my_uploads');
-    Route::get('/user/my-uploads/{id}/preview-tileset', [ProjectController::class, 'previewTileset'])->name('api.user.preview_tileset');
+    Route::get('/user/my-uploads/{id}/preview-tileset', [ProjectController::class, 'getPreviewTilesetConfig'])->name('api.user.preview_tileset');
     Route::patch('/user/my-uploads/{id}', [ProjectController::class, 'updateMetadata'])->name('api.user.update_metadata');
     Route::delete('/user/my-uploads/{id}', [ProjectController::class, 'destroyProject'])->name('api.user.delete_project');
 
