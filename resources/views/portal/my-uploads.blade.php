@@ -1217,11 +1217,46 @@
       const bModal = new bootstrap.Modal(modalEl);
       bModal.show();
 
+      // Push a history state so the browser back button triggers popstate instead of navigating away
+      history.pushState({ previewModalOpen: true }, '');
+
+      // Clean up: clear iframe when modal is dismissed normally (X button)
+      let closedByPopstate = false;
       modalEl.addEventListener('hidden.bs.modal', function disposeFrame() {
         frameEl.src = '';
+        titleEl.innerHTML = `<i class="bx bx-layer me-2 text-primary"></i> 3D Model Map Viewer`;
+        // If closed via X button (not back button), pop the history state we pushed
+        if (!closedByPopstate && history.state && history.state.previewModalOpen) {
+          history.back();
+        }
+        closedByPopstate = false;
         modalEl.removeEventListener('hidden.bs.modal', disposeFrame);
       });
+
+      // Store flag reference on element for popstate handler to access
+      modalEl._closedByPopstate = () => { closedByPopstate = true; };
     }
+
+    // Listen for browser back button — close the modal cleanly without navigating away
+    window.addEventListener('popstate', function(e) {
+      const modalEl = document.getElementById('mapPreviewModal');
+      const frameEl = document.getElementById('interactivePreviewFrame');
+      const titleEl = document.getElementById('mapPreviewModalTitle');
+      if (!modalEl) return;
+
+      const isVisible = modalEl.classList.contains('show');
+      if (isVisible) {
+        // Programmatically hide the Bootstrap modal cleanly
+        const bModal = bootstrap.Modal.getInstance(modalEl);
+        if (bModal) {
+          // Signal that we are closing via back button so hidden.bs.modal doesn't double-back
+          if (typeof modalEl._closedByPopstate === 'function') modalEl._closedByPopstate();
+          frameEl.src = '';
+          if (titleEl) titleEl.innerHTML = `<i class="bx bx-layer me-2 text-primary"></i> 3D Model Map Viewer`;
+          bModal.hide();
+        }
+      }
+    });
 
     // Live Search Logic
     function copyTextFromElement(elId, btn) {
