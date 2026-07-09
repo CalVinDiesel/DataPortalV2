@@ -597,7 +597,7 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
         camCtrl.tiltEventTypes = [{ eventType: CameraEventType.RIGHT_DRAG }];
         camCtrl.zoomEventTypes = [CameraEventType.WHEEL, CameraEventType.PINCH];
         camCtrl.minimumZoomDistance = 10.0;
-        camCtrl.maximumZoomDistance = 2500.0;
+        camCtrl.maximumZoomDistance = 50000.0;
 
         // Apply pitch constraints supported by CesiumNavigation-es6
         const minPitch = CesiumMath.toRadians(-90); // Straight down
