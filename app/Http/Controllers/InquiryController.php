@@ -1321,7 +1321,7 @@ class InquiryController extends Controller
 
     /**
      * Return a secure tileset URL for previewing the 3D model for a completed inquiry.
-     * Mirrors ProjectController::getPreviewTilesetConfig but uses inquiry delivery paths.
+     * Strategy mirrors clientDownload: local-first, SFTP fallback with auto-extract.
      */
     public function getInquiryPreviewTilesetConfig($id)
     {
@@ -1335,7 +1335,7 @@ class InquiryController extends Controller
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        // 2. Security: only completed inquiries with delivery ready
+        // 2. Security: only completed inquiries with delivery_ready
         if ($inquiry->status !== 'completed' || !$inquiry->delivery_ready) {
             return response()->json([
                 'success' => false,
@@ -1343,89 +1343,142 @@ class InquiryController extends Controller
             ], 403);
         }
 
-        // 3. Resolve delivery directory — inquiry deliveries are stored at:
-        //    inquiry_deliveries/{inquiry_id}/ on the sftp_delivery disk
+        // 3. Resolve paths — mirrors getSftpDeliveryRelativePath / getSftpDeliveryAbsolutePath
         $relativeDeliveryDir = $inquiry->getSftpDeliveryRelativePath(); // "inquiry_deliveries/{inquiry_id}"
+        $absoluteDeliveryDir = $inquiry->getSftpDeliveryAbsolutePath(); // SYSTEM_SSH_STORAGE_ROOT/inquiry_deliveries/{inquiry_id}
+        $absoluteTilesetPath = rtrim($absoluteDeliveryDir, '/') . '/tileset.json';
 
-        $portalRoot = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/');
-        $sftpGoRoot = rtrim(env('SFTPGO_HOME_DIR_ROOT', '/srv/sftpgo/data'), '/');
+        // ─── STEP A: Check if tileset.json already exists locally ────────────
+        if (file_exists($absoluteTilesetPath)) {
+            // Serve from local via viewer_assets (relative to sftp_delivery disk root)
+            $relTileset = ltrim(str_replace(
+                rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/') . '/',
+                '',
+                $absoluteTilesetPath
+            ), '/');
+            return response()->json([
+                'success'     => true,
+                'inquiry_id'  => $inquiry->inquiry_id,
+                'tileset_url' => route('viewer_assets', ['path' => $relTileset]),
+            ]);
+        }
 
-        // Local directory for auto-unzip check
-        $directoryLocal = $portalRoot . '/' . $relativeDeliveryDir;
-        $absoluteTilesetPath = $directoryLocal . '/tileset.json';
-
-        // 4. AUTO-UNZIP: If tileset.json not found locally, look for a ZIP and extract it
-        if (!file_exists($absoluteTilesetPath)) {
-            $zipFiles = [];
-            if (is_dir($directoryLocal)) {
-                $zipFiles = array_merge($zipFiles, glob(rtrim($directoryLocal, '/') . '/*.zip'));
-            }
-            $zipFiles = array_unique(array_filter(array_map(function ($f) {
-                return str_replace('\\', '/', $f);
-            }, $zipFiles), 'file_exists'));
-
-            if (!file_exists($directoryLocal)) {
-                mkdir($directoryLocal, 0777, true);
-            }
-
-            foreach ($zipFiles as $zipFile) {
+        // ─── STEP B: Look for a ZIP in the local delivery folder and extract ─
+        if (is_dir($absoluteDeliveryDir)) {
+            $localZips = array_filter(glob(rtrim($absoluteDeliveryDir, '/') . '/*.zip') ?: [], 'file_exists');
+            foreach ($localZips as $zipFile) {
                 try {
                     $zip = new \ZipArchive();
                     if ($zip->open($zipFile) === true) {
-                        $zip->extractTo($directoryLocal);
+                        $zip->extractTo($absoluteDeliveryDir);
                         $zip->close();
-                        if (file_exists($absoluteTilesetPath)) break;
+                        if (file_exists($absoluteTilesetPath)) {
+                            $relTileset = ltrim(str_replace(
+                                rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/') . '/',
+                                '',
+                                $absoluteTilesetPath
+                            ), '/');
+                            return response()->json([
+                                'success'     => true,
+                                'inquiry_id'  => $inquiry->inquiry_id,
+                                'tileset_url' => route('viewer_assets', ['path' => $relTileset]),
+                            ]);
+                        }
                     }
                 } catch (\Exception $e) {
-                    Log::error("Inquiry 3D Preview Auto-Unzip failed for {$zipFile}: " . $e->getMessage());
+                    Log::error("Inquiry 3D Preview local ZIP extract failed [{$zipFile}]: " . $e->getMessage());
                 }
             }
         }
 
-        // 5. Scan SFTP disk for tileset.json under inquiry delivery folder
+        // ─── STEP C: Check SFTP disk (plain relativePath only — disk root is '/') ─
         $disk = Storage::disk('sftp_delivery');
         $relativeTilesetPath = null;
 
-        $candidates = [
-            $relativeDeliveryDir,
-            ltrim($sftpGoRoot, '/') . '/' . $relativeDeliveryDir,
-            ltrim($portalRoot, '/') . '/' . $relativeDeliveryDir,
-        ];
+        try {
+            if ($disk->exists($relativeDeliveryDir)) {
+                // First try: look for already-extracted tileset.json
+                $sftpFiles = $disk->allFiles($relativeDeliveryDir);
+                foreach ($sftpFiles as $sftpFile) {
+                    if (basename($sftpFile) === 'tileset.json') {
+                        $relativeTilesetPath = $sftpFile;
+                        break;
+                    }
+                }
 
-        foreach ($candidates as $candidate) {
-            $candidate = ltrim(str_replace('\\', '/', $candidate), '/');
-            try {
-                if ($disk->exists($candidate)) {
-                    $files = $disk->allFiles($candidate);
-                    foreach ($files as $file) {
-                        if (basename($file) === 'tileset.json') {
-                            $relativeTilesetPath = $file;
-                            break 2;
+                // Second try: look for a ZIP and extract it to local
+                if (!$relativeTilesetPath) {
+                    $sftpZipFile = null;
+                    foreach ($disk->files($relativeDeliveryDir) as $f) {
+                        if (strtolower(pathinfo($f, PATHINFO_EXTENSION)) === 'zip') {
+                            $sftpZipFile = $f;
+                            break;
+                        }
+                    }
+
+                    if ($sftpZipFile) {
+                        // Ensure local extraction directory exists
+                        if (!is_dir($absoluteDeliveryDir)) {
+                            @mkdir($absoluteDeliveryDir, 0777, true);
+                        }
+
+                        $tempZip = tempnam(sys_get_temp_dir(), 'inq_preview_');
+                        try {
+                            // Download ZIP from SFTP and extract locally
+                            $zipStream = $disk->readStream($sftpZipFile);
+                            if ($zipStream) {
+                                file_put_contents($tempZip, $zipStream);
+                                fclose($zipStream);
+                            }
+
+                            $zip = new \ZipArchive();
+                            if ($zip->open($tempZip) === true) {
+                                $zip->extractTo($absoluteDeliveryDir);
+                                $zip->close();
+
+                                if (file_exists($absoluteTilesetPath)) {
+                                    $relTileset = ltrim(str_replace(
+                                        rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/') . '/',
+                                        '',
+                                        $absoluteTilesetPath
+                                    ), '/');
+                                    return response()->json([
+                                        'success'     => true,
+                                        'inquiry_id'  => $inquiry->inquiry_id,
+                                        'tileset_url' => route('viewer_assets', ['path' => $relTileset]),
+                                    ]);
+                                }
+                            }
+                        } finally {
+                            @unlink($tempZip);
                         }
                     }
                 }
-            } catch (\Exception $e) {
-                Log::error("Inquiry SFTP candidate check failed for {$candidate}: " . $e->getMessage());
             }
+        } catch (\Exception $e) {
+            Log::error("Inquiry 3D Preview SFTP scan failed for [{$relativeDeliveryDir}]: " . $e->getMessage());
         }
 
-        if (!$relativeTilesetPath || !$disk->exists($relativeTilesetPath)) {
+        // ─── STEP D: If tileset found on SFTP (non-zipped), stream via viewer_assets ─
+        if ($relativeTilesetPath && $disk->exists($relativeTilesetPath)) {
             return response()->json([
-                'success' => false,
-                'message' => 'Inquiry 3D model preview tileset not found on delivery storage.',
-                'debug' => [
-                    'relative_delivery_dir' => $relativeDeliveryDir,
-                    'absolute_tileset_path' => $absoluteTilesetPath,
-                    'local_exists' => file_exists($absoluteTilesetPath),
-                ],
-            ], 404);
+                'success'     => true,
+                'inquiry_id'  => $inquiry->inquiry_id,
+                'tileset_url' => route('viewer_assets', ['path' => $relativeTilesetPath]),
+            ]);
         }
 
-        // 6. Return secure viewer_assets URL
         return response()->json([
-            'success'      => true,
-            'inquiry_id'   => $inquiry->inquiry_id,
-            'tileset_url'  => route('viewer_assets', ['path' => $relativeTilesetPath]),
-        ]);
+            'success' => false,
+            'message' => 'Inquiry 3D model preview tileset not found on delivery storage.',
+            'debug'   => [
+                'relative_delivery_dir'  => $relativeDeliveryDir,
+                'absolute_delivery_dir'  => $absoluteDeliveryDir,
+                'absolute_tileset_path'  => $absoluteTilesetPath,
+                'local_dir_exists'       => is_dir($absoluteDeliveryDir),
+                'local_tileset_exists'   => file_exists($absoluteTilesetPath),
+                'sftp_dir_accessible'    => $disk->exists($relativeDeliveryDir),
+            ],
+        ], 404);
     }
 }

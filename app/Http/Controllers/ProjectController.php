@@ -1528,7 +1528,7 @@ class ProjectController extends Controller
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
 
-            // Security check: Clients can only access paths under their own uploads/{sftp_username}/ directory
+            // Security check: Clients can only access paths under their own uploads/{sftp_username}/ directory, or their own inquiry delivery paths
             if ($user->role !== 'admin' && $user->role !== 'superadmin') {
                 $sftpUser = $user->sftp_username ?: \Illuminate\Support\Str::slug($user->name);
                 $prefix = "uploads/" . $sftpUser . "/";
@@ -1541,7 +1541,26 @@ class ProjectController extends Controller
                     $testPath = ltrim(\Illuminate\Support\Str::after($path, $normalizedRoot), '/');
                 }
                 
-                if (!\Illuminate\Support\Str::startsWith($testPath, $prefix)) {
+                $isAllowed = false;
+                if (\Illuminate\Support\Str::startsWith($testPath, $prefix)) {
+                    $isAllowed = true;
+                }
+                
+                // Allow access if it's an inquiry delivery path and user owns the inquiry
+                if (!$isAllowed && \Illuminate\Support\Str::startsWith($testPath, 'inquiry_deliveries/')) {
+                    $parts = explode('/', $testPath);
+                    if (count($parts) >= 2) {
+                        $inquiryId = $parts[1]; // inquiry_id is the second part
+                        $ownsInquiry = \App\Models\Inquiry::where('inquiry_id', $inquiryId)
+                            ->where('user_id', $user->id)
+                            ->exists();
+                        if ($ownsInquiry) {
+                            $isAllowed = true;
+                        }
+                    }
+                }
+                
+                if (!$isAllowed) {
                     return response()->json(['error' => 'Unauthorized access to asset path.'], 403);
                 }
             }
