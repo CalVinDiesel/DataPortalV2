@@ -1696,7 +1696,7 @@
           '<p class="location-choice-card-desc">' + desc.replace(/</g, '&lt;') + '</p>';
         card.appendChild(body);
         card.addEventListener('click', function () {
-          window.open('/loading-3d?id=' + encodeURIComponent(loc.id), '_blank', 'noopener');
+          window.open('/loading-3d?id=' + encodeURIComponent(loc.id) + '&source=overview', '_blank', 'noopener');
         });
         cardsContainer.appendChild(card);
       });

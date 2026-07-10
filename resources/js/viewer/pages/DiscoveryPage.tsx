@@ -1641,41 +1641,56 @@ function DiscoveryPage({ locationData, modelId, stateSiteTitle }: {
     };
     const handleCloseViewer = (e: React.MouseEvent<HTMLAnchorElement>) => {
         e.preventDefault();
-        
-        // If the window was opened by a script (new tab/window), try to close it
+
+        // Determine the destination based on the 'source' query param
+        const params = new URLSearchParams(window.location.search);
+        const sourceParam = params.get('source') || '';
+        const destinationMap: Record<string, string> = {
+            'showcases': '/#showcases',
+            'overview':  '/#overview-map',
+            'my-uploads': '/my-uploads',
+            'inquiry': '/inquiry/my',
+        };
+        const destination = destinationMap[sourceParam] || '/my-uploads';
+
+        // If opened in a new tab (window.opener exists), close the tab
         if (window.opener || window.history.length === 1) {
             window.close();
-            
-            // If window.close() was blocked by browser security (e.g. user navigated directly), fallback after 100ms
+            // Fallback if window.close() was blocked
             setTimeout(() => {
-                const referrer = document.referrer;
-                if (referrer && referrer.includes(window.location.hostname)) {
-                    window.location.href = referrer;
-                } else {
-                    window.location.href = '/my-uploads';
-                }
+                window.location.href = destination;
             }, 100);
         } else {
-            // Otherwise, go back in history if possible, or fallback to referrer/my-uploads
-            const referrer = document.referrer;
-            if (referrer && referrer.includes(window.location.hostname)) {
-                window.location.href = referrer;
-            } else if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.location.href = '/my-uploads';
-            }
+            // Navigated directly — go to determined destination
+            window.location.href = destination;
         }
     };
+
+    // Compute label and href dynamically from 'source' param
+    const _backParams = new URLSearchParams(window.location.search);
+    const _backSource = _backParams.get('source') || '';
+    const backLabelMap: Record<string, string> = {
+        'showcases':  'Back to Showcases',
+        'overview':   'Back to Overview Map',
+        'my-uploads': 'Back to My Uploads',
+        'inquiry':    'Back to My Inquiry',
+    };
+    const backLabel = backLabelMap[_backSource] || (_backParams.has('tileset_url') ? 'Close Viewer' : 'Back to My Uploads');
+    const backHref  = {
+        'showcases':  '/#showcases',
+        'overview':   '/#overview-map',
+        'my-uploads': '/my-uploads',
+        'inquiry':    '/inquiry/my',
+    }[_backSource] || '/my-uploads';
 
     return (
         <div className="discovery-page">
             <header className="discovery-header">
-                <a href="/my-uploads"
+                <a href={backHref}
                     className="back-button"
                     onClick={handleCloseViewer}>
                     <ArrowLeft size={20} />
-                    <span>{new URLSearchParams(window.location.search).has('tileset_url') ? "Close Viewer" : "Back to My Uploads"}</span>
+                    <span>{backLabel}</span>
                 </a>
                 <h1 className="discovery-title">{siteTitle} - Data Discovery</h1>
                 {/* TEMPORARILY HIDDEN - Purchase button and price display

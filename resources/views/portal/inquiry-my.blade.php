@@ -1317,7 +1317,7 @@
 
       function openTab(tilesetUrl, label) {
         const title = encodeURIComponent('Inquiry 3D Model: ' + label);
-        const viewerUrl = `/viewer/${encodeURIComponent(inquiryStringId)}?model=${encodeURIComponent(inquiryStringId)}&tileset_url=${encodeURIComponent(tilesetUrl)}&title=${decodeURIComponent(title)}`;
+        const viewerUrl = `/viewer/${encodeURIComponent(inquiryStringId)}?model=${encodeURIComponent(inquiryStringId)}&tileset_url=${encodeURIComponent(tilesetUrl)}&title=${decodeURIComponent(title)}&source=inquiry`;
         window.open(viewerUrl, '_blank');
       }
 

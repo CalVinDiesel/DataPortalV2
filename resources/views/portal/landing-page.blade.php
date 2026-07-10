@@ -1377,7 +1377,7 @@ ob_start(function($output) {
             col.className = 'col-lg-4 col-md-6';
             col.id = 'tile-showcase-' + id;
             col.innerHTML =
-              '<a href="/loading-3d?id=' + esc(id) + '" class="tile-3d-card" target="_blank" rel="noopener">' +
+              '<a href="/loading-3d?id=' + esc(id) + '&source=showcases" class="tile-3d-card" target="_blank" rel="noopener">' +
                 '<div class="tile-3d-img"><img alt="' + esc(title) + '"></div>' +
                 '<div class="tile-3d-body">' +
                   '<h6 class="tile-3d-title">' + esc(title) + '</h6>' +

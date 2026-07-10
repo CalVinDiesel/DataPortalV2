@@ -1205,7 +1205,7 @@
       }
 
       function openViewerTab(tilesetUrl) {
-        const viewerUrl = `/viewer/${encodeURIComponent(projectIdString)}?model=${encodeURIComponent(projectIdString)}&tileset_url=${encodeURIComponent(tilesetUrl)}&title=${encodeURIComponent(projectTitle)}`;
+        const viewerUrl = `/viewer/${encodeURIComponent(projectIdString)}?model=${encodeURIComponent(projectIdString)}&tileset_url=${encodeURIComponent(tilesetUrl)}&title=${encodeURIComponent(projectTitle)}&source=my-uploads`;
         window.open(viewerUrl, '_blank');
       }
 

@@ -65,7 +65,9 @@
     (function () {
       var params = new URLSearchParams(window.location.search);
       var id = params.get('id');
-      var url = id ? ('/viewer/' + encodeURIComponent(id)) : '/';
+      var source = params.get('source') || '';
+      // Forward the source param so the viewer shows the correct back button label
+      var url = id ? ('/viewer/' + encodeURIComponent(id) + (source ? '?source=' + encodeURIComponent(source) : '')) : '/';
       setTimeout(function () { window.location.href = url; }, 1500);
     })();
   </script>
