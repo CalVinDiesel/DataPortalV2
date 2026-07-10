@@ -1569,6 +1569,9 @@ class ProjectController extends Controller
                     $testPath = ltrim(\Illuminate\Support\Str::after($path, $normalizedRoot), '/');
                 }
                 
+                // Normalize by removing leading slashes
+                $testPath = ltrim($testPath, '/');
+                
                 $isAllowed = false;
                 if (\Illuminate\Support\Str::startsWith($testPath, $prefix)) {
                     $isAllowed = true;
@@ -1578,9 +1581,14 @@ class ProjectController extends Controller
                 if (!$isAllowed && \Illuminate\Support\Str::startsWith($testPath, 'inquiry_deliveries/')) {
                     $parts = explode('/', $testPath);
                     if (count($parts) >= 2) {
-                        $inquiryId = $parts[1]; // inquiry_id is the second part
-                        $ownsInquiry = \App\Models\Inquiry::where('inquiry_id', $inquiryId)
-                            ->where('user_id', $user->id)
+                        $inquiryId = $parts[1]; // inquiry_id is the second part (could be string or numeric ID)
+                        $ownsInquiry = \App\Models\Inquiry::where('user_id', $user->id)
+                            ->where(function($query) use ($inquiryId) {
+                                $query->where('inquiry_id', $inquiryId);
+                                if (is_numeric($inquiryId)) {
+                                    $query->orWhere('id', intval($inquiryId));
+                                }
+                            })
                             ->exists();
                         if ($ownsInquiry) {
                             $isAllowed = true;
@@ -1594,19 +1602,43 @@ class ProjectController extends Controller
             }
 
             $disk = Storage::disk('sftp_delivery');
-            if (!$disk->exists($path)) {
-                $dir = dirname($path);
-                $dirFiles = [];
+            
+            // Normalize path by removing leading slash
+            $cleanPath = ltrim($path, '/');
+            
+            $existsOnSftp = false;
+            try {
+                $existsOnSftp = $disk->exists($cleanPath);
+            } catch (\Exception $e) {}
+
+            $portalRoot = rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/');
+            $localPath = $portalRoot . '/' . $cleanPath;
+            $existsLocally = file_exists($localPath) && is_readable($localPath) && !is_dir($localPath);
+
+            if (!$existsOnSftp && !$existsLocally) {
+                $dir = dirname($cleanPath);
+                $sftpFiles = [];
                 try {
-                    $dirFiles = $disk->files($dir);
+                    $sftpFiles = $disk->files($dir);
                 } catch (\Exception $e) {}
-                \Log::warning("streamViewerAsset 404: path [{$path}] not found on disk. Directory [{$dir}] contains files: " . json_encode($dirFiles));
+                
+                $localDirFiles = [];
+                $localDir = $portalRoot . '/' . $dir;
+                if (is_dir($localDir)) {
+                    $localDirFiles = array_diff(scandir($localDir), ['.', '..']);
+                }
+                
+                \Log::warning("streamViewerAsset 404: path [{$cleanPath}] not found on SFTP or locally. Local path: [{$localPath}]");
                 
                 return response()->json([
                     'error' => 'Asset not found', 
-                    'path' => $path,
+                    'path' => $cleanPath,
+                    'local_path' => $localPath,
+                    'local_exists' => file_exists($localPath),
+                    'sftp_exists' => $existsOnSftp,
                     'directory' => $dir,
-                    'directory_files' => $dirFiles
+                    'sftp_directory_files' => $sftpFiles,
+                    'local_directory_files' => array_values($localDirFiles)
                 ], 404);
             }
 
@@ -1636,6 +1668,12 @@ class ProjectController extends Controller
                 'geojson' => 'application/geo+json',
             ];
             $contentType = $contentTypes[$ext] ?? 'application/octet-stream';
+            if ($existsLocally && !$existsOnSftp) {
+                return response()->file($localPath, [
+                    'Content-Type' => $contentType,
+                    'Cache-Control' => 'public, max-age=86400',
+                ]);
+            }
 
             // Low-memory streaming from SFTP delivery disk directly to browser response buffer
             return response()->stream(function() use ($disk, $path) {
