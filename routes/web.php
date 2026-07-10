@@ -93,9 +93,6 @@ Route::get('/payment', function () {
 })->name('payment');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/viewer/{id}', function ($id) { 
-        return view('portal.3D-viewer', ['id' => $id]); 
-    })->name('viewer');
 
     Route::get('/create-project', function () {
         if (\App\Models\ClientUpload::hasExceededStorageLimit(auth()->user()->email)) {
