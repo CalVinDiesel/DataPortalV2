@@ -1344,7 +1344,7 @@
             };
             openTab(d.tileset_url, d.inquiry_id || inquiryStringId);
           } else {
-            alert('The 3D model preview is not yet available for this inquiry.');
+            alert(d.message || 'The 3D model preview is not yet available for this inquiry.');
           }
         })
         .catch(() => {

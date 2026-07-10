@@ -1457,55 +1457,12 @@ class InquiryController extends Controller
             ]);
         }
 
-        // ─── STEP E: Fallback to linked showcase MapData if present ──────────
-        if ($inquiry->map_data_id) {
-            $inquiry->load('mapData');
-            if ($inquiry->mapData) {
-                $tilesetUrl = $inquiry->mapData->getAttribute('3dTiles');
-                if ($tilesetUrl) {
-                    return response()->json([
-                        'success'     => true,
-                        'inquiry_id'  => $inquiry->inquiry_id,
-                        'tileset_url' => $tilesetUrl,
-                    ]);
-                }
-            }
-        }
-
-        // ─── STEP F: Debug listing and return 404 ────────────────────────────
-        $localFiles = [];
+        // ─── STEP E: Return error for invalid format of 3D tileset (No showcase fallback allowed) ───
         $absoluteDeliveryDir = $portalRoot . '/inquiry_deliveries/' . $inquiry->inquiry_id;
-        if (is_dir($absoluteDeliveryDir)) {
-            try {
-                $iterator = new \RecursiveIteratorIterator(
-                    new \RecursiveDirectoryIterator($absoluteDeliveryDir),
-                    \RecursiveIteratorIterator::LEAVES_ONLY
-                );
-                foreach ($iterator as $file) {
-                    if ($file->isFile()) {
-                        $localFiles[] = str_replace('\\', '/', substr($file->getPathname(), strlen($absoluteDeliveryDir) + 1));
-                    }
-                }
-            } catch (\Exception $e) {
-                $localFiles[] = 'Error listing local files: ' . $e->getMessage();
-            }
-        }
-
-        $sftpFilesList = [];
         $relativeDeliveryDir = 'inquiry_deliveries/' . $inquiry->inquiry_id;
-        try {
-            if ($disk->exists($relativeDeliveryDir)) {
-                $sftpFilesList = array_map(function($f) use ($relativeDeliveryDir) {
-                    return str_replace('\\', '/', substr($f, strlen($relativeDeliveryDir) + 1));
-                }, $disk->allFiles($relativeDeliveryDir));
-            }
-        } catch (\Exception $e) {
-            $sftpFilesList[] = 'Error listing SFTP files: ' . $e->getMessage();
-        }
-
         return response()->json([
             'success' => false,
-            'message' => 'Inquiry 3D model preview tileset not found on delivery storage.',
+            'message' => 'this is an incorrect format of 3d model tileset as requested by you',
             'debug'   => [
                 'relative_delivery_dir'  => $relativeDeliveryDir,
                 'absolute_delivery_dir'  => $absoluteDeliveryDir,
@@ -1513,10 +1470,8 @@ class InquiryController extends Controller
                 'local_dir_exists'       => is_dir($absoluteDeliveryDir),
                 'local_tileset_exists'   => false,
                 'sftp_dir_accessible'    => $disk->exists($relativeDeliveryDir),
-                'local_files'            => $localFiles,
-                'sftp_files'             => $sftpFilesList,
                 'candidates_checked'     => $relativeCandidates,
             ],
-        ], 404);
+        ], 400);
     }
 }
