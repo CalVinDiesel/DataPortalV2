@@ -19,7 +19,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Copy all source files needed by Vite to build
-RUN echo "Cache bust trigger: 2026-07-06 15:33"
+RUN echo "Cache bust trigger: 2026-07-10 13:28"
 COPY resources/ ./resources/
 COPY vite.config.js ./
 COPY tsconfig.json ./
