@@ -279,16 +279,25 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
             }
         });
     }, [layers, dataLoaded]);
-
     // Update annotation visibility
     useEffect(() => {
         if (!dataLoaded) return;
+
+        const setEntityVisibility = (entity: Entity, visible: boolean) => {
+            entity.show = visible;
+            const subs = (entity as any).subEntities;
+            if (Array.isArray(subs)) {
+                subs.forEach((sub: any) => {
+                    if (sub) sub.show = visible;
+                });
+            }
+        };
 
         Object.entries(annotationStates).forEach(([name, isVisible]) => {
             const entities = entityRefs.current.annotations[name];
             if (entities) {
                 entities.forEach(entity => {
-                    entity.show = isVisible;
+                    setEntityVisibility(entity, isVisible);
                 });
             }
         });
@@ -298,21 +307,19 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
         userAnnotations.lines.forEach((entity, idx) => {
             const isGroupVisible = annotationStates['Lines'] ?? true;
             const itemVisible = annotationItemVisibility[`line-${idx}`] ?? true;
-            entity.show = isGroupVisible && itemVisible;
+            setEntityVisibility(entity, isGroupVisible && itemVisible);
         });
         // User Polygons
         userAnnotations.polygons.forEach((entity, idx) => {
             const isGroupVisible = annotationStates['Polygons'] ?? true;
             const itemVisible = annotationItemVisibility[`polygon-${idx}`] ?? true;
-            entity.show = isGroupVisible && itemVisible;
+            setEntityVisibility(entity, isGroupVisible && itemVisible);
         });
-        // Markers are a bit different as they are grouped under 'Points' in the original code but handled separately in userAnnotations
-        // For now, let's assume if Points are visible, markers should be too, unless individually toggled
         // User Markers (Points)
         userAnnotations.markers.forEach((entity, idx) => {
             const isGroupVisible = annotationStates['Points'] ?? true; // Markers grouped under Points
             const itemVisible = annotationItemVisibility[`marker-${idx}`] ?? true;
-            entity.show = isGroupVisible && itemVisible;
+            setEntityVisibility(entity, isGroupVisible && itemVisible);
         });
     }, [annotationStates, dataLoaded, userAnnotations, annotationItemVisibility]);
 
@@ -320,11 +327,21 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
     useEffect(() => {
         if (!dataLoaded) return;
 
+        const setEntityVisibility = (entity: Entity, visible: boolean) => {
+            entity.show = visible;
+            const subs = (entity as any).subEntities;
+            if (Array.isArray(subs)) {
+                subs.forEach((sub: any) => {
+                    if (sub) sub.show = visible;
+                });
+            }
+        };
+
         Object.entries(measurementStates).forEach(([name, isVisible]) => {
             const entities = entityRefs.current.measurements[name];
             if (entities) {
                 entities.forEach(entity => {
-                    entity.show = isVisible;
+                    setEntityVisibility(entity, isVisible);
                 });
             }
         });
@@ -334,40 +351,38 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
             drawnMeasurements.length.forEach((entity, idx) => {
                 const itemKey = `length-${idx}`;
                 const itemVisible = measurementItemVisibility[itemKey] ?? true;
-                entity.show = measurementStates['Length'] && itemVisible;
+                setEntityVisibility(entity, measurementStates['Length'] && itemVisible);
             });
         }
         if (drawnMeasurements.height.length > 0 && measurementStates['Height'] !== undefined) {
             drawnMeasurements.height.forEach((entity, idx) => {
                 const itemKey = `height-${idx}`;
                 const itemVisible = measurementItemVisibility[itemKey] ?? true;
-                entity.show = measurementStates['Height'] && itemVisible;
+                setEntityVisibility(entity, measurementStates['Height'] && itemVisible);
             });
         }
         if (drawnMeasurements.triangle.length > 0 && measurementStates['Triangle'] !== undefined) {
             drawnMeasurements.triangle.forEach((entity, idx) => {
                 const itemKey = `triangle-${idx}`;
                 const itemVisible = measurementItemVisibility[itemKey] ?? true;
-                entity.show = measurementStates['Triangle'] && itemVisible;
+                setEntityVisibility(entity, measurementStates['Triangle'] && itemVisible);
             });
         }
         if (drawnMeasurements.area.length > 0 && measurementStates['Area'] !== undefined) {
             drawnMeasurements.area.forEach((entity, idx) => {
                 const itemKey = `area-${idx}`;
                 const itemVisible = measurementItemVisibility[itemKey] ?? true;
-                entity.show = measurementStates['Area'] && itemVisible;
+                setEntityVisibility(entity, measurementStates['Area'] && itemVisible);
             });
         }
         if (drawnMeasurements.circle.length > 0 && measurementStates['Circle'] !== undefined) {
             drawnMeasurements.circle.forEach((entity, idx) => {
                 const itemKey = `circle-${idx}`;
                 const itemVisible = measurementItemVisibility[itemKey] ?? true;
-                entity.show = measurementStates['Circle'] && itemVisible;
+                setEntityVisibility(entity, measurementStates['Circle'] && itemVisible);
             });
         }
     }, [measurementStates, dataLoaded, drawnMeasurements, measurementItemVisibility]);
-
-
     const toggleSection = (section: keyof typeof expandedSections) => {
         setExpandedSections((prev) => ({
             ...prev,
