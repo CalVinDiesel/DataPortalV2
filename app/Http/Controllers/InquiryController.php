@@ -1468,6 +1468,34 @@ class InquiryController extends Controller
             ]);
         }
 
+        $localFiles = [];
+        if (is_dir($absoluteDeliveryDir)) {
+            try {
+                $iterator = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($absoluteDeliveryDir),
+                    \RecursiveIteratorIterator::LEAVES_ONLY
+                );
+                foreach ($iterator as $file) {
+                    if ($file->isFile()) {
+                        $localFiles[] = str_replace('\\', '/', substr($file->getPathname(), strlen($absoluteDeliveryDir) + 1));
+                    }
+                }
+            } catch (\Exception $e) {
+                $localFiles[] = 'Error listing local files: ' . $e->getMessage();
+            }
+        }
+
+        $sftpFilesList = [];
+        try {
+            if ($disk->exists($relativeDeliveryDir)) {
+                $sftpFilesList = array_map(function($f) use ($relativeDeliveryDir) {
+                    return str_replace('\\', '/', substr($f, strlen($relativeDeliveryDir) + 1));
+                }, $disk->allFiles($relativeDeliveryDir));
+            }
+        } catch (\Exception $e) {
+            $sftpFilesList[] = 'Error listing SFTP files: ' . $e->getMessage();
+        }
+
         return response()->json([
             'success' => false,
             'message' => 'Inquiry 3D model preview tileset not found on delivery storage.',
@@ -1478,6 +1506,8 @@ class InquiryController extends Controller
                 'local_dir_exists'       => is_dir($absoluteDeliveryDir),
                 'local_tileset_exists'   => file_exists($absoluteTilesetPath),
                 'sftp_dir_accessible'    => $disk->exists($relativeDeliveryDir),
+                'local_files'            => $localFiles,
+                'sftp_files'             => $sftpFilesList,
             ],
         ], 404);
     }
