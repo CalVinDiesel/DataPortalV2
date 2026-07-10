@@ -1316,20 +1316,36 @@ class ProjectController extends Controller
         $directoryLocal = $portalRoot . '/' . $cleanRelativeDir;
         $absoluteTilesetPath = $directoryLocal . '/tileset.json';
 
+        // ─── STEP A: Check if tileset.json already exists locally ────────────
+        if (file_exists($absoluteTilesetPath)) {
+            $relTileset = ltrim(str_replace(
+                rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/') . '/',
+                '',
+                $absoluteTilesetPath
+            ), '/');
+            return response()->json([
+                'success' => true,
+                'project_id' => $record->project_id,
+                'title' => $record->project_title,
+                'latitude' => $record->latitude,
+                'longitude' => $record->longitude,
+                'tileset_url' => route('viewer_assets', ['path' => $relTileset])
+            ]);
+        }
+
         // Project root directories (one level above delivered folder)
         $projectLocalDir = $portalRoot . '/uploads/' . $sftpUser . '/' . $record->project_id;
         
-        // 🚀 AUTO-UNZIP PREVIEW LAYER:
-        // Search for ZIP file in both /delivered/ and project root folders, and extract into /delivered/
+        // ─── STEP B: Look for a ZIP in the local delivery folder and extract ─
         if (!file_exists($absoluteTilesetPath)) {
             $zipFiles = [];
             // Candidate 1: files inside /delivered/
             if (is_dir($directoryLocal)) {
-                $zipFiles = array_merge($zipFiles, glob(rtrim($directoryLocal, '/') . '/*.zip'));
+                $zipFiles = array_merge($zipFiles, glob(rtrim($directoryLocal, '/') . '/*.zip') ?: []);
             }
             // Candidate 2: files inside project root folder
             if (is_dir($projectLocalDir)) {
-                $zipFiles = array_merge($zipFiles, glob(rtrim($projectLocalDir, '/') . '/*.zip'));
+                $zipFiles = array_merge($zipFiles, glob(rtrim($projectLocalDir, '/') . '/*.zip') ?: []);
             }
             // Candidate 3: explicit delivery path target
             if ($deliveryPath) {
@@ -1354,7 +1370,19 @@ class ProjectController extends Controller
                         $zip->extractTo($directoryLocal);
                         $zip->close();
                         if (file_exists($absoluteTilesetPath)) {
-                            break;
+                            $relTileset = ltrim(str_replace(
+                                rtrim(env('SYSTEM_SSH_STORAGE_ROOT', '/home/dataportal/sftpgo/sftpgo_home/data'), '/') . '/',
+                                '',
+                                $absoluteTilesetPath
+                            ), '/');
+                            return response()->json([
+                                'success' => true,
+                                'project_id' => $record->project_id,
+                                'title' => $record->project_title,
+                                'latitude' => $record->latitude,
+                                'longitude' => $record->longitude,
+                                'tileset_url' => route('viewer_assets', ['path' => $relTileset])
+                            ]);
                         }
                     }
                 } catch (\Exception $e) {
@@ -1363,7 +1391,7 @@ class ProjectController extends Controller
             }
         }
 
-        // Resolve candidates for the relative directory path on the SFTP disk
+        // ─── STEP C: Check SFTP disk fallback ────────────────────────────────
         $root = rtrim(config('filesystems.disks.sftp_delivery.root', '/'), '/');
         $candidates = [
             $cleanRelativeDir,
