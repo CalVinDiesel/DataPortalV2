@@ -270,19 +270,16 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
 
     // Update 3D model visibility
     useEffect(() => {
-        if (!dataLoaded) return;
-
         Object.entries(layers).forEach(([layerName, isVisible]) => {
             const model = entityRefs.current.models[layerName];
             if (model) {
                 model.show = isVisible;
             }
         });
-    }, [layers, dataLoaded]);
+    }, [layers]);
+
     // Update annotation visibility
     useEffect(() => {
-        if (!dataLoaded) return;
-
         const setEntityVisibility = (entity: Entity, visible: boolean) => {
             entity.show = visible;
             const subs = (entity as any).subEntities;
@@ -321,12 +318,10 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
             const itemVisible = annotationItemVisibility[`marker-${idx}`] ?? true;
             setEntityVisibility(entity, isGroupVisible && itemVisible);
         });
-    }, [annotationStates, dataLoaded, userAnnotations, annotationItemVisibility]);
+    }, [annotationStates, userAnnotations, annotationItemVisibility]);
 
     // Update measurement visibility
     useEffect(() => {
-        if (!dataLoaded) return;
-
         const setEntityVisibility = (entity: Entity, visible: boolean) => {
             entity.show = visible;
             const subs = (entity as any).subEntities;
@@ -382,7 +377,7 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
                 setEntityVisibility(entity, measurementStates['Circle'] && itemVisible);
             });
         }
-    }, [measurementStates, dataLoaded, drawnMeasurements, measurementItemVisibility]);
+    }, [measurementStates, drawnMeasurements, measurementItemVisibility]);
     const toggleSection = (section: keyof typeof expandedSections) => {
         setExpandedSections((prev) => ({
             ...prev,
