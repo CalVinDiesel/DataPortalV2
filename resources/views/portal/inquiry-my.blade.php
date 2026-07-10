@@ -1328,14 +1328,10 @@
         return;
       }
 
-      // Cache miss: show preparing modal and fetch live
-      const loadingModal = new bootstrap.Modal(document.getElementById('preparing3DModal'));
-      loadingModal.show();
-
+      // Cache miss: fetch live then open
       fetch(`/api/inquiry/${encodeURIComponent(inquiryNumericId)}/preview-tileset`)
         .then(r => r.json())
         .then(d => {
-          loadingModal.hide();
           if (d.success && d.tileset_url) {
             window.inquiryTilesetCache = window.inquiryTilesetCache || {};
             window.inquiryTilesetCache[String(inquiryNumericId)] = {
@@ -1348,26 +1344,9 @@
           }
         })
         .catch(() => {
-          loadingModal.hide();
           alert('Failed to connect to the 3D preview pipeline. Please try again.');
         });
     }
   </script>
-  <!-- 3D Model Preparing Modal -->
-  <div class="modal fade" id="preparing3DModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
-        <div class="modal-body text-center p-5">
-          <div class="spinner-border text-primary mb-4" role="status" style="width: 3rem; height: 3rem; border-width: 4px;"></div>
-          <h5 class="fw-bold text-dark mb-2">Preparing 3D Model</h5>
-          <p class="text-muted small mb-0 px-2">
-            We are unzipping and optimizing the 3D files on the server.<br>
-            First-time initialization may take <strong>up to 30 seconds</strong>.<br>
-            Please keep this tab open...
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
