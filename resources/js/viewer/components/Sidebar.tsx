@@ -282,6 +282,10 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
     useEffect(() => {
         const setEntityVisibility = (entity: Entity, visible: boolean) => {
             entity.show = visible;
+            const prim = (entity as any).primitiveLineCollection;
+            if (prim) {
+                prim.show = visible;
+            }
             const subs = (entity as any).subEntities;
             if (Array.isArray(subs)) {
                 subs.forEach((sub: any) => {
@@ -324,6 +328,10 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
     useEffect(() => {
         const setEntityVisibility = (entity: Entity, visible: boolean) => {
             entity.show = visible;
+            const prim = (entity as any).primitiveLineCollection;
+            if (prim) {
+                prim.show = visible;
+            }
             const subs = (entity as any).subEntities;
             if (Array.isArray(subs)) {
                 subs.forEach((sub: any) => {
@@ -530,7 +538,7 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
                                                 >
                                                     <input
                                                         type="checkbox"
-                                                        checked={annotationItemVisibility[`marker-${idx}`] ?? true}
+                                                        checked={(annotationStates['Points'] ?? true) && (annotationItemVisibility[`marker-${idx}`] ?? true)}
                                                         onChange={() => toggleAnnotationItem(`marker-${idx}`)}
                                                         onClick={(e) => e.stopPropagation()}
                                                     />
@@ -604,7 +612,7 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
                                                 >
                                                     <input
                                                         type="checkbox"
-                                                        checked={annotationItemVisibility[`line-${idx}`] ?? true}
+                                                        checked={(annotationStates['Lines'] ?? true) && (annotationItemVisibility[`line-${idx}`] ?? true)}
                                                         onChange={() => toggleAnnotationItem(`line-${idx}`)}
                                                         onClick={(e) => e.stopPropagation()}
                                                     />
@@ -678,7 +686,7 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
                                                 >
                                                     <input
                                                         type="checkbox"
-                                                        checked={annotationItemVisibility[`polygon-${idx}`] ?? true}
+                                                        checked={(annotationStates['Polygons'] ?? true) && (annotationItemVisibility[`polygon-${idx}`] ?? true)}
                                                         onChange={() => toggleAnnotationItem(`polygon-${idx}`)}
                                                         onClick={(e) => e.stopPropagation()}
                                                     />
@@ -790,7 +798,7 @@ function Sidebar({ isOpen, onToggle, viewer, siteTitle = 'SITE', tilesetUrl, dra
                                                         >
                                                             <input
                                                                 type="checkbox"
-                                                                checked={measurementItemVisibility[`${measurementType}-${drawIdx}`] ?? true}
+                                                                checked={measurementStates[measurement.name] && (measurementItemVisibility[`${measurementType}-${drawIdx}`] ?? true)}
                                                                 onChange={() => toggleMeasurementItem(`${measurementType}-${drawIdx}`)}
                                                                 onClick={(e) => e.stopPropagation()}
                                                             />
