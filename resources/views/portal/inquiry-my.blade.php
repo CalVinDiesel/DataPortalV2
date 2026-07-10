@@ -1304,9 +1304,17 @@
                   tilesetUrl: d.tileset_url,
                   inquiryStringId: d.inquiry_id,
                 };
+              } else {
+                window.inquiryTilesetCache[inquiryId] = {
+                  error: d.message || 'The 3D model preview is not yet available for this inquiry.'
+                };
               }
             })
-            .catch(() => {}); // Silent — cache miss handled at click time
+            .catch(() => {
+              window.inquiryTilesetCache[inquiryId] = {
+                error: 'Failed to connect to the 3D preview pipeline. Please try again.'
+              };
+            });
         }
       });
     })();
@@ -1324,7 +1332,11 @@
       // 🚀 Use cached URL for instant navigation
       const cached = window.inquiryTilesetCache && window.inquiryTilesetCache[String(inquiryNumericId)];
       if (cached) {
-        openTab(cached.tilesetUrl, cached.inquiryStringId || inquiryStringId);
+        if (cached.tilesetUrl) {
+          openTab(cached.tilesetUrl, cached.inquiryStringId || inquiryStringId);
+        } else if (cached.error) {
+          alert(cached.error);
+        }
         return;
       }
 

@@ -890,6 +890,31 @@
           // Dummy UI Storage recalculate
           updateStorageUI(totalBytes);
 
+          // 🚀 Warm the preview cache for completed/sent projects to prevent loading modals for invalid formats
+          window.tilesetUrlCache = window.tilesetUrlCache || {};
+          data.forEach(item => {
+            const isReadyForPreview = (item.request_status === 'completed' || item.request_status === 'sent') && item.delivered_file_path;
+            if (isReadyForPreview && !window.tilesetUrlCache[String(item.id)]) {
+              fetch(`/api/user/my-uploads/${encodeURIComponent(item.id)}/preview-tileset`)
+                .then(res => res.json())
+                .then(d => {
+                  if (d.success && d.tileset_url) {
+                    window.tilesetUrlCache[String(item.id)] = {
+                      tilesetUrl: d.tileset_url
+                    };
+                  } else {
+                    window.tilesetUrlCache[String(item.id)] = {
+                      error: d.message || "The preview fileset index could not be resolved on the server."
+                    };
+                  }
+                })
+                .catch(() => {
+                  window.tilesetUrlCache[String(item.id)] = {
+                    error: "Failed to connect to the 3D secure rendering pipeline endpoint."
+                  };
+                });
+            }
+          });
         })
         .catch(err => {
           console.error("Error fetching uploads:", err);
@@ -1212,39 +1237,46 @@
       // 🚀 Use cached tileset URL for instant navigation (no API round-trip on click)
       const cached = window.tilesetUrlCache && window.tilesetUrlCache[String(projectIdString)];
       if (cached) {
-        openViewerTab(cached);
-      } else {
-        // Cache miss: show preparing modal and fetch live
-        const modalEl = document.getElementById('preparing3DModal');
-        const loadingModal = new bootstrap.Modal(modalEl);
-        loadingModal.show();
+        if (cached.tilesetUrl) {
+          openViewerTab(cached.tilesetUrl);
+        } else if (cached.error) {
+          alert(cached.error);
+        }
+        return;
+      }
 
-        fetch(`/api/user/my-uploads/${encodeURIComponent(projectIdString)}/preview-tileset`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.success && data.tileset_url) {
-              loadingModal.hide();
-              window.tilesetUrlCache = window.tilesetUrlCache || {};
-              window.tilesetUrlCache[String(projectIdString)] = data.tileset_url;
-              openViewerTab(data.tileset_url);
-            } else {
-              const onHidden = () => {
-                modalEl.removeEventListener('hidden.bs.modal', onHidden);
-                alert(data.message || "The preview fileset index could not be resolved on the server.");
-              };
-              modalEl.addEventListener('hidden.bs.modal', onHidden);
-              loadingModal.hide();
-            }
-          })
-          .catch(() => {
+      // Cache miss: show preparing modal and fetch live
+      const modalEl = document.getElementById('preparing3DModal');
+      const loadingModal = new bootstrap.Modal(modalEl);
+      loadingModal.show();
+
+      fetch(`/api/user/my-uploads/${encodeURIComponent(projectIdString)}/preview-tileset`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.tileset_url) {
+            loadingModal.hide();
+            window.tilesetUrlCache = window.tilesetUrlCache || {};
+            window.tilesetUrlCache[String(projectIdString)] = {
+              tilesetUrl: data.tileset_url
+            };
+            openViewerTab(data.tileset_url);
+          } else {
             const onHidden = () => {
               modalEl.removeEventListener('hidden.bs.modal', onHidden);
-              alert("Failed to connect to the 3D secure rendering pipeline endpoint.");
+              alert(data.message || "The preview fileset index could not be resolved on the server.");
             };
             modalEl.addEventListener('hidden.bs.modal', onHidden);
             loadingModal.hide();
-          });
-      }
+          }
+        })
+        .catch(() => {
+          const onHidden = () => {
+            modalEl.removeEventListener('hidden.bs.modal', onHidden);
+            alert("Failed to connect to the 3D secure rendering pipeline endpoint.");
+          };
+          modalEl.addEventListener('hidden.bs.modal', onHidden);
+          loadingModal.hide();
+        });
     }
 
     // Listen for browser back button — close the modal cleanly without navigating away

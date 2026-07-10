@@ -1375,6 +1375,21 @@ class InquiryController extends Controller
                         try {
                             $zip = new \ZipArchive();
                             if ($zip->open($zipFile) === true) {
+                                $hasTileset = false;
+                                for ($i = 0; $i < $zip->numFiles; $i++) {
+                                    $stat = $zip->statIndex($i);
+                                    if (basename($stat['name']) === 'tileset.json') {
+                                        $hasTileset = true;
+                                        break;
+                                    }
+                                }
+                                if (!$hasTileset) {
+                                    $zip->close();
+                                    return response()->json([
+                                        'success' => false,
+                                        'message' => 'this is an incorrect format of 3d model tileset as requested by you'
+                                    ], 400);
+                                }
                                 $zip->extractTo($absDir);
                                 $zip->close();
                                 if (file_exists($absTileset)) {
@@ -1429,6 +1444,21 @@ class InquiryController extends Controller
 
                                 $zip = new \ZipArchive();
                                 if ($zip->open($tempZip) === true) {
+                                    $hasTileset = false;
+                                    for ($i = 0; $i < $zip->numFiles; $i++) {
+                                        $stat = $zip->statIndex($i);
+                                        if (basename($stat['name']) === 'tileset.json') {
+                                            $hasTileset = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!$hasTileset) {
+                                        $zip->close();
+                                        return response()->json([
+                                            'success' => false,
+                                            'message' => 'this is an incorrect format of 3d model tileset as requested by you'
+                                        ], 400);
+                                    }
                                     $zip->extractTo($absDir);
                                     $zip->close();
                                     $absTileset = rtrim($absDir, '/') . '/tileset.json';
