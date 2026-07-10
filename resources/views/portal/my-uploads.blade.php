@@ -1214,20 +1214,35 @@
       if (cached) {
         openViewerTab(cached);
       } else {
-        // Cache miss: fetch live then open
+        // Cache miss: show preparing modal and fetch live
+        const modalEl = document.getElementById('preparing3DModal');
+        const loadingModal = new bootstrap.Modal(modalEl);
+        loadingModal.show();
+
         fetch(`/api/user/my-uploads/${encodeURIComponent(projectIdString)}/preview-tileset`)
           .then(res => res.json())
           .then(data => {
             if (data.success && data.tileset_url) {
+              loadingModal.hide();
               window.tilesetUrlCache = window.tilesetUrlCache || {};
               window.tilesetUrlCache[String(projectIdString)] = data.tileset_url;
               openViewerTab(data.tileset_url);
             } else {
-              alert(data.message || "The preview fileset index could not be resolved on the server.");
+              const onHidden = () => {
+                modalEl.removeEventListener('hidden.bs.modal', onHidden);
+                alert(data.message || "The preview fileset index could not be resolved on the server.");
+              };
+              modalEl.addEventListener('hidden.bs.modal', onHidden);
+              loadingModal.hide();
             }
           })
           .catch(() => {
-            alert("Failed to connect to the 3D secure rendering pipeline endpoint.");
+            const onHidden = () => {
+              modalEl.removeEventListener('hidden.bs.modal', onHidden);
+              alert("Failed to connect to the 3D secure rendering pipeline endpoint.");
+            };
+            modalEl.addEventListener('hidden.bs.modal', onHidden);
+            loadingModal.hide();
           });
       }
     }
@@ -1493,5 +1508,22 @@
           </div>
         </div>
       </div>
+
+  <!-- 3D Model Preparing Modal -->
+  <div class="modal fade" id="preparing3DModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+        <div class="modal-body text-center p-5">
+          <div class="spinner-border text-primary mb-4" role="status" style="width: 3rem; height: 3rem; border-width: 4px;"></div>
+          <h5 class="fw-bold text-dark mb-2">Preparing 3D Model</h5>
+          <p class="text-muted small mb-0 px-2">
+            We are unzipping and optimizing the 3D files on the server.<br>
+            First-time initialization may take <strong>up to 30 seconds</strong>.<br>
+            Please keep this tab open...
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
